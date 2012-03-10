@@ -25,3 +25,5 @@ windows has no 'env' command, and the stdin/out redirection is different (no 'lu
 tests that assume directory separators fail
 
 loadlib tests assume 'lib.so'
+
+test crlf change
