@@ -4,3 +4,10 @@ x64
 *.vcproj.*.user
 *.wwdb
 *.suo
+env.exe
+msys-1.0.dll
+msys-iconv-2.dll
+msys-intl-8.dll
+lua-5.2.0-tests
+lua-5.2.0
+
