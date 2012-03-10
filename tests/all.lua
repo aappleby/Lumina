@@ -13,8 +13,7 @@ end
 -- defaults are for Linux; test everything
 
 _soft = false      -- true to avoid long or memory consuming tests
--- FIXMEFIXME
-_port = true      -- true to avoid non-portable tests
+_port = false      -- true to avoid non-portable tests
 -- FIXMEFIXME
 _no32 = true      -- true to avoid tests that assume 32 bits
 _nomsg = false     -- true to avoid messages about tests not performed
@@ -135,7 +134,8 @@ dofile = function (n)
   return f()
 end
 
-dofile('main.lua')
+-- FIXME (or not, main.lua assumes a lot about bash shells & directory separators
+-- dofile('main.lua')
 
 do
   local eph = setmetatable({}, {__mode = "k"})   -- create an ephemeron table

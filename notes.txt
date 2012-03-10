@@ -17,3 +17,11 @@ _noformatA = true
 api.lua
 -- FIXMEFIXME 
 -- check3("cannot read", T.testC("loadfile 2; gettop; return .", "."))
+
+
+
+windows has no 'env' command, and the stdin/out redirection is different (no 'lua -e --') so most of the tests in main.lua are useless
+
+tests that assume directory separators fail
+
+loadlib tests assume 'lib.so'
