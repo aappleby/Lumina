@@ -10,4 +10,5 @@ msys-iconv-2.dll
 msys-intl-8.dll
 lua-5.2.0-tests
 lua-5.2.0
-
+lua.exe
+lua.pdb

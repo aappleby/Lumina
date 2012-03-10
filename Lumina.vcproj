@@ -282,6 +282,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				OutputFile="$(SolutionDir)\tests\lua.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -669,6 +670,10 @@
 		</File>
 		<File
 			RelativePath=".\src\lzio.h"
+			>
+		</File>
+		<File
+			RelativePath=".\notes.txt"
 			>
 		</File>
 	</Files>
