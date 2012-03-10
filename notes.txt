@@ -1,0 +1,19 @@
+initial diffs to get things working under win-x64 -
+
+lua.h -
+#define LUA_USER_H "ltests.h"
+
+luaconf.h
+#define LUA_USE_LONGLONG	/* assume support for long long */
+
+
+all.lua -
+_port = true
+_no32 = true
+_noposix = true
+_noformatA = true
+
+
+api.lua
+-- FIXMEFIXME 
+-- check3("cannot read", T.testC("loadfile 2; gettop; return .", "."))
