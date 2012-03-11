@@ -110,7 +110,6 @@ typedef struct CallInfo {
 */
 typedef struct global_State {
   lua_Alloc frealloc;  /* function to reallocate memory */
-  void *ud;         /* auxiliary data to `frealloc' */
   size_t totalbytes;  /* number of bytes currently allocated - GCdebt */
   l_mem GCdebt;  /* bytes allocated not yet compensated by the collector */
   size_t lastmajormem;  /* memory in use after last major collection */

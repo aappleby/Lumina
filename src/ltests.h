@@ -24,18 +24,6 @@
 #define UNUSED(x)       (x=0, (void)(x))
 
 
-/* memory allocator control variables */
-typedef struct Memcontrol {
-  unsigned long numblocks;
-  unsigned long total;
-  unsigned long maxmem;
-  unsigned long memlimit;
-  unsigned long objcount[LUA_NUMTAGS];
-} Memcontrol;
-
-extern Memcontrol l_memcontrol;
-
-
 void *debug_realloc (void *block, size_t osize, size_t nsize);
 
 typedef struct CallInfo *pCallInfo;
@@ -45,7 +33,7 @@ int lua_checkmemory (lua_State *L);
 int luaB_opentests (lua_State *L);
 
 #if defined(lua_c)
-#define luaL_newstate()		lua_newstate(debug_realloc, &l_memcontrol)
+#define luaL_newstate()		lua_newstate(debug_realloc, 0)
 #define luaL_openlibs(L)  \
   { (luaL_openlibs)(L); luaL_requiref(L, "T", luaB_opentests, 1); }
 #endif

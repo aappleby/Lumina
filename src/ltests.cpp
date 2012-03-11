@@ -94,6 +94,15 @@ typedef union Header {
 
 #endif
 
+/* memory allocator control variables */
+typedef struct Memcontrol {
+  unsigned long numblocks;
+  unsigned long total;
+  unsigned long maxmem;
+  unsigned long memlimit;
+  unsigned long objcount[LUA_NUMTAGS];
+} Memcontrol;
+
 
 Memcontrol l_memcontrol =
   {0L, 0L, 0L, 0L, {0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L}};
@@ -1454,7 +1463,6 @@ int luaB_opentests (lua_State *L) {
   lua_atpanic(L, &tpanic);
   atexit(checkfinalmem);
   lua_assert(lua_getallocf(L, &ud) == debug_realloc);
-  lua_assert(ud == cast(void *, &l_memcontrol));
   lua_setallocf(L, lua_getallocf(L, NULL), ud);
   luaL_newlib(L, tests_funcs);
   return 1;

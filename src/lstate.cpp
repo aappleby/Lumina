@@ -240,7 +240,6 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   g->gckind = KGC_NORMAL;
   preinit_state(L, g);
   g->frealloc = f;
-  g->ud = ud;
   g->mainthread = L;
   g->uvhead.u.l.prev = &g->uvhead;
   g->uvhead.u.l.next = &g->uvhead;
