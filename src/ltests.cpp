@@ -113,7 +113,7 @@ static void freeblock (Memcontrol *mc, Header *block) {
     size_t size = block->d.size;
     int i;
     for (i = 0; i < MARKSIZE; i++)  /* check marks after block */
-      lua_assert(*(cast(char *, block + 1) + size + i) == MARK);
+      assert(*(cast(char *, block + 1) + size + i) == MARK);
     mc->objcount[block->d.type]--;
     fillmem(block, sizeof(Header) + size + MARKSIZE);  /* erase block */
     free(block);  /* actually free block */
@@ -139,7 +139,7 @@ void *debug_realloc (void *b, size_t oldsize, size_t size) {
   else {
     block--;  /* go to real header */
     type = block->d.type;
-    lua_assert(oldsize == block->d.size);
+    assert(oldsize == block->d.size);
   }
   if (size == 0) {
     freeblock(mc, block);
@@ -217,13 +217,13 @@ static int testobjref (global_State *g, GCObject *f, GCObject *t) {
   return r;
 }
 
-#define checkobjref(g,f,t) lua_assert(testobjref(g,f,obj2gco(t)))
+#define checkobjref(g,f,t) assert(testobjref(g,f,obj2gco(t)))
 
 
 static void checkvalref (global_State *g, GCObject *f, const TValue *t) {
   if (iscollectable(t)) {
-    lua_assert(righttt(t));
-    lua_assert(testobjref(g, f, gcvalue(t)));
+    assert(righttt(t));
+    assert(testobjref(g, f, gcvalue(t)));
   }
 }
 
@@ -238,7 +238,7 @@ static void checktable (global_State *g, Table *h) {
     checkvalref(g, hgc, &h->array[i]);
   for (n = gnode(h, 0); n < limit; n++) {
     if (!ttisnil(gval(n))) {
-      lua_assert(!ttisnil(gkey(n)));
+      assert(!ttisnil(gkey(n)));
       checkvalref(g, hgc, gkey(n));
       checkvalref(g, hgc, gval(n));
     }
@@ -283,11 +283,11 @@ static void checkclosure (global_State *g, Closure *cl) {
   }
   else {
     int i;
-    lua_assert(cl->l.nupvalues == cl->l.p->sizeupvalues);
+    assert(cl->l.nupvalues == cl->l.p->sizeupvalues);
     checkobjref(g, clgc, cl->l.p);
     for (i=0; i<cl->l.nupvalues; i++) {
       if (cl->l.upvals[i]) {
-        lua_assert(cl->l.upvals[i]->tt == LUA_TUPVAL);
+        assert(cl->l.upvals[i]->tt == LUA_TUPVAL);
         checkobjref(g, clgc, cl->l.upvals[i]);
       }
     }
@@ -311,35 +311,35 @@ static void checkstack (global_State *g, lua_State *L1) {
   StkId o;
   CallInfo *ci;
   GCObject *uvo;
-  lua_assert(!isdead(g, obj2gco(L1)));
+  assert(!isdead(g, obj2gco(L1)));
   for (uvo = L1->openupval; uvo != NULL; uvo = gch(uvo)->next) {
     UpVal *uv = gco2uv(uvo);
-    lua_assert(uv->v != &uv->u.value);  /* must be open */
-    lua_assert(!isblack(uvo));  /* open upvalues cannot be black */
+    assert(uv->v != &uv->u.value);  /* must be open */
+    assert(!isblack(uvo));  /* open upvalues cannot be black */
   }
   for (ci = L1->ci; ci != NULL; ci = ci->previous) {
-    lua_assert(ci->top <= L1->stack_last);
-    lua_assert(lua_checkpc(ci));
+    assert(ci->top <= L1->stack_last);
+    assert(lua_checkpc(ci));
   }
   if (L1->stack) {
     for (o = L1->stack; o < L1->top; o++)
       checkliveness(g, o);
   }
-  else lua_assert(L1->stacksize == 0);
+  else assert(L1->stacksize == 0);
 }
 
 
 static void checkobject (global_State *g, GCObject *o) {
   if (isdead(g, o))
-    lua_assert(issweepphase(g));
+    assert(issweepphase(g));
   else {
     if (g->gcstate == GCSpause && !isgenerational(g))
-      lua_assert(iswhite(o));
+      assert(iswhite(o));
     switch (gch(o)->tt) {
       case LUA_TUPVAL: {
         UpVal *uv = gco2uv(o);
-        lua_assert(uv->v == &uv->u.value);  /* must be closed */
-        lua_assert(!isgray(o));  /* closed upvalues are never gray */
+        assert(uv->v == &uv->u.value);  /* must be closed */
+        assert(!isgray(o));  /* closed upvalues are never gray */
         checkvalref(g, o, uv->v);
         break;
       }
@@ -365,7 +365,7 @@ static void checkobject (global_State *g, GCObject *o) {
         break;
       }
       case LUA_TSTRING: break;
-      default: lua_assert(0);
+      default: assert(0);
     }
   }
 }
@@ -375,15 +375,15 @@ static void checkobject (global_State *g, GCObject *o) {
 
 static void checkgraylist (GCObject *l) {
   while (l) {
-    lua_assert(isgray(l));
-    lua_assert(!testbit(l->gch.marked, TESTGRAYBIT));
+    assert(isgray(l));
+    assert(!testbit(l->gch.marked, TESTGRAYBIT));
     l_setbit(l->gch.marked, TESTGRAYBIT);
     switch (gch(l)->tt) {
       case LUA_TTABLE: l = gco2t(l)->gclist; break;
       case LUA_TFUNCTION: l = gco2cl(l)->c.gclist; break;
       case LUA_TTHREAD: l = gco2th(l)->gclist; break;
       case LUA_TPROTO: l = gco2p(l)->gclist; break;
-      default: lua_assert(0);  /* other objects cannot be gray */
+      default: assert(0);  /* other objects cannot be gray */
     }
   }
 }
@@ -407,16 +407,16 @@ static void checkold (global_State *g, GCObject *o) {
   int isold = 0;
   for (; o != NULL; o = gch(o)->next) {
     if (isold(o)) {  /* old generation? */
-      lua_assert(isgenerational(g));
+      assert(isgenerational(g));
       if (!issweepphase(g))
         isold = 1;
     }
-    else lua_assert(!isold);  /* non-old object cannot be after an old one */
+    else assert(!isold);  /* non-old object cannot be after an old one */
     if (isgray(o)) {
-      lua_assert(!keepinvariant(g) || testbit(o->gch.marked, TESTGRAYBIT));
+      assert(!keepinvariant(g) || testbit(o->gch.marked, TESTGRAYBIT));
       resetbit(o->gch.marked, TESTGRAYBIT);
     }
-    lua_assert(!testbit(o->gch.marked, TESTGRAYBIT));
+    assert(!testbit(o->gch.marked, TESTGRAYBIT));
   }
 }
 
@@ -426,10 +426,10 @@ int lua_checkmemory (lua_State *L) {
   GCObject *o;
   UpVal *uv;
   if (keepinvariant(g)) {
-    lua_assert(!iswhite(obj2gco(g->mainthread)));
-    lua_assert(!iswhite(gcvalue(&g->l_registry)));
+    assert(!iswhite(obj2gco(g->mainthread)));
+    assert(!iswhite(gcvalue(&g->l_registry)));
   }
-  lua_assert(!isdead(g, gcvalue(&g->l_registry)));
+  assert(!isdead(g, gcvalue(&g->l_registry)));
   checkstack(g, g->mainthread);
   resetbit(g->mainthread->marked, TESTGRAYBIT);
   /* check 'allgc' list */
@@ -437,31 +437,31 @@ int lua_checkmemory (lua_State *L) {
   checkold(g, g->allgc);
   for (o = g->allgc; o != NULL; o = gch(o)->next) {
     checkobject(g, o);
-    lua_assert(!testbit(o->gch.marked, SEPARATED));
+    assert(!testbit(o->gch.marked, SEPARATED));
   }
   /* check 'finobj' list */
   checkold(g, g->finobj);
   for (o = g->finobj; o != NULL; o = gch(o)->next) {
-    lua_assert(!isdead(g, o) && testbit(o->gch.marked, SEPARATED));
-    lua_assert(gch(o)->tt == LUA_TUSERDATA ||
+    assert(!isdead(g, o) && testbit(o->gch.marked, SEPARATED));
+    assert(gch(o)->tt == LUA_TUSERDATA ||
                gch(o)->tt == LUA_TTABLE);
     checkobject(g, o);
   }
   /* check 'tobefnz' list */
   checkold(g, g->tobefnz);
   for (o = g->tobefnz; o != NULL; o = gch(o)->next) {
-    lua_assert(!iswhite(o));
-    lua_assert(!isdead(g, o) && testbit(o->gch.marked, SEPARATED));
-    lua_assert(gch(o)->tt == LUA_TUSERDATA ||
+    assert(!iswhite(o));
+    assert(!isdead(g, o) && testbit(o->gch.marked, SEPARATED));
+    assert(gch(o)->tt == LUA_TUSERDATA ||
                gch(o)->tt == LUA_TTABLE);
   }
   /* check 'uvhead' list */
   for (uv = g->uvhead.u.l.next; uv != &g->uvhead; uv = uv->u.l.next) {
-    lua_assert(uv->u.l.next->u.l.prev == uv && uv->u.l.prev->u.l.next == uv);
-    lua_assert(uv->v != &uv->u.value);  /* must be open */
-    lua_assert(!isblack(obj2gco(uv)));  /* open upvalues are never black */
+    assert(uv->u.l.next->u.l.prev == uv && uv->u.l.prev->u.l.next == uv);
+    assert(uv->v != &uv->u.value);  /* must be open */
+    assert(!isblack(obj2gco(uv)));  /* open upvalues are never black */
     if (isdead(g, obj2gco(uv)))
-      lua_assert(issweepphase(g));
+      assert(issweepphase(g));
     else
       checkvalref(g, obj2gco(uv), uv->v);
   }
@@ -643,7 +643,7 @@ static int gc_state (lua_State *L) {
   else {
     lua_lock(L);
     luaC_runtilstate(L, bitmask(option));
-    lua_assert(G(L)->gcstate == option);
+    assert(G(L)->gcstate == option);
     lua_unlock(L);
     return 0;
   }
@@ -735,21 +735,21 @@ static int tref (lua_State *L) {
   luaL_checkany(L, 1);
   lua_pushvalue(L, 1);
   lua_pushinteger(L, luaL_ref(L, LUA_REGISTRYINDEX));
-  lua_assert(lua_gettop(L) == level+1);  /* +1 for result */
+  assert(lua_gettop(L) == level+1);  /* +1 for result */
   return 1;
 }
 
 static int getref (lua_State *L) {
   int level = lua_gettop(L);
   lua_rawgeti(L, LUA_REGISTRYINDEX, luaL_checkint(L, 1));
-  lua_assert(lua_gettop(L) == level+1);
+  assert(lua_gettop(L) == level+1);
   return 1;
 }
 
 static int unref (lua_State *L) {
   int level = lua_gettop(L);
   luaL_unref(L, LUA_REGISTRYINDEX, luaL_checkint(L, 1));
-  lua_assert(lua_gettop(L) == level);
+  assert(lua_gettop(L) == level);
   return 0;
 }
 
@@ -1040,7 +1040,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     else if EQ("tostring") {
       const char *s = lua_tostring(L1, getindex);
       const char *s1 = lua_pushstring(L1, s);
-      lua_assert((s == NULL && s1 == NULL) || (strcmp)(s, s1) == 0);
+      assert((s == NULL && s1 == NULL) || (strcmp)(s, s1) == 0);
     }
     else if EQ("objsize") {
       lua_pushinteger(L1, lua_rawlen(L1, getindex));
@@ -1454,15 +1454,15 @@ static const struct luaL_Reg tests_funcs[] = {
 
 
 static void checkfinalmem (void) {
-  lua_assert(l_memcontrol.numblocks == 0);
-  lua_assert(l_memcontrol.total == 0);
+  assert(l_memcontrol.numblocks == 0);
+  assert(l_memcontrol.total == 0);
 }
 
 
 int luaB_opentests (lua_State *L) {
   lua_atpanic(L, &tpanic);
   atexit(checkfinalmem);
-  lua_assert(lua_getallocf(L) == debug_realloc);
+  assert(lua_getallocf(L) == debug_realloc);
   lua_setallocf(L, lua_getallocf(L));
   luaL_newlib(L, tests_funcs);
   return 1;

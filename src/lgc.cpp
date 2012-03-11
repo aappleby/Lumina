@@ -70,7 +70,7 @@
 
 #define isfinalized(x)		testbit(gch(x)->marked, FINALIZEDBIT)
 
-#define checkdeadkey(n)	lua_assert(!ttisdeadkey(gkey(n)) || ttisnil(gval(n)))
+#define checkdeadkey(n)	assert(!ttisdeadkey(gkey(n)) || ttisnil(gval(n)))
 
 
 #define checkconsistency(obj)  \
@@ -110,7 +110,7 @@ static void reallymarkobject (global_State *g, GCObject *o);
 ** from the table)
 */
 static void removeentry (Node *n) {
-  lua_assert(ttisnil(gval(n)));
+  assert(ttisnil(gval(n)));
   if (valiswhite(gkey(n)))
     setdeadvalue(gkey(n));  /* unused and unmarked key; remove it */
 }
@@ -139,13 +139,13 @@ static int iscleared (const TValue *o) {
 */
 void luaC_barrier_ (lua_State *L, GCObject *o, GCObject *v) {
   global_State *g = G(L);
-  lua_assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
-  lua_assert(isgenerational(g) || g->gcstate != GCSpause);
-  lua_assert(gch(o)->tt != LUA_TTABLE);
+  assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
+  assert(isgenerational(g) || g->gcstate != GCSpause);
+  assert(gch(o)->tt != LUA_TTABLE);
   if (keepinvariant(g))  /* must keep invariant? */
     reallymarkobject(g, v);  /* restore invariant */
   else {  /* sweep phase */
-    lua_assert(issweepphase(g));
+    assert(issweepphase(g));
     makewhite(g, o);  /* mark main obj. as white to avoid other barriers */
   }
 }
@@ -159,7 +159,7 @@ void luaC_barrier_ (lua_State *L, GCObject *o, GCObject *v) {
 */
 void luaC_barrierback_ (lua_State *L, GCObject *o) {
   global_State *g = G(L);
-  lua_assert(isblack(o) && !isdead(g, o) && gch(o)->tt == LUA_TTABLE);
+  assert(isblack(o) && !isdead(g, o) && gch(o)->tt == LUA_TTABLE);
   black2gray(o);  /* make object gray (again) */
   gco2t(o)->gclist = g->grayagain;
   g->grayagain = o;
@@ -176,7 +176,7 @@ void luaC_barrierback_ (lua_State *L, GCObject *o) {
 */
 LUAI_FUNC void luaC_barrierproto_ (lua_State *L, Proto *p, Closure *c) {
   global_State *g = G(L);
-  lua_assert(isblack(obj2gco(p)));
+  assert(isblack(obj2gco(p)));
   if (p->cache == NULL) {  /* first time? */
     luaC_objbarrier(L, p, c);
   }
@@ -194,7 +194,7 @@ LUAI_FUNC void luaC_barrierproto_ (lua_State *L, Proto *p, Closure *c) {
 */
 void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
   GCObject *o = obj2gco(uv);
-  lua_assert(!isblack(o));  /* open upvalues are never black */
+  assert(!isblack(o));  /* open upvalues are never black */
   if (isgray(o)) {
     if (keepinvariant(g)) {
       resetoldbit(o);  /* see MOVE OLD rule */
@@ -202,7 +202,7 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
       markvalue(g, uv->v);
     }
     else {
-      lua_assert(issweepphase(g));
+      assert(issweepphase(g));
       makewhite(g, o);
     }
   }
@@ -246,7 +246,7 @@ GCObject *luaC_newobj (lua_State *L, int tt, size_t sz, GCObject **list,
 ** linked in 'headuv' list.)
 */
 static void reallymarkobject (global_State *g, GCObject *o) {
-  lua_assert(iswhite(o) && !isdead(g, o));
+  assert(iswhite(o) && !isdead(g, o));
   white2gray(o);
   switch (gch(o)->tt) {
     case LUA_TSTRING: {
@@ -285,7 +285,7 @@ static void reallymarkobject (global_State *g, GCObject *o) {
       g->gray = o;
       break;
     }
-    default: lua_assert(0);
+    default: assert(0);
   }
 }
 
@@ -357,7 +357,7 @@ static void traverseweakvalue (global_State *g, Table *h) {
     if (ttisnil(gval(n)))  /* entry is empty? */
       removeentry(n);  /* remove it */
     else {
-      lua_assert(!ttisnil(gkey(n)));
+      assert(!ttisnil(gkey(n)));
       markvalue(g, gkey(n));  /* mark key */
       if (!hasclears && iscleared(gval(n)))  /* is there a white value? */
         hasclears = 1;  /* table will have to be cleared */
@@ -418,7 +418,7 @@ static void traversestrongtable (global_State *g, Table *h) {
     if (ttisnil(gval(n)))  /* entry is empty? */
       removeentry(n);  /* remove it */
     else {
-      lua_assert(!ttisnil(gkey(n)));
+      assert(!ttisnil(gkey(n)));
       markvalue(g, gkey(n));  /* mark key */
       markvalue(g, gval(n));  /* mark value */
     }
@@ -478,7 +478,7 @@ static int traverseclosure (global_State *g, Closure *cl) {
   }
   else {
     int i;
-    lua_assert(cl->l.nupvalues == cl->l.p->sizeupvalues);
+    assert(cl->l.nupvalues == cl->l.p->sizeupvalues);
     markobject(g, cl->l.p);  /* mark its prototype */
     for (i=0; i<cl->l.nupvalues; i++)  /* mark its upvalues */
       markobject(g, cl->l.upvals[i]);
@@ -509,7 +509,7 @@ static int traversestack (global_State *g, lua_State *L) {
 */
 static int propagatemark (global_State *g) {
   GCObject *o = g->gray;
-  lua_assert(isgray(o));
+  assert(isgray(o));
   gray2black(o);
   switch (gch(o)->tt) {
     case LUA_TTABLE: {
@@ -535,7 +535,7 @@ static int propagatemark (global_State *g) {
       g->gray = p->gclist;
       return traverseproto(g, p);
     }
-    default: lua_assert(0); return 0;
+    default: assert(0); return 0;
   }
 }
 
@@ -546,7 +546,7 @@ static void propagateall (global_State *g) {
 
 
 static void propagatelist (global_State *g, GCObject *l) {
-  lua_assert(g->gray == NULL);  /* no grays left */
+  assert(g->gray == NULL);  /* no grays left */
   g->gray = l;
   propagateall(g);  /* traverse all elements from 'l' */
 }
@@ -650,7 +650,7 @@ static void freeobj (lua_State *L, GCObject *o) {
       luaM_freemem(L, o, sizestring(gco2ts(o)));
       break;
     }
-    default: lua_assert(0);
+    default: assert(0);
   }
 }
 
@@ -746,12 +746,12 @@ static void checkSizes (lua_State *L) {
 
 static GCObject *udata2finalize (global_State *g) {
   GCObject *o = g->tobefnz;  /* get first element */
-  lua_assert(isfinalized(o));
+  assert(isfinalized(o));
   g->tobefnz = gch(o)->next;  /* remove it from 'tobefnz' list */
   gch(o)->next = g->allgc;  /* return it to 'allgc' list */
   g->allgc = o;
   resetbit(gch(o)->marked, SEPARATED);  /* mark that it is not in 'tobefnz' */
-  lua_assert(!isold(o));  /* see MOVE OLD rule */
+  assert(!isold(o));  /* see MOVE OLD rule */
   if (!keepinvariant(g))  /* not keeping invariant? */
     makewhite(g, o);  /* "sweep" object */
   return o;
@@ -807,8 +807,8 @@ static void separatetobefnz (lua_State *L, int all) {
   while (*lastnext != NULL)
     lastnext = &gch(*lastnext)->next;
   while ((curr = *p) != NULL) {  /* traverse all finalizable objects */
-    lua_assert(!isfinalized(curr));
-    lua_assert(testbit(gch(curr)->marked, SEPARATED));
+    assert(!isfinalized(curr));
+    assert(testbit(gch(curr)->marked, SEPARATED));
     if (!(all || iswhite(curr)))  /* not being collected? */
       p = &gch(curr)->next;  /* don't bother with it */
     else {
@@ -895,7 +895,7 @@ void luaC_freeallobjects (lua_State *L) {
   global_State *g = G(L);
   int i;
   separatetobefnz(L, 1);  /* separate all objects with finalizers */
-  lua_assert(g->finobj == NULL);
+  assert(g->finobj == NULL);
   callallpendingfinalizers(L, 0);
   g->currentwhite = WHITEBITS; /* this "white" makes all objects look dead */
   g->gckind = KGC_NORMAL;
@@ -903,14 +903,14 @@ void luaC_freeallobjects (lua_State *L) {
   sweepwholelist(L, &g->allgc);
   for (i = 0; i < g->strt.size; i++)  /* free all string lists */
     sweepwholelist(L, &g->strt.hash[i]);
-  lua_assert(g->strt.nuse == 0);
+  assert(g->strt.nuse == 0);
 }
 
 
 static void atomic (lua_State *L) {
   global_State *g = G(L);
   GCObject *origweak, *origall;
-  lua_assert(!iswhite(obj2gco(g->mainthread)));
+  assert(!iswhite(obj2gco(g->mainthread)));
   markobject(g, L);  /* mark running thread */
   /* registry and global metatables may be changed by API */
   markvalue(g, &g->l_registry);
@@ -949,7 +949,7 @@ static l_mem singlestep (lua_State *L) {
       if (!isgenerational(g))
         markroot(g);  /* start a new collection */
       /* in any case, root must be marked */
-      lua_assert(!iswhite(obj2gco(g->mainthread))
+      assert(!iswhite(obj2gco(g->mainthread))
               && !iswhite(gcvalue(&g->l_registry)));
       g->gcstate = GCSpropagate;
       return GCROOTCOST;
@@ -999,7 +999,7 @@ static l_mem singlestep (lua_State *L) {
         return GCSWEEPCOST;
       }
     }
-    default: lua_assert(0); return 0;
+    default: assert(0); return 0;
   }
 }
 
@@ -1072,7 +1072,7 @@ void luaC_step (lua_State *L) {
 void luaC_fullgc (lua_State *L, int isemergency) {
   global_State *g = G(L);
   int origkind = g->gckind;
-  lua_assert(origkind != KGC_EMERGENCY);
+  assert(origkind != KGC_EMERGENCY);
   if (!isemergency)   /* do not run finalizers during emergency GC */
     callallpendingfinalizers(L, 1);
   if (keepinvariant(g)) {  /* marking phase? */

@@ -77,7 +77,7 @@ void luaE_setdebt (global_State *g, l_mem debt) {
 
 CallInfo *luaE_extendCI (lua_State *L) {
   CallInfo *ci = luaM_new(L, CallInfo);
-  lua_assert(L->ci->next == NULL);
+  assert(L->ci->next == NULL);
   L->ci->next = ci;
   ci->previous = L->ci;
   ci->next = NULL;
@@ -191,7 +191,7 @@ static void close_state (lua_State *L) {
   luaM_freearray(L, G(L)->strt.hash, G(L)->strt.size);
   luaZ_freebuffer(L, &g->buff);
   freestack(L);
-  lua_assert(gettotalbytes(g) == sizeof(LG));
+  assert(gettotalbytes(g) == sizeof(LG));
   (*g->frealloc)(fromstate(L), sizeof(LG), 0);  /* free main block */
 }
 
@@ -218,7 +218,7 @@ LUA_API lua_State *lua_newthread (lua_State *L) {
 void luaE_freethread (lua_State *L, lua_State *L1) {
   LX *l = fromstate(L1);
   luaF_close(L1, L1->stack);  /* close all upvalues for this thread */
-  lua_assert(L1->openupval == NULL);
+  assert(L1->openupval == NULL);
   luai_userstatefree(L, L1);
   freestack(L1);
   luaM_free(L, l);

@@ -43,7 +43,7 @@ void luaS_resize (lua_State *L, int newsize) {
   }
   if (newsize < tb->size) {
     /* shrinking slice must be empty */
-    lua_assert(tb->hash[newsize] == NULL && tb->hash[tb->size - 1] == NULL);
+    assert(tb->hash[newsize] == NULL && tb->hash[tb->size - 1] == NULL);
     luaM_reallocvector(L, tb->hash, tb->size, newsize, GCObject *);
   }
   tb->size = newsize;

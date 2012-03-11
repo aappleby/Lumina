@@ -34,7 +34,7 @@ static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name);
 
 
 static int currentpc (CallInfo *ci) {
-  lua_assert(isLua(ci));
+  assert(isLua(ci));
   return pcRel(ci->u.l.savedpc, ci_func(ci)->p);
 }
 
@@ -276,7 +276,7 @@ LUA_API int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
   else {
     ci = ar->i_ci;
     func = ci->func;
-    lua_assert(ttisfunction(ci->func));
+    assert(ttisfunction(ci->func));
   }
   cl = ttisclosure(func) ? clvalue(func) : NULL;
   status = auxgetinfo(L, what, ar, cl, ci);
@@ -515,7 +515,7 @@ l_noret luaG_typeerror (lua_State *L, const TValue *o, const char *op) {
 
 l_noret luaG_concaterror (lua_State *L, StkId p1, StkId p2) {
   if (ttisstring(p1) || ttisnumber(p1)) p1 = p2;
-  lua_assert(!ttisstring(p1) && !ttisnumber(p2));
+  assert(!ttisstring(p1) && !ttisnumber(p2));
   luaG_typeerror(L, p1, "concatenate");
 }
 

@@ -59,7 +59,7 @@ static void expr (LexState *ls, expdesc *v);
 
 static void anchor_token (LexState *ls) {
   /* last token from outer function must be EOS */
-  lua_assert(ls->fs != NULL || ls->t.token == TK_EOS);
+  assert(ls->fs != NULL || ls->t.token == TK_EOS);
   if (ls->t.token == TK_NAME || ls->t.token == TK_STRING) {
     TString *ts = ls->t.seminfo.ts;
     luaX_newstring(ls, getstr(ts), ts->tsv.len);
@@ -197,7 +197,7 @@ static void new_localvarliteral_ (LexState *ls, const char *name, size_t sz) {
 
 static LocVar *getlocvar (FuncState *fs, int i) {
   int idx = fs->ls->dyd->actvar.arr[fs->firstlocal + i].idx;
-  lua_assert(idx < fs->nlocvars);
+  assert(idx < fs->nlocvars);
   return &fs->f->locvars[idx];
 }
 
@@ -300,7 +300,7 @@ static void singlevar (LexState *ls, expdesc *var) {
   if (singlevaraux(fs, varname, var, 1) == VVOID) {  /* global name? */
     expdesc key;
     singlevaraux(fs, ls->envn, var, 1);  /* get environment variable */
-    lua_assert(var->k == VLOCAL || var->k == VUPVAL);
+    assert(var->k == VLOCAL || var->k == VUPVAL);
     codestring(ls, &key, varname);  /* key is variable name */
     luaK_indexed(fs, var, &key);  /* env[varname] */
   }
@@ -342,7 +342,7 @@ static void closegoto (LexState *ls, int g, Labeldesc *label) {
   FuncState *fs = ls->fs;
   Labellist *gl = &ls->dyd->gt;
   Labeldesc *gt = &gl->arr[g];
-  lua_assert(eqstr(gt->name, label->name));
+  assert(eqstr(gt->name, label->name));
   if (gt->nactvar < label->nactvar) {
     TString *vname = getlocvar(fs, gt->nactvar)->varname;
     const char *msg = luaO_pushfstring(ls->L,
@@ -443,7 +443,7 @@ static void enterblock (FuncState *fs, BlockCnt *bl, uint8_t isloop) {
   bl->upval = 0;
   bl->previous = fs->bl;
   fs->bl = bl;
-  lua_assert(fs->freereg == fs->nactvar);
+  assert(fs->freereg == fs->nactvar);
 }
 
 
@@ -482,7 +482,7 @@ static void leaveblock (FuncState *fs) {
     breaklabel(ls);  /* close pending breaks */
   fs->bl = bl->previous;
   removevars(fs, bl->nactvar);
-  lua_assert(bl->nactvar == fs->nactvar);
+  assert(bl->nactvar == fs->nactvar);
   fs->freereg = fs->nactvar;  /* free registers */
   ls->dyd->label.n = bl->firstlabel;  /* remove local labels */
   if (bl->previous)  /* inner block? */
@@ -562,7 +562,7 @@ static void close_func (LexState *ls) {
   f->sizelocvars = fs->nlocvars;
   luaM_reallocvector(L, f->upvalues, f->sizeupvalues, fs->nups, Upvaldesc);
   f->sizeupvalues = fs->nups;
-  lua_assert(fs->bl == NULL);
+  assert(fs->bl == NULL);
   ls->fs = fs->prev;
   /* last token read was anchored in defunct function; must re-anchor it */
   anchor_token(ls);
@@ -747,7 +747,7 @@ static void constructor (LexState *ls, expdesc *t) {
   luaK_exp2nextreg(ls->fs, t);  /* fix it at stack top */
   checknext(ls, '{');
   do {
-    lua_assert(cc.v.k == VVOID || cc.tostore > 0);
+    assert(cc.v.k == VVOID || cc.tostore > 0);
     if (ls->t.token == '}') break;
     closelistfield(fs, &cc);
     field(ls, &cc);
@@ -854,7 +854,7 @@ static void funcargs (LexState *ls, expdesc *f, int line) {
       luaX_syntaxerror(ls, "function arguments expected");
     }
   }
-  lua_assert(f->k == VNONRELOC);
+  assert(f->k == VNONRELOC);
   base = f->u.info;  /* base register for call */
   if (hasmultret(args.k))
     nparams = LUA_MULTRET;  /* open call */
@@ -1274,7 +1274,7 @@ static int exp1 (LexState *ls) {
   int reg;
   expr(ls, &e);
   luaK_exp2nextreg(ls->fs, &e);
-  lua_assert(e.k == VNONRELOC);
+  assert(e.k == VNONRELOC);
   reg = e.u.info;
   return reg;
 }
@@ -1503,7 +1503,7 @@ static void retstat (LexState *ls) {
       luaK_setmultret(fs, &e);
       if (e.k == VCALL && nret == 1) {  /* tail call? */
         SET_OPCODE(getcode(fs,&e), OP_TAILCALL);
-        lua_assert(GETARG_A(getcode(fs,&e)) == fs->nactvar);
+        assert(GETARG_A(getcode(fs,&e)) == fs->nactvar);
       }
       first = fs->nactvar;
       nret = LUA_MULTRET;  /* return all values */
@@ -1514,7 +1514,7 @@ static void retstat (LexState *ls) {
       else {
         luaK_exp2nextreg(fs, &e);  /* values must go to the `stack' */
         first = fs->nactvar;  /* return all `active' values */
-        lua_assert(nret == fs->freereg - first);
+        assert(nret == fs->freereg - first);
       }
     }
   }
@@ -1585,7 +1585,7 @@ static void statement (LexState *ls) {
       break;
     }
   }
-  lua_assert(ls->fs->f->maxstacksize >= ls->fs->freereg &&
+  assert(ls->fs->f->maxstacksize >= ls->fs->freereg &&
              ls->fs->freereg >= ls->fs->nactvar);
   ls->fs->freereg = ls->fs->nactvar;  /* free registers */
   leavelevel(ls);
@@ -1612,9 +1612,9 @@ Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
   check(&lexstate, TK_EOS);
   close_func(&lexstate);
   L->top--;  /* pop name */
-  lua_assert(!funcstate.prev && funcstate.nups == 1 && !lexstate.fs);
+  assert(!funcstate.prev && funcstate.nups == 1 && !lexstate.fs);
   /* all scopes should be correctly finished */
-  lua_assert(dyd->actvar.n == 0 && dyd->gt.n == 0 && dyd->label.n == 0);
+  assert(dyd->actvar.n == 0 && dyd->gt.n == 0 && dyd->label.n == 0);
   return funcstate.f;
 }
 

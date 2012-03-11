@@ -76,7 +76,7 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
   void *newblock;
   global_State *g = G(L);
   size_t realosize = (block) ? osize : 0;
-  lua_assert((realosize == 0) == (block == NULL));
+  assert((realosize == 0) == (block == NULL));
 #if defined(HARDMEMTESTS)
   if (nsize > realosize && g->gcrunning)
     luaC_fullgc(L, 1);  /* force a GC whenever possible */
@@ -92,7 +92,7 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
     if (newblock == NULL)
       luaD_throw(L, LUA_ERRMEM);
   }
-  lua_assert((nsize == 0) == (newblock == NULL));
+  assert((nsize == 0) == (newblock == NULL));
   g->GCdebt = (g->GCdebt + nsize) - realosize;
 #if defined(TRACEMEM)
   { /* auxiliary patch to monitor garbage collection.

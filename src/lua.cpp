@@ -399,12 +399,12 @@ static int collectargs (char **argv, int *args) {
 static int runargs (lua_State *L, char **argv, int n) {
   int i;
   for (i = 1; i < n; i++) {
-    lua_assert(argv[i][0] == '-');
+    assert(argv[i][0] == '-');
     switch (argv[i][1]) {  /* option */
       case 'e': {
         const char *chunk = argv[i] + 2;
         if (*chunk == '\0') chunk = argv[++i];
-        lua_assert(chunk != NULL);
+        assert(chunk != NULL);
         if (dostring(L, chunk, "=(command line)") != LUA_OK)
           return 0;
         break;
@@ -412,7 +412,7 @@ static int runargs (lua_State *L, char **argv, int n) {
       case 'l': {
         const char *filename = argv[i] + 2;
         if (*filename == '\0') filename = argv[++i];
-        lua_assert(filename != NULL);
+        assert(filename != NULL);
         if (dolibrary(L, filename) != LUA_OK)
           return 0;  /* stop if file fails */
         break;

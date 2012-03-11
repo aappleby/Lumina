@@ -74,7 +74,7 @@ void luaX_init (lua_State *L) {
 
 const char *luaX_token2str (LexState *ls, int token) {
   if (token < FIRST_RESERVED) {
-    lua_assert(token == cast(unsigned char, token));
+    assert(token == cast(unsigned char, token));
     return (lisprint(token)) ? luaO_pushfstring(ls->L, LUA_QL("%c"), token) :
                               luaO_pushfstring(ls->L, "char(%d)", token);
   }
@@ -144,7 +144,7 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
 */
 static void inclinenumber (LexState *ls) {
   int old = ls->current;
-  lua_assert(currIsNewline(ls));
+  assert(currIsNewline(ls));
   next(ls);  /* skip `\n' or `\r' */
   if (currIsNewline(ls) && ls->current != old)
     next(ls);  /* skip `\n\r' or `\r\n' */
@@ -223,7 +223,7 @@ static void trydecpoint (LexState *ls, SemInfo *seminfo) {
 
 /* LUA_NUMBER */
 static void read_numeral (LexState *ls, SemInfo *seminfo) {
-  lua_assert(lisdigit(ls->current));
+  assert(lisdigit(ls->current));
   do {
     save_and_next(ls);
     if (check_next(ls, "EePp"))  /* exponent part? */
@@ -243,7 +243,7 @@ static void read_numeral (LexState *ls, SemInfo *seminfo) {
 static int skip_sep (LexState *ls) {
   int count = 0;
   int s = ls->current;
-  lua_assert(s == '[' || s == ']');
+  assert(s == '[' || s == ']');
   save_and_next(ls);
   while (ls->current == '=') {
     save_and_next(ls);
@@ -509,7 +509,7 @@ void luaX_next (LexState *ls) {
 
 
 int luaX_lookahead (LexState *ls) {
-  lua_assert(ls->lookahead.token == TK_EOS);
+  assert(ls->lookahead.token == TK_EOS);
   ls->lookahead.token = llex(ls, &ls->lookahead.seminfo);
   return ls->lookahead.token;
 }

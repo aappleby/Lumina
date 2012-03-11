@@ -251,7 +251,7 @@ int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
 */
 int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
   const TValue *tm;
-  lua_assert(ttisequal(t1, t2));
+  assert(ttisequal(t1, t2));
   switch (ttype(t1)) {
     case LUA_TNIL: return 1;
     case LUA_TNUMBER: return luai_numeq(nvalue(t1), nvalue(t2));
@@ -272,7 +272,7 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
       break;  /* will try TM */
     }
     default:
-      lua_assert(iscollectable(t1));
+      assert(iscollectable(t1));
       return gcvalue(t1) == gcvalue(t2);
   }
   if (tm == NULL) return 0;  /* no TM? */
@@ -282,7 +282,7 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
 
 
 void luaV_concat (lua_State *L, int total) {
-  lua_assert(total >= 2);
+  assert(total >= 2);
   do {
     StkId top = L->top;
     int n = 2;  /* number of elements handled in this pass (at least 2) */
@@ -426,11 +426,11 @@ void luaV_finishOp (lua_State *L) {
       int res = !l_isfalse(L->top - 1);
       L->top--;
       /* metamethod should not be called when operand is K */
-      lua_assert(!ISK(GETARG_B(inst)));
+      assert(!ISK(GETARG_B(inst)));
       if (op == OP_LE &&  /* "<=" using "<" instead? */
           ttisnil(luaT_gettmbyobj(L, base + GETARG_B(inst), TM_LE)))
         res = !res;  /* invert result */
-      lua_assert(GET_OPCODE(*ci->u.l.savedpc) == OP_JMP);
+      assert(GET_OPCODE(*ci->u.l.savedpc) == OP_JMP);
       if (res != GETARG_A(inst))  /* condition failed? */
         ci->u.l.savedpc++;  /* skip jump instruction */
       break;
@@ -450,7 +450,7 @@ void luaV_finishOp (lua_State *L) {
       break;
     }
     case OP_TFORCALL: {
-      lua_assert(GET_OPCODE(*ci->u.l.savedpc) == OP_TFORLOOP);
+      assert(GET_OPCODE(*ci->u.l.savedpc) == OP_TFORLOOP);
       L->top = ci->top;  /* correct top */
       break;
     }
@@ -461,7 +461,7 @@ void luaV_finishOp (lua_State *L) {
     }
     case OP_TAILCALL: case OP_SETTABUP:  case OP_SETTABLE:
       break;
-    default: lua_assert(0);
+    default: assert(0);
   }
 }
 
@@ -523,7 +523,7 @@ void luaV_execute (lua_State *L) {
   TValue *k;
   StkId base;
  newframe:  /* reentry point when frame changes (call/return) */
-  lua_assert(ci == L->ci);
+  assert(ci == L->ci);
   cl = clLvalue(ci->func);
   k = cl->p->k;
   base = ci->u.l.base;
@@ -537,8 +537,8 @@ void luaV_execute (lua_State *L) {
     }
     /* WARNING: several calls may realloc the stack and invalidate `ra' */
     ra = RA(i);
-    lua_assert(base == ci->u.l.base);
-    lua_assert(base <= L->top && L->top < L->stack + L->stacksize);
+    assert(base == ci->u.l.base);
+    assert(base <= L->top && L->top < L->stack + L->stacksize);
     vmdispatch (GET_OPCODE(i)) {
       vmcase(OP_MOVE,
         setobjs2s(L, ra, RB(i));
@@ -549,7 +549,7 @@ void luaV_execute (lua_State *L) {
       )
       vmcase(OP_LOADKX,
         TValue *rb;
-        lua_assert(GET_OPCODE(*ci->u.l.savedpc) == OP_EXTRAARG);
+        assert(GET_OPCODE(*ci->u.l.savedpc) == OP_EXTRAARG);
         rb = k + GETARG_Ax(*ci->u.l.savedpc++);
         setobj2s(L, ra, rb);
       )
@@ -716,7 +716,7 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_TAILCALL,
         int b = GETARG_B(i);
         if (b != 0) L->top = ra+b;  /* else previous instruction set top */
-        lua_assert(GETARG_C(i) - 1 == LUA_MULTRET);
+        assert(GETARG_C(i) - 1 == LUA_MULTRET);
         if (luaD_precall(L, ra, LUA_MULTRET))  /* C function? */
           base = ci->u.l.base;
         else {
@@ -738,7 +738,7 @@ void luaV_execute (lua_State *L) {
           oci->u.l.savedpc = nci->u.l.savedpc;
           oci->callstatus |= CIST_TAIL;  /* function was tail called */
           ci = L->ci = oci;  /* remove new frame */
-          lua_assert(L->top == oci->u.l.base + getproto(ofunc)->maxstacksize);
+          assert(L->top == oci->u.l.base + getproto(ofunc)->maxstacksize);
           goto newframe;  /* restart luaV_execute over new Lua function */
         }
       )
@@ -752,8 +752,8 @@ void luaV_execute (lua_State *L) {
         else {  /* invocation via reentry: continue execution */
           ci = L->ci;
           if (b) L->top = ci->top;
-          lua_assert(isLua(ci));
-          lua_assert(GET_OPCODE(*((ci)->u.l.savedpc - 1)) == OP_CALL);
+          assert(isLua(ci));
+          assert(GET_OPCODE(*((ci)->u.l.savedpc - 1)) == OP_CALL);
           goto newframe;  /* restart luaV_execute over new Lua function */
         }
       )
@@ -791,7 +791,7 @@ void luaV_execute (lua_State *L) {
         L->top = ci->top;
         i = *(ci->u.l.savedpc++);  /* go to next instruction */
         ra = RA(i);
-        lua_assert(GET_OPCODE(i) == OP_TFORLOOP);
+        assert(GET_OPCODE(i) == OP_TFORLOOP);
         goto l_tforloop;
       )
       vmcase(OP_TFORLOOP,
@@ -808,7 +808,7 @@ void luaV_execute (lua_State *L) {
         Table *h;
         if (n == 0) n = cast_int(L->top - ra) - 1;
         if (c == 0) {
-          lua_assert(GET_OPCODE(*ci->u.l.savedpc) == OP_EXTRAARG);
+          assert(GET_OPCODE(*ci->u.l.savedpc) == OP_EXTRAARG);
           c = GETARG_Ax(*ci->u.l.savedpc++);
         }
         luai_runtimecheck(L, ttistable(ra));
@@ -856,7 +856,7 @@ void luaV_execute (lua_State *L) {
         }
       )
       vmcase(OP_EXTRAARG,
-        lua_assert(0);
+        assert(0);
       )
     }
   }

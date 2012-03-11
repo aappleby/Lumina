@@ -12,22 +12,8 @@
 
 #define LUA_DEBUG
 
-#undef NDEBUG
-#define lua_assert(c)           assert(c)
-
-
-/* to avoid warnings, and to make sure value is really unused */
-#define UNUSED(x)       (x=0, (void)(x))
-
-
 void *debug_realloc (void *block, size_t osize, size_t nsize);
 
 int luaB_opentests (lua_State *L);
-
-#if defined(lua_c)
-#define luaL_newstate()		lua_newstate(debug_realloc)
-#endif
-
-
 
 #endif
