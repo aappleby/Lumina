@@ -9,17 +9,19 @@ public:
 
   TString() {}
 
-  const char * c_str() const { return reinterpret_cast<const char *>(this+1); }
-
-  uint32_t getHash() const { return hash; }
-  void setHash(uint32_t h) { hash = h; }
-
   size_t getLen() const { return len; }
   void setLen(size_t l) { len = l; }
+
+  const char * c_str() const {
+    return reinterpret_cast<const char *>(this+1);
+  }
 
   void setText(const char * str) {
     memcpy(this+1, str, len*sizeof(char));
   }
+
+  uint32_t getHash() const { return hash; }
+  void setHash(uint32_t h) { hash = h; }
 
   uint8_t getReserved() const { return reserved; }
   void setReserved(uint8_t r) { reserved = r; }

@@ -646,7 +646,7 @@ static void freeobj (lua_State *L, LuaBase *o) {
     case LUA_TUSERDATA: luaM_freemem(L, o, sizeudata(gco2u(o))); break;
     case LUA_TSTRING: {
       G(L)->strt.nuse--;
-      luaM_freemem(L, o, sizestring(gco2ts(o)));
+      luaS_freestr(L, gco2ts(o));
       break;
     }
     default: assert(0);

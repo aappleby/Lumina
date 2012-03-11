@@ -114,3 +114,8 @@ Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
   return u;
 }
 
+#define sizestring(s)	(sizeof(TString)+((s)->getLen()+1)*sizeof(char))
+
+void luaS_freestr (lua_State* L, TString* ts) {
+  luaM_freemem(L, ts, sizestring(ts));
+}
