@@ -103,7 +103,7 @@ static const char *txtToken (LexState *ls, int token) {
 
 static l_noret lexerror (LexState *ls, const char *msg, int token) {
   char buff[LUA_IDSIZE];
-  luaO_chunkid(buff, getstr(ls->source), LUA_IDSIZE);
+  luaO_chunkid(buff, ls->source->c_str(), LUA_IDSIZE);
   msg = luaO_pushfstring(ls->L, "%s:%d: %s", buff, ls->linenumber, msg);
   if (token)
     luaO_pushfstring(ls->L, "%s near %s", msg, txtToken(ls, token));

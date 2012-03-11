@@ -497,7 +497,7 @@ const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
   setsvalue2s(L, L->top, ts);
   api_incr_top(L);
   lua_unlock(L);
-  return getstr(ts);
+  return ts->c_str();
 }
 
 
@@ -514,7 +514,7 @@ const char *lua_pushstring (lua_State *L, const char *s) {
     setsvalue2s(L, L->top, ts);
     api_incr_top(L);
     lua_unlock(L);
-    return getstr(ts);
+    return ts->c_str();
   }
 }
 
@@ -1198,7 +1198,7 @@ static const char *aux_upvalue (StkId fi, int n, TValue **val,
       *val = f->upvals[n-1]->v;
       if (owner) *owner = obj2gco(f->upvals[n - 1]);
       name = p->upvalues[n-1].name;
-      return (name == NULL) ? "" : getstr(name);
+      return (name == NULL) ? "" : name->c_str();
     }
     default: return NULL;  /* not a closure */
   }

@@ -31,18 +31,17 @@ typedef TValue* StkId;  /* index to stack elements */
 /*
 ** Header for string value; string bytes follow the end of this structure
 */
-__declspec(align(8)) struct TString : public LuaBase {
+__declspec(align(8)) class TString : public LuaBase {
+public:
   uint8_t reserved;
   unsigned int hash;
   size_t len;  /* number of characters in string */
+
+  const char * c_str() const { return reinterpret_cast<const char *>(this+1); }
 };
 
-
-/* get the actual string (array of bytes) from a TString */
-#define getstr(ts)	cast(const char *, (ts) + 1)
-
 /* get the actual string (array of bytes) from a Lua value */
-#define svalue(o)       getstr(tsvalue(o))
+#define svalue(o)       tsvalue(o)->c_str()
 
 
 /*

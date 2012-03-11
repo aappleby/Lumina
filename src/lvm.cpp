@@ -199,9 +199,9 @@ static int call_orderTM (lua_State *L, const TValue *p1, const TValue *p2,
 
 
 static int l_strcmp (const TString *ls, const TString *rs) {
-  const char *l = getstr(ls);
+  const char *l = ls->c_str();
   size_t ll = ls->len;
-  const char *r = getstr(rs);
+  const char *r = rs->c_str();
   size_t lr = rs->len;
   for (;;) {
     int temp = strcoll(l, r);

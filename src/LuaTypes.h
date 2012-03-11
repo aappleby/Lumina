@@ -2,6 +2,9 @@
 #include "stdint.h"
 
 class LuaBase;
+
+class TString;
+
 struct lua_State;
 
 

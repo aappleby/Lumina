@@ -97,7 +97,7 @@ int lua_getstack (lua_State *L, int level, lua_Debug *ar) {
 static const char *upvalname (Proto *p, int uv) {
   TString *s = check_exp(uv < p->sizeupvalues, p->upvalues[uv].name);
   if (s == NULL) return "?";
-  else return getstr(s);
+  else return s->c_str();
 }
 
 
@@ -181,7 +181,7 @@ static void funcinfo (lua_Debug *ar, Closure *cl) {
   }
   else {
     Proto *p = cl->l.p;
-    ar->source = p->source ? getstr(p->source) : "=?";
+    ar->source = p->source ? p->source->c_str() : "=?";
     ar->linedefined = p->linedefined;
     ar->lastlinedefined = p->lastlinedefined;
     ar->what = (ar->linedefined == 0) ? "main" : "Lua";
@@ -460,7 +460,7 @@ static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name) {
     default:
       return NULL;  /* else no useful name can be found */
   }
-  *name = getstr(G(L)->tmname[tm]);
+  *name = G(L)->tmname[tm]->c_str();
   return "metamethod";
 }
 
@@ -545,7 +545,7 @@ static void addinfo (lua_State *L, const char *msg) {
     int line = currentline(ci);
     TString *src = ci_func(ci)->p->source;
     if (src)
-      luaO_chunkid(buff, getstr(src), LUA_IDSIZE);
+      luaO_chunkid(buff, src->c_str(), LUA_IDSIZE);
     else {  /* no source available; use "?" instead */
       buff[0] = '?'; buff[1] = '\0';
     }

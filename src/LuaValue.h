@@ -46,6 +46,8 @@ struct TValue {
 
   void setBool  (int x)     { b = x; tt_ = LUA_TBOOLEAN; }
   void setValue (TValue* x) { bytes = x->bytes; tt_ = x->tt_; }
+
+  TString* asString() { return reinterpret_cast<TString*>(gc); }
 };
 
 

@@ -222,7 +222,7 @@ int main(int argc, char* argv[])
 
 static void PrintString(const TString* ts)
 {
- const char* s=getstr(ts);
+ const char* s=ts->c_str();
  size_t i,n=ts->len;
  printf("%c",'"');
  for (i=0; i<n; i++)
@@ -271,7 +271,7 @@ static void PrintConstant(const Proto* f, int i)
  }
 }
 
-#define UPVALNAME(x) ((f->upvalues[x].name) ? getstr(f->upvalues[x].name) : "-")
+#define UPVALNAME(x) ((f->upvalues[x].name) ? f->upvalues[x].name->c_str() : "-")
 #define MYK(x)		(-1-(x))
 
 static void PrintCode(const Proto* f)
@@ -377,7 +377,7 @@ static void PrintCode(const Proto* f)
 
 static void PrintHeader(const Proto* f)
 {
- const char* s=f->source ? getstr(f->source) : "=?";
+ const char* s=f->source ? f->source->c_str() : "=?";
  if (*s=='@' || *s=='=')
   s++;
  else if (*s==LUA_SIGNATURE[0])
@@ -411,7 +411,7 @@ static void PrintDebug(const Proto* f)
  for (i=0; i<n; i++)
  {
   printf("\t%d\t%s\t%d\t%d\n",
-  i,getstr(f->locvars[i].varname),f->locvars[i].startpc+1,f->locvars[i].endpc+1);
+  i,f->locvars[i].varname->c_str(),f->locvars[i].startpc+1,f->locvars[i].endpc+1);
  }
  n=f->sizeupvalues;
  printf("upvalues (%d) for %p:\n",n,VOID(f));

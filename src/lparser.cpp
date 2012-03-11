@@ -62,7 +62,7 @@ static void anchor_token (LexState *ls) {
   assert(ls->fs != NULL || ls->t.token == TK_EOS);
   if (ls->t.token == TK_NAME || ls->t.token == TK_STRING) {
     TString *ts = ls->t.seminfo.ts;
-    luaX_newstring(ls, getstr(ts), ts->len);
+    luaX_newstring(ls, ts->c_str(), ts->len);
   }
 }
 
@@ -347,7 +347,7 @@ static void closegoto (LexState *ls, int g, Labeldesc *label) {
     TString *vname = getlocvar(fs, gt->nactvar)->varname;
     const char *msg = luaO_pushfstring(ls->L,
       "<goto %s> at line %d jumps into the scope of local " LUA_QS,
-      getstr(gt->name), gt->line, getstr(vname));
+      gt->name->c_str(), gt->line, vname->c_str());
     semerror(ls, msg);
   }
   luaK_patchlist(fs, gt->pc, label->pc);
@@ -464,7 +464,7 @@ static l_noret undefgoto (LexState *ls, Labeldesc *gt) {
   const char *msg = (gt->name->reserved > 0)
                     ? "<%s> at line %d not inside a loop"
                     : "no visible label " LUA_QS " for <goto> at line %d";
-  msg = luaO_pushfstring(ls->L, msg, getstr(gt->name), gt->line);
+  msg = luaO_pushfstring(ls->L, msg, gt->name->c_str(), gt->line);
   semerror(ls, msg);
 }
 
@@ -1203,7 +1203,7 @@ static void checkrepeated (FuncState *fs, Labellist *ll, TString *label) {
     if (eqstr(label, ll->arr[i].name)) {
       const char *msg = luaO_pushfstring(fs->ls->L,
                           "label " LUA_QS " already defined on line %d",
-                          getstr(label), ll->arr[i].line);
+                          label->c_str(), ll->arr[i].line);
       semerror(fs->ls, msg);
     }
   }

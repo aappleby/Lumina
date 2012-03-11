@@ -87,7 +87,7 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
     TString *ts = gco2ts(o);
     if (h == ts->hash &&
         ts->len == l &&
-        (memcmp(str, getstr(ts), l * sizeof(char)) == 0)) {
+        (memcmp(str, ts->c_str(), l * sizeof(char)) == 0)) {
       if (isdead(G(L), o))  /* string is dead (but was not collected yet)? */
         changewhite(o);  /* resurrect it */
       return ts;
