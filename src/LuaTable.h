@@ -20,6 +20,6 @@ public:
   TValue *array;  /* array part */
   Node *node;
   Node *lastfree;  /* any free position is before this position */
-  GCObject *gclist;
+  LuaBase *gclist;
   int sizearray;  /* size of `array' array */
 };

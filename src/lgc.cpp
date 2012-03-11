@@ -82,7 +82,7 @@
 #define markobject(g,t) { if ((t) && iswhite(obj2gco(t))) \
 		reallymarkobject(g, obj2gco(t)); }
 
-static void reallymarkobject (global_State *g, GCObject *o);
+static void reallymarkobject (global_State *g, LuaBase *o);
 
 
 /*
@@ -136,7 +136,7 @@ static int iscleared (const TValue *o) {
 ** barrier that moves collector forward, that is, mark the white object
 ** being pointed by a black object.
 */
-void luaC_barrier_ (lua_State *L, GCObject *o, GCObject *v) {
+void luaC_barrier_ (lua_State *L, LuaBase *o, LuaBase *v) {
   global_State *g = G(L);
   assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
   assert(isgenerational(g) || g->gcstate != GCSpause);
@@ -156,7 +156,7 @@ void luaC_barrier_ (lua_State *L, GCObject *o, GCObject *v) {
 ** only works for tables; access to 'gclist' is not uniform across
 ** different types.)
 */
-void luaC_barrierback_ (lua_State *L, GCObject *o) {
+void luaC_barrierback_ (lua_State *L, LuaBase *o) {
   global_State *g = G(L);
   assert(isblack(o) && !isdead(g, o) && gch(o)->tt == LUA_TTABLE);
   black2gray(o);  /* make object gray (again) */
@@ -192,7 +192,7 @@ LUAI_FUNC void luaC_barrierproto_ (lua_State *L, Proto *p, Closure *c) {
 ** i.e., moved into the 'allgc' list
 */
 void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
-  GCObject *o = obj2gco(uv);
+  LuaBase *o = obj2gco(uv);
   assert(!isblack(o));  /* open upvalues are never black */
   if (isgray(o)) {
     if (keepinvariant(g)) {
@@ -213,10 +213,10 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
 ** it to '*list'. 'offset' tells how many bytes to allocate before the
 ** object itself (used only by states).
 */
-GCObject *luaC_newobj (lua_State *L, int tt, size_t sz, GCObject **list,
+LuaBase *luaC_newobj (lua_State *L, int tt, size_t sz, LuaBase **list,
                        int offset) {
   global_State *g = G(L);
-  GCObject *o = obj2gco(cast(char *, luaM_newobject(L, tt, sz)) + offset);
+  LuaBase *o = obj2gco(cast(char *, luaM_newobject(L, tt, sz)) + offset);
   if (list == NULL)
     list = &g->allgc;  /* standard list for collectable objects */
   gch(o)->marked = luaC_white(g);
@@ -244,7 +244,7 @@ GCObject *luaC_newobj (lua_State *L, int tt, size_t sz, GCObject **list,
 ** to be visited (and turned black) later. (Open upvalues are already
 ** linked in 'headuv' list.)
 */
-static void reallymarkobject (global_State *g, GCObject *o) {
+static void reallymarkobject (global_State *g, LuaBase *o) {
   assert(iswhite(o) && !isdead(g, o));
   white2gray(o);
   switch (gch(o)->tt) {
@@ -303,7 +303,7 @@ static void markmt (global_State *g) {
 ** mark all objects in list of being-finalized
 */
 static void markbeingfnz (global_State *g) {
-  GCObject *o;
+  LuaBase *o;
   for (o = g->tobefnz; o != NULL; o = gch(o)->next) {
     makewhite(g, o);
     reallymarkobject(g, o);
@@ -507,7 +507,7 @@ static int traversestack (global_State *g, lua_State *L) {
 ** Returns number of values traversed.
 */
 static int propagatemark (global_State *g) {
-  GCObject *o = g->gray;
+  LuaBase *o = g->gray;
   assert(isgray(o));
   gray2black(o);
   switch (gch(o)->tt) {
@@ -544,7 +544,7 @@ static void propagateall (global_State *g) {
 }
 
 
-static void propagatelist (global_State *g, GCObject *l) {
+static void propagatelist (global_State *g, LuaBase *l) {
   assert(g->gray == NULL);  /* no grays left */
   g->gray = l;
   propagateall(g);  /* traverse all elements from 'l' */
@@ -556,9 +556,9 @@ static void propagatelist (global_State *g, GCObject *l) {
 ** twice the same table (which is not wrong, but inefficient)
 */
 static void retraversegrays (global_State *g) {
-  GCObject *weak = g->weak;  /* save original lists */
-  GCObject *grayagain = g->grayagain;
-  GCObject *ephemeron = g->ephemeron;
+  LuaBase *weak = g->weak;  /* save original lists */
+  LuaBase *grayagain = g->grayagain;
+  LuaBase *ephemeron = g->ephemeron;
   g->weak = g->grayagain = g->ephemeron = NULL;
   propagateall(g);  /* traverse main gray list */
   propagatelist(g, grayagain);
@@ -570,8 +570,8 @@ static void retraversegrays (global_State *g) {
 static void convergeephemerons (global_State *g) {
   int changed;
   do {
-    GCObject *w;
-    GCObject *next = g->ephemeron;  /* get ephemeron list */
+    LuaBase *w;
+    LuaBase *next = g->ephemeron;  /* get ephemeron list */
     g->ephemeron = NULL;  /* tables will return to this list when traversed */
     changed = 0;
     while ((w = next) != NULL) {
@@ -598,7 +598,7 @@ static void convergeephemerons (global_State *g) {
 ** clear entries with unmarked keys from all weaktables in list 'l' up
 ** to element 'f'
 */
-static void clearkeys (GCObject *l, GCObject *f) {
+static void clearkeys (LuaBase *l, LuaBase *f) {
   for (; l != f; l = gco2t(l)->gclist) {
     Table *h = gco2t(l);
     Node *n, *limit = gnodelast(h);
@@ -616,7 +616,7 @@ static void clearkeys (GCObject *l, GCObject *f) {
 ** clear entries with unmarked values from all weaktables in list 'l' up
 ** to element 'f'
 */
-static void clearvalues (GCObject *l, GCObject *f) {
+static void clearvalues (LuaBase *l, LuaBase *f) {
   for (; l != f; l = gco2t(l)->gclist) {
     Table *h = gco2t(l);
     Node *n, *limit = gnodelast(h);
@@ -636,7 +636,7 @@ static void clearvalues (GCObject *l, GCObject *f) {
 }
 
 
-static void freeobj (lua_State *L, GCObject *o) {
+static void freeobj (lua_State *L, LuaBase *o) {
   switch (gch(o)->tt) {
     case LUA_TPROTO: luaF_freeproto(L, gco2p(o)); break;
     case LUA_TFUNCTION: luaF_freeclosure(L, gco2cl(o)); break;
@@ -655,7 +655,7 @@ static void freeobj (lua_State *L, GCObject *o) {
 
 
 #define sweepwholelist(L,p)	sweeplist(L,p,MAX_LUMEM)
-static GCObject **sweeplist (lua_State *L, GCObject **p, size_t count);
+static LuaBase **sweeplist (lua_State *L, LuaBase **p, size_t count);
 
 
 /*
@@ -683,7 +683,7 @@ static void sweepthread (lua_State *L, lua_State *L1) {
 ** one will be old too.
 ** When object is a thread, sweep its list of open upvalues too.
 */
-static GCObject **sweeplist (lua_State *L, GCObject **p, size_t count) {
+static LuaBase **sweeplist (lua_State *L, LuaBase **p, size_t count) {
   global_State *g = G(L);
   int ow = otherwhite(g);
   int toclear, toset;  /* bits to clear and to set in all live objects */
@@ -700,7 +700,7 @@ static GCObject **sweeplist (lua_State *L, GCObject **p, size_t count) {
     tostop = 0;  /* do not stop */
   }
   while (*p != NULL && count-- > 0) {
-    GCObject *curr = *p;
+    LuaBase *curr = *p;
     int marked = gch(curr)->marked;
     if (isdeadm(ow, marked)) {  /* is 'curr' dead? */
       *p = gch(curr)->next;  /* remove 'curr' from list */
@@ -710,7 +710,7 @@ static GCObject **sweeplist (lua_State *L, GCObject **p, size_t count) {
       if (gch(curr)->tt == LUA_TTHREAD)
         sweepthread(L, gco2th(curr));  /* sweep thread's upvalues */
       if (testbits(marked, tostop)) {
-        static GCObject *nullp = NULL;
+        static LuaBase *nullp = NULL;
         p = &nullp;  /* stop sweeping this list */
         break;
       }
@@ -743,8 +743,8 @@ static void checkSizes (lua_State *L) {
 }
 
 
-static GCObject *udata2finalize (global_State *g) {
-  GCObject *o = g->tobefnz;  /* get first element */
+static LuaBase *udata2finalize (global_State *g) {
+  LuaBase *o = g->tobefnz;  /* get first element */
   assert(isfinalized(o));
   g->tobefnz = gch(o)->next;  /* remove it from 'tobefnz' list */
   gch(o)->next = g->allgc;  /* return it to 'allgc' list */
@@ -799,9 +799,9 @@ static void GCTM (lua_State *L, int propagateerrors) {
 */
 static void separatetobefnz (lua_State *L, int all) {
   global_State *g = G(L);
-  GCObject **p = &g->finobj;
-  GCObject *curr;
-  GCObject **lastnext = &g->tobefnz;
+  LuaBase **p = &g->finobj;
+  LuaBase *curr;
+  LuaBase **lastnext = &g->tobefnz;
   /* find last 'next' field in 'tobefnz' list (to add elements in its end) */
   while (*lastnext != NULL)
     lastnext = &gch(*lastnext)->next;
@@ -825,14 +825,14 @@ static void separatetobefnz (lua_State *L, int all) {
 ** if object 'o' has a finalizer, remove it from 'allgc' list (must
 ** search the list to find it) and link it in 'finobj' list.
 */
-void luaC_checkfinalizer (lua_State *L, GCObject *o, Table *mt) {
+void luaC_checkfinalizer (lua_State *L, LuaBase *o, Table *mt) {
   global_State *g = G(L);
   if (testbit(gch(o)->marked, SEPARATED) || /* obj. is already separated... */
       isfinalized(o) ||                           /* ... or is finalized... */
       gfasttm(g, mt, TM_GC) == NULL)                /* or has no finalizer? */
     return;  /* nothing to be done */
   else {  /* move 'o' to 'finobj' list */
-    GCObject **p;
+    LuaBase **p;
     for (p = &g->allgc; *p != o; p = &gch(*p)->next) ;
     *p = gch(o)->next;  /* remove 'o' from root list */
     gch(o)->next = g->finobj;  /* link it in list 'finobj' */
@@ -908,7 +908,7 @@ void luaC_freeallobjects (lua_State *L) {
 
 static void atomic (lua_State *L) {
   global_State *g = G(L);
-  GCObject *origweak, *origall;
+  LuaBase *origweak, *origall;
   assert(!iswhite(obj2gco(g->mainthread)));
   markobject(g, L);  /* mark running thread */
   /* registry and global metatables may be changed by API */
@@ -991,7 +991,7 @@ static l_mem singlestep (lua_State *L) {
       }
       else {
         /* sweep main thread */
-        GCObject *mt = obj2gco(g->mainthread);
+        LuaBase *mt = obj2gco(g->mainthread);
         sweeplist(L, &mt, 1);
         checkSizes(L);
         g->gcstate = GCSpause;  /* finish collection */

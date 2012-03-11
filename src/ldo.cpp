@@ -141,7 +141,7 @@ int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
 
 static void correctstack (lua_State *L, TValue *oldstack) {
   CallInfo *ci;
-  GCObject *up;
+  LuaBase *up;
   L->top = (L->top - oldstack) + L->stack;
   for (up = L->openupval; up != NULL; up = up->next)
     gco2uv(up)->v = (gco2uv(up)->v - oldstack) + L->stack;

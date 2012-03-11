@@ -57,7 +57,7 @@ struct lua_longjmp;  /* defined in ldo.c */
 
 
 typedef struct stringtable {
-  GCObject **hash;
+  LuaBase **hash;
   uint32_t nuse;  /* number of elements */
   int size;
 } stringtable;
@@ -120,15 +120,15 @@ typedef struct global_State {
   uint8_t gckind;  /* kind of GC running */
   uint8_t gcrunning;  /* true if GC is running */
   int sweepstrgc;  /* position of sweep in `strt' */
-  GCObject *allgc;  /* list of all collectable objects */
-  GCObject *finobj;  /* list of collectable objects with finalizers */
-  GCObject **sweepgc;  /* current position of sweep */
-  GCObject *gray;  /* list of gray objects */
-  GCObject *grayagain;  /* list of objects to be traversed atomically */
-  GCObject *weak;  /* list of tables with weak values */
-  GCObject *ephemeron;  /* list of ephemeron tables (weak keys) */
-  GCObject *allweak;  /* list of all-weak tables */
-  GCObject *tobefnz;  /* list of userdata to be GC */
+  LuaBase *allgc;  /* list of all collectable objects */
+  LuaBase *finobj;  /* list of collectable objects with finalizers */
+  LuaBase **sweepgc;  /* current position of sweep */
+  LuaBase *gray;  /* list of gray objects */
+  LuaBase *grayagain;  /* list of objects to be traversed atomically */
+  LuaBase *weak;  /* list of tables with weak values */
+  LuaBase *ephemeron;  /* list of ephemeron tables (weak keys) */
+  LuaBase *allweak;  /* list of all-weak tables */
+  LuaBase *tobefnz;  /* list of userdata to be GC */
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
   Mbuffer buff;  /* temporary buffer for string concatenation */
   int gcpause;  /* size of pause between successive GCs */
@@ -162,8 +162,8 @@ struct lua_State : public LuaBase {
   int basehookcount;
   int hookcount;
   lua_Hook hook;
-  GCObject *openupval;  /* list of open upvalues in this stack */
-  GCObject *gclist;
+  LuaBase *openupval;  /* list of open upvalues in this stack */
+  LuaBase *gclist;
   struct lua_longjmp *errorJmp;  /* current error recover point */
   ptrdiff_t errfunc;  /* current error handling function (stack index) */
   CallInfo base_ci;  /* CallInfo for first level (C calling Lua) */
@@ -178,12 +178,12 @@ struct lua_State : public LuaBase {
 ** Union of all collectable objects
 */
 
-typedef LuaBase GCObject;
+typedef LuaBase LuaBase;
 
 
 #define gch(o)		(o)
 
-/* macros to convert a GCObject into a specific value */
+/* macros to convert a LuaBase into a specific value */
 #define gco2ts(o)	check_exp((o)->gch.tt == LUA_TSTRING, reinterpret_cast<TString*>(o))
 #define rawgco2u(o)	check_exp((o)->gch.tt == LUA_TUSERDATA, reinterpret_cast<Udata*>(o))
 
@@ -195,8 +195,8 @@ typedef LuaBase GCObject;
 #define gco2uv(o)	check_exp((o)->gch.tt == LUA_TUPVAL, reinterpret_cast<UpVal*>(o))
 #define gco2th(o)	check_exp((o)->gch.tt == LUA_TTHREAD, reinterpret_cast<lua_State*>(o))
 
-/* macro to convert any Lua object into a GCObject */
-#define obj2gco(v)	(cast(GCObject *, (v)))
+/* macro to convert any Lua object into a LuaBase */
+#define obj2gco(v)	(cast(LuaBase *, (v)))
 
 
 /* actual number of total bytes allocated */

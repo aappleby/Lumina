@@ -54,7 +54,7 @@
 #define LUA_ERRERR	6
 
 
-typedef struct lua_State lua_State;
+struct lua_State;
 
 typedef int (*lua_CFunction) (lua_State *L);
 
@@ -72,23 +72,6 @@ typedef int (*lua_Writer) (lua_State *L, const void* p, size_t sz, void* ud);
 */
 typedef void * (*lua_Alloc) (void *ptr, size_t osize, size_t nsize);
 
-
-/*
-** basic types
-*/
-#define LUA_TNONE		(-1)
-
-#define LUA_TNIL		0
-#define LUA_TBOOLEAN		1
-#define LUA_TLIGHTUSERDATA	2
-#define LUA_TNUMBER		3
-#define LUA_TSTRING		4
-#define LUA_TTABLE		5
-#define LUA_TFUNCTION		6
-#define LUA_TUSERDATA		7
-#define LUA_TTHREAD		8
-
-#define LUA_NUMTAGS		9
 
 
 
@@ -111,6 +94,12 @@ typedef LUA_INTEGER lua_Integer;
 
 /* unsigned integer type */
 typedef LUA_UNSIGNED lua_Unsigned;
+
+
+
+#include "LuaValue.h"
+
+
 
 /*
 ** state manipulation
