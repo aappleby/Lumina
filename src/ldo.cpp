@@ -523,7 +523,6 @@ static void resume (lua_State *L, void *ud) {
 LUA_API int lua_resume (lua_State *L, lua_State *from, int nargs) {
   int status;
   lua_lock(L);
-  luai_userstateresume(L, nargs);
   L->nCcalls = (from) ? from->nCcalls + 1 : 1;
   L->nny = 0;  /* allow yields */
   api_checknelems(L, (L->status == LUA_OK) ? nargs + 1 : nargs);
@@ -553,7 +552,6 @@ LUA_API int lua_resume (lua_State *L, lua_State *from, int nargs) {
 
 LUA_API int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   CallInfo *ci = L->ci;
-  luai_userstateyield(L, nresults);
   lua_lock(L);
   api_checknelems(L, nresults);
   if (L->nny > 0) {

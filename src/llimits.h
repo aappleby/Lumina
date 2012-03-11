@@ -143,35 +143,6 @@ typedef uint32_t Instruction;
 
 
 /*
-** these macros allow user-specific actions on threads when you defined
-** LUAI_EXTRASPACE and need to do something extra when a thread is
-** created/deleted/resumed/yielded.
-*/
-#if !defined(luai_userstateopen)
-#define luai_userstateopen(L)		((void)L)
-#endif
-
-#if !defined(luai_userstateclose)
-#define luai_userstateclose(L)		((void)L)
-#endif
-
-#if !defined(luai_userstatethread)
-#define luai_userstatethread(L,L1)	((void)L)
-#endif
-
-#if !defined(luai_userstatefree)
-#define luai_userstatefree(L,L1)	((void)L)
-#endif
-
-#if !defined(luai_userstateresume)
-#define luai_userstateresume(L,n)       ((void)L)
-#endif
-
-#if !defined(luai_userstateyield)
-#define luai_userstateyield(L,n)        ((void)L)
-#endif
-
-/*
 ** lua_number2int is a macro to convert lua_Number to int.
 ** lua_number2integer is a macro to convert lua_Number to lua_Integer.
 ** lua_number2unsigned is a macro to convert a lua_Number to a lua_Unsigned.

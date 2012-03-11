@@ -40,29 +40,14 @@
 
 #define MEMERRMSG       "not enough memory"
 
-
-/*
-** thread state + extra space
-*/
-typedef struct LX {
-#if defined(LUAI_EXTRASPACE)
-  char buff[LUAI_EXTRASPACE];
-#endif
-  lua_State l;
-} LX;
-
-
 /*
 ** Main thread combines a thread state and the global state
 */
 typedef struct LG {
-  LX l;
+  lua_State l;
   global_State g;
 } LG;
 
-
-
-#define fromstate(L)	(cast(LX *, cast(uint8_t *, (L)) - offsetof(LX, l)))
 
 
 /*
@@ -192,7 +177,7 @@ static void close_state (lua_State *L) {
   luaZ_freebuffer(L, &g->buff);
   freestack(L);
   assert(gettotalbytes(g) == sizeof(LG));
-  (*g->frealloc)(fromstate(L), sizeof(LG), 0);  /* free main block */
+  (*g->frealloc)(L, sizeof(LG), 0);  /* free main block */
 }
 
 
@@ -200,7 +185,7 @@ LUA_API lua_State *lua_newthread (lua_State *L) {
   lua_State *L1;
   lua_lock(L);
   luaC_checkGC(L);
-  L1 = &luaC_newobj(L, LUA_TTHREAD, sizeof(LX), NULL, offsetof(LX, l))->th;
+  L1 = &luaC_newobj(L, LUA_TTHREAD, sizeof(lua_State), NULL, 0)->th;
   setthvalue(L, L->top, L1);
   api_incr_top(L);
   preinit_state(L1, G(L));
@@ -208,7 +193,6 @@ LUA_API lua_State *lua_newthread (lua_State *L) {
   L1->basehookcount = L->basehookcount;
   L1->hook = L->hook;
   resethookcount(L1);
-  luai_userstatethread(L, L1);
   stack_init(L1, L);  /* init stack */
   lua_unlock(L);
   return L1;
@@ -216,12 +200,10 @@ LUA_API lua_State *lua_newthread (lua_State *L) {
 
 
 void luaE_freethread (lua_State *L, lua_State *L1) {
-  LX *l = fromstate(L1);
   luaF_close(L1, L1->stack);  /* close all upvalues for this thread */
   assert(L1->openupval == NULL);
-  luai_userstatefree(L, L1);
   freestack(L1);
-  luaM_free(L, l);
+  luaM_free(L, L1);
 }
 
 
@@ -231,7 +213,7 @@ LUA_API lua_State *lua_newstate (lua_Alloc f) {
   global_State *g;
   LG *l = cast(LG *, (*f)(NULL, LUA_TTHREAD, sizeof(LG)));
   if (l == NULL) return NULL;
-  L = &l->l.l;
+  L = &l->l;
   g = &l->g;
   L->next = NULL;
   L->tt = LUA_TTHREAD;
@@ -269,8 +251,6 @@ LUA_API lua_State *lua_newstate (lua_Alloc f) {
     close_state(L);
     L = NULL;
   }
-  else
-    luai_userstateopen(L);
   return L;
 }
 
@@ -278,7 +258,6 @@ LUA_API lua_State *lua_newstate (lua_Alloc f) {
 LUA_API void lua_close (lua_State *L) {
   L = G(L)->mainthread;  /* only the main thread can be closed */
   lua_lock(L);
-  luai_userstateclose(L);
   close_state(L);
 }
 
