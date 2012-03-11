@@ -101,16 +101,16 @@ union GCObject;
 #define nvalue(o)	check_exp(ttisnumber(o), (o)->n)
 #define gcvalue(o)	check_exp(iscollectable(o), (o)->gc)
 #define pvalue(o)	check_exp(ttislightuserdata(o), (o)->p)
-#define tsvalue(o)	check_exp(ttisstring(o), &(o)->gc->ts)
+#define tsvalue(o)	check_exp(ttisstring(o), reinterpret_cast<TString*>((o)->gc))
 #define rawuvalue(o)	check_exp(ttisuserdata(o), &(o)->gc->u)
-#define uvalue(o)	(&rawuvalue(o)->uv)
-#define clvalue(o)	check_exp(ttisclosure(o), &(o)->gc->cl)
-#define clLvalue(o)	check_exp(ttisLclosure(o), &(o)->gc->cl.l)
-#define clCvalue(o)	check_exp(ttisCclosure(o), &(o)->gc->cl.c)
+#define uvalue(o)	(rawuvalue(o))
+#define clvalue(o)	check_exp(ttisclosure(o), reinterpret_cast<Closure*>((o)->gc))
+#define clLvalue(o)	check_exp(ttisLclosure(o), reinterpret_cast<LClosure*>((o)->gc))
+#define clCvalue(o)	check_exp(ttisCclosure(o), reinterpret_cast<CClosure*>((o)->gc))
 #define fvalue(o)	check_exp(ttislcf(o), (o)->f)
-#define hvalue(o)	check_exp(ttistable(o), &(o)->gc->h)
+#define hvalue(o)	check_exp(ttistable(o), reinterpret_cast<Table*>((o)->gc))
 #define bvalue(o)	check_exp(ttisboolean(o), (o)->b)
-#define thvalue(o)	check_exp(ttisthread(o), &(o)->gc->th)
+#define thvalue(o)	check_exp(ttisthread(o), reinterpret_cast<lua_State*>((o)->gc))
 /* a dead value may get the 'gc' field, but cannot access its contents */
 #define deadvalue(o)	check_exp(ttisdeadkey(o), cast(void *, (o)->gc))
 
@@ -256,15 +256,13 @@ __declspec(align(8)) struct TString : public LuaBase {
 /*
 ** Header for userdata; memory area follows the end of this structure
 */
-__declspec(align(8)) union Udata {
-  struct {
-    GCObject *next;
-    uint8_t tt;
-    uint8_t marked;
-    Table *metatable;
-    Table *env;
-    size_t len;  /* number of bytes */
-  } uv;
+__declspec(align(8)) struct Udata {
+  GCObject *next;
+  uint8_t tt;
+  uint8_t marked;
+  Table *metatable;
+  Table *env;
+  size_t len;  /* number of bytes */
 };
 
 

@@ -21,7 +21,8 @@
 
 
 Closure *luaF_newCclosure (lua_State *L, int n) {
-  Closure *c = &luaC_newobj(L, LUA_TFUNCTION, sizeCclosure(n), NULL, 0)->cl;
+  GCObject* o = luaC_newobj(L, LUA_TFUNCTION, sizeCclosure(n), NULL, 0);
+  Closure *c = gco2cl(o);
   c->c.isC = 1;
   c->c.nupvalues = cast_byte(n);
   return c;
@@ -30,7 +31,8 @@ Closure *luaF_newCclosure (lua_State *L, int n) {
 
 Closure *luaF_newLclosure (lua_State *L, Proto *p) {
   int n = p->sizeupvalues;
-  Closure *c = &luaC_newobj(L, LUA_TFUNCTION, sizeLclosure(n), NULL, 0)->cl;
+  GCObject* o = luaC_newobj(L, LUA_TFUNCTION, sizeLclosure(n), NULL, 0);
+  Closure *c = gco2cl(o);
   c->l.isC = 0;
   c->l.p = p;
   c->l.nupvalues = cast_byte(n);

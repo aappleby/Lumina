@@ -179,13 +179,13 @@ struct lua_State : public LuaBase {
 */
 union GCObject {
   LuaBase gch;
-  TString ts;
+  //TString ts;
   Udata u;
-  Closure cl;
-  Table h;
+  //Closure cl;
+  //Table h;
   //Proto p;
   //UpVal uv;
-  lua_State th;  /* thread */
+  //lua_State th;  /* thread */
 };
 
 
@@ -195,7 +195,7 @@ union GCObject {
 #define gco2ts(o)	check_exp((o)->gch.tt == LUA_TSTRING, reinterpret_cast<TString*>(o))
 #define rawgco2u(o)	check_exp((o)->gch.tt == LUA_TUSERDATA, reinterpret_cast<Udata*>(o))
 
-#define gco2u(o)	(&rawgco2u(o)->uv)
+#define gco2u(o)	(rawgco2u(o))
 
 #define gco2cl(o)	check_exp((o)->gch.tt == LUA_TFUNCTION, reinterpret_cast<Closure*>(o))
 #define gco2t(o)	check_exp((o)->gch.tt == LUA_TTABLE, reinterpret_cast<Table*>(o))
