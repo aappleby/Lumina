@@ -95,7 +95,7 @@ static Node *mainposition (const Table *t, const TValue *key) {
     case LUA_TNUMBER:
       return hashnum(t, nvalue(key));
     case LUA_TSTRING:
-      return hashstr(t, rawtsvalue(key));
+      return hashstr(t, tsvalue(key));
     case LUA_TBOOLEAN:
       return hashboolean(t, bvalue(key));
     case LUA_TLIGHTUSERDATA:
@@ -454,7 +454,7 @@ const TValue *luaH_getint (Table *t, int key) {
 const TValue *luaH_getstr (Table *t, TString *key) {
   Node *n = hashstr(t, key);
   do {  /* check whether `key' is somewhere in the chain */
-    if (ttisstring(gkey(n)) && eqstr(rawtsvalue(gkey(n)), key))
+    if (ttisstring(gkey(n)) && eqstr(tsvalue(gkey(n)), key))
       return gval(n);  /* that's it */
     else n = gnext(n);
   } while (n);
@@ -468,7 +468,7 @@ const TValue *luaH_getstr (Table *t, TString *key) {
 const TValue *luaH_get (Table *t, const TValue *key) {
   switch (ttypenv(key)) {
     case LUA_TNIL: return luaO_nilobject;
-    case LUA_TSTRING: return luaH_getstr(t, rawtsvalue(key));
+    case LUA_TSTRING: return luaH_getstr(t, tsvalue(key));
     case LUA_TNUMBER: {
       int k;
       lua_Number n = nvalue(key);

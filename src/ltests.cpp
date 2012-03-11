@@ -248,7 +248,7 @@ static void checkproto (global_State *g, Proto *f) {
   if (f->source) checkobjref(g, fgc, f->source);
   for (i=0; i<f->sizek; i++) {
     if (ttisstring(f->k+i))
-      checkobjref(g, fgc, rawtsvalue(f->k+i));
+      checkobjref(g, fgc, tsvalue(f->k+i));
   }
   for (i=0; i<f->sizeupvalues; i++) {
     if (f->upvalues[i].name)

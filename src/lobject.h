@@ -100,8 +100,7 @@ union GCObject;
 #define nvalue(o)	check_exp(ttisnumber(o), (o)->n)
 #define gcvalue(o)	check_exp(iscollectable(o), (o)->gc)
 #define pvalue(o)	check_exp(ttislightuserdata(o), (o)->p)
-#define rawtsvalue(o)	check_exp(ttisstring(o), &(o)->gc->ts)
-#define tsvalue(o)	rawtsvalue(o)
+#define tsvalue(o)	check_exp(ttisstring(o), &(o)->gc->ts)
 #define rawuvalue(o)	check_exp(ttisuserdata(o), &(o)->gc->u)
 #define uvalue(o)	(&rawuvalue(o)->uv)
 #define clvalue(o)	check_exp(ttisclosure(o), &(o)->gc->cl)
@@ -253,7 +252,7 @@ __declspec(align(8)) struct TString {
 #define getstr(ts)	cast(const char *, (ts) + 1)
 
 /* get the actual string (array of bytes) from a Lua value */
-#define svalue(o)       getstr(rawtsvalue(o))
+#define svalue(o)       getstr(tsvalue(o))
 
 
 /*

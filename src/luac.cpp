@@ -263,7 +263,7 @@ static void PrintConstant(const Proto* f, int i)
 	printf(LUA_NUMBER_FMT,nvalue(o));
 	break;
   case LUA_TSTRING:
-	PrintString(rawtsvalue(o));
+	PrintString(tsvalue(o));
 	break;
   default:				/* cannot happen */
 	printf("? type=%d",ttype(o));

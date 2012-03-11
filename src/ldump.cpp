@@ -96,7 +96,7 @@ static void DumpConstants(const Proto* f, DumpState* D)
 	DumpNumber(nvalue(o),D);
 	break;
    case LUA_TSTRING:
-	DumpString(rawtsvalue(o),D);
+	DumpString(tsvalue(o),D);
 	break;
   }
  }

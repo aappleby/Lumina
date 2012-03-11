@@ -225,7 +225,7 @@ int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
   if (ttisnumber(l) && ttisnumber(r))
     return luai_numlt(L, nvalue(l), nvalue(r));
   else if (ttisstring(l) && ttisstring(r))
-    return l_strcmp(rawtsvalue(l), rawtsvalue(r)) < 0;
+    return l_strcmp(tsvalue(l), tsvalue(r)) < 0;
   else if ((res = call_orderTM(L, l, r, TM_LT)) < 0)
     luaG_ordererror(L, l, r);
   return res;
@@ -237,7 +237,7 @@ int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
   if (ttisnumber(l) && ttisnumber(r))
     return luai_numle(L, nvalue(l), nvalue(r));
   else if (ttisstring(l) && ttisstring(r))
-    return l_strcmp(rawtsvalue(l), rawtsvalue(r)) <= 0;
+    return l_strcmp(tsvalue(l), tsvalue(r)) <= 0;
   else if ((res = call_orderTM(L, l, r, TM_LE)) >= 0)  /* first try `le' */
     return res;
   else if ((res = call_orderTM(L, r, l, TM_LT)) < 0)  /* else try `lt' */
@@ -258,7 +258,7 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
     case LUA_TBOOLEAN: return bvalue(t1) == bvalue(t2);  /* true must be 1 !! */
     case LUA_TLIGHTUSERDATA: return pvalue(t1) == pvalue(t2);
     case LUA_TLCF: return fvalue(t1) == fvalue(t2);
-    case LUA_TSTRING: return eqstr(rawtsvalue(t1), rawtsvalue(t2));
+    case LUA_TSTRING: return eqstr(tsvalue(t1), tsvalue(t2));
     case LUA_TUSERDATA: {
       if (uvalue(t1) == uvalue(t2)) return 1;
       else if (L == NULL) return 0;
@@ -293,7 +293,7 @@ void luaV_concat (lua_State *L, int total) {
     else if (tsvalue(top-1)->len == 0)  /* second operand is empty? */
       (void)tostring(L, top - 2);  /* result is first operand */
     else if (ttisstring(top-2) && tsvalue(top-2)->len == 0) {
-      setsvalue2s(L, top-2, rawtsvalue(top-1));  /* result is second op. */
+      setsvalue2s(L, top-2, tsvalue(top-1));  /* result is second op. */
     }
     else {
       /* at least two non-empty string values; get as many as possible */
