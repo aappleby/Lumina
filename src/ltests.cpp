@@ -64,13 +64,12 @@ static int tpanic (lua_State *L) {
 
 #define MARK		0x55  /* 01010101 (a nice pattern) */
 
-typedef union Header {
-  L_Umaxalign a;  /* ensures maximum alignment for Header */
+__declspec(align(8)) union Header {
   struct {
     size_t size;
     int type;
   } d;
-} Header;
+};
 
 
 #if !defined(EXTERNMEMCHECK)

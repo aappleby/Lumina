@@ -73,8 +73,7 @@
 #define checkdeadkey(n)	assert(!ttisdeadkey(gkey(n)) || ttisnil(gval(n)))
 
 
-#define checkconsistency(obj)  \
-  lua_longassert(!iscollectable(obj) || righttt(obj))
+#define checkconsistency(obj) assert(!iscollectable(obj) || righttt(obj))
 
 
 #define markvalue(g,o) { checkconsistency(o); \

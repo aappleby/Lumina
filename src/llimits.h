@@ -18,57 +18,14 @@
 typedef LUAI_MEM l_mem;
 
 #define MAX_SIZET	((size_t)(~(size_t)0)-2)
-
 #define MAX_LUMEM	((size_t)(~(size_t)0)-2)
-
-
 #define MAX_INT (INT_MAX-2)  /* maximum value of an int (-2 for safety) */
 
 
-
-/* type to ensure maximum alignment */
-#if !defined(LUAI_USER_ALIGNMENT_T)
-#define LUAI_USER_ALIGNMENT_T	union { double u; void *s; long l; }
-#endif
-
-typedef LUAI_USER_ALIGNMENT_T L_Umaxalign;
-
-
-/* result of a `usual argument conversion' over lua_Number */
-typedef LUAI_UACNUMBER l_uacNumber;
-
-
-/* internal assertions for in-house debugging */
-#if defined(assert)
 #define check_exp(c,e)		(assert(c), (e))
-/* to avoid problems with conditions too long */
-#define lua_longassert(c)	{ if (!(c)) assert(0); }
-#else
-#define assert(c)		((void)0)
-#define check_exp(c,e)		(e)
-#define lua_longassert(c)	((void)0)
-#endif
-
-/*
-** assertion for checking API calls
-*/
-#if !defined(luai_apicheck)
-
-#if defined(LUA_USE_APICHECK)
-#include <assert.h>
 #define luai_apicheck(L,e)	assert(e)
-#else
-#define luai_apicheck(L,e)	assert(e)
-#endif
-
-#endif
-
 #define api_check(l,e,msg)	luai_apicheck(l,(e) && msg)
-
-
-#if !defined(UNUSED)
 #define UNUSED(x)	((void)(x))	/* to avoid warnings */
-#endif
 
 
 #define cast(t, exp)	((t)(exp))

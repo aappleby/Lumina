@@ -383,13 +383,6 @@
 #define LUA_NUMBER	double
 
 /*
-@@ LUAI_UACNUMBER is the result of an 'usual argument conversion'
-@* over a number.
-*/
-#define LUAI_UACNUMBER	double
-
-
-/*
 @@ LUA_NUMBER_SCAN is the format for reading numbers.
 @@ LUA_NUMBER_FMT is the format for writing numbers.
 @@ lua_number2str converts a number to a string.
@@ -453,7 +446,7 @@
 @@ LUA_UNSIGNED is the integral type used by lua_pushunsigned/lua_tounsigned.
 ** It must have at least 32 bits.
 */
-#define LUA_UNSIGNED	unsigned LUA_INT32
+#define LUA_UNSIGNED	uint32_t
 
 
 #if defined(LUA_CORE)		/* { */

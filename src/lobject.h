@@ -159,9 +159,7 @@ typedef struct lua_TValue TValue;
 /* Macros for internal tests */
 #define righttt(obj)		(ttypenv(obj) == gcvalue(obj)->gch.tt)
 
-#define checkliveness(g,obj) \
-	lua_longassert(!iscollectable(obj) || \
-			(righttt(obj) && !isdead(g,gcvalue(obj))))
+#define checkliveness(g,obj) assert(!iscollectable(obj) || (righttt(obj) && !isdead(g,gcvalue(obj))))
 
 
 /* Macros to set values */
@@ -287,8 +285,7 @@ typedef TValue* StkId;  /* index to stack elements */
 /*
 ** Header for string value; string bytes follow the end of this structure
 */
-typedef union TString {
-  L_Umaxalign dummy;  /* ensures maximum alignment for strings */
+__declspec(align(8)) union TString {
   struct {
     GCObject *next;
     uint8_t tt;
@@ -297,7 +294,7 @@ typedef union TString {
     unsigned int hash;
     size_t len;  /* number of characters in string */
   } tsv;
-} TString;
+};
 
 
 /* get the actual string (array of bytes) from a TString */
@@ -310,8 +307,7 @@ typedef union TString {
 /*
 ** Header for userdata; memory area follows the end of this structure
 */
-typedef union Udata {
-  L_Umaxalign dummy;  /* ensures maximum alignment for `local' udata */
+__declspec(align(8)) union Udata {
   struct {
     GCObject *next;
     uint8_t tt;
@@ -320,7 +316,7 @@ typedef union Udata {
     Table *env;
     size_t len;  /* number of bytes */
   } uv;
-} Udata;
+};
 
 
 
