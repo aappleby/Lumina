@@ -822,7 +822,7 @@ static int num2int (lua_State *L) {
 
 static int newstate (lua_State *L) {
   lua_Alloc f = lua_getallocf(L);
-  lua_State *L1 = lua_newstate(f, 0);
+  lua_State *L1 = lua_newstate(f);
   if (L1) {
     lua_atpanic(L1, tpanic);
     lua_pushlightuserdata(L, L1);

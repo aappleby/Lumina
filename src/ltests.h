@@ -33,7 +33,7 @@ int lua_checkmemory (lua_State *L);
 int luaB_opentests (lua_State *L);
 
 #if defined(lua_c)
-#define luaL_newstate()		lua_newstate(debug_realloc, 0)
+#define luaL_newstate()		lua_newstate(debug_realloc)
 #define luaL_openlibs(L)  \
   { (luaL_openlibs)(L); luaL_requiref(L, "T", luaB_opentests, 1); }
 #endif
