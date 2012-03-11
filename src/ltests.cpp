@@ -44,7 +44,7 @@ static void setnameval (lua_State *L, const char *name, int val) {
 
 
 static void pushobject (lua_State *L, const TValue *o) {
-  setobj2s(L, L->top, o);
+  setobj(L, L->top, o);
   api_incr_top(L);
 }
 
@@ -110,7 +110,7 @@ static void freeblock (Memcontrol *mc, Header *block) {
     fillmem(block, sizeof(Header) + size + MARKSIZE);  /* erase block */
     free(block);  /* actually free block */
     mc->numblocks--;  /* update counts */
-    mc->total -= size;
+    mc->total -= (uint32_t)size;
   }
 }
 
@@ -125,7 +125,7 @@ void *debug_realloc (void *b, size_t oldsize, size_t size) {
     mc->memlimit = limit ? strtoul(limit, NULL, 10) : ULONG_MAX;
   }
   if (block == NULL) {
-    type = (oldsize < LUA_NUMTAGS) ? oldsize : 0;
+    type = (oldsize < LUA_NUMTAGS) ? (int)oldsize : 0;
     oldsize = 0;
   }
   else {
@@ -158,7 +158,7 @@ void *debug_realloc (void *b, size_t oldsize, size_t size) {
       *(cast(char *, newblock + 1) + size + i) = MARK;
     newblock->d.size = size;
     newblock->d.type = type;
-    mc->total += size;
+    mc->total += (uint32_t)size;
     if (mc->total > mc->maxmem)
       mc->maxmem = mc->total;
     mc->numblocks++;
@@ -923,7 +923,7 @@ static int getnum_aux (lua_State *L, lua_State *L1, const char **pc) {
   int sig = 1;
   skip(pc);
   if (**pc == '.') {
-    res = lua_tointeger(L1, -1);
+    res = (int)lua_tointeger(L1, -1);
     lua_pop(L1, 1);
     (*pc)++;
     return res;
@@ -1027,7 +1027,9 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       lua_pushnumber(L1, lua_tonumber(L1, getindex));
     }
     else if EQ("topointer") {
-      lua_pushnumber(L1, cast(size_t, lua_topointer(L1, getindex)));
+      const void* temp1 = lua_topointer(L1, getindex);
+      size_t temp2 = reinterpret_cast<size_t>(temp1);
+      lua_pushnumber(L1, static_cast<lua_Number>(temp2));
     }
     else if EQ("tostring") {
       const char *s = lua_tostring(L1, getindex);
@@ -1048,7 +1050,8 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("func2num") {
       lua_CFunction func = lua_tocfunction(L1, getindex);
-      lua_pushnumber(L1, cast(size_t, func));
+      size_t temp = reinterpret_cast<size_t>(func);
+      lua_pushnumber(L1, static_cast<double>(temp));
     }
     else if EQ("return") {
       int n = getnum;
@@ -1161,7 +1164,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       static char ops[] = "+-*/%^_";
       int op;
       skip(&pc);
-      op = strchr(ops, *pc++) - ops;
+      op = (int)(strchr(ops, *pc++) - ops);
       lua_arith(L1, op);
     }
     else if EQ("compare") {
@@ -1238,7 +1241,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("append") {
       int t = getindex;
-      int i = lua_rawlen(L1, t);
+      int i = (int)lua_rawlen(L1, t);
       lua_rawseti(L1, t, i + 1);
     }
     else if EQ("getctx") {

@@ -159,14 +159,14 @@ int luaH_next (lua_State *L, Table *t, StkId key) {
   for (i++; i < t->sizearray; i++) {  /* try first array part */
     if (!ttisnil(&t->array[i])) {  /* a non-nil value? */
       setnvalue(key, cast_num(i+1));
-      setobj2s(L, key+1, &t->array[i]);
+      setobj(L, key+1, &t->array[i]);
       return 1;
     }
   }
   for (i -= t->sizearray; i < sizenode(t); i++) {  /* then hash part */
     if (!ttisnil(gval(gnode(t, i)))) {  /* a non-nil value? */
-      setobj2s(L, key, gkey(gnode(t, i)));
-      setobj2s(L, key+1, gval(gnode(t, i)));
+      setobj(L, key, gkey(gnode(t, i)));
+      setobj(L, key+1, gval(gnode(t, i)));
       return 1;
     }
   }
@@ -314,7 +314,7 @@ void luaH_resize (lua_State *L, Table *t, int nasize, int nhsize) {
     if (!ttisnil(gval(old))) {
       /* doesn't need barrier/invalidate cache, as entry was
          already present in the table */
-      setobjt2t(L, luaH_set(L, t, gkey(old)), gval(old));
+      setobj(L, luaH_set(L, t, gkey(old)), gval(old));
     }
   }
   if (!isdummy(nold))
@@ -421,7 +421,7 @@ TValue *luaH_newkey (lua_State *L, Table *t, const TValue *key) {
       mp = n;
     }
   }
-  setobj2t(L, gkey(mp), key);
+  setobj(L, gkey(mp), key);
   luaC_barrierback(L, obj2gco(t), key);
   assert(ttisnil(gval(mp)));
   return gval(mp);
@@ -512,7 +512,7 @@ void luaH_setint (lua_State *L, Table *t, int key, TValue *value) {
     setnvalue(&k, cast_num(key));
     cell = luaH_newkey(L, t, &k);
   }
-  setobj2t(L, cell, value);
+  setobj(L, cell, value);
 }
 
 

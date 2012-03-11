@@ -198,20 +198,10 @@ union GCObject;
 ** different types of assignments, according to destination
 */
 
-/* from stack to (same) stack */
-#define setobjs2s	setobj
-/* to stack (not from same stack) */
-#define setobj2s	setobj
-#define setsvalue2s	setsvalue
-#define sethvalue2s	sethvalue
+#define setsvalue2s	  setsvalue
+#define sethvalue2s	  sethvalue
 #define setptvalue2s	setptvalue
-/* from table to same table */
-#define setobjt2t	setobj
-/* to table */
-#define setobj2t	setobj
-/* to new object */
-#define setobj2n	setobj
-#define setsvalue2n	setsvalue
+#define setsvalue2n	  setsvalue
 
 #define luai_checknum(L,o,c)	{ /* empty */ }
 
@@ -411,7 +401,7 @@ typedef union Closure {
 	(check_exp((size&(size-1))==0, (cast(int, (s) & ((size)-1)))))
 
 
-#define twoto(x)	(1<<(x))
+#define twoto(x)	(1ull<<(x))
 #define sizenode(t)	(twoto((t)->lsizenode))
 
 
