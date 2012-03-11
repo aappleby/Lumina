@@ -146,10 +146,7 @@ typedef struct global_State {
 /*
 ** `per thread' state
 */
-struct lua_State {
-  GCObject *next;
-  uint8_t tt;
-  uint8_t marked; ;
+struct lua_State : public LuaBase {
   uint8_t status;
   StkId top;  /* first free slot in the stack */
   global_State *l_G;
@@ -175,23 +172,20 @@ struct lua_State {
 
 #define G(L)	(L->l_G)
 
+#include "LuaBase.h"
 
 /*
 ** Union of all collectable objects
 */
 union GCObject {
-  struct {
-    GCObject *next;
-    uint8_t tt;
-    uint8_t marked;
-  } gch;
+  LuaBase gch;
   TString ts;
-  union Udata u;
-  union Closure cl;
+  Udata u;
+  Closure cl;
   Table h;
-  struct Proto p;
-  struct UpVal uv;
-  struct lua_State th;  /* thread */
+  //Proto p;
+  //UpVal uv;
+  lua_State th;  /* thread */
 };
 
 

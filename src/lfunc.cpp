@@ -40,7 +40,8 @@ Closure *luaF_newLclosure (lua_State *L, Proto *p) {
 
 
 UpVal *luaF_newupval (lua_State *L) {
-  UpVal *uv = &luaC_newobj(L, LUA_TUPVAL, sizeof(UpVal), NULL, 0)->uv;
+  GCObject *o = luaC_newobj(L, LUA_TUPVAL, sizeof(UpVal), NULL, 0);
+  UpVal *uv = gco2uv(o);
   uv->v = &uv->u.value;
   setnilvalue(uv->v);
   return uv;
@@ -64,7 +65,8 @@ UpVal *luaF_findupval (lua_State *L, StkId level) {
     pp = &p->next;
   }
   /* not found: create a new one */
-  uv = &luaC_newobj(L, LUA_TUPVAL, sizeof(UpVal), pp, 0)->uv;
+  GCObject* o = luaC_newobj(L, LUA_TUPVAL, sizeof(UpVal), pp, 0);
+  uv = gco2uv(o);
   uv->v = level;  /* current value lives in the stack */
   uv->u.l.prev = &g->uvhead;  /* double link it in `uvhead' list */
   uv->u.l.next = g->uvhead.u.l.next;
@@ -111,7 +113,8 @@ void luaF_close (lua_State *L, StkId level) {
 
 
 Proto *luaF_newproto (lua_State *L) {
-  Proto *f = &luaC_newobj(L, LUA_TPROTO, sizeof(Proto), NULL, 0)->p;
+  GCObject* o = luaC_newobj(L, LUA_TPROTO, sizeof(Proto), NULL, 0);
+  Proto* f = gco2p(o);
   f->k = NULL;
   f->sizek = 0;
   f->p = NULL;

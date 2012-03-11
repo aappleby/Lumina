@@ -15,6 +15,7 @@
 #include "llimits.h"
 #include "lua.h"
 
+#include "LuaBase.h"
 class Table;
 
 
@@ -238,10 +239,7 @@ typedef TValue* StkId;  /* index to stack elements */
 /*
 ** Header for string value; string bytes follow the end of this structure
 */
-__declspec(align(8)) struct TString {
-  GCObject *next;
-  uint8_t tt;
-  uint8_t marked;
+__declspec(align(8)) struct TString : public LuaBase {
   uint8_t reserved;
   unsigned int hash;
   size_t len;  /* number of characters in string */
@@ -295,10 +293,7 @@ typedef struct LocVar {
 /*
 ** Function Prototypes
 */
-typedef struct Proto {
-  GCObject *next;
-  uint8_t tt;
-  uint8_t marked;
+struct Proto : public LuaBase {
   TValue *k;  /* constants used by the function */
   Instruction *code;
   struct Proto **p;  /* functions defined inside the function */
@@ -319,17 +314,14 @@ typedef struct Proto {
   uint8_t numparams;  /* number of fixed parameters */
   uint8_t is_vararg;
   uint8_t maxstacksize;  /* maximum stack used by this function */
-} Proto;
+};
 
 
 
 /*
 ** Lua Upvalues
 */
-typedef struct UpVal {
-  GCObject *next;
-  uint8_t tt;
-  uint8_t marked;
+struct UpVal : public LuaBase {
   TValue *v;  /* points to stack or to its own value */
   union {
     TValue value;  /* the value (when closed) */
@@ -338,44 +330,35 @@ typedef struct UpVal {
       struct UpVal *next;
     } l;
   } u;
-} UpVal;
+};
 
 
 /*
 ** Closures
 */
 
-#define ClosureHeader \
-	GCObject *next; uint8_t tt; uint8_t marked; uint8_t isC; uint8_t nupvalues; GCObject *gclist
-
-typedef struct CClosure {
-  GCObject *next;
-  uint8_t tt;
-  uint8_t marked;
+struct CClosure : public LuaBase {
   uint8_t isC;
   uint8_t nupvalues;
   GCObject *gclist;
   lua_CFunction f;
   TValue upvalue[1];  /* list of upvalues */
-} CClosure;
+};
 
 
-typedef struct LClosure {
-  GCObject *next;
-  uint8_t tt;
-  uint8_t marked;
+struct LClosure : public LuaBase {
   uint8_t isC;
   uint8_t nupvalues;
   GCObject *gclist;
   struct Proto *p;
   UpVal *upvals[1];  /* list of upvalues */
-} LClosure;
+};
 
 
-typedef union Closure {
+union Closure {
   CClosure c;
   LClosure l;
-} Closure;
+};
 
 
 #define isLfunction(o)	ttisLclosure(o)

@@ -1,3 +1,5 @@
+#pragma once
+#include "LuaBase.h"
 
 struct Node;
 class Table;
@@ -8,13 +10,6 @@ struct Node {
   Node *next;  /* for chaining */
 };
 
-
-class LuaBase {
-public:
-  GCObject *next;
-  uint8_t tt;
-  uint8_t marked;
-};
 
 class Table : public LuaBase {
 public:
