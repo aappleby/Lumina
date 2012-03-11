@@ -62,7 +62,7 @@ static void anchor_token (LexState *ls) {
   assert(ls->fs != NULL || ls->t.token == TK_EOS);
   if (ls->t.token == TK_NAME || ls->t.token == TK_STRING) {
     TString *ts = ls->t.seminfo.ts;
-    luaX_newstring(ls, getstr(ts), ts->tsv.len);
+    luaX_newstring(ls, getstr(ts), ts->len);
   }
 }
 
@@ -461,7 +461,7 @@ static void breaklabel (LexState *ls) {
 ** message when label name is a reserved word (which can only be 'break')
 */
 static l_noret undefgoto (LexState *ls, Labeldesc *gt) {
-  const char *msg = (gt->name->tsv.reserved > 0)
+  const char *msg = (gt->name->reserved > 0)
                     ? "<%s> at line %d not inside a loop"
                     : "no visible label " LUA_QS " for <goto> at line %d";
   msg = luaO_pushfstring(ls->L, msg, getstr(gt->name), gt->line);

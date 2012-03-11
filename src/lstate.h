@@ -185,7 +185,7 @@ union GCObject {
     uint8_t tt;
     uint8_t marked;
   } gch;
-  union TString ts;
+  TString ts;
   union Udata u;
   union Closure cl;
   Table h;
@@ -198,10 +198,9 @@ union GCObject {
 #define gch(o)		(&(o)->gch)
 
 /* macros to convert a GCObject into a specific value */
-#define rawgco2ts(o)	check_exp((o)->gch.tt == LUA_TSTRING, reinterpret_cast<TString*>(o))
+#define gco2ts(o)	check_exp((o)->gch.tt == LUA_TSTRING, reinterpret_cast<TString*>(o))
 #define rawgco2u(o)	check_exp((o)->gch.tt == LUA_TUSERDATA, reinterpret_cast<Udata*>(o))
 
-#define gco2ts(o)	(&rawgco2ts(o)->tsv)
 #define gco2u(o)	(&rawgco2u(o)->uv)
 
 #define gco2cl(o)	check_exp((o)->gch.tt == LUA_TFUNCTION, reinterpret_cast<Closure*>(o))

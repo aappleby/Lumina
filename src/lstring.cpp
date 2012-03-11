@@ -63,9 +63,9 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   totalsize = sizeof(TString) + ((l + 1) * sizeof(char));
   list = &tb->hash[lmod(h, tb->size)];
   ts = &luaC_newobj(L, LUA_TSTRING, totalsize, list, 0)->ts;
-  ts->tsv.len = l;
-  ts->tsv.hash = h;
-  ts->tsv.reserved = 0;
+  ts->len = l;
+  ts->hash = h;
+  ts->reserved = 0;
   memcpy(ts+1, str, l*sizeof(char));
   ((char *)(ts+1))[l] = '\0';  /* ending 0 */
   tb->nuse++;
@@ -83,9 +83,9 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   for (o = G(L)->strt.hash[lmod(h, G(L)->strt.size)];
        o != NULL;
        o = gch(o)->next) {
-    TString *ts = rawgco2ts(o);
-    if (h == ts->tsv.hash &&
-        ts->tsv.len == l &&
+    TString *ts = gco2ts(o);
+    if (h == ts->hash &&
+        ts->len == l &&
         (memcmp(str, getstr(ts), l * sizeof(char)) == 0)) {
       if (isdead(G(L), o))  /* string is dead (but was not collected yet)? */
         changewhite(o);  /* resurrect it */

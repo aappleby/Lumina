@@ -101,7 +101,7 @@ union GCObject;
 #define gcvalue(o)	check_exp(iscollectable(o), (o)->gc)
 #define pvalue(o)	check_exp(ttislightuserdata(o), (o)->p)
 #define rawtsvalue(o)	check_exp(ttisstring(o), &(o)->gc->ts)
-#define tsvalue(o)	(&rawtsvalue(o)->tsv)
+#define tsvalue(o)	rawtsvalue(o)
 #define rawuvalue(o)	check_exp(ttisuserdata(o), &(o)->gc->u)
 #define uvalue(o)	(&rawuvalue(o)->uv)
 #define clvalue(o)	check_exp(ttisclosure(o), &(o)->gc->cl)
@@ -239,15 +239,13 @@ typedef TValue* StkId;  /* index to stack elements */
 /*
 ** Header for string value; string bytes follow the end of this structure
 */
-__declspec(align(8)) union TString {
-  struct {
-    GCObject *next;
-    uint8_t tt;
-    uint8_t marked;
-    uint8_t reserved;
-    unsigned int hash;
-    size_t len;  /* number of characters in string */
-  } tsv;
+__declspec(align(8)) struct TString {
+  GCObject *next;
+  uint8_t tt;
+  uint8_t marked;
+  uint8_t reserved;
+  unsigned int hash;
+  size_t len;  /* number of characters in string */
 };
 
 

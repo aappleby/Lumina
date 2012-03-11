@@ -65,7 +65,7 @@
 #define white2gray(x)	resetbits(gch(x)->marked, WHITEBITS)
 #define black2gray(x)	resetbit(gch(x)->marked, BLACKBIT)
 
-#define stringmark(s)	((void)((s) && resetbits((s)->tsv.marked, WHITEBITS)))
+#define stringmark(s)	((void)((s) && resetbits((s)->marked, WHITEBITS)))
 
 
 #define isfinalized(x)		testbit(gch(x)->marked, FINALIZEDBIT)

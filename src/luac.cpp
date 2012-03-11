@@ -223,7 +223,7 @@ int main(int argc, char* argv[])
 static void PrintString(const TString* ts)
 {
  const char* s=getstr(ts);
- size_t i,n=ts->tsv.len;
+ size_t i,n=ts->len;
  printf("%c",'"');
  for (i=0; i<n; i++)
  {

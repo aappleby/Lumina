@@ -712,7 +712,7 @@ static int string_query (lua_State *L) {
     GCObject *ts;
     int n = 0;
     for (ts = tb->hash[s]; ts; ts = gch(ts)->next) {
-      setsvalue2s(L, L->top, rawgco2ts(ts));
+      setsvalue2s(L, L->top, gco2ts(ts));
       incr_top(L);
       n++;
     }
