@@ -4,17 +4,29 @@
 /*
 ** basic types
 */
-#define LUA_TNONE		(-1)
-#define LUA_TNIL		0
-#define LUA_TBOOLEAN		1
-#define LUA_TLIGHTUSERDATA	2
-#define LUA_TNUMBER		3
-#define LUA_TSTRING		4
-#define LUA_TTABLE		5
-#define LUA_TFUNCTION		6
-#define LUA_TUSERDATA		7
-#define LUA_TTHREAD		8
-#define LUA_NUMTAGS		9
+enum LuaTag {
+  LUA_TNONE          = -1,
+  LUA_TNIL           = 0,
+  LUA_TBOOLEAN       = 1,
+  LUA_TLIGHTUSERDATA = 2,
+  LUA_TNUMBER        = 3,
+  LUA_TSTRING        = 4,
+  LUA_TTABLE         = 5,
+  LUA_TFUNCTION      = 6,
+  LUA_TUSERDATA      = 7,
+  LUA_TTHREAD        = 8,
+  LUA_NUMTAGS        = 9,
+
+  // non-values
+  LUA_TPROTO = 9,
+  LUA_TUPVAL = 10,
+  LUA_TDEADKEY = 11,
+};
+
+/*
+** number of all possible tags (including LUA_TNONE but excluding DEADKEY)
+*/
+#define LUA_TOTALTAGS	(LUA_TUPVAL+2)
 
 struct TValue {
   union {
@@ -38,17 +50,6 @@ struct TValue {
 
 
 
-/*
-** Extra tags for non-values
-*/
-#define LUA_TPROTO	LUA_NUMTAGS
-#define LUA_TUPVAL	(LUA_NUMTAGS+1)
-#define LUA_TDEADKEY	(LUA_NUMTAGS+2)
-
-/*
-** number of all possible tags (including LUA_TNONE but excluding DEADKEY)
-*/
-#define LUA_TOTALTAGS	(LUA_TUPVAL+2)
 
 
 /*

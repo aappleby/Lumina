@@ -243,17 +243,5 @@
 #define luai_numisnan(L,a)	(!luai_numeq((a), (a)))
 #endif
 
-
-
-/* }================================================================== */
-
-
-/*
-** Local configuration. You can use this space to add your redefinitions
-** without modifying the main part of the file.
-*/
-
-
-
 #endif
 

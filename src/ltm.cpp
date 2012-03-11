@@ -19,13 +19,20 @@
 #include "ltm.h"
 
 
-static const char udatatypename[] = "userdata";
-
 const char *const luaT_typenames_[LUA_TOTALTAGS] = {
   "no value",
-  "nil", "boolean", udatatypename, "number",
-  "string", "table", "function", udatatypename, "thread",
-  "proto", "upval"  /* these last two cases are used for tests only */
+  "nil",
+  "boolean",
+  "userdata",
+  "number",
+  "string",
+  "table",
+  "function",
+  "userdata",
+  "thread",
+  /* these last two cases are used for tests only */
+  "proto",
+  "upval"
 };
 
 
