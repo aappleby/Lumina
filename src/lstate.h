@@ -180,7 +180,11 @@ struct lua_State {
 ** Union of all collectable objects
 */
 union GCObject {
-  GCheader gch;  /* common header */
+  struct {
+    GCObject *next;
+    uint8_t tt;
+    uint8_t marked;
+  } gch;
   union TString ts;
   union Udata u;
   union Closure cl;
