@@ -43,9 +43,9 @@ typedef struct BlockCnt {
   struct BlockCnt *previous;  /* chain */
   short firstlabel;  /* index of first label in this block */
   short firstgoto;  /* index of first pending goto in this block */
-  lu_byte nactvar;  /* # active locals outside the block */
-  lu_byte upval;  /* true if some variable in the block is an upvalue */
-  lu_byte isloop;  /* true if `block' is a loop */
+  uint8_t nactvar;  /* # active locals outside the block */
+  uint8_t upval;  /* true if some variable in the block is an upvalue */
+  uint8_t isloop;  /* true if `block' is a loop */
 } BlockCnt;
 
 
@@ -435,7 +435,7 @@ static void movegotosout (FuncState *fs, BlockCnt *bl) {
 }
 
 
-static void enterblock (FuncState *fs, BlockCnt *bl, lu_byte isloop) {
+static void enterblock (FuncState *fs, BlockCnt *bl, uint8_t isloop) {
   bl->isloop = isloop;
   bl->nactvar = fs->nactvar;
   bl->firstlabel = fs->ls->dyd->label.n;
@@ -1022,8 +1022,8 @@ static BinOpr getbinopr (int op) {
 
 
 static const struct {
-  lu_byte left;  /* left priority for each binary operator */
-  lu_byte right; /* right priority */
+  uint8_t left;  /* left priority for each binary operator */
+  uint8_t right; /* right priority */
 } priority[] = {  /* ORDER OPR */
    {6, 6}, {6, 6}, {7, 7}, {7, 7}, {7, 7},  /* `+' `-' `*' `/' `%' */
    {10, 9}, {5, 4},                 /* ^, .. (right associative) */

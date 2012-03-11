@@ -61,7 +61,7 @@
 #define hashmod(t,n)	(gnode(t, ((n) % ((sizenode(t)-1)|1))))
 
 
-#define hashpointer(t,p)	hashmod(t, IntPoint(p))
+#define hashpointer(t,p)	hashmod(t, reinterpret_cast<uint32_t>(p))
 
 
 #define dummynode		(&dummynode_)

@@ -238,13 +238,21 @@
 ** You can define it to get all options, or change specific options
 ** to fit your specific needs.
 */
-#if defined(LUA_COMPAT_ALL)	/* { */
+
+/*
+@@ LUA_COMPAT_LOADSTRING defines the function 'loadstring' in the base
+** library. You can rewrite 'loadstring(s)' as 'load(s)'.
+*/
+#define LUA_COMPAT_LOADSTRING
 
 /*
 @@ LUA_COMPAT_UNPACK controls the presence of global 'unpack'.
 ** You can replace it with 'table.unpack'.
 */
 #define LUA_COMPAT_UNPACK
+
+
+#if defined(LUA_COMPAT_ALL)	/* { */
 
 /*
 @@ LUA_COMPAT_LOADERS controls the presence of table 'package.loaders'.
@@ -267,12 +275,6 @@
 ** You can rewrite 'log10(x)' as 'log(x, 10)'.
 */
 #define LUA_COMPAT_LOG10
-
-/*
-@@ LUA_COMPAT_LOADSTRING defines the function 'loadstring' in the base
-** library. You can rewrite 'loadstring(s)' as 'load(s)'.
-*/
-#define LUA_COMPAT_LOADSTRING
 
 /*
 @@ LUA_COMPAT_MAXN defines the function 'maxn' in the table library.
@@ -491,33 +493,6 @@
 
 /* }================================================================== */
 
-
-/*
-@@ LUA_NANTRICK_LE/LUA_NANTRICK_BE controls the use of a trick to
-** pack all types into a single double value, using NaN values to
-** represent non-number values. The trick only works on 32-bit machines
-** (ints and pointers are 32-bit values) with numbers represented as
-** IEEE 754-2008 doubles with conventional endianess (12345678 or
-** 87654321), in CPUs that do not produce signaling NaN values (all NaNs
-** are quiet).
-*/
-#if defined(LUA_CORE) && \
-    defined(LUA_NUMBER_DOUBLE) && !defined(LUA_ANSI)	/* { */
-
-/* little-endian architectures that satisfy those conditions */
-#if defined(__i386__) || defined(__i386) || defined(__X86__) || \
-    defined(_M_IX86)
-
-#define LUA_NANTRICK_LE
-
-#endif
-
-#endif							/* } */
-
-
-
-
-/* =================================================================== */
 
 /*
 ** Local configuration. You can use this space to add your redefinitions

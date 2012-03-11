@@ -55,7 +55,7 @@
 /*
 ** some useful bit tricks
 */
-#define resetbits(x,m)		((x) &= cast(lu_byte, ~(m)))
+#define resetbits(x,m)		((x) &= cast(uint8_t, ~(m)))
 #define setbits(x,m)		((x) |= (m))
 #define testbits(x,m)		((x) & (m))
 #define bitmask(b)		(1<<(b))
@@ -98,7 +98,7 @@
 
 #define valiswhite(x)	(iscollectable(x) && iswhite(gcvalue(x)))
 
-#define luaC_white(g)	cast(lu_byte, (g)->currentwhite & WHITEBITS)
+#define luaC_white(g)	cast(uint8_t, (g)->currentwhite & WHITEBITS)
 
 
 #define luaC_condGC(L,c) \

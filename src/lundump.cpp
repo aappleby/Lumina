@@ -34,7 +34,7 @@ static void error(LoadState* S, const char* why)
 }
 
 #define LoadMem(S,b,n,size)	LoadBlock(S,b,(n)*(size))
-#define LoadByte(S)		(lu_byte)LoadChar(S)
+#define LoadByte(S)		(uint8_t)LoadChar(S)
 #define LoadVar(S,x)		LoadMem(S,&x,1,sizeof(x))
 #define LoadVector(S,b,n,size)	LoadMem(S,b,n,size)
 
@@ -188,8 +188,8 @@ static Proto* LoadFunction(LoadState* S)
 
 static void LoadHeader(LoadState* S)
 {
- lu_byte h[LUAC_HEADERSIZE];
- lu_byte s[LUAC_HEADERSIZE];
+ uint8_t h[LUAC_HEADERSIZE];
+ uint8_t s[LUAC_HEADERSIZE];
  luaU_header(h);
  memcpy(s,h,sizeof(char));			/* first char already read */
  LoadBlock(S,s+sizeof(char),LUAC_HEADERSIZE-sizeof(char));
@@ -227,7 +227,7 @@ Proto* luaU_undump (lua_State* L, ZIO* Z, Mbuffer* buff, const char* name)
 * if you change the code below be sure to update LoadHeader and FORMAT above
 * and LUAC_HEADERSIZE in lundump.h
 */
-void luaU_header (lu_byte* h)
+void luaU_header (uint8_t* h)
 {
  int x=1;
  memcpy(h,LUA_SIGNATURE,sizeof(LUA_SIGNATURE)-sizeof(char));

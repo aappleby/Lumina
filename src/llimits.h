@@ -10,36 +10,19 @@
 
 #include <limits.h>
 #include <stddef.h>
-
+#include "stdint.h"
 
 #include "lua.h"
 
 
-typedef unsigned LUA_INT32 lu_int32;
-
-typedef LUAI_UMEM lu_mem;
-
 typedef LUAI_MEM l_mem;
-
-
-
-/* chars used as small naturals (so that `char' is reserved for characters) */
-typedef unsigned char lu_byte;
-
 
 #define MAX_SIZET	((size_t)(~(size_t)0)-2)
 
-#define MAX_LUMEM	((lu_mem)(~(lu_mem)0)-2)
+#define MAX_LUMEM	((size_t)(~(size_t)0)-2)
 
 
 #define MAX_INT (INT_MAX-2)  /* maximum value of an int (-2 for safety) */
-
-/*
-** conversion of pointer to integer
-** this is for hashing only; there is no problem if the integer
-** cannot hold the whole pointer value
-*/
-#define IntPoint(p)  ((unsigned int)(lu_mem)(p))
 
 
 
@@ -90,7 +73,7 @@ typedef LUAI_UACNUMBER l_uacNumber;
 
 #define cast(t, exp)	((t)(exp))
 
-#define cast_byte(i)	cast(lu_byte, (i))
+#define cast_byte(i)	cast(uint8_t, (i))
 #define cast_num(i)	cast(lua_Number, (i))
 #define cast_int(i)	cast(int, (i))
 #define cast_uchar(i)	cast(unsigned char, (i))
@@ -128,7 +111,7 @@ typedef LUAI_UACNUMBER l_uacNumber;
 ** type for virtual-machine instructions
 ** must be an unsigned with (at least) 4 bytes (see details in lopcodes.h)
 */
-typedef lu_int32 Instruction;
+typedef uint32_t Instruction;
 
 
 

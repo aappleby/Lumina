@@ -58,7 +58,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   stringtable *tb = &G(L)->strt;
   if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
     luaM_toobig(L);
-  if (tb->nuse >= cast(lu_int32, tb->size) && tb->size <= MAX_INT/2)
+  if (tb->nuse >= cast(uint32_t, tb->size) && tb->size <= MAX_INT/2)
     luaS_resize(L, tb->size*2);  /* too crowded */
   totalsize = sizeof(TString) + ((l + 1) * sizeof(char));
   list = &tb->hash[lmod(h, tb->size)];

@@ -20,7 +20,7 @@
 ** be kept somehow accessible until being freed.
 **
 ** Lua keeps most objects linked in list g->allgc. The link uses field
-** 'next' of the CommonHeader.
+** 'next' of the common header.
 **
 ** Strings are kept in several lists headed by the array g->strt.hash.
 **
@@ -58,7 +58,7 @@ struct lua_longjmp;  /* defined in ldo.c */
 
 typedef struct stringtable {
   GCObject **hash;
-  lu_int32 nuse;  /* number of elements */
+  uint32_t nuse;  /* number of elements */
   int size;
 } stringtable;
 
@@ -71,7 +71,7 @@ typedef struct CallInfo {
   StkId	top;  /* top for this function */
   struct CallInfo *previous, *next;  /* dynamic call link */
   short nresults;  /* expected number of results from this function */
-  lu_byte callstatus;
+  uint8_t callstatus;
   union {
     struct {  /* only for Lua functions */
       StkId base;  /* base for this function */
@@ -82,8 +82,8 @@ typedef struct CallInfo {
       lua_CFunction k;  /* continuation in case of yields */
       ptrdiff_t old_errfunc;
       ptrdiff_t extra;
-      lu_byte old_allowhook;
-      lu_byte status;
+      uint8_t old_allowhook;
+      uint8_t status;
     } c;
   } u;
 } CallInfo;
@@ -111,15 +111,15 @@ typedef struct CallInfo {
 typedef struct global_State {
   lua_Alloc frealloc;  /* function to reallocate memory */
   void *ud;         /* auxiliary data to `frealloc' */
-  lu_mem totalbytes;  /* number of bytes currently allocated - GCdebt */
+  size_t totalbytes;  /* number of bytes currently allocated - GCdebt */
   l_mem GCdebt;  /* bytes allocated not yet compensated by the collector */
-  lu_mem lastmajormem;  /* memory in use after last major collection */
+  size_t lastmajormem;  /* memory in use after last major collection */
   stringtable strt;  /* hash table for strings */
   TValue l_registry;
-  lu_byte currentwhite;
-  lu_byte gcstate;  /* state of garbage collector */
-  lu_byte gckind;  /* kind of GC running */
-  lu_byte gcrunning;  /* true if GC is running */
+  uint8_t currentwhite;
+  uint8_t gcstate;  /* state of garbage collector */
+  uint8_t gckind;  /* kind of GC running */
+  uint8_t gcrunning;  /* true if GC is running */
   int sweepstrgc;  /* position of sweep in `strt' */
   GCObject *allgc;  /* list of all collectable objects */
   GCObject *finobj;  /* list of collectable objects with finalizers */
@@ -140,7 +140,7 @@ typedef struct global_State {
   const lua_Number *version;  /* pointer to version number */
   TString *memerrmsg;  /* memory-error message */
   TString *tmname[TM_N];  /* array with tag-method names */
-  struct Table *mt[LUA_NUMTAGS];  /* metatables for basic types */
+  Table *mt[LUA_NUMTAGS];  /* metatables for basic types */
 } global_State;
 
 
@@ -148,8 +148,10 @@ typedef struct global_State {
 ** `per thread' state
 */
 struct lua_State {
-  CommonHeader;
-  lu_byte status;
+  GCObject *next;
+  uint8_t tt;
+  uint8_t marked; ;
+  uint8_t status;
   StkId top;  /* first free slot in the stack */
   global_State *l_G;
   CallInfo *ci;  /* call info for current function */
@@ -159,8 +161,8 @@ struct lua_State {
   int stacksize;
   unsigned short nny;  /* number of non-yieldable calls in stack */
   unsigned short nCcalls;  /* number of nested C calls */
-  lu_byte hookmask;
-  lu_byte allowhook;
+  uint8_t hookmask;
+  uint8_t allowhook;
   int basehookcount;
   int hookcount;
   lua_Hook hook;
@@ -183,7 +185,7 @@ union GCObject {
   union TString ts;
   union Udata u;
   union Closure cl;
-  struct Table h;
+  Table h;
   struct Proto p;
   struct UpVal uv;
   struct lua_State th;  /* thread */

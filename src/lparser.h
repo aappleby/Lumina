@@ -42,8 +42,8 @@ typedef struct expdesc {
   union {
     struct {  /* for indexed variables (VINDEXED) */
       short idx;  /* index (R/K) */
-      lu_byte t;  /* table (register or upvalue) */
-      lu_byte vt;  /* whether 't' is register (VLOCAL) or upvalue (VUPVAL) */
+      uint8_t t;  /* table (register or upvalue) */
+      uint8_t vt;  /* whether 't' is register (VLOCAL) or upvalue (VUPVAL) */
     } ind;
     int info;  /* for generic use */
     lua_Number nval;  /* for VKNUM */
@@ -64,7 +64,7 @@ typedef struct Labeldesc {
   TString *name;  /* label identifier */
   int pc;  /* position in code */
   int line;  /* line where it appeared */
-  lu_byte nactvar;  /* local level where it appears in current block */
+  uint8_t nactvar;  /* local level where it appears in current block */
 } Labeldesc;
 
 
@@ -106,9 +106,9 @@ typedef struct FuncState {
   int np;  /* number of elements in `p' */
   int firstlocal;  /* index of first local var (in Dyndata array) */
   short nlocvars;  /* number of elements in 'f->locvars' */
-  lu_byte nactvar;  /* number of active local variables */
-  lu_byte nups;  /* number of upvalues */
-  lu_byte freereg;  /* first free register */
+  uint8_t nactvar;  /* number of active local variables */
+  uint8_t nups;  /* number of upvalues */
+  uint8_t freereg;  /* first free register */
 } FuncState;
 
 

@@ -656,7 +656,7 @@ static void freeobj (lua_State *L, GCObject *o) {
 
 
 #define sweepwholelist(L,p)	sweeplist(L,p,MAX_LUMEM)
-static GCObject **sweeplist (lua_State *L, GCObject **p, lu_mem count);
+static GCObject **sweeplist (lua_State *L, GCObject **p, size_t count);
 
 
 /*
@@ -684,7 +684,7 @@ static void sweepthread (lua_State *L, lua_State *L1) {
 ** one will be old too.
 ** When object is a thread, sweep its list of open upvalues too.
 */
-static GCObject **sweeplist (lua_State *L, GCObject **p, lu_mem count) {
+static GCObject **sweeplist (lua_State *L, GCObject **p, size_t count) {
   global_State *g = G(L);
   int ow = otherwhite(g);
   int toclear, toset;  /* bits to clear and to set in all live objects */
@@ -737,7 +737,7 @@ static void checkSizes (lua_State *L) {
   global_State *g = G(L);
   if (g->gckind != KGC_EMERGENCY) {  /* do not change sizes in emergency */
     int hs = g->strt.size / 2;  /* half the size of the string table */
-    if (g->strt.nuse < cast(lu_int32, hs))  /* using less than that half? */
+    if (g->strt.nuse < cast(uint32_t, hs))  /* using less than that half? */
       luaS_resize(L, hs);  /* halve its size */
     luaZ_freebuffer(L, &g->buff);  /* free concatenation buffer */
   }
@@ -772,7 +772,7 @@ static void GCTM (lua_State *L, int propagateerrors) {
   tm = luaT_gettmbyobj(L, &v, TM_GC);
   if (tm != NULL && ttisfunction(tm)) {  /* is there a finalizer? */
     int status;
-    lu_byte oldah = L->allowhook;
+    uint8_t oldah = L->allowhook;
     int running  = g->gcrunning;
     L->allowhook = 0;  /* stop debug hooks during GC metamethod */
     g->gcrunning = 0;  /* avoid GC steps */

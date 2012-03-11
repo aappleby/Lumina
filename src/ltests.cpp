@@ -37,9 +37,6 @@
 #if defined(LUA_DEBUG)
 
 
-void *l_Trick = 0;
-
-
 int islocked = 0;
 
 
@@ -117,8 +114,9 @@ static void freeblock (Memcontrol *mc, Header *block) {
 }
 
 
-void *debug_realloc (void *ud, void *b, size_t oldsize, size_t size) {
-  Memcontrol *mc = cast(Memcontrol *, ud);
+void *debug_realloc (void *b, size_t oldsize, size_t size) {
+  //Memcontrol *mc = cast(Memcontrol *, ud);
+  Memcontrol *mc = &l_memcontrol;
   Header *block = cast(Header *, b);
   int type;
   if (mc->memlimit == 0) {  /* first time? */
@@ -591,15 +589,6 @@ static int mem_query (lua_State *L) {
     }
     return luaL_error(L, "unkown type '%s'", t);
   }
-}
-
-
-static int settrick (lua_State *L) {
-  if (ttisnil(obj_at(L, 1)))
-    l_Trick = NULL;
-  else
-    l_Trick = gcvalue(obj_at(L, 1));
-  return 0;
 }
 
 
@@ -1447,7 +1436,6 @@ static const struct luaL_Reg tests_funcs[] = {
   {"testC", testC},
   {"makeCfunc", makeCfunc},
   {"totalmem", mem_query},
-  {"trick", settrick},
   {"udataval", udataval},
   {"unref", unref},
   {"upvalue", upvalue},
