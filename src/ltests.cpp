@@ -368,8 +368,8 @@ static void checkobject (global_State *g, GCObject *o) {
 static void checkgraylist (GCObject *l) {
   while (l) {
     assert(isgray(l));
-    assert(!testbit(l->gch.marked, TESTGRAYBIT));
-    l_setbit(l->gch.marked, TESTGRAYBIT);
+    assert(!testbit(l->marked, TESTGRAYBIT));
+    l_setbit(l->marked, TESTGRAYBIT);
     switch (gch(l)->tt) {
       case LUA_TTABLE: l = gco2t(l)->gclist; break;
       case LUA_TFUNCTION: l = gco2cl(l)->c.gclist; break;
@@ -406,9 +406,9 @@ static void checkold (global_State *g, GCObject *o) {
     else assert(!isold);  /* non-old object cannot be after an old one */
     if (isgray(o)) {
       assert(!keepinvariant(g) || testbit(o->gch.marked, TESTGRAYBIT));
-      resetbit(o->gch.marked, TESTGRAYBIT);
+      resetbit(o->marked, TESTGRAYBIT);
     }
-    assert(!testbit(o->gch.marked, TESTGRAYBIT));
+    assert(!testbit(o->marked, TESTGRAYBIT));
   }
 }
 
@@ -602,7 +602,7 @@ static int get_gccolor (lua_State *L) {
   if (!iscollectable(o))
     lua_pushstring(L, "no collectable");
   else {
-    int marked = gcvalue(o)->gch.marked;
+    int marked = gcvalue(o)->marked;
     int n = 1;
     lua_pushstring(L, iswhite(gcvalue(o)) ? "white" :
                       isblack(gcvalue(o)) ? "black" : "grey");

@@ -78,23 +78,23 @@
 #define WHITEBITS	bit2mask(WHITE0BIT, WHITE1BIT)
 
 
-#define iswhite(x)      testbits((x)->gch.marked, WHITEBITS)
-#define isblack(x)      testbit((x)->gch.marked, BLACKBIT)
+#define iswhite(x)      testbits((x)->marked, WHITEBITS)
+#define isblack(x)      testbit((x)->marked, BLACKBIT)
 #define isgray(x)  /* neither white nor black */  \
-	(!testbits((x)->gch.marked, WHITEBITS | bitmask(BLACKBIT)))
+	(!testbits((x)->marked, WHITEBITS | bitmask(BLACKBIT)))
 
-#define isold(x)	testbit((x)->gch.marked, OLDBIT)
+#define isold(x)	testbit((x)->marked, OLDBIT)
 
 /* MOVE OLD rule: whenever an object is moved to the beginning of
    a GC list, its old bit must be cleared */
-#define resetoldbit(o)	resetbit((o)->gch.marked, OLDBIT)
+#define resetoldbit(o)	resetbit((o)->marked, OLDBIT)
 
 #define otherwhite(g)	(g->currentwhite ^ WHITEBITS)
 #define isdeadm(ow,m)	(!(((m) ^ WHITEBITS) & (ow)))
-#define isdead(g,v)	isdeadm(otherwhite(g), (v)->gch.marked)
+#define isdead(g,v)	isdeadm(otherwhite(g), (v)->marked)
 
-#define changewhite(x)	((x)->gch.marked ^= WHITEBITS)
-#define gray2black(x)	l_setbit((x)->gch.marked, BLACKBIT)
+#define changewhite(x)	((x)->marked ^= WHITEBITS)
+#define gray2black(x)	l_setbit((x)->marked, BLACKBIT)
 
 #define valiswhite(x)	(iscollectable(x) && iswhite(gcvalue(x)))
 

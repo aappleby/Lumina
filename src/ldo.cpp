@@ -143,7 +143,7 @@ static void correctstack (lua_State *L, TValue *oldstack) {
   CallInfo *ci;
   GCObject *up;
   L->top = (L->top - oldstack) + L->stack;
-  for (up = L->openupval; up != NULL; up = up->gch.next)
+  for (up = L->openupval; up != NULL; up = up->next)
     gco2uv(up)->v = (gco2uv(up)->v - oldstack) + L->stack;
   for (ci = L->ci; ci != NULL; ci = ci->previous) {
     ci->top = (ci->top - oldstack) + L->stack;

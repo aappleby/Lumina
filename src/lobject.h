@@ -58,7 +58,8 @@ class Table;
 /* mark a tag as collectable */
 #define ctb(t)			((t) | BIT_ISCOLLECTABLE)
 
-union GCObject;
+class LuaBase;
+typedef LuaBase GCObject;
 
 
 
@@ -102,7 +103,7 @@ union GCObject;
 #define gcvalue(o)	check_exp(iscollectable(o), (o)->gc)
 #define pvalue(o)	check_exp(ttislightuserdata(o), (o)->p)
 #define tsvalue(o)	check_exp(ttisstring(o), reinterpret_cast<TString*>((o)->gc))
-#define rawuvalue(o)	check_exp(ttisuserdata(o), &(o)->gc->u)
+#define rawuvalue(o)	check_exp(ttisuserdata(o), reinterpret_cast<Udata*>((o)->gc))
 #define uvalue(o)	(rawuvalue(o))
 #define clvalue(o)	check_exp(ttisclosure(o), reinterpret_cast<Closure*>((o)->gc))
 #define clLvalue(o)	check_exp(ttisLclosure(o), reinterpret_cast<LClosure*>((o)->gc))

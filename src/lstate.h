@@ -177,19 +177,11 @@ struct lua_State : public LuaBase {
 /*
 ** Union of all collectable objects
 */
-union GCObject {
-  LuaBase gch;
-  //TString ts;
-  Udata u;
-  //Closure cl;
-  //Table h;
-  //Proto p;
-  //UpVal uv;
-  //lua_State th;  /* thread */
-};
+
+typedef LuaBase GCObject;
 
 
-#define gch(o)		(&(o)->gch)
+#define gch(o)		(o)
 
 /* macros to convert a GCObject into a specific value */
 #define gco2ts(o)	check_exp((o)->gch.tt == LUA_TSTRING, reinterpret_cast<TString*>(o))

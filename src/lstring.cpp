@@ -106,7 +106,8 @@ Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
   Udata *u;
   if (s > MAX_SIZET - sizeof(Udata))
     luaM_toobig(L);
-  u = &luaC_newobj(L, LUA_TUSERDATA, sizeof(Udata) + s, NULL, 0)->u;
+  GCObject* o = luaC_newobj(L, LUA_TUSERDATA, sizeof(Udata) + s, NULL, 0);
+  u = gco2u(o);
   u->len = s;
   u->metatable = NULL;
   u->env = e;
