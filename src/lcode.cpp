@@ -176,7 +176,7 @@ void luaK_patchlist (FuncState *fs, int list, int target) {
 }
 
 
-LUAI_FUNC void luaK_patchclose (FuncState *fs, int list, int level) {
+void luaK_patchclose (FuncState *fs, int list, int level) {
   level++;  /* argument is +1 to reserve 0 as non-op */
   while (list != NO_JUMP) {
     int next = getjump(fs, list);

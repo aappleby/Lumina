@@ -670,7 +670,7 @@ static const lua_CFunction searchers[] =
   {searcher_preload, searcher_Lua, searcher_C, searcher_Croot, NULL};
 
 
-LUAMOD_API int luaopen_package (lua_State *L) {
+int luaopen_package (lua_State *L) {
   int i;
   /* create new type _LOADLIB */
   luaL_newmetatable(L, "_LOADLIB");

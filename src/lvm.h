@@ -24,22 +24,22 @@
 
 
 /* not to called directly */
-LUAI_FUNC int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2);
+int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2);
 
 
-LUAI_FUNC int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r);
-LUAI_FUNC int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r);
-LUAI_FUNC const TValue *luaV_tonumber (const TValue *obj, TValue *n);
-LUAI_FUNC int luaV_tostring (lua_State *L, StkId obj);
-LUAI_FUNC void luaV_gettable (lua_State *L, const TValue *t, TValue *key,
+int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r);
+int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r);
+const TValue *luaV_tonumber (const TValue *obj, TValue *n);
+int luaV_tostring (lua_State *L, StkId obj);
+void luaV_gettable (lua_State *L, const TValue *t, TValue *key,
                                             StkId val);
-LUAI_FUNC void luaV_settable (lua_State *L, const TValue *t, TValue *key,
+void luaV_settable (lua_State *L, const TValue *t, TValue *key,
                                             StkId val);
-LUAI_FUNC void luaV_finishOp (lua_State *L);
-LUAI_FUNC void luaV_execute (lua_State *L);
-LUAI_FUNC void luaV_concat (lua_State *L, int total);
-LUAI_FUNC void luaV_arith (lua_State *L, StkId ra, const TValue *rb,
+void luaV_finishOp (lua_State *L);
+void luaV_execute (lua_State *L);
+void luaV_concat (lua_State *L, int total);
+void luaV_arith (lua_State *L, StkId ra, const TValue *rb,
                            const TValue *rc, TMS op);
-LUAI_FUNC void luaV_objlen (lua_State *L, StkId ra, const TValue *rb);
+void luaV_objlen (lua_State *L, StkId ra, const TValue *rb);
 
 #endif

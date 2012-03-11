@@ -135,59 +135,6 @@
 
 
 /*
-@@ LUA_API is a mark for all core API functions.
-@@ LUALIB_API is a mark for all auxiliary library functions.
-@@ LUAMOD_API is a mark for all standard library opening functions.
-** CHANGE them if you need to define those functions in some special way.
-** For instance, if you want to create one Windows DLL with the core and
-** the libraries, you may want to use the following definition (define
-** LUA_BUILD_AS_DLL to get it).
-*/
-#if defined(LUA_BUILD_AS_DLL)	/* { */
-
-#if defined(LUA_CORE) || defined(LUA_LIB)	/* { */
-#define LUA_API __declspec(dllexport)
-#else						/* }{ */
-#define LUA_API __declspec(dllimport)
-#endif						/* } */
-
-#else				/* }{ */
-
-#define LUA_API		extern
-
-#endif				/* } */
-
-
-/* more often than not the libs go together with the core */
-#define LUALIB_API	LUA_API
-#define LUAMOD_API	LUALIB_API
-
-
-/*
-@@ LUAI_FUNC is a mark for all extern functions that are not to be
-@* exported to outside modules.
-@@ LUAI_DDEF and LUAI_DDEC are marks for all extern (const) variables
-@* that are not to be exported to outside modules (LUAI_DDEF for
-@* definitions and LUAI_DDEC for declarations).
-** CHANGE them if you need to mark them in some special way. Elf/gcc
-** (versions 3.2 and later) mark them as "hidden" to optimize access
-** when Lua is compiled as a shared library. Not all elf targets support
-** this attribute. Unfortunately, gcc does not offer a way to check
-** whether the target offers that support, and those without support
-** give a warning about it. To avoid these warnings, change to the
-** default definition.
-*/
-#if defined(__GNUC__) && ((__GNUC__*100 + __GNUC_MINOR__) >= 302) && \
-    defined(__ELF__)		/* { */
-#define LUAI_FUNC	__attribute__((visibility("hidden"))) extern
-
-#else				/* }{ */
-#define LUAI_FUNC
-#endif				/* } */
-
-
-
-/*
 @@ LUA_QL describes how error messages quote program elements.
 ** CHANGE it if you want a different appearance.
 */

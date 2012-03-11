@@ -11,13 +11,13 @@
 #include "lzio.h"
 
 /* load one chunk; from lundump.c */
-LUAI_FUNC Proto* luaU_undump (lua_State* L, ZIO* Z, Mbuffer* buff, const char* name);
+Proto* luaU_undump (lua_State* L, ZIO* Z, Mbuffer* buff, const char* name);
 
 /* make header; from lundump.c */
-LUAI_FUNC void luaU_header (uint8_t* h);
+void luaU_header (uint8_t* h);
 
 /* dump one chunk; from ldump.c */
-LUAI_FUNC int luaU_dump (lua_State* L, const Proto* f, lua_Writer w, void* data, int strip);
+int luaU_dump (lua_State* L, const Proto* f, lua_Writer w, void* data, int strip);
 
 /* data to catch conversion errors */
 #define LUAC_TAIL		"\x19\x93\r\n\x1a\n"

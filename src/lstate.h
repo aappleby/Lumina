@@ -202,10 +202,10 @@ typedef LuaBase LuaBase;
 /* actual number of total bytes allocated */
 #define gettotalbytes(g)	((g)->totalbytes + (g)->GCdebt)
 
-LUAI_FUNC void luaE_setdebt (global_State *g, l_mem debt);
-LUAI_FUNC void luaE_freethread (lua_State *L, lua_State *L1);
-LUAI_FUNC CallInfo *luaE_extendCI (lua_State *L);
-LUAI_FUNC void luaE_freeCI (lua_State *L);
+void luaE_setdebt (global_State *g, l_mem debt);
+void luaE_freethread (lua_State *L, lua_State *L1);
+CallInfo *luaE_extendCI (lua_State *L);
+void luaE_freeCI (lua_State *L);
 
 
 #endif

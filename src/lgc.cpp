@@ -173,7 +173,7 @@ void luaC_barrierback_ (lua_State *L, LuaBase *o) {
 ** it again. Otherwise, use a backward barrier, to avoid marking all
 ** possible instances.
 */
-LUAI_FUNC void luaC_barrierproto_ (lua_State *L, Proto *p, Closure *c) {
+void luaC_barrierproto_ (lua_State *L, Proto *p, Closure *c) {
   global_State *g = G(L);
   assert(isblack(obj2gco(p)));
   if (p->cache == NULL) {  /* first time? */
