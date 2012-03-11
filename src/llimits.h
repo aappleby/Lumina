@@ -181,10 +181,10 @@ typedef uint32_t Instruction;
 ** both small and large values (outside the range of integers).
 */
 
-#define lua_number2int(i,n)	((i)=(int)(n))
-#define lua_number2integer(i,n)	((i)=(lua_Integer)(n))
-#define lua_number2unsigned(i,n)	((i)=(lua_Unsigned)(n))
-#define lua_unsigned2number(u)  ((lua_Number)(u))
+#define lua_number2int(i,n)	       ((i)=(int32_t)(n))
+#define lua_number2integer(i,n)	   ((i)=(lua_Integer)(n))
+#define lua_number2unsigned(i,n)	 ((i)=(uint32_t)(n))
+#define lua_unsigned2number(u)     ((double)(u))
 
 
 
@@ -199,23 +199,5 @@ typedef uint32_t Instruction;
 
 #endif
 
-
-
-/*
-** macro to control inclusion of some hard tests on stack reallocation
-*/
-#if !defined(HARDSTACKTESTS)
-#define condmovestack(L)	((void)0)
-#else
-/* realloc stack keeping its size */
-#define condmovestack(L)	luaD_reallocstack((L), (L)->stacksize)
-#endif
-
-#if !defined(HARDMEMTESTS)
-#define condchangemem(L)	condmovestack(L)
-#else
-#define condchangemem(L)  \
-	((void)(!(G(L)->gcrunning) || (luaC_fullgc(L, 0), 1)))
-#endif
 
 #endif

@@ -939,7 +939,6 @@ static void atomic (lua_State *L) {
   g->sweepstrgc = 0;  /* prepare to sweep strings */
   g->gcstate = GCSsweepstring;
   g->currentwhite = cast_byte(otherwhite(g));  /* flip current white */
-  /*lua_checkmemory(L);*/
 }
 
 

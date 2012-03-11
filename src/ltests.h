@@ -7,16 +7,12 @@
 #ifndef ltests_h
 #define ltests_h
 
-
-#include <stdlib.h>
-
 /* do not use compatibility macros in Lua code */
 #undef LUA_COMPAT_API
 
 #define LUA_DEBUG
 
 #undef NDEBUG
-#include <assert.h>
 #define lua_assert(c)           assert(c)
 
 
@@ -26,16 +22,10 @@
 
 void *debug_realloc (void *block, size_t osize, size_t nsize);
 
-typedef struct CallInfo *pCallInfo;
-
-int lua_checkmemory (lua_State *L);
-
 int luaB_opentests (lua_State *L);
 
 #if defined(lua_c)
 #define luaL_newstate()		lua_newstate(debug_realloc)
-#define luaL_openlibs(L)  \
-  { (luaL_openlibs)(L); luaL_requiref(L, "T", luaB_opentests, 1); }
 #endif
 
 

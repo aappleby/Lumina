@@ -295,6 +295,8 @@ static void checkclosure (global_State *g, Closure *cl) {
 }
 
 
+typedef struct CallInfo *pCallInfo;
+
 static int lua_checkpc (pCallInfo ci) {
   if (!isLua(ci)) return 1;
   else {

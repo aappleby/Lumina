@@ -63,5 +63,7 @@ LUALIB_API void luaL_openlibs (lua_State *L) {
     lua_setfield(L, -2, lib->name);
   }
   lua_pop(L, 1);  /* remove _PRELOAD table */
+
+  luaL_requiref(L, "T", luaB_opentests, 1);
 }
 

@@ -11,6 +11,9 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <assert.h>
+#include "stdint.h"
 
 
 #include "luaconf.h"

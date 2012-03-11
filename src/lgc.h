@@ -102,7 +102,7 @@
 
 
 #define luaC_condGC(L,c) \
-	{if (G(L)->GCdebt > 0) {c;}; condchangemem(L);}
+	{if (G(L)->GCdebt > 0) {c;};}
 #define luaC_checkGC(L)		luaC_condGC(L, luaC_step(L);)
 
 
