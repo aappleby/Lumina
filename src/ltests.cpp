@@ -821,9 +821,8 @@ static int num2int (lua_State *L) {
 
 
 static int newstate (lua_State *L) {
-  void *ud;
-  lua_Alloc f = lua_getallocf(L, &ud);
-  lua_State *L1 = lua_newstate(f, ud);
+  lua_Alloc f = lua_getallocf(L);
+  lua_State *L1 = lua_newstate(f, 0);
   if (L1) {
     lua_atpanic(L1, tpanic);
     lua_pushlightuserdata(L, L1);
@@ -1459,11 +1458,10 @@ static void checkfinalmem (void) {
 
 
 int luaB_opentests (lua_State *L) {
-  void *ud;
   lua_atpanic(L, &tpanic);
   atexit(checkfinalmem);
-  lua_assert(lua_getallocf(L, &ud) == debug_realloc);
-  lua_setallocf(L, lua_getallocf(L, NULL), ud);
+  lua_assert(lua_getallocf(L) == debug_realloc);
+  lua_setallocf(L, lua_getallocf(L));
   luaL_newlib(L, tests_funcs);
   return 1;
 }
