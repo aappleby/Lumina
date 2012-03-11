@@ -14,6 +14,7 @@ public:
   GCObject *next;
   uint8_t tt;
   uint8_t marked;
+
   uint8_t flags;  /* 1<<p means tagmethod(p) is not present */
   uint8_t lsizenode;  /* log2 of size of `node' array */
   Table *metatable;

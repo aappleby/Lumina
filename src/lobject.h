@@ -91,9 +91,6 @@ typedef union Value Value;
 ** an actual value plus a tag with its type.
 */
 
-typedef struct lua_TValue TValue;
-
-
 #define val_(o)		((o)->value_)
 #define num_(o)		(val_(o).n)
 
@@ -258,17 +255,16 @@ typedef struct lua_TValue TValue;
 */
 
 
-union Value {
-  GCObject *gc;    /* collectable objects */
-  void *p;         /* light userdata */
-  int b;           /* booleans */
-  lua_CFunction f; /* light C functions */
-  numfield         /* numbers */
-};
 
 
-struct lua_TValue {
-  Value value_;
+struct TValue {
+  union {
+    GCObject *gc;    /* collectable objects */
+    void *p;         /* light userdata */
+    int b;           /* booleans */
+    lua_CFunction f; /* light C functions */
+    numfield         /* numbers */
+  } value_;
   int tt_;
 };
 
