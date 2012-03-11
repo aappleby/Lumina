@@ -198,15 +198,17 @@ union GCObject {
 #define gch(o)		(&(o)->gch)
 
 /* macros to convert a GCObject into a specific value */
-#define rawgco2ts(o)	check_exp((o)->gch.tt == LUA_TSTRING, &((o)->ts))
+#define rawgco2ts(o)	check_exp((o)->gch.tt == LUA_TSTRING, reinterpret_cast<TString*>(o))
+#define rawgco2u(o)	check_exp((o)->gch.tt == LUA_TUSERDATA, reinterpret_cast<Udata*>(o))
+
 #define gco2ts(o)	(&rawgco2ts(o)->tsv)
-#define rawgco2u(o)	check_exp((o)->gch.tt == LUA_TUSERDATA, &((o)->u))
 #define gco2u(o)	(&rawgco2u(o)->uv)
-#define gco2cl(o)	check_exp((o)->gch.tt == LUA_TFUNCTION, &((o)->cl))
-#define gco2t(o)	check_exp((o)->gch.tt == LUA_TTABLE, &((o)->h))
-#define gco2p(o)	check_exp((o)->gch.tt == LUA_TPROTO, &((o)->p))
-#define gco2uv(o)	check_exp((o)->gch.tt == LUA_TUPVAL, &((o)->uv))
-#define gco2th(o)	check_exp((o)->gch.tt == LUA_TTHREAD, &((o)->th))
+
+#define gco2cl(o)	check_exp((o)->gch.tt == LUA_TFUNCTION, reinterpret_cast<Closure*>(o))
+#define gco2t(o)	check_exp((o)->gch.tt == LUA_TTABLE, reinterpret_cast<Table*>(o))
+#define gco2p(o)	check_exp((o)->gch.tt == LUA_TPROTO, reinterpret_cast<Proto*>(o))
+#define gco2uv(o)	check_exp((o)->gch.tt == LUA_TUPVAL, reinterpret_cast<UpVal*>(o))
+#define gco2th(o)	check_exp((o)->gch.tt == LUA_TTHREAD, reinterpret_cast<lua_State*>(o))
 
 /* macro to convert any Lua object into a GCObject */
 #define obj2gco(v)	(cast(GCObject *, (v)))
