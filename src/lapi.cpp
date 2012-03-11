@@ -390,7 +390,7 @@ const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
     o = index2addr(L, idx);  /* previous call may reallocate the stack */
     lua_unlock(L);
   }
-  if (len != NULL) *len = tsvalue(o)->len;
+  if (len != NULL) *len = tsvalue(o)->getLen();
   return tsvalue(o)->c_str();
 }
 
@@ -398,7 +398,7 @@ const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
 size_t lua_rawlen (lua_State *L, int idx) {
   StkId o = index2addr(L, idx);
   switch (ttypenv(o)) {
-    case LUA_TSTRING: return tsvalue(o)->len;
+    case LUA_TSTRING: return tsvalue(o)->getLen();
     case LUA_TUSERDATA: return uvalue(o)->len;
     case LUA_TTABLE: return luaH_getn(hvalue(o));
     default: return 0;

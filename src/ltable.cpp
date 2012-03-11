@@ -47,7 +47,7 @@
 
 #define hashpow2(t,n)      (gnode(t, lmod((n), sizenode(t))))
 
-#define hashstr(t,str)  hashpow2(t, (str)->hash)
+#define hashstr(t,str)  hashpow2(t, (str)->getHash())
 #define hashboolean(t,p)        hashpow2(t, p)
 
 

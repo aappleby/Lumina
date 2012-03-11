@@ -67,7 +67,7 @@ static void DumpString(const TString* s, DumpState* D)
  }
  else
  {
-  size_t size=s->len+1;		/* include trailing '\0' */
+  size_t size=s->getLen()+1;		/* include trailing '\0' */
   DumpVar(size,D);
   DumpBlock(s->c_str(),size*sizeof(char),D);
  }

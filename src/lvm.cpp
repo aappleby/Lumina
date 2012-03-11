@@ -35,7 +35,7 @@
 const TValue *luaV_tonumber (const TValue *obj, TValue *n) {
   lua_Number num;
   if (ttisnumber(obj)) return obj;
-  if (ttisstring(obj) && luaO_str2d(tsvalue(obj)->c_str(), tsvalue(obj)->len, &num)) {
+  if (ttisstring(obj) && luaO_str2d(tsvalue(obj)->c_str(), tsvalue(obj)->getLen(), &num)) {
     setnvalue(n, num);
     return n;
   }
@@ -200,9 +200,9 @@ static int call_orderTM (lua_State *L, const TValue *p1, const TValue *p2,
 
 static int l_strcmp (const TString *ls, const TString *rs) {
   const char *l = ls->c_str();
-  size_t ll = ls->len;
+  size_t ll = ls->getLen();
   const char *r = rs->c_str();
-  size_t lr = rs->len;
+  size_t lr = rs->getLen();
   for (;;) {
     int temp = strcoll(l, r);
     if (temp != 0) return temp;
@@ -290,19 +290,19 @@ void luaV_concat (lua_State *L, int total) {
       if (!call_binTM(L, top-2, top-1, top-2, TM_CONCAT))
         luaG_concaterror(L, top-2, top-1);
     }
-    else if (tsvalue(top-1)->len == 0)  /* second operand is empty? */
+    else if (tsvalue(top-1)->getLen() == 0)  /* second operand is empty? */
       (void)tostring(L, top - 2);  /* result is first operand */
-    else if (ttisstring(top-2) && tsvalue(top-2)->len == 0) {
+    else if (ttisstring(top-2) && tsvalue(top-2)->getLen() == 0) {
       setsvalue2s(L, top-2, tsvalue(top-1));  /* result is second op. */
     }
     else {
       /* at least two non-empty string values; get as many as possible */
-      size_t tl = tsvalue(top-1)->len;
+      size_t tl = tsvalue(top-1)->getLen();
       char *buffer;
       int i;
       /* collect total length */
       for (i = 1; i < total && tostring(L, top-i-1); i++) {
-        size_t l = tsvalue(top-i-1)->len;
+        size_t l = tsvalue(top-i-1)->getLen();
         if (l >= (MAX_SIZET/sizeof(char)) - tl)
           luaG_runerror(L, "string length overflow");
         tl += l;
@@ -311,7 +311,7 @@ void luaV_concat (lua_State *L, int total) {
       tl = 0;
       n = i;
       do {  /* concat all strings */
-        size_t l = tsvalue(top-i)->len;
+        size_t l = tsvalue(top-i)->getLen();
         memcpy(buffer+tl, tsvalue(top-i)->c_str(), l * sizeof(char));
         tl += l;
       } while (--i > 0);
@@ -334,7 +334,7 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
       return;
     }
     case LUA_TSTRING: {
-      setnvalue(ra, cast_num(tsvalue(rb)->len));
+      setnvalue(ra, cast_num(tsvalue(rb)->getLen()));
       return;
     }
     default: {  /* try metamethod */

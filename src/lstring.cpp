@@ -34,7 +34,7 @@ void luaS_resize (lua_State *L, int newsize) {
     tb->hash[i] = NULL;
     while (p) {  /* for each node in the list */
       LuaBase *next = gch(p)->next;  /* save next */
-      unsigned int h = lmod(gco2ts(p)->hash, newsize);  /* new position */
+      unsigned int h = lmod(gco2ts(p)->getHash(), newsize);  /* new position */
       gch(p)->next = tb->hash[h];  /* chain it */
       tb->hash[h] = p;
       resetoldbit(p);  /* see MOVE OLD rule */
@@ -64,9 +64,9 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   list = &tb->hash[lmod(h, tb->size)];
   LuaBase* o = luaC_newobj(L, LUA_TSTRING, totalsize, list, 0);
   ts = gco2ts(o);
-  ts->len = l;
-  ts->hash = h;
-  ts->reserved = 0;
+  ts->setLen(l);
+  ts->setHash(h);
+  ts->setReserved(0);
   memcpy(ts+1, str, l*sizeof(char));
   ((char *)(ts+1))[l] = '\0';  /* ending 0 */
   tb->nuse++;
@@ -85,8 +85,8 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
        o != NULL;
        o = gch(o)->next) {
     TString *ts = gco2ts(o);
-    if (h == ts->hash &&
-        ts->len == l &&
+    if (h == ts->getHash() &&
+        ts->getLen() == l &&
         (memcmp(str, ts->c_str(), l * sizeof(char)) == 0)) {
       if (isdead(G(L), o))  /* string is dead (but was not collected yet)? */
         changewhite(o);  /* resurrect it */

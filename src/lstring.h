@@ -12,7 +12,7 @@
 #include "lstate.h"
 
 
-#define sizestring(s)	(sizeof(TString)+((s)->len+1)*sizeof(char))
+#define sizestring(s)	(sizeof(TString)+((s)->getLen()+1)*sizeof(char))
 
 #define sizeudata(u)	(sizeof(Udata)+(u)->len)
 

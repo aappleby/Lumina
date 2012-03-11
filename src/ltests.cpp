@@ -645,7 +645,7 @@ static int gc_state (lua_State *L) {
 static int hash_query (lua_State *L) {
   if (lua_isnone(L, 2)) {
     luaL_argcheck(L, lua_type(L, 1) == LUA_TSTRING, 1, "string expected");
-    lua_pushinteger(L, tsvalue(obj_at(L, 1))->hash);
+    lua_pushinteger(L, tsvalue(obj_at(L, 1))->getHash());
   }
   else {
     TValue *o = obj_at(L, 1);
