@@ -181,74 +181,10 @@ typedef uint32_t Instruction;
 ** both small and large values (outside the range of integers).
 */
 
-#if defined(MS_ASMTRICK)	/* { */
-/* trick with Microsoft assembler for X86 */
-
-#define lua_number2int(i,n)  __asm {__asm fld n   __asm fistp i}
-#define lua_number2integer(i,n)		lua_number2int(i, n)
-#define lua_number2unsigned(i,n)  \
-  {__int64 l; __asm {__asm fld n   __asm fistp l} i = (unsigned int)l;}
-
-
-#elif defined(LUA_IEEE754TRICK)		/* }{ */
-/* the next trick should work on any machine using IEEE754 with
-   a 32-bit integer type */
-
-union luai_Cast { double l_d; LUA_INT32 l_p[2]; };
-
-#if !defined(LUA_IEEEENDIAN)	/* { */
-#define LUAI_EXTRAIEEE	\
-  static const union luai_Cast ieeeendian = {-(33.0 + 6755399441055744.0)};
-#define LUA_IEEEENDIAN		(ieeeendian.l_p[1] == 33)
-#else
-#define LUAI_EXTRAIEEE		/* empty */
-#endif				/* } */
-
-#define lua_number2int32(i,n,t) \
-  { LUAI_EXTRAIEEE \
-    volatile union luai_Cast u; u.l_d = (n) + 6755399441055744.0; \
-    (i) = (t)u.l_p[LUA_IEEEENDIAN]; }
-
-#define luai_hashnum(i,n)  \
-  { volatile union luai_Cast u; u.l_d = (n) + 1.0;  /* avoid -0 */ \
-    (i) = u.l_p[0]; (i) += u.l_p[1]; }  /* add double bits for his hash */
-
-#define lua_number2int(i,n)		lua_number2int32(i, n, int)
-#define lua_number2integer(i,n)		lua_number2int32(i, n, lua_Integer)
-#define lua_number2unsigned(i,n)	lua_number2int32(i, n, lua_Unsigned)
-
-#endif				/* } */
-
-
-/* the following definitions always work, but may be slow */
-
-#if !defined(lua_number2int)
 #define lua_number2int(i,n)	((i)=(int)(n))
-#endif
-
-#if !defined(lua_number2integer)
 #define lua_number2integer(i,n)	((i)=(lua_Integer)(n))
-#endif
-
-#if !defined(lua_number2unsigned)	/* { */
-/* the following definition assures proper modulo behavior */
-#if defined(LUA_NUMBER_DOUBLE)
-#include <math.h>
-#define SUPUNSIGNED	((lua_Number)(~(lua_Unsigned)0) + 1)
-#define lua_number2unsigned(i,n)  \
-	((i)=(lua_Unsigned)((n) - floor((n)/SUPUNSIGNED)*SUPUNSIGNED))
-#else
 #define lua_number2unsigned(i,n)	((i)=(lua_Unsigned)(n))
-#endif
-#endif				/* } */
-
-
-#if !defined(lua_unsigned2number)
-/* on several machines, coercion from unsigned to double is slow,
-   so it may be worth to avoid */
-#define lua_unsigned2number(u)  \
-    (((u) <= (lua_Unsigned)INT_MAX) ? (lua_Number)(int)(u) : (lua_Number)(u))
-#endif
+#define lua_unsigned2number(u)  ((lua_Number)(u))
 
 
 
