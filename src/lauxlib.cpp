@@ -221,34 +221,11 @@ LUALIB_API int luaL_fileresult (lua_State *L, int stat, const char *fname) {
 }
 
 
-#if !defined(inspectstat)	/* { */
-
-#if defined(LUA_USE_POSIX)
-
-#include <sys/wait.h>
-
-/*
-** use appropriate macros to interpret 'pclose' return status
-*/
-#define inspectstat(stat,what)  \
-   if (WIFEXITED(stat)) { stat = WEXITSTATUS(stat); } \
-   else if (WIFSIGNALED(stat)) { stat = WTERMSIG(stat); what = "signal"; }
-
-#else
-
-#define inspectstat(stat,what)  /* no op */
-
-#endif
-
-#endif				/* } */
-
-
 LUALIB_API int luaL_execresult (lua_State *L, int stat) {
   const char *what = "exit";  /* type of termination */
   if (stat == -1)  /* error? */
     return luaL_fileresult(L, 0, NULL);
   else {
-    inspectstat(stat, what);  /* interpret result */
     if (*what == 'e' && stat == 0)  /* successful termination? */
       lua_pushboolean(L, 1);
     else

@@ -562,7 +562,7 @@ static int listlocals (lua_State *L) {
 
 static int get_limits (lua_State *L) {
   lua_createtable(L, 0, 5);
-  setnameval(L, "BITS_INT", LUAI_BITSINT);
+  setnameval(L, "BITS_INT", 32);
   setnameval(L, "LFPF", LFIELDS_PER_FLUSH);
   setnameval(L, "MAXSTACK", MAXSTACK);
   setnameval(L, "NUM_OPCODES", NUM_OPCODES);

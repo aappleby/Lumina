@@ -56,7 +56,7 @@ enum OpMode {iABC, iABx, iAsBx, iAx};  /* basic instruction format */
 ** we use (signed) int to manipulate most arguments,
 ** so they must fit in LUAI_BITSINT-1 bits (-1 for sign)
 */
-#if SIZE_Bx < LUAI_BITSINT-1
+#if SIZE_Bx < 32-1
 #define MAXARG_Bx        ((1<<SIZE_Bx)-1)
 #define MAXARG_sBx        (MAXARG_Bx>>1)         /* `sBx' is signed */
 #else
@@ -64,7 +64,7 @@ enum OpMode {iABC, iABx, iAsBx, iAx};  /* basic instruction format */
 #define MAXARG_sBx        MAX_INT
 #endif
 
-#if SIZE_Ax < LUAI_BITSINT-1
+#if SIZE_Ax < 32-1
 #define MAXARG_Ax	((1<<SIZE_Ax)-1)
 #else
 #define MAXARG_Ax	MAX_INT

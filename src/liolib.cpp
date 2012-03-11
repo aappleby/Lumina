@@ -37,29 +37,8 @@
 ** =======================================================
 */
 
-#if !defined(lua_popen)	/* { */
-
-#if defined(LUA_USE_POPEN)	/* { */
-
-#define lua_popen(L,c,m)	((void)L, fflush(NULL), popen(c,m))
-#define lua_pclose(L,file)	((void)L, pclose(file))
-
-#elif defined(LUA_WIN)		/* }{ */
-
 #define lua_popen(L,c,m)		((void)L, _popen(c,m))
-#define lua_pclose(L,file)		((void)L, _pclose(file))
-
-
-#else				/* }{ */
-
-#define lua_popen(L,c,m)		((void)((void)c, m),  \
-		luaL_error(L, LUA_QL("popen") " not supported"), (FILE*)0)
-#define lua_pclose(L,file)		((void)((void)L, file), -1)
-
-
-#endif				/* } */
-
-#endif			/* } */
+#define lua_pclose(L,file)	((void)L, _pclose(file))
 
 /* }====================================================== */
 
@@ -70,31 +49,9 @@
 ** =======================================================
 */
 
-#if !defined(lua_fseek)	/* { */
-
-#if defined(LUA_USE_POSIX)
-
-#define l_fseek(f,o,w)		fseeko(f,o,w)
-#define l_ftell(f)		ftello(f)
-#define l_seeknum		off_t
-
-#elif defined(LUA_WIN) && !defined(_CRTIMP_TYPEINFO) \
-   && defined(_MSC_VER) && (_MSC_VER >= 1400)
-/* Windows (but not DDK) and Visual C++ 2005 or higher */
-
-#define l_fseek(f,o,w)		_fseeki64(f,o,w)
-#define l_ftell(f)		_ftelli64(f)
-#define l_seeknum		__int64
-
-#else
-
 #define l_fseek(f,o,w)		fseek(f,o,w)
 #define l_ftell(f)		ftell(f)
 #define l_seeknum		long
-
-#endif
-
-#endif			/* } */
 
 /* }====================================================== */
 
