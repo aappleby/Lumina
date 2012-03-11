@@ -30,13 +30,6 @@
 #include "lualib.h"
 
 
-
-/*
-** The whole module only makes sense with LUA_DEBUG on
-*/
-#if defined(LUA_DEBUG)
-
-
 int islocked = 0;
 
 
@@ -1459,13 +1452,10 @@ static void checkfinalmem (void) {
 }
 
 
-int luaB_opentests (lua_State *L) {
+int luaopen_test (lua_State *L) {
   lua_atpanic(L, &tpanic);
   atexit(checkfinalmem);
   assert(lua_getallocf(L) == debug_realloc);
-  lua_setallocf(L, lua_getallocf(L));
   luaL_newlib(L, tests_funcs);
   return 1;
 }
-
-#endif

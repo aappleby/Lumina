@@ -913,6 +913,7 @@ LUALIB_API const char *luaL_gsub (lua_State *L, const char *s, const char *p,
   return lua_tostring(L, -1);
 }
 
+void *debug_realloc (void *block, size_t osize, size_t nsize);
 
 static void *l_alloc (void *ptr, size_t osize, size_t nsize) {
   (void)osize;  /* not used */

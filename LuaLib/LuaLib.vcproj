@@ -423,10 +423,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\ltests.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\luaconf.h"
 				>
 			</File>

@@ -37,6 +37,7 @@ static const luaL_Reg loadedlibs[] = {
   {LUA_BITLIBNAME, luaopen_bit32},
   {LUA_MATHLIBNAME, luaopen_math},
   {LUA_DBLIBNAME, luaopen_debug},
+  {LUA_TESTLIBNAME, luaopen_test},
   {NULL, NULL}
 };
 
@@ -64,6 +65,6 @@ LUALIB_API void luaL_openlibs (lua_State *L) {
   }
   lua_pop(L, 1);  /* remove _PRELOAD table */
 
-  luaL_requiref(L, "T", luaB_opentests, 1);
+  //luaL_requiref(L, "T", luaB_opentests, 1);
 }
 

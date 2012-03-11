@@ -15,9 +15,9 @@
 #include <assert.h>
 #include "stdint.h"
 
+#define LUA_DEBUG
 
 #include "luaconf.h"
-
 
 #define LUA_VERSION_MAJOR	"5"
 #define LUA_VERSION_MINOR	"2"
@@ -111,18 +111,6 @@ typedef LUA_INTEGER lua_Integer;
 
 /* unsigned integer type */
 typedef LUA_UNSIGNED lua_Unsigned;
-
-
-
-/*
-** generic extra include file
-*/
-#define LUA_USER_H "ltests.h"
-#if defined(LUA_USER_H)
-#include LUA_USER_H
-#endif
-
-
 
 /*
 ** state manipulation
