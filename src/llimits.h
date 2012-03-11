@@ -12,7 +12,8 @@
 #include <stddef.h>
 #include "stdint.h"
 
-#include "lua.h"
+#include "LuaTypes.h"
+//#include "lua.h"
 
 
 typedef LUAI_MEM l_mem;

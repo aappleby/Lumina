@@ -68,7 +68,7 @@
 
 
 /* two more entries for 0 and -1 (EOZ) */
-LUAI_DDEC const uint8_t luai_ctype_[UCHAR_MAX + 2];
+extern const uint8_t luai_ctype_[UCHAR_MAX + 2];
 
 
 #else			/* }{ */

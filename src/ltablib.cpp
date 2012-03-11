@@ -259,9 +259,6 @@ static int sort (lua_State *L) {
 
 static const luaL_Reg tab_funcs[] = {
   {"concat", tconcat},
-#if defined(LUA_COMPAT_MAXN)
-  {"maxn", maxn},
-#endif
   {"insert", tinsert},
   {"pack", pack},
   {"unpack", unpack},
@@ -273,11 +270,6 @@ static const luaL_Reg tab_funcs[] = {
 
 LUAMOD_API int luaopen_table (lua_State *L) {
   luaL_newlib(L, tab_funcs);
-#if defined(LUA_COMPAT_UNPACK)
-  /* _G.unpack = table.unpack */
-  lua_getfield(L, -1, "unpack");
-  lua_setglobal(L, "unpack");
-#endif
   return 1;
 }
 

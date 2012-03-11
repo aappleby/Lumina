@@ -11,6 +11,8 @@
 #include <limits.h>
 #include <stddef.h>
 
+#include "LuaTypes.h"
+
 
 /*
 ** ==================================================================
@@ -178,13 +180,9 @@
 #if defined(__GNUC__) && ((__GNUC__*100 + __GNUC_MINOR__) >= 302) && \
     defined(__ELF__)		/* { */
 #define LUAI_FUNC	__attribute__((visibility("hidden"))) extern
-#define LUAI_DDEC	LUAI_FUNC
-#define LUAI_DDEF	/* empty */
 
 #else				/* }{ */
-#define LUAI_FUNC	extern
-#define LUAI_DDEC	extern
-#define LUAI_DDEF	/* empty */
+#define LUAI_FUNC
 #endif				/* } */
 
 
@@ -224,100 +222,7 @@
 	(fprintf(stderr, (s), (p)), fflush(stderr))
 
 
-
-
-
-/*
-** {==================================================================
-** Compatibility with previous versions
-** ===================================================================
-*/
-
-/*
-@@ LUA_COMPAT_ALL controls all compatibility options.
-** You can define it to get all options, or change specific options
-** to fit your specific needs.
-*/
-
-/*
-@@ LUA_COMPAT_LOADSTRING defines the function 'loadstring' in the base
-** library. You can rewrite 'loadstring(s)' as 'load(s)'.
-*/
-#define LUA_COMPAT_LOADSTRING
-
-/*
-@@ LUA_COMPAT_UNPACK controls the presence of global 'unpack'.
-** You can replace it with 'table.unpack'.
-*/
-#define LUA_COMPAT_UNPACK
-
-
-#if defined(LUA_COMPAT_ALL)	/* { */
-
-/*
-@@ LUA_COMPAT_LOADERS controls the presence of table 'package.loaders'.
-** You can replace it with 'package.searchers'.
-*/
-#define LUA_COMPAT_LOADERS
-
-/*
-@@ macro 'lua_cpcall' emulates deprecated function lua_cpcall.
-** You can call your C function directly (with light C functions).
-*/
-#define lua_cpcall(L,f,u)  \
-	(lua_pushcfunction(L, (f)), \
-	 lua_pushlightuserdata(L,(u)), \
-	 lua_pcall(L,1,0,0))
-
-
-/*
-@@ LUA_COMPAT_LOG10 defines the function 'log10' in the math library.
-** You can rewrite 'log10(x)' as 'log(x, 10)'.
-*/
-#define LUA_COMPAT_LOG10
-
-/*
-@@ LUA_COMPAT_MAXN defines the function 'maxn' in the table library.
-*/
-#define LUA_COMPAT_MAXN
-
-/*
-@@ The following macros supply trivial compatibility for some
-** changes in the API. The macros themselves document how to
-** change your code to avoid using them.
-*/
-#define lua_strlen(L,i)		lua_rawlen(L, (i))
-
-#define lua_objlen(L,i)		lua_rawlen(L, (i))
-
-#define lua_equal(L,idx1,idx2)		lua_compare(L,(idx1),(idx2),LUA_OPEQ)
-#define lua_lessthan(L,idx1,idx2)	lua_compare(L,(idx1),(idx2),LUA_OPLT)
-
-/*
-@@ LUA_COMPAT_MODULE controls compatibility with previous
-** module functions 'module' (Lua) and 'luaL_register' (C).
-*/
-#define LUA_COMPAT_MODULE
-
-#endif				/* } */
-
 /* }================================================================== */
-
-
-
-/*
-@@ LUA_INT32 is an signed integer with exactly 32 bits.
-@@ LUAI_UMEM is an unsigned integer big enough to count the total
-@* memory used by Lua.
-@@ LUAI_MEM is a signed integer big enough to count the total memory
-@* used by Lua.
-** CHANGE here if for some weird reason the default definitions are not
-** good enough for your machine. Probably you do not need to change
-** this.
-*/
-#define LUAI_UMEM	size_t
-#define LUAI_MEM	ptrdiff_t
-
 
 /*
 @@ LUAI_MAXSTACK limits the size of the Lua stack.
@@ -339,20 +244,6 @@
 */
 #define LUAL_BUFFERSIZE		BUFSIZ
 
-
-
-
-/*
-** {==================================================================
-@@ LUA_NUMBER is the type of numbers in Lua.
-** CHANGE the following definitions only if you want to build Lua
-** with a number type different from double. You may also need to
-** change lua_number2int & lua_number2integer.
-** ===================================================================
-*/
-
-#define LUA_NUMBER_DOUBLE
-#define LUA_NUMBER	double
 
 /*
 @@ LUA_NUMBER_SCAN is the format for reading numbers.
@@ -406,55 +297,6 @@
 #endif
 
 
-
-/*
-@@ LUA_INTEGER is the integral type used by lua_pushinteger/lua_tointeger.
-** CHANGE that if ptrdiff_t is not adequate on your machine. (On most
-** machines, ptrdiff_t gives a good choice between int or long.)
-*/
-#define LUA_INTEGER	ptrdiff_t
-
-/*
-@@ LUA_UNSIGNED is the integral type used by lua_pushunsigned/lua_tounsigned.
-** It must have at least 32 bits.
-*/
-#define LUA_UNSIGNED	uint32_t
-
-
-#if defined(LUA_CORE)		/* { */
-
-#if defined(LUA_NUMBER_DOUBLE) && !defined(LUA_ANSI)	/* { */
-
-/* On a Microsoft compiler on a Pentium, use assembler to avoid clashes
-   with a DirectX idiosyncrasy */
-#if defined(LUA_WIN) && defined(_MSC_VER) && defined(_M_IX86)	/* { */
-
-#define MS_ASMTRICK
-
-#else				/* }{ */
-/* the next definition uses a trick that should work on any machine
-   using IEEE754 with a 32-bit integer type */
-
-#define LUA_IEEE754TRICK
-
-/*
-@@ LUA_IEEEENDIAN is the endianness of doubles in your machine
-** (0 for little endian, 1 for big endian); if not defined, Lua will
-** check it dynamically.
-*/
-/* check for known architectures */
-#if defined(__i386__) || defined(__i386) || defined(__X86__) || \
-    defined (__x86_64)
-#define LUA_IEEEENDIAN	0
-#elif defined(__POWERPC__) || defined(__ppc__)
-#define LUA_IEEEENDIAN	1
-#endif
-
-#endif				/* } */
-
-#endif			/* } */
-
-#endif			/* } */
 
 /* }================================================================== */
 

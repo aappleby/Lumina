@@ -507,6 +507,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\LuaBase.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\LuaBase.h"
 				>
 			</File>
@@ -516,6 +520,14 @@
 			</File>
 			<File
 				RelativePath="..\src\LuaTable.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaTypes.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaTypes.h"
 				>
 			</File>
 			<File

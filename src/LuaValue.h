@@ -1,8 +1,5 @@
 #pragma once
-
-#include "stdint.h"
-
-class LuaBase;
+#include "LuaTypes.h"
 
 /*
 ** basic types

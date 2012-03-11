@@ -19,6 +19,8 @@
 
 #include "luaconf.h"
 
+#include "LuaTypes.h"
+
 #define LUA_VERSION_MAJOR	"5"
 #define LUA_VERSION_MINOR	"2"
 #define LUA_VERSION_NUM		502
@@ -54,11 +56,6 @@
 #define LUA_ERRERR	6
 
 
-struct lua_State;
-
-typedef int (*lua_CFunction) (lua_State *L);
-
-
 /*
 ** functions that read/write blocks when loading/dumping Lua chunks
 */
@@ -84,16 +81,6 @@ typedef void * (*lua_Alloc) (void *ptr, size_t osize, size_t nsize);
 #define LUA_RIDX_GLOBALS	2
 #define LUA_RIDX_LAST		LUA_RIDX_GLOBALS
 
-
-/* type of numbers in Lua */
-typedef LUA_NUMBER lua_Number;
-
-
-/* type for integer functions */
-typedef LUA_INTEGER lua_Integer;
-
-/* unsigned integer type */
-typedef LUA_UNSIGNED lua_Unsigned;
 
 
 
