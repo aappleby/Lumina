@@ -39,14 +39,15 @@
 /*
 ** nodes for block list (list of active blocks)
 */
-typedef struct BlockCnt {
-  struct BlockCnt *previous;  /* chain */
+class BlockCnt {
+public:
+  BlockCnt *previous;  /* chain */
   short firstlabel;  /* index of first label in this block */
   short firstgoto;  /* index of first pending goto in this block */
   uint8_t nactvar;  /* # active locals outside the block */
   uint8_t upval;  /* true if some variable in the block is an upvalue */
   uint8_t isloop;  /* true if `block' is a loop */
-} BlockCnt;
+};
 
 
 

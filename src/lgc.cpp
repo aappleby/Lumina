@@ -429,8 +429,8 @@ static int traversetable (global_State *g, Table *h) {
   const TValue *mode = gfasttm(g, h->metatable, TM_MODE);
   markobject(g, h->metatable);
   if (mode && ttisstring(mode)) {  /* is there a weak mode? */
-    int weakkey = (strchr(svalue(mode), 'k') != NULL);
-    int weakvalue = (strchr(svalue(mode), 'v') != NULL);
+    int weakkey = (strchr(tsvalue(mode)->c_str(), 'k') != NULL);
+    int weakvalue = (strchr(tsvalue(mode)->c_str(), 'v') != NULL);
     if (weakkey || weakvalue) {  /* is really weak? */
       black2gray(obj2gco(h));  /* keep table gray */
       if (!weakkey) {  /* strong keys? */

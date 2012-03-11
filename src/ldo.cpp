@@ -75,7 +75,7 @@
 
 /* chain list of long jump buffers */
 struct lua_longjmp {
-  struct lua_longjmp *previous;
+  lua_longjmp *previous;
   luai_jmpbuf b;
   volatile int status;  /* error code */
 };
@@ -124,7 +124,7 @@ l_noret luaD_throw (lua_State *L, int errcode) {
 
 int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
   unsigned short oldnCcalls = L->nCcalls;
-  struct lua_longjmp lj;
+  lua_longjmp lj;
   lj.status = LUA_OK;
   lj.previous = L->errorJmp;  /* chain new error handler */
   L->errorJmp = &lj;

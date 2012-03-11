@@ -35,7 +35,7 @@
 const TValue *luaV_tonumber (const TValue *obj, TValue *n) {
   lua_Number num;
   if (ttisnumber(obj)) return obj;
-  if (ttisstring(obj) && luaO_str2d(svalue(obj), tsvalue(obj)->len, &num)) {
+  if (ttisstring(obj) && luaO_str2d(tsvalue(obj)->c_str(), tsvalue(obj)->len, &num)) {
     setnvalue(n, num);
     return n;
   }
@@ -312,7 +312,7 @@ void luaV_concat (lua_State *L, int total) {
       n = i;
       do {  /* concat all strings */
         size_t l = tsvalue(top-i)->len;
-        memcpy(buffer+tl, svalue(top-i), l * sizeof(char));
+        memcpy(buffer+tl, tsvalue(top-i)->c_str(), l * sizeof(char));
         tl += l;
       } while (--i > 0);
       setsvalue2s(L, top-n, luaS_newlstr(L, buffer, tl));

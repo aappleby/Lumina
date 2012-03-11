@@ -37,7 +37,7 @@ typedef enum {
 #define vkisvar(k)	(VLOCAL <= (k) && (k) <= VINDEXED)
 #define vkisinreg(k)	((k) == VNONRELOC || (k) == VLOCAL)
 
-typedef struct expdesc {
+struct expdesc {
   expkind k;
   union {
     struct {  /* for indexed variables (VINDEXED) */
@@ -50,22 +50,22 @@ typedef struct expdesc {
   } u;
   int t;  /* patch list of `exit when true' */
   int f;  /* patch list of `exit when false' */
-} expdesc;
+};
 
 
 /* description of active local variable */
-typedef struct Vardesc {
+struct Vardesc {
   short idx;  /* variable index in stack */
-} Vardesc;
+};
 
 
 /* description of pending goto statements and label statements */
-typedef struct Labeldesc {
+struct Labeldesc {
   TString *name;  /* label identifier */
   int pc;  /* position in code */
   int line;  /* line where it appeared */
   uint8_t nactvar;  /* local level where it appears in current block */
-} Labeldesc;
+};
 
 
 /* list of labels or gotos */
@@ -77,7 +77,7 @@ typedef struct Labellist {
 
 
 /* dynamic structures used by the parser */
-typedef struct Dyndata {
+struct Dyndata {
   struct {  /* list of active local variables */
     Vardesc *arr;
     int n;
@@ -85,20 +85,21 @@ typedef struct Dyndata {
   } actvar;
   Labellist gt;  /* list of pending gotos */
   Labellist label;   /* list of active labels */
-} Dyndata;
+};
 
 
 /* control of blocks */
-struct BlockCnt;  /* defined in lparser.c */
-
+class BlockCnt;  /* defined in lparser.c */
+class LexState;
 
 /* state needed to generate code for a given function */
-typedef struct FuncState {
+class FuncState {
+public:
   Proto *f;  /* current function header */
   Table *h;  /* table to find (and reuse) elements in `k' */
-  struct FuncState *prev;  /* enclosing function */
-  struct LexState *ls;  /* lexical state */
-  struct BlockCnt *bl;  /* chain of current blocks */
+  FuncState *prev;  /* enclosing function */
+  LexState *ls;  /* lexical state */
+  BlockCnt *bl;  /* chain of current blocks */
   int pc;  /* next position to code (equivalent to `ncode') */
   int lasttarget;   /* 'label' of last 'jump label' */
   int jpc;  /* list of pending jumps to `pc' */
@@ -109,7 +110,7 @@ typedef struct FuncState {
   uint8_t nactvar;  /* number of active local variables */
   uint8_t nups;  /* number of upvalues */
   uint8_t freereg;  /* first free register */
-} FuncState;
+};
 
 
 Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,

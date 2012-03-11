@@ -25,23 +25,7 @@ class Table;
 
 typedef TValue* StkId;  /* index to stack elements */
 
-
-
-
-/*
-** Header for string value; string bytes follow the end of this structure
-*/
-__declspec(align(8)) class TString : public LuaBase {
-public:
-  uint8_t reserved;
-  unsigned int hash;
-  size_t len;  /* number of characters in string */
-
-  const char * c_str() const { return reinterpret_cast<const char *>(this+1); }
-};
-
-/* get the actual string (array of bytes) from a Lua value */
-#define svalue(o)       tsvalue(o)->c_str()
+#include "LuaString.h"
 
 
 /*
@@ -186,8 +170,7 @@ int luaO_ceillog2 (unsigned int x);
 lua_Number luaO_arith (int op, lua_Number v1, lua_Number v2);
 int luaO_str2d (const char *s, size_t len, lua_Number *result);
 int luaO_hexavalue (int c);
-const char *luaO_pushvfstring (lua_State *L, const char *fmt,
-                                                       va_list argp);
+const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp);
 const char *luaO_pushfstring (lua_State *L, const char *fmt, ...);
 void luaO_chunkid (char *out, const char *source, size_t len);
 

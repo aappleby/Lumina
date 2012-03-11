@@ -35,6 +35,8 @@
 #include "ltable.h"
 #include "lvm.h"
 
+#include <float.h>
+#include <math.h>
 
 /*
 ** max size of array part is 2^MAXBITS
@@ -69,6 +71,9 @@ static const Node dummynode_ = {
   NULL /* next */
 };
 
+#define luai_hashnum(i,n) { int e;  \
+  n = frexp(n, &e) * (lua_Number)(INT_MAX - DBL_MAX_EXP);  \
+  lua_number2int(i, n); i += e; }
 
 /*
 ** hash for lua_Numbers

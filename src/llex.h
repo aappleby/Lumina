@@ -45,24 +45,26 @@ typedef struct Token {
   SemInfo seminfo;
 } Token;
 
+class FuncState;
 
 /* state of the lexer plus state of the parser when shared by all
    functions */
-typedef struct LexState {
+class LexState {
+public:
   int current;  /* current character (charint) */
   int linenumber;  /* input line counter */
   int lastline;  /* line of last token `consumed' */
   Token t;  /* current token */
   Token lookahead;  /* look ahead token */
-  struct FuncState *fs;  /* current function (parser) */
-  struct lua_State *L;
+  FuncState *fs;  /* current function (parser) */
+  lua_State *L;
   ZIO *z;  /* input stream */
   Mbuffer *buff;  /* buffer for tokens */
   struct Dyndata *dyd;  /* dynamic structures used by the parser */
   TString *source;  /* current source name */
   TString *envn;  /* environment variable name */
   char decpoint;  /* locale decimal point */
-} LexState;
+};
 
 
 void luaX_init (lua_State *L);

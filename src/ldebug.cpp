@@ -308,7 +308,7 @@ static void kname (Proto *p, int pc, int c, const char **name) {
   if (ISK(c)) {  /* is 'c' a constant? */
     TValue *kvalue = &p->k[INDEXK(c)];
     if (ttisstring(kvalue)) {  /* literal constant? */
-      *name = svalue(kvalue);  /* it is its own name */
+      *name = tsvalue(kvalue)->c_str();  /* it is its own name */
       return;
     }
     /* else no reasonable name found */
@@ -409,7 +409,7 @@ static const char *getobjname (Proto *p, int lastpc, int reg,
         int b = (op == OP_LOADK) ? GETARG_Bx(i)
                                  : GETARG_Ax(p->code[pc + 1]);
         if (ttisstring(&p->k[b])) {
-          *name = svalue(&p->k[b]);
+          *name = tsvalue(&p->k[b])->c_str();
           return "constant";
         }
         break;

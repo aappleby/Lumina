@@ -2,10 +2,8 @@
 #include "stdint.h"
 
 class LuaBase;
-
 class TString;
-
-struct lua_State;
+class lua_State;
 
 
 #define LUA_NUMBER_DOUBLE
@@ -53,3 +51,27 @@ typedef LUA_UNSIGNED lua_Unsigned;
 ** this.
 */
 #define LUAI_MEM	ptrdiff_t
+
+
+
+/*
+** non-return type
+*/
+#if defined(__GNUC__)
+#define l_noret		void __attribute__((noreturn))
+#elif defined(_MSC_VER)
+#define l_noret		void __declspec(noreturn)
+#else
+#define l_noret		void
+#endif
+
+
+typedef LUAI_MEM l_mem;
+
+
+
+/*
+** type for virtual-machine instructions
+** must be an unsigned with (at least) 4 bytes (see details in lopcodes.h)
+*/
+typedef uint32_t Instruction;

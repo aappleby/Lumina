@@ -228,7 +228,7 @@ const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
   }
   pushstr(L, fmt, strlen(fmt));
   if (n > 0) luaV_concat(L, n + 1);
-  return svalue(L->top - 1);
+  return tsvalue(L->top - 1)->c_str();
 }
 
 

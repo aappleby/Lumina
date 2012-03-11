@@ -13,10 +13,7 @@
 #include "stdint.h"
 
 #include "LuaTypes.h"
-//#include "lua.h"
 
-
-typedef LUAI_MEM l_mem;
 
 #define MAX_SIZET	((size_t)(~(size_t)0)-2)
 #define MAX_LUMEM	((size_t)(~(size_t)0)-2)
@@ -37,18 +34,6 @@ typedef LUAI_MEM l_mem;
 #define cast_uchar(i)	cast(unsigned char, (i))
 
 
-/*
-** non-return type
-*/
-#if defined(__GNUC__)
-#define l_noret		void __attribute__((noreturn))
-#elif defined(_MSC_VER)
-#define l_noret		void __declspec(noreturn)
-#else
-#define l_noret		void
-#endif
-
-
 
 /*
 ** maximum depth for nested C calls and syntactical nested non-terminals
@@ -63,13 +48,6 @@ typedef LUAI_MEM l_mem;
 ** must fit in an unsigned char.)
 */
 #define MAXUPVAL	UCHAR_MAX
-
-
-/*
-** type for virtual-machine instructions
-** must be an unsigned with (at least) 4 bytes (see details in lopcodes.h)
-*/
-typedef uint32_t Instruction;
 
 
 
@@ -105,7 +83,6 @@ typedef uint32_t Instruction;
 ** lua_number2integer is a macro to convert lua_Number to lua_Integer.
 ** lua_number2unsigned is a macro to convert a lua_Number to a lua_Unsigned.
 ** lua_unsigned2number is a macro to convert a lua_Unsigned to a lua_Number.
-** luai_hashnum is a macro to hash a lua_Number value into an integer.
 ** The hash must be deterministic and give reasonable values for
 ** both small and large values (outside the range of integers).
 */
@@ -114,19 +91,6 @@ typedef uint32_t Instruction;
 #define lua_number2integer(i,n)	   ((i)=(lua_Integer)(n))
 #define lua_number2unsigned(i,n)	 ((i)=(uint32_t)(n))
 #define lua_unsigned2number(u)     ((double)(u))
-
-
-
-#if defined(ltable_c) && !defined(luai_hashnum)
-
-#include <float.h>
-#include <math.h>
-
-#define luai_hashnum(i,n) { int e;  \
-  n = frexp(n, &e) * (lua_Number)(INT_MAX - DBL_MAX_EXP);  \
-  lua_number2int(i, n); i += e; }
-
-#endif
 
 
 #endif

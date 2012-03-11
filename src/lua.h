@@ -335,7 +335,7 @@ void      (lua_setallocf) (lua_State *L, lua_Alloc f);
 #define LUA_MASKLINE	(1 << LUA_HOOKLINE)
 #define LUA_MASKCOUNT	(1 << LUA_HOOKCOUNT)
 
-typedef struct lua_Debug lua_Debug;  /* activation record */
+class lua_Debug;  /* activation record */
 
 
 /* Functions to be called by the debugger in specific events */
@@ -358,8 +358,10 @@ lua_Hook (lua_gethook) (lua_State *L);
 int (lua_gethookmask) (lua_State *L);
 int (lua_gethookcount) (lua_State *L);
 
+class CallInfo;
 
-struct lua_Debug {
+class lua_Debug {
+public:
   int event;
   const char *name;	/* (n) */
   const char *namewhat;	/* (n) 'global', 'local', 'field', 'method' */
@@ -374,7 +376,7 @@ struct lua_Debug {
   char istailcall;	/* (t) */
   char short_src[LUA_IDSIZE]; /* (S) */
   /* private part */
-  struct CallInfo *i_ci;  /* active function */
+  CallInfo *i_ci;  /* active function */
 };
 
 /* }====================================================================== */

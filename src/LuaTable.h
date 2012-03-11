@@ -1,5 +1,6 @@
 #pragma once
 #include "LuaBase.h"
+#include "LuaValue.h"
 
 struct Node;
 class Table;

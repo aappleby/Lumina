@@ -391,7 +391,7 @@ const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
     lua_unlock(L);
   }
   if (len != NULL) *len = tsvalue(o)->len;
-  return svalue(o);
+  return tsvalue(o)->c_str();
 }
 
 

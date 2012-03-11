@@ -56,20 +56,22 @@ struct lua_longjmp;  /* defined in ldo.c */
 #define KGC_GEN		2	/* generational collection */
 
 
-typedef struct stringtable {
+class stringtable {
+public:
   LuaBase **hash;
   uint32_t nuse;  /* number of elements */
   int size;
-} stringtable;
+};
 
 
 /*
 ** information about a call
 */
-typedef struct CallInfo {
+class CallInfo {
+public:
   StkId func;  /* function index in the stack */
   StkId	top;  /* top for this function */
-  struct CallInfo *previous, *next;  /* dynamic call link */
+  CallInfo *previous, *next;  /* dynamic call link */
   short nresults;  /* expected number of results from this function */
   uint8_t callstatus;
   union {
@@ -86,7 +88,7 @@ typedef struct CallInfo {
       uint8_t status;
     } c;
   } u;
-} CallInfo;
+};
 
 
 /*
@@ -108,7 +110,8 @@ typedef struct CallInfo {
 /*
 ** `global state', shared by all threads of this state
 */
-typedef struct global_State {
+class global_State {
+public:
   lua_Alloc frealloc;  /* function to reallocate memory */
   size_t totalbytes;  /* number of bytes currently allocated - GCdebt */
   l_mem GCdebt;  /* bytes allocated not yet compensated by the collector */
@@ -135,25 +138,28 @@ typedef struct global_State {
   int gcmajorinc;  /* how much to wait for a major GC (only in gen. mode) */
   int gcstepmul;  /* GC `granularity' */
   lua_CFunction panic;  /* to be called in unprotected errors */
-  struct lua_State *mainthread;
+  lua_State *mainthread;
   const lua_Number *version;  /* pointer to version number */
   TString *memerrmsg;  /* memory-error message */
   TString *tmname[TM_N];  /* array with tag-method names */
   Table *mt[LUA_NUMTAGS];  /* metatables for basic types */
-} global_State;
+};
 
+class global_State;
+class CallInfo;
 
 /*
 ** `per thread' state
 */
-struct lua_State : public LuaBase {
+class lua_State : public LuaBase {
+public:
   uint8_t status;
   StkId top;  /* first free slot in the stack */
   global_State *l_G;
   CallInfo *ci;  /* call info for current function */
   const Instruction *oldpc;  /* last pc traced */
-  StkId stack_last;  /* last free slot in the stack */
-  StkId stack;  /* stack base */
+  TValue* stack_last;  /* last free slot in the stack */
+  TValue* stack;  /* stack base */
   int stacksize;
   unsigned short nny;  /* number of non-yieldable calls in stack */
   unsigned short nCcalls;  /* number of nested C calls */
@@ -164,22 +170,14 @@ struct lua_State : public LuaBase {
   lua_Hook hook;
   LuaBase *openupval;  /* list of open upvalues in this stack */
   LuaBase *gclist;
-  struct lua_longjmp *errorJmp;  /* current error recover point */
+  lua_longjmp *errorJmp;  /* current error recover point */
   ptrdiff_t errfunc;  /* current error handling function (stack index) */
   CallInfo base_ci;  /* CallInfo for first level (C calling Lua) */
 };
 
-
 #define G(L)	(L->l_G)
 
 #include "LuaBase.h"
-
-/*
-** Union of all collectable objects
-*/
-
-typedef LuaBase LuaBase;
-
 
 #define gch(o)		(o)
 
