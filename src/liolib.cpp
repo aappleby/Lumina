@@ -5,22 +5,11 @@
 */
 
 
-/*
-** POSIX idiosyncrasy!
-** This definition must come before the inclusion of 'stdio.h'; it
-** should not affect non-POSIX systems
-*/
-#if !defined(_FILE_OFFSET_BITS)
-#define _FILE_OFFSET_BITS 64
-#endif
-
-
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define liolib_c
 #define LUA_LIB
 
 #include "lua.h"
@@ -39,19 +28,6 @@
 
 #define lua_popen(L,c,m)		((void)L, _popen(c,m))
 #define lua_pclose(L,file)	((void)L, _pclose(file))
-
-/* }====================================================== */
-
-
-/*
-** {======================================================
-** lua_fseek/lua_ftell: configuration for longer offsets
-** =======================================================
-*/
-
-#define l_fseek(f,o,w)		fseek(f,o,w)
-#define l_ftell(f)		ftell(f)
-#define l_seeknum		long
 
 /* }====================================================== */
 
@@ -497,14 +473,14 @@ static int f_seek (lua_State *L) {
   FILE *f = tofile(L);
   int op = luaL_checkoption(L, 2, "cur", modenames);
   lua_Number p3 = luaL_optnumber(L, 3, 0);
-  l_seeknum offset = (l_seeknum)p3;
+  int offset = (int)p3;
   luaL_argcheck(L, (lua_Number)offset == p3, 3,
                   "not an integer in proper range");
-  op = l_fseek(f, offset, mode[op]);
+  op = fseek(f, offset, mode[op]);
   if (op)
     return luaL_fileresult(L, 0, NULL);  /* error */
   else {
-    lua_pushnumber(L, (lua_Number)l_ftell(f));
+    lua_pushnumber(L, (lua_Number)ftell(f));
     return 1;
   }
 }

@@ -94,10 +94,6 @@ typedef union Value Value;
 typedef struct lua_TValue TValue;
 
 
-/* macro defining a nil value */
-#define NILCONSTANT	{NULL}, LUA_TNIL
-
-
 #define val_(o)		((o)->value_)
 #define num_(o)		(val_(o).n)
 

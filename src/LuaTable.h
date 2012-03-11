@@ -1,11 +1,13 @@
 
+struct Node;
+class Table;
+
 union TKey {
   struct {
     Value value_;
     int tt_;
     struct Node *next;  /* for chaining */
   } nk;
-  TValue tvk;
 };
 
 
