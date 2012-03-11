@@ -2,18 +2,10 @@
 struct Node;
 class Table;
 
-union TKey {
-  struct {
-    Value value_;
-    int tt_;
-    struct Node *next;  /* for chaining */
-  } nk;
-};
-
-
 struct Node {
   TValue i_val;
-  TKey i_key;
+  TValue i_key;
+  Node *next;  /* for chaining */
 };
 
 

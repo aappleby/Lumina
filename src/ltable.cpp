@@ -64,8 +64,9 @@
 #define isdummy(n)		((n) == dummynode)
 
 static const Node dummynode_ = {
-  {{NULL}, LUA_TNIL},  /* value */
-  {{{NULL}, LUA_TNIL, NULL}}  /* key */
+  {{NULL}, LUA_TNIL}, /* value */
+  {{NULL}, LUA_TNIL}, /* key */
+  NULL /* next */
 };
 
 

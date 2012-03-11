@@ -11,10 +11,9 @@
 
 
 #define gnode(t,i)	(&(t)->node[i])
-//#define gkey(n)		(&(n)->i_key.tvk)
 #define gkey(n)   (reinterpret_cast<TValue*>(&(n)->i_key))
 #define gval(n)		(&(n)->i_val)
-#define gnext(n)	((n)->i_key.nk.next)
+#define gnext(n)	((n)->next)
 
 #define invalidateTMcache(t)	((t)->flags = 0)
 
