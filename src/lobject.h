@@ -66,7 +66,7 @@ typedef struct LocVar {
 struct Proto : public LuaBase {
   TValue *k;  /* constants used by the function */
   Instruction *code;
-  struct Proto **p;  /* functions defined inside the function */
+  Proto **p;  /* functions defined inside the function */
   int *lineinfo;  /* map from opcodes to source lines (debug information) */
   LocVar *locvars;  /* information about local variables (debug information) */
   Upvaldesc *upvalues;  /* upvalue information */

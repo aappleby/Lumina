@@ -163,7 +163,8 @@ void luaD_reallocstack (lua_State *L, int newsize) {
   int lim = L->stacksize;
   assert(newsize <= LUAI_MAXSTACK || newsize == ERRORSTACKSIZE);
   assert(L->stack_last - L->stack == L->stacksize - EXTRA_STACK);
-  luaM_reallocvector2(L, L->stack, L->stacksize, newsize);
+  L->stack = (TValue*)luaM_reallocv(L, L->stack, L->stacksize, newsize, sizeof(TValue));
+
   for (; lim < newsize; lim++)
     setnilvalue(L->stack + lim); /* erase new segment */
   L->stacksize = newsize;

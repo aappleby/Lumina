@@ -551,17 +551,17 @@ static void close_func (LexState *ls) {
   Proto *f = fs->f;
   luaK_ret(fs, 0, 0);  /* final return */
   leaveblock(fs);
-  luaM_reallocvector2(L, f->code, f->sizecode, fs->pc);
+  f->code = (Instruction*)luaM_reallocv(L, f->code, f->sizecode, fs->pc, sizeof(Instruction));
   f->sizecode = fs->pc;
-  luaM_reallocvector2(L, f->lineinfo, f->sizelineinfo, fs->pc);
+  f->lineinfo = (int*)luaM_reallocv(L, f->lineinfo, f->sizelineinfo, fs->pc, sizeof(int));
   f->sizelineinfo = fs->pc;
-  luaM_reallocvector2(L, f->k, f->sizek, fs->nk);
+  f->k = (TValue*)luaM_reallocv(L, f->k, f->sizek, fs->nk, sizeof(TValue));
   f->sizek = fs->nk;
-  luaM_reallocvector2(L, f->p, f->sizep, fs->np);
+  f->p = (Proto**)luaM_reallocv(L, f->p, f->sizep, fs->np, sizeof(Proto*));
   f->sizep = fs->np;
-  luaM_reallocvector2(L, f->locvars, f->sizelocvars, fs->nlocvars);
+  f->locvars = (LocVar*)luaM_reallocv(L, f->locvars, f->sizelocvars, fs->nlocvars, sizeof(LocVar));
   f->sizelocvars = fs->nlocvars;
-  luaM_reallocvector2(L, f->upvalues, f->sizeupvalues, fs->nups);
+  f->upvalues = (Upvaldesc*)luaM_reallocv(L, f->upvalues, f->sizeupvalues, fs->nups, sizeof(Upvaldesc));
   f->sizeupvalues = fs->nups;
   assert(fs->bl == NULL);
   ls->fs = fs->prev;

@@ -20,11 +20,11 @@ typedef struct Zio ZIO;
 #define zgetc(z)  (((z)->n--)>0 ?  cast_uchar(*(z)->p++) : luaZ_fill(z))
 
 
-typedef struct Mbuffer {
+struct Mbuffer {
   char *buffer;
   size_t n;
   size_t buffsize;
-} Mbuffer;
+};
 
 #define luaZ_initbuffer(L, buff) ((buff)->buffer = NULL, (buff)->buffsize = 0)
 
@@ -34,12 +34,6 @@ typedef struct Mbuffer {
 
 #define luaZ_resetbuffer(buff) ((buff)->n = 0)
 
-
-#define luaZ_resizebuffer(L, buff, size) \
-	(luaM_reallocvector2(L, (buff)->buffer, (buff)->buffsize, size), \
-	(buff)->buffsize = size)
-
-#define luaZ_freebuffer(L, buff)	luaZ_resizebuffer(L, buff, 0)
 
 
 char *luaZ_openspace (lua_State *L, Mbuffer *buff, size_t n);
