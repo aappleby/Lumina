@@ -218,7 +218,9 @@ static int luaK_code (FuncState *fs, Instruction i) {
   }
   f->code[fs->pc] = i;
   /* save corresponding line information */
-  luaM_growvector(fs->ls->L, f->lineinfo, fs->pc, f->sizelineinfo, int, MAX_INT, "opcodes");
+  if(fs->pc >= f->sizelineinfo) {
+    f->lineinfo = (int*)luaM_growaux_(fs->ls->L, f->lineinfo, f->sizelineinfo, sizeof(int), MAX_INT, "opcodes");
+  }
   f->lineinfo[fs->pc] = fs->ls->lastline;
   return fs->pc++;
 }
@@ -308,9 +310,7 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
      table has no metatable, so it does not need to invalidate cache */
   setnvalue(idx, cast_num(k));
   
-  //luaM_growvector(L, f->constants, k, f->nconstants, TValue, MAXARG_Ax, "constants");
-//#define luaM_growvector(L,v,nelems,size,t,limit,e)
-  if (k+1 > f->nconstants) {
+  if (k >= f->nconstants) {
     f->constants = (TValue*)luaM_growaux_(L,f->constants,f->nconstants,sizeof(TValue),MAXARG_Ax,"constants");
   }
   

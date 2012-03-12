@@ -167,7 +167,10 @@ static int registerlocalvar (LexState *ls, TString *varname) {
   FuncState *fs = ls->fs;
   Proto *f = fs->f;
   int oldsize = f->sizelocvars;
-  luaM_growvector(ls->L, f->locvars, fs->nlocvars, f->sizelocvars, LocVar, SHRT_MAX, "local variables");
+  if(fs->nlocvars >= f->sizelocvars) {
+    f->locvars = (LocVar*)luaM_growaux_(ls->L, f->locvars, f->sizelocvars, sizeof(LocVar), SHRT_MAX, "local variables");
+  }
+  
   while (oldsize < f->sizelocvars) f->locvars[oldsize++].varname = NULL;
   f->locvars[fs->nlocvars].varname = varname;
   luaC_objbarrier(ls->L, f, varname);
@@ -181,8 +184,9 @@ static void new_localvar (LexState *ls, TString *name) {
   int reg = registerlocalvar(ls, name);
   checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal,
                   MAXVARS, "local variables");
-  luaM_growvector(ls->L, dyd->actvar.arr, dyd->actvar.n + 1,
-                  dyd->actvar.size, Vardesc, MAX_INT, "local variables");
+  if(dyd->actvar.n+1 >= dyd->actvar.size) {
+    dyd->actvar.arr = (Vardesc*)luaM_growaux_(ls->L, dyd->actvar.arr, dyd->actvar.size, sizeof(Vardesc), MAX_INT, "local variables");
+  }
   dyd->actvar.arr[dyd->actvar.n++].idx = cast(short, reg);
 }
 
@@ -232,8 +236,9 @@ static int newupvalue (FuncState *fs, TString *name, expdesc *v) {
   Proto *f = fs->f;
   int oldsize = f->sizeupvalues;
   checklimit(fs, fs->nups + 1, MAXUPVAL, "upvalues");
-  luaM_growvector(fs->ls->L, f->upvalues, fs->nups, f->sizeupvalues,
-                  Upvaldesc, MAXUPVAL, "upvalues");
+  if(fs->nups >= f->sizeupvalues) {
+    f->upvalues = (Upvaldesc*)luaM_growaux_(fs->ls->L, f->upvalues, f->sizeupvalues, sizeof(Upvaldesc), MAXUPVAL, "upvalues");
+  }
   while (oldsize < f->sizeupvalues) f->upvalues[oldsize++].name = NULL;
   f->upvalues[fs->nups].instack = (v->k == VLOCAL);
   f->upvalues[fs->nups].idx = cast_byte(v->u.info);
@@ -384,8 +389,9 @@ static int findlabel (LexState *ls, int g) {
 static int newlabelentry (LexState *ls, Labellist *l, TString *name,
                           int line, int pc) {
   int n = l->n;
-  luaM_growvector(ls->L, l->arr, n, l->size,
-                  Labeldesc, SHRT_MAX, "labels/gotos");
+  if(n >= l->size) {
+    l->arr = (Labeldesc*)luaM_growaux_(ls->L, l->arr, l->size, sizeof(Labeldesc), SHRT_MAX, "labels/gotos");
+  }
   l->arr[n].name = name;
   l->arr[n].line = line;
   l->arr[n].nactvar = ls->fs->nactvar;
@@ -501,8 +507,9 @@ static void codeclosure (LexState *ls, Proto *clp, expdesc *v) {
   Proto *f = fs->f;  /* prototype of function creating new closure */
   if (fs->np >= f->sizep) {
     int oldsize = f->sizep;
-    luaM_growvector(ls->L, f->p, fs->np, f->sizep, Proto *,
-                    MAXARG_Bx, "functions");
+    if(fs->np >= f->sizep) {
+      f->p = (Proto**)luaM_growaux_(ls->L, f->p, f->sizep, sizeof(Proto*), MAXARG_Bx, "functions");
+    }
     while (oldsize < f->sizep) f->p[oldsize++] = NULL;
   }
   f->p[fs->np++] = clp;
