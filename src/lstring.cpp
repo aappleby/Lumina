@@ -119,3 +119,13 @@ Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
 void luaS_freestr (lua_State* L, TString* ts) {
   luaM_freemem(L, ts, sizestring(ts));
 }
+
+void luaS_initstrt(stringtable * strt) {
+  strt->size = 0;
+  strt->nuse = 0;
+  strt->hash = NULL;
+}
+
+void luaS_freestrt (lua_State* L, stringtable* strt) {
+  luaM_freearray(L, strt->hash, strt->size);
+}

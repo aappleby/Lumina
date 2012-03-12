@@ -56,14 +56,6 @@ struct lua_longjmp;  /* defined in ldo.c */
 #define KGC_GEN		2	/* generational collection */
 
 
-class stringtable {
-public:
-  LuaBase **hash;
-  uint32_t nuse;  /* number of elements */
-  int size;
-};
-
-
 /*
 ** information about a call
 */

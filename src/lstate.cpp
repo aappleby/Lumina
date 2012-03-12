@@ -173,7 +173,7 @@ static void close_state (lua_State *L) {
   global_State *g = G(L);
   luaF_close(L, L->stack);  /* close all upvalues for this thread */
   luaC_freeallobjects(L);  /* collect all objects */
-  luaM_freearray(L, G(L)->strt.hash, G(L)->strt.size);
+  luaS_freestrt(L, &G(L)->strt);
   luaZ_freebuffer(L, &g->buff);
   freestack(L);
   assert(gettotalbytes(g) == sizeof(LG));
@@ -228,9 +228,7 @@ lua_State *lua_newstate (lua_Alloc f) {
   g->uvhead.u.l.next = &g->uvhead;
   g->gcrunning = 0;  /* no GC while building state */
   g->lastmajormem = 0;
-  g->strt.size = 0;
-  g->strt.nuse = 0;
-  g->strt.hash = NULL;
+  luaS_initstrt(&g->strt);
   setnilvalue(&g->l_registry);
   luaZ_initbuffer(L, &g->buff);
   g->panic = NULL;

@@ -33,3 +33,10 @@ protected:
   size_t len;  /* number of characters in string */
 
 };
+
+class stringtable {
+public:
+  LuaBase **hash;
+  uint32_t nuse;  /* number of elements */
+  int size;
+};

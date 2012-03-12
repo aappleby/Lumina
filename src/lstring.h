@@ -32,5 +32,8 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l);
 TString *luaS_new (lua_State *L, const char *str);
 void luaS_freestr (lua_State *L, TString* ts);
 
+void luaS_initstrt(stringtable * strt);
+void luaS_freestrt (lua_State* L, stringtable* strt);
+
 
 #endif
