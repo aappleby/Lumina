@@ -551,17 +551,17 @@ static void close_func (LexState *ls) {
   Proto *f = fs->f;
   luaK_ret(fs, 0, 0);  /* final return */
   leaveblock(fs);
-  luaM_reallocvector(L, f->code, f->sizecode, fs->pc, Instruction);
+  luaM_reallocvector2(L, f->code, f->sizecode, fs->pc);
   f->sizecode = fs->pc;
-  luaM_reallocvector(L, f->lineinfo, f->sizelineinfo, fs->pc, int);
+  luaM_reallocvector2(L, f->lineinfo, f->sizelineinfo, fs->pc);
   f->sizelineinfo = fs->pc;
-  luaM_reallocvector(L, f->k, f->sizek, fs->nk, TValue);
+  luaM_reallocvector2(L, f->k, f->sizek, fs->nk);
   f->sizek = fs->nk;
-  luaM_reallocvector(L, f->p, f->sizep, fs->np, Proto *);
+  luaM_reallocvector2(L, f->p, f->sizep, fs->np);
   f->sizep = fs->np;
-  luaM_reallocvector(L, f->locvars, f->sizelocvars, fs->nlocvars, LocVar);
+  luaM_reallocvector2(L, f->locvars, f->sizelocvars, fs->nlocvars);
   f->sizelocvars = fs->nlocvars;
-  luaM_reallocvector(L, f->upvalues, f->sizeupvalues, fs->nups, Upvaldesc);
+  luaM_reallocvector2(L, f->upvalues, f->sizeupvalues, fs->nups);
   f->sizeupvalues = fs->nups;
   assert(fs->bl == NULL);
   ls->fs = fs->prev;

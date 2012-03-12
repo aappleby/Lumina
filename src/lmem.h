@@ -40,8 +40,6 @@ void* luaM_newobject(lua_State* L, int tag, size_t size);
           if ((nelems)+1 > (size)) \
             ((v)=cast(t *, luaM_growaux_(L,v,&(size),sizeof(t),limit,e)))
 
-#define luaM_reallocvector(L, v,oldn,n,t) ((v)=cast(t *, luaM_reallocv(L, v, oldn, n, sizeof(t))))
-
 template<class T>
 void luaM_reallocvector2(lua_State* L, T*& v, size_t oldn, size_t newn) {
   v = (T*)luaM_reallocv(L, v, oldn, newn, sizeof(T));
