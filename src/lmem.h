@@ -13,20 +13,12 @@
 #include "llimits.h"
 #include "lua.h"
 
-/* +1 to avoid warnings */
-/*
-#define luaM_reallocv(L,b,on,n,e) \
-	((cast(size_t, (n)+1) > MAX_SIZET/(e)) ?   \
-		(luaM_toobig(L), (void *)0) : \
-		luaM_realloc_(L, (b), (on)*(e), (n)*(e)))
-*/
 
 void* luaM_reallocv(lua_State* L, void* block, size_t osize, size_t nsize, size_t esize);
 
 void luaM_freemem(lua_State* L, void * blob, size_t size);
 
 
-#define luaM_free(L, b)		luaM_realloc_(L, (b), sizeof(*(b)), 0)
 #define luaM_freearray(L, b, n)   luaM_reallocv(L, (b), n, 0, sizeof((b)[0]))
 
 #define luaM_malloc(L,s)	luaM_realloc_(L, NULL, 0, (s))

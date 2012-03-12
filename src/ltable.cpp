@@ -374,7 +374,7 @@ void luaH_free (lua_State *L, Table *t) {
   if (!isdummy(t->node))
     luaM_freearray(L, t->node, cast(size_t, sizenode(t)));
   luaM_freearray(L, t->array, t->sizearray);
-  luaM_free(L, t);
+  luaM_freemem(L, t, sizeof(Table));
 }
 
 

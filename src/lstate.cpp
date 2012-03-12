@@ -76,7 +76,7 @@ void luaE_freeCI (lua_State *L) {
   ci->next = NULL;
   while ((ci = next) != NULL) {
     next = ci->next;
-    luaM_free(L, ci);
+    luaM_freemem(L, ci, sizeof(CallInfo));
   }
 }
 
@@ -207,7 +207,7 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
   luaF_close(L1, L1->stack);  /* close all upvalues for this thread */
   assert(L1->openupval == NULL);
   freestack(L1);
-  luaM_free(L, L1);
+  luaM_freemem(L, L1, sizeof(lua_State));
 }
 
 

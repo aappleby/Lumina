@@ -89,7 +89,7 @@ static void unlinkupval (UpVal *uv) {
 void luaF_freeupval (lua_State *L, UpVal *uv) {
   if (uv->v != &uv->u.value)  /* is it open? */
     unlinkupval(uv);  /* remove from open list */
-  luaM_free(L, uv);  /* free upvalue */
+  luaM_freemem(L, uv, sizeof(UpVal));  /* free upvalue */
 }
 
 
@@ -141,13 +141,13 @@ Proto *luaF_newproto (lua_State *L) {
 
 
 void luaF_freeproto (lua_State *L, Proto *f) {
-  luaM_freearray(L, f->code, f->sizecode);
-  luaM_freearray(L, f->p, f->sizep);
-  luaM_freearray(L, f->k, f->sizek);
-  luaM_freearray(L, f->lineinfo, f->sizelineinfo);
-  luaM_freearray(L, f->locvars, f->sizelocvars);
-  luaM_freearray(L, f->upvalues, f->sizeupvalues);
-  luaM_free(L, f);
+  luaM_freemem(L, f->code, f->sizecode * sizeof(Instruction));
+  luaM_freemem(L, f->p, f->sizep * sizeof(Proto*));
+  luaM_freemem(L, f->k, f->sizek * sizeof(TValue));
+  luaM_freemem(L, f->lineinfo, f->sizelineinfo * sizeof(int));
+  luaM_freemem(L, f->locvars, f->sizelocvars * sizeof(LocVar));
+  luaM_freemem(L, f->upvalues, f->sizeupvalues * sizeof(Upvaldesc));
+  luaM_freemem(L, f, sizeof(Proto));
 }
 
 
