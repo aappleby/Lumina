@@ -174,16 +174,16 @@ public:
 #define gch(o)		(o)
 
 /* macros to convert a LuaBase into a specific value */
-#define gco2ts(o)	check_exp((o)->gch.tt == LUA_TSTRING, reinterpret_cast<TString*>(o))
-#define rawgco2u(o)	check_exp((o)->gch.tt == LUA_TUSERDATA, reinterpret_cast<Udata*>(o))
+#define gco2ts(o)	check_exp((o)->tt == LUA_TSTRING, reinterpret_cast<TString*>(o))
+#define rawgco2u(o)	check_exp((o)->tt == LUA_TUSERDATA, reinterpret_cast<Udata*>(o))
 
 #define gco2u(o)	(rawgco2u(o))
 
-#define gco2cl(o)	check_exp((o)->gch.tt == LUA_TFUNCTION, reinterpret_cast<Closure*>(o))
-#define gco2t(o)	check_exp((o)->gch.tt == LUA_TTABLE, reinterpret_cast<Table*>(o))
-#define gco2p(o)	check_exp((o)->gch.tt == LUA_TPROTO, reinterpret_cast<Proto*>(o))
-#define gco2uv(o)	check_exp((o)->gch.tt == LUA_TUPVAL, reinterpret_cast<UpVal*>(o))
-#define gco2th(o)	check_exp((o)->gch.tt == LUA_TTHREAD, reinterpret_cast<lua_State*>(o))
+#define gco2cl(o)	check_exp((o)->tt == LUA_TFUNCTION, reinterpret_cast<Closure*>(o))
+#define gco2t(o)	check_exp((o)->tt == LUA_TTABLE, reinterpret_cast<Table*>(o))
+#define gco2p(o)	check_exp((o)->tt == LUA_TPROTO, reinterpret_cast<Proto*>(o))
+#define gco2uv(o)	check_exp((o)->tt == LUA_TUPVAL, reinterpret_cast<UpVal*>(o))
+#define gco2th(o)	check_exp((o)->tt == LUA_TTHREAD, reinterpret_cast<lua_State*>(o))
 
 /* macro to convert any Lua object into a LuaBase */
 #define obj2gco(v)	(cast(LuaBase *, (v)))

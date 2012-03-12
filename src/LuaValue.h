@@ -139,7 +139,7 @@ struct TValue {
 
 
 /* Macros for internal tests */
-#define righttt(obj)		(ttypenv(obj) == gcvalue(obj)->gch.tt)
+#define righttt(obj)		(ttypenv(obj) == gcvalue(obj)->tt)
 
 #define checkliveness(g,obj) assert(!iscollectable(obj) || (righttt(obj) && !isdead(g,gcvalue(obj))))
 

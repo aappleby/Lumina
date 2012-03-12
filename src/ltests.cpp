@@ -405,7 +405,7 @@ static void checkold (global_State *g, LuaBase *o) {
     }
     else assert(!isold);  /* non-old object cannot be after an old one */
     if (isgray(o)) {
-      assert(!keepinvariant(g) || testbit(o->gch.marked, TESTGRAYBIT));
+      assert(!keepinvariant(g) || testbit(o->marked, TESTGRAYBIT));
       resetbit(o->marked, TESTGRAYBIT);
     }
     assert(!testbit(o->marked, TESTGRAYBIT));
@@ -429,12 +429,12 @@ int lua_checkmemory (lua_State *L) {
   checkold(g, g->allgc);
   for (o = g->allgc; o != NULL; o = gch(o)->next) {
     checkobject(g, o);
-    assert(!testbit(o->gch.marked, SEPARATED));
+    assert(!testbit(o->marked, SEPARATED));
   }
   /* check 'finobj' list */
   checkold(g, g->finobj);
   for (o = g->finobj; o != NULL; o = gch(o)->next) {
-    assert(!isdead(g, o) && testbit(o->gch.marked, SEPARATED));
+    assert(!isdead(g, o) && testbit(o->marked, SEPARATED));
     assert(gch(o)->tt == LUA_TUSERDATA ||
                gch(o)->tt == LUA_TTABLE);
     checkobject(g, o);
@@ -443,7 +443,7 @@ int lua_checkmemory (lua_State *L) {
   checkold(g, g->tobefnz);
   for (o = g->tobefnz; o != NULL; o = gch(o)->next) {
     assert(!iswhite(o));
-    assert(!isdead(g, o) && testbit(o->gch.marked, SEPARATED));
+    assert(!isdead(g, o) && testbit(o->marked, SEPARATED));
     assert(gch(o)->tt == LUA_TUSERDATA ||
                gch(o)->tt == LUA_TTABLE);
   }
@@ -1457,7 +1457,6 @@ static void checkfinalmem (void) {
 int luaopen_test (lua_State *L) {
   lua_atpanic(L, &tpanic);
   atexit(checkfinalmem);
-  assert(lua_getallocf(L) == debug_realloc);
   luaL_newlib(L, tests_funcs);
   return 1;
 }
