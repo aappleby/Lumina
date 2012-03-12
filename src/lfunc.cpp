@@ -21,7 +21,7 @@
 
 
 Closure *luaF_newCclosure (lua_State *L, int n) {
-  LuaBase* o = luaC_newobj(L, LUA_TFUNCTION, sizeCclosure(n), NULL, 0);
+  LuaBase* o = luaC_newobj(L, LUA_TFUNCTION, sizeCclosure(n), NULL);
   Closure *c = gco2cl(o);
   c->c.isC = 1;
   c->c.nupvalues = cast_byte(n);
@@ -31,7 +31,7 @@ Closure *luaF_newCclosure (lua_State *L, int n) {
 
 Closure *luaF_newLclosure (lua_State *L, Proto *p) {
   int n = p->sizeupvalues;
-  LuaBase* o = luaC_newobj(L, LUA_TFUNCTION, sizeLclosure(n), NULL, 0);
+  LuaBase* o = luaC_newobj(L, LUA_TFUNCTION, sizeLclosure(n), NULL);
   Closure *c = gco2cl(o);
   c->l.isC = 0;
   c->l.p = p;
@@ -42,7 +42,7 @@ Closure *luaF_newLclosure (lua_State *L, Proto *p) {
 
 
 UpVal *luaF_newupval (lua_State *L) {
-  LuaBase *o = luaC_newobj(L, LUA_TUPVAL, sizeof(UpVal), NULL, 0);
+  LuaBase *o = luaC_newobj(L, LUA_TUPVAL, sizeof(UpVal), NULL);
   UpVal *uv = gco2uv(o);
   uv->v = &uv->u.value;
   setnilvalue(uv->v);
@@ -67,7 +67,7 @@ UpVal *luaF_findupval (lua_State *L, StkId level) {
     pp = &p->next;
   }
   /* not found: create a new one */
-  LuaBase* o = luaC_newobj(L, LUA_TUPVAL, sizeof(UpVal), pp, 0);
+  LuaBase* o = luaC_newobj(L, LUA_TUPVAL, sizeof(UpVal), pp);
   uv = gco2uv(o);
   uv->v = level;  /* current value lives in the stack */
   uv->u.l.prev = &g->uvhead;  /* double link it in `uvhead' list */
@@ -115,7 +115,7 @@ void luaF_close (lua_State *L, StkId level) {
 
 
 Proto *luaF_newproto (lua_State *L) {
-  LuaBase* o = luaC_newobj(L, LUA_TPROTO, sizeof(Proto), NULL, 0);
+  LuaBase* o = luaC_newobj(L, LUA_TPROTO, sizeof(Proto), NULL);
   Proto* f = gco2p(o);
   f->k = NULL;
   f->sizek = 0;

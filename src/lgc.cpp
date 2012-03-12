@@ -213,10 +213,9 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
 ** it to '*list'. 'offset' tells how many bytes to allocate before the
 ** object itself (used only by states).
 */
-LuaBase *luaC_newobj (lua_State *L, int tt, size_t sz, LuaBase **list,
-                       int offset) {
+LuaBase *luaC_newobj (lua_State *L, int tt, size_t sz, LuaBase **list) {
   global_State *g = G(L);
-  LuaBase *o = obj2gco(cast(char *, luaM_newobject(L, tt, sz)) + offset);
+  LuaBase *o = obj2gco(cast(char *, luaM_newobject(L, tt, sz)));
   if (list == NULL)
     list = &g->allgc;  /* standard list for collectable objects */
   gch(o)->marked = luaC_white(g);

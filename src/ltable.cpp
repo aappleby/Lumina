@@ -359,7 +359,7 @@ static void rehash (lua_State *L, Table *t, const TValue *ek) {
 
 
 Table *luaH_new (lua_State *L) {
-  LuaBase* o = luaC_newobj(L, LUA_TTABLE, sizeof(Table), NULL, 0);
+  LuaBase* o = luaC_newobj(L, LUA_TTABLE, sizeof(Table), NULL);
   Table *t = gco2t(o);
   t->metatable = NULL;
   t->flags = cast_byte(~0);

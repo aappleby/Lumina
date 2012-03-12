@@ -116,7 +116,6 @@ static void freeblock (Memcontrol *mc, Header *block) {
 
 
 void *debug_realloc (void *b, size_t oldsize, size_t size) {
-  //Memcontrol *mc = cast(Memcontrol *, ud);
   Memcontrol *mc = &l_memcontrol;
   Header *block = cast(Header *, b);
   int type;

@@ -127,8 +127,7 @@ void luaC_step (lua_State *L);
 void luaC_forcestep (lua_State *L);
 void luaC_runtilstate (lua_State *L, int statesmask);
 void luaC_fullgc (lua_State *L, int isemergency);
-LuaBase *luaC_newobj (lua_State *L, int tt, size_t sz,
-                                 LuaBase **list, int offset);
+LuaBase *luaC_newobj (lua_State *L, int tt, size_t sz, LuaBase **list);
 void luaC_barrier_ (lua_State *L, LuaBase *o, LuaBase *v);
 void luaC_barrierback_ (lua_State *L, LuaBase *o);
 void luaC_barrierproto_ (lua_State *L, Proto *p, Closure *c);

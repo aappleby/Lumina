@@ -185,7 +185,7 @@ lua_State *lua_newthread (lua_State *L) {
   lua_State *L1;
   lua_lock(L);
   luaC_checkGC(L);
-  LuaBase* o = luaC_newobj(L, LUA_TTHREAD, sizeof(lua_State), NULL, 0);
+  LuaBase* o = luaC_newobj(L, LUA_TTHREAD, sizeof(lua_State), NULL);
   L1 = gco2th(o);
   setthvalue(L, L->top, L1);
   api_incr_top(L);
