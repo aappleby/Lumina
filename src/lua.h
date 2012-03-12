@@ -91,7 +91,7 @@ typedef void * (*lua_Alloc) (void *ptr, size_t osize, size_t nsize);
 /*
 ** state manipulation
 */
-lua_State *(lua_newstate) (lua_Alloc f);
+lua_State *(lua_newstate) ();
 void       (lua_close) (lua_State *L);
 lua_State *(lua_newthread) (lua_State *L);
 
@@ -267,10 +267,6 @@ int   (lua_next) (lua_State *L, int idx);
 
 void  (lua_concat) (lua_State *L, int n);
 void  (lua_len)    (lua_State *L, int idx);
-
-lua_Alloc (lua_getallocf) (lua_State *L);
-void      (lua_setallocf) (lua_State *L, lua_Alloc f);
-
 
 
 /*

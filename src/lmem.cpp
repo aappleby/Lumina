@@ -21,25 +21,6 @@
 
 
 
-/*
-** About the realloc function:
-** void * frealloc (void *ud, void *ptr, size_t osize, size_t nsize);
-** (`osize' is the old size, `nsize' is the new size)
-**
-** * frealloc(ud, NULL, x, s) creates a new block of size `s' (no
-** matter 'x').
-**
-** * frealloc(ud, p, x, 0) frees the block `p'
-** (in this specific case, frealloc must return NULL);
-** particularly, frealloc(ud, NULL, 0, 0) does nothing
-** (which is equivalent to free(NULL) in ANSI C)
-**
-** frealloc returns NULL if it cannot create or reallocate the area
-** (any reallocation to an equal or smaller size cannot fail!)
-*/
-
-
-
 #define MINSIZEARRAY	4
 
 
@@ -97,13 +78,13 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
   global_State *g = G(L);
   size_t realosize = (block) ? osize : 0;
   assert((realosize == 0) == (block == NULL));
-  newblock = (*g->frealloc)(block, osize, nsize);
+  newblock = default_alloc(block, osize, nsize);
   if (newblock == NULL && nsize > 0) {
     api_check(L, nsize > realosize,
                  "realloc cannot fail when shrinking a block");
     if (g->gcrunning) {
       luaC_fullgc(L, 1);  /* try to free some memory... */
-      newblock = (*g->frealloc)(block, osize, nsize);  /* try again */
+      newblock = default_alloc(block, osize, nsize);  /* try again */
     }
     if (newblock == NULL)
       luaD_throw(L, LUA_ERRMEM);

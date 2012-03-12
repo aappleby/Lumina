@@ -104,7 +104,6 @@ public:
 */
 class global_State {
 public:
-  lua_Alloc frealloc;  /* function to reallocate memory */
   size_t totalbytes;  /* number of bytes currently allocated - GCdebt */
   l_mem GCdebt;  /* bytes allocated not yet compensated by the collector */
   size_t lastmajormem;  /* memory in use after last major collection */

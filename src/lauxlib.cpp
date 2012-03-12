@@ -817,7 +817,7 @@ static int panic (lua_State *L) {
 
 
 lua_State *luaL_newstate (void) {
-  lua_State *L = lua_newstate(default_alloc);
+  lua_State *L = lua_newstate();
   if (L) lua_atpanic(L, &panic);
   return L;
 }

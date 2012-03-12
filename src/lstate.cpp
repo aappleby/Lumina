@@ -180,7 +180,7 @@ static void close_state (lua_State *L) {
 
   freestack(L);
   assert(gettotalbytes(g) == sizeof(LG));
-  (*g->frealloc)(L, sizeof(LG), 0);  /* free main block */
+  default_alloc(L, sizeof(LG), 0);  /* free main block */
 }
 
 
@@ -211,11 +211,11 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
 }
 
 
-lua_State *lua_newstate (lua_Alloc f) {
+lua_State *lua_newstate () {
   int i;
   lua_State *L;
   global_State *g;
-  LG *l = cast(LG *, (*f)(NULL, LUA_TTHREAD, sizeof(LG)));
+  LG *l = cast(LG *, default_alloc(NULL, LUA_TTHREAD, sizeof(LG)));
   if (l == NULL) return NULL;
   L = &l->l;
   g = &l->g;
@@ -225,7 +225,6 @@ lua_State *lua_newstate (lua_Alloc f) {
   L->marked = luaC_white(g);
   g->gckind = KGC_NORMAL;
   preinit_state(L, g);
-  g->frealloc = f;
   g->mainthread = L;
   g->uvhead.u.l.prev = &g->uvhead;
   g->uvhead.u.l.next = &g->uvhead;

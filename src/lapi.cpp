@@ -1151,22 +1151,6 @@ void lua_len (lua_State *L, int idx) {
 }
 
 
-lua_Alloc lua_getallocf (lua_State *L) {
-  lua_Alloc f;
-  lua_lock(L);
-  f = G(L)->frealloc;
-  lua_unlock(L);
-  return f;
-}
-
-
-void lua_setallocf (lua_State *L, lua_Alloc f) {
-  lua_lock(L);
-  G(L)->frealloc = f;
-  lua_unlock(L);
-}
-
-
 void *lua_newuserdata (lua_State *L, size_t size) {
   Udata *u;
   lua_lock(L);
