@@ -67,6 +67,26 @@ l_noret luaM_toobig (lua_State *L) {
   luaG_runerror(L, "memory allocation error: block too big");
 }
 
+void *l_alloc (void *ptr, size_t osize, size_t nsize) {
+  (void)osize;  /* not used */
+  if (nsize == 0) {
+    free(ptr);
+    return NULL;
+  }
+  else
+    return realloc(ptr, nsize);
+}
+
+void *debug_realloc (void *block, size_t osize, size_t nsize);
+void *l_alloc (void *ptr, size_t osize, size_t nsize);
+
+void* default_alloc(void *ptr, size_t osize, size_t nsize) {
+#ifdef LUA_DEBUG
+  return debug_realloc(ptr,osize,nsize);
+#else
+  return l_alloc(ptr,osize,nsize);
+#endif
+}
 
 
 /*
@@ -77,10 +97,6 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
   global_State *g = G(L);
   size_t realosize = (block) ? osize : 0;
   assert((realosize == 0) == (block == NULL));
-#if defined(HARDMEMTESTS)
-  if (nsize > realosize && g->gcrunning)
-    luaC_fullgc(L, 1);  /* force a GC whenever possible */
-#endif
   newblock = (*g->frealloc)(block, osize, nsize);
   if (newblock == NULL && nsize > 0) {
     api_check(L, nsize > realosize,
@@ -94,21 +110,6 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
   }
   assert((nsize == 0) == (newblock == NULL));
   g->GCdebt = (g->GCdebt + nsize) - realosize;
-#if defined(TRACEMEM)
-  { /* auxiliary patch to monitor garbage collection.
-    ** To plot, gnuplot with following command:
-    ** plot TRACEMEM using 1:2 with lines, TRACEMEM using 1:3 with lines
-    */
-    static unsigned long total = 0;  /* our "time" */
-    static FILE *f = NULL;  /* output file */
-    total++;  /* "time" always grows */
-    if ((total % 200) == 0) {
-      if (f == NULL) f = fopen(TRACEMEM, "w");
-      fprintf(f, "%lu %u %d %d\n", total,
-              gettotalbytes(g), g->GCdebt, g->gcstate * 10000);
-    }
-  }
-#endif
 
   return newblock;
 }

@@ -125,7 +125,7 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
   lua_State *L = ls->L;
   TValue *o;  /* entry for `str' */
   TString *ts = luaS_newlstr(L, str, l);  /* create new string */
-  setsvalue2s(L, L->top++, ts);  /* temporarily anchor it in stack */
+  setsvalue(L, L->top++, ts);  /* temporarily anchor it in stack */
   o = luaH_set(L, ls->fs->h, L->top - 1);
   if (ttisnil(o)) {  /* not in use yet? (see 'addK') */
     /* boolean value does not need GC barrier;

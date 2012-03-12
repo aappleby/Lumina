@@ -171,7 +171,7 @@ int luaO_str2d (const char *s, size_t len, lua_Number *result) {
 
 
 static void pushstr (lua_State *L, const char *str, size_t l) {
-  setsvalue2s(L, L->top, luaS_newlstr(L, str, l));
+  setsvalue(L, L->top, luaS_newlstr(L, str, l));
   incr_top(L);
 }
 
@@ -182,7 +182,7 @@ const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
   for (;;) {
     const char *e = strchr(fmt, '%');
     if (e == NULL) break;
-    setsvalue2s(L, L->top, luaS_newlstr(L, fmt, e-fmt));
+    setsvalue(L, L->top, luaS_newlstr(L, fmt, e-fmt));
     incr_top(L);
     switch (*(e+1)) {
       case 's': {

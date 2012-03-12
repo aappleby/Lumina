@@ -84,11 +84,11 @@ struct lua_longjmp {
 static void seterrorobj (lua_State *L, int errcode, StkId oldtop) {
   switch (errcode) {
     case LUA_ERRMEM: {  /* memory error? */
-      setsvalue2s(L, oldtop, G(L)->memerrmsg); /* reuse preregistered msg. */
+      setsvalue(L, oldtop, G(L)->memerrmsg); /* reuse preregistered msg. */
       break;
     }
     case LUA_ERRERR: {
-      setsvalue2s(L, oldtop, luaS_newliteral(L, "error in error handling"));
+      setsvalue(L, oldtop, luaS_newliteral(L, "error in error handling"));
       break;
     }
     default: {
@@ -473,7 +473,7 @@ static int recover (lua_State *L, int status) {
 */
 static l_noret resume_error (lua_State *L, const char *msg, StkId firstArg) {
   L->top = firstArg;  /* remove args from the stack */
-  setsvalue2s(L, L->top, luaS_new(L, msg));  /* push error message */
+  setsvalue(L, L->top, luaS_new(L, msg));  /* push error message */
   incr_top(L);
   luaD_throw(L, -1);  /* jump back to 'lua_resume' */
 }
@@ -636,7 +636,7 @@ static void f_parser (lua_State *L, void *ud) {
     checkmode(L, p->mode, "text");
     tf = luaY_parser(L, p->z, &p->buff, &p->dyd, p->name, c);
   }
-  setptvalue2s(L, L->top, tf);
+  setptvalue(L, L->top, tf);
   incr_top(L);
   cl = luaF_newLclosure(L, tf);
   setclLvalue(L, L->top - 1, cl);

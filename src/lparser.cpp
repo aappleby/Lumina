@@ -535,11 +535,11 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   f->source = ls->source;
   f->maxstacksize = 2;  /* registers 0/1 are always valid */
   /* anchor prototype (to avoid being collected) */
-  setptvalue2s(L, L->top, f);
+  setptvalue(L, L->top, f);
   incr_top(L);
   fs->h = luaH_new(L);
   /* anchor table of constants (to avoid being collected) */
-  sethvalue2s(L, L->top, fs->h);
+  sethvalue(L, L->top, fs->h);
   incr_top(L);
   enterblock(fs, bl, 0);
 }
@@ -1601,7 +1601,7 @@ Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
   FuncState funcstate;
   BlockCnt bl;
   TString *tname = luaS_new(L, name);
-  setsvalue2s(L, L->top, tname);  /* push name to protect it */
+  setsvalue(L, L->top, tname);  /* push name to protect it */
   incr_top(L);
   lexstate.buff = buff;
   lexstate.dyd = dyd;

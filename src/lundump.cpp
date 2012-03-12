@@ -116,7 +116,7 @@ static void LoadConstants(LoadState* S, Proto* f)
 	setnvalue(o,LoadNumber(S));
 	break;
    case LUA_TSTRING:
-	setsvalue2n(S->L,o,LoadString(S));
+	setsvalue(S->L,o,LoadString(S));
 	break;
   }
  }
@@ -166,7 +166,7 @@ static void LoadDebug(LoadState* S, Proto* f)
 static Proto* LoadFunction(LoadState* S)
 {
  Proto* f=luaF_newproto(S->L);
- setptvalue2s(S->L,S->L->top,f); incr_top(S->L);
+ setptvalue(S->L,S->L->top,f); incr_top(S->L);
  f->linedefined=LoadInt(S);
  f->lastlinedefined=LoadInt(S);
  f->numparams=LoadByte(S);

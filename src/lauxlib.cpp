@@ -22,6 +22,7 @@
 #include "lua.h"
 
 #include "lauxlib.h"
+#include "lmem.h"
 
 
 /*
@@ -890,18 +891,6 @@ const char *luaL_gsub (lua_State *L, const char *s, const char *p,
   return lua_tostring(L, -1);
 }
 
-void *debug_realloc (void *block, size_t osize, size_t nsize);
-
-static void *l_alloc (void *ptr, size_t osize, size_t nsize) {
-  (void)osize;  /* not used */
-  if (nsize == 0) {
-    free(ptr);
-    return NULL;
-  }
-  else
-    return realloc(ptr, nsize);
-}
-
 
 static int panic (lua_State *L) {
   luai_writestringerror("PANIC: unprotected error in call to Lua API (%s)\n",
@@ -911,11 +900,7 @@ static int panic (lua_State *L) {
 
 
 lua_State *luaL_newstate (void) {
-#ifdef LUA_DEBUG
-  lua_State *L = lua_newstate(debug_realloc);
-#else
-  lua_State *L = lua_newstate(l_alloc);
-#endif
+  lua_State *L = lua_newstate(default_alloc);
   if (L) lua_atpanic(L, &panic);
   return L;
 }

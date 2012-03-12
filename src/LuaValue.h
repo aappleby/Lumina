@@ -212,14 +212,5 @@ struct TValue {
 	  checkliveness(G(L),io1); }
 
 
-/*
-** different types of assignments, according to destination
-*/
-
-#define setsvalue2s	  setsvalue
-#define sethvalue2s	  sethvalue
-#define setptvalue2s	setptvalue
-#define setsvalue2n	  setsvalue
-
 #define luai_checknum(L,o,c)	{ /* empty */ }
 

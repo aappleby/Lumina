@@ -25,8 +25,7 @@
 
 #define luaM_malloc(L,s)	luaM_realloc_(L, NULL, 0, (s))
 #define luaM_new(L,t)		cast(t *, luaM_malloc(L, sizeof(t)))
-#define luaM_newvector(L,n,t) \
-		cast(t *, luaM_reallocv(L, NULL, 0, n, sizeof(t)))
+#define luaM_newvector(L,n,t) cast(t *, luaM_reallocv(L, NULL, 0, n, sizeof(t)))
 
 #define luaM_newobject(L,tag,s)	luaM_realloc_(L, NULL, tag, (s))
 
@@ -34,8 +33,7 @@
           if ((nelems)+1 > (size)) \
             ((v)=cast(t *, luaM_growaux_(L,v,&(size),sizeof(t),limit,e)))
 
-#define luaM_reallocvector(L, v,oldn,n,t) \
-   ((v)=cast(t *, luaM_reallocv(L, v, oldn, n, sizeof(t))))
+#define luaM_reallocvector(L, v,oldn,n,t) ((v)=cast(t *, luaM_reallocv(L, v, oldn, n, sizeof(t))))
 
 l_noret luaM_toobig (lua_State *L);
 
@@ -45,6 +43,8 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t oldsize,
 void *luaM_growaux_ (lua_State *L, void *block, int *size,
                                size_t size_elem, int limit,
                                const char *what);
+
+void* default_alloc(void *ptr, size_t osize, size_t nsize);
 
 #endif
 
