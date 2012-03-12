@@ -555,8 +555,8 @@ static void close_func (LexState *ls) {
   f->sizecode = fs->pc;
   f->lineinfo = (int*)luaM_reallocv(L, f->lineinfo, f->sizelineinfo, fs->pc, sizeof(int));
   f->sizelineinfo = fs->pc;
-  f->k = (TValue*)luaM_reallocv(L, f->k, f->sizek, fs->nk, sizeof(TValue));
-  f->sizek = fs->nk;
+  f->constants = (TValue*)luaM_reallocv(L, f->constants, f->nconstants, fs->nk, sizeof(TValue));
+  f->nconstants = fs->nk;
   f->p = (Proto**)luaM_reallocv(L, f->p, f->sizep, fs->np, sizeof(Proto*));
   f->sizep = fs->np;
   f->locvars = (LocVar*)luaM_reallocv(L, f->locvars, f->sizelocvars, fs->nlocvars, sizeof(LocVar));

@@ -117,8 +117,8 @@ void luaF_close (lua_State *L, StkId level) {
 Proto *luaF_newproto (lua_State *L) {
   LuaBase* o = luaC_newobj(L, LUA_TPROTO, sizeof(Proto), NULL);
   Proto* f = gco2p(o);
-  f->k = NULL;
-  f->sizek = 0;
+  f->constants = NULL;
+  f->nconstants = 0;
   f->p = NULL;
   f->sizep = 0;
   f->code = NULL;
@@ -143,7 +143,7 @@ Proto *luaF_newproto (lua_State *L) {
 void luaF_freeproto (lua_State *L, Proto *f) {
   luaM_freemem(L, f->code, f->sizecode * sizeof(Instruction));
   luaM_freemem(L, f->p, f->sizep * sizeof(Proto*));
-  luaM_freemem(L, f->k, f->sizek * sizeof(TValue));
+  luaM_freemem(L, f->constants, f->nconstants * sizeof(TValue));
   luaM_freemem(L, f->lineinfo, f->sizelineinfo * sizeof(int));
   luaM_freemem(L, f->locvars, f->sizelocvars * sizeof(LocVar));
   luaM_freemem(L, f->upvalues, f->sizeupvalues * sizeof(Upvaldesc));

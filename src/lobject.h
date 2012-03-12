@@ -64,7 +64,9 @@ typedef struct LocVar {
 ** Function Prototypes
 */
 struct Proto : public LuaBase {
-  TValue *k;  /* constants used by the function */
+  TValue *constants;  /* constants used by the function */
+  int nconstants;  /* size of `constants' */
+
   Instruction *code;
   Proto **p;  /* functions defined inside the function */
   int *lineinfo;  /* map from opcodes to source lines (debug information) */
@@ -73,7 +75,6 @@ struct Proto : public LuaBase {
   union Closure *cache;  /* last created closure with this prototype */
   TString  *source;  /* used for debug information */
   int sizeupvalues;  /* size of 'upvalues' */
-  int sizek;  /* size of `k' */
   int sizecode;
   int sizelineinfo;
   int sizep;  /* size of `p' */

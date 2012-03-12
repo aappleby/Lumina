@@ -86,7 +86,7 @@ static TString* LoadString(LoadState* S)
 static void LoadCode(LoadState* S, Proto* f)
 {
  int n=LoadInt(S);
- f->code=luaM_newvector(S->L,n,Instruction);
+ f->code = (Instruction*)luaM_allocv(S->L,n,sizeof(Instruction));
  f->sizecode=n;
  LoadVector(S,f->code,n,sizeof(Instruction));
 }
@@ -97,12 +97,12 @@ static void LoadConstants(LoadState* S, Proto* f)
 {
  int i,n;
  n=LoadInt(S);
- f->k=luaM_newvector(S->L,n,TValue);
- f->sizek=n;
- for (i=0; i<n; i++) setnilvalue(&f->k[i]);
+ f->constants = (TValue*)luaM_allocv(S->L,n,sizeof(TValue));
+ f->nconstants=n;
+ for (i=0; i<n; i++) setnilvalue(&f->constants[i]);
  for (i=0; i<n; i++)
  {
-  TValue* o=&f->k[i];
+  TValue* o=&f->constants[i];
   int t=LoadChar(S);
   switch (t)
   {
@@ -121,7 +121,7 @@ static void LoadConstants(LoadState* S, Proto* f)
   }
  }
  n=LoadInt(S);
- f->p=luaM_newvector(S->L,n,Proto*);
+ f->p = (Proto**)luaM_allocv(S->L,n,sizeof(Proto*));
  f->sizep=n;
  for (i=0; i<n; i++) f->p[i]=NULL;
  for (i=0; i<n; i++) f->p[i]=LoadFunction(S);
@@ -131,7 +131,7 @@ static void LoadUpvalues(LoadState* S, Proto* f)
 {
  int i,n;
  n=LoadInt(S);
- f->upvalues=luaM_newvector(S->L,n,Upvaldesc);
+ f->upvalues = (Upvaldesc*)luaM_allocv(S->L,n,sizeof(Upvaldesc));
  f->sizeupvalues=n;
  for (i=0; i<n; i++) f->upvalues[i].name=NULL;
  for (i=0; i<n; i++)
@@ -146,11 +146,11 @@ static void LoadDebug(LoadState* S, Proto* f)
  int i,n;
  f->source=LoadString(S);
  n=LoadInt(S);
- f->lineinfo=luaM_newvector(S->L,n,int);
+ f->lineinfo = (int*)luaM_allocv(S->L,n,sizeof(int));
  f->sizelineinfo=n;
  LoadVector(S,f->lineinfo,n,sizeof(int));
  n=LoadInt(S);
- f->locvars=luaM_newvector(S->L,n,LocVar);
+ f->locvars = (LocVar*)luaM_allocv(S->L,n,sizeof(LocVar));
  f->sizelocvars=n;
  for (i=0; i<n; i++) f->locvars[i].varname=NULL;
  for (i=0; i<n; i++)

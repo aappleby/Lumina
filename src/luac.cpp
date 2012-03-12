@@ -250,7 +250,7 @@ static void PrintString(const TString* ts)
 
 static void PrintConstant(const Proto* f, int i)
 {
- const TValue* o=&f->k[i];
+ const TValue* o=&f->constants[i];
  switch (ttype(o))
  {
   case LUA_TNIL:
@@ -392,13 +392,13 @@ static void PrintHeader(const Proto* f)
 	(int)(f->numparams),f->is_vararg?"+":"",SS(f->numparams),
 	S(f->maxstacksize),S(f->sizeupvalues));
  printf("%d local%s, %d constant%s, %d function%s\n",
-	S(f->sizelocvars),S(f->sizek),S(f->sizep));
+	S(f->sizelocvars),S(f->nconstants),S(f->sizep));
 }
 
 static void PrintDebug(const Proto* f)
 {
  int i,n;
- n=f->sizek;
+ n=f->nconstants;
  printf("constants (%d) for %p:\n",n,VOID(f));
  for (i=0; i<n; i++)
  {

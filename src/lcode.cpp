@@ -213,12 +213,10 @@ static int luaK_code (FuncState *fs, Instruction i) {
   Proto *f = fs->f;
   dischargejpc(fs);  /* `pc' will change */
   /* put new instruction in code array */
-  luaM_growvector(fs->ls->L, f->code, fs->pc, f->sizecode, Instruction,
-                  MAX_INT, "opcodes");
+  luaM_growvector(fs->ls->L, f->code, fs->pc, f->sizecode, Instruction, MAX_INT, "opcodes");
   f->code[fs->pc] = i;
   /* save corresponding line information */
-  luaM_growvector(fs->ls->L, f->lineinfo, fs->pc, f->sizelineinfo, int,
-                  MAX_INT, "opcodes");
+  luaM_growvector(fs->ls->L, f->lineinfo, fs->pc, f->sizelineinfo, int, MAX_INT, "opcodes");
   f->lineinfo[fs->pc] = fs->ls->lastline;
   return fs->pc++;
 }
@@ -296,20 +294,20 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   if (ttisnumber(idx)) {
     lua_Number n = nvalue(idx);
     lua_number2int(k, n);
-    if (luaV_rawequalobj(&f->k[k], v))
+    if (luaV_rawequalobj(&f->constants[k], v))
       return k;
     /* else may be a collision (e.g., between 0.0 and "\0\0\0\0\0\0\0\0");
        go through and create a new entry for this value */
   }
   /* constant not found; create a new entry */
-  oldsize = f->sizek;
+  oldsize = f->nconstants;
   k = fs->nk;
   /* numerical value does not need GC barrier;
      table has no metatable, so it does not need to invalidate cache */
   setnvalue(idx, cast_num(k));
-  luaM_growvector(L, f->k, k, f->sizek, TValue, MAXARG_Ax, "constants");
-  while (oldsize < f->sizek) setnilvalue(&f->k[oldsize++]);
-  setobj(L, &f->k[k], v);
+  luaM_growvector(L, f->constants, k, f->nconstants, TValue, MAXARG_Ax, "constants");
+  while (oldsize < f->nconstants) setnilvalue(&f->constants[oldsize++]);
+  setobj(L, &f->constants[k], v);
   fs->nk++;
   luaC_barrier(L, f, v);
   return k;

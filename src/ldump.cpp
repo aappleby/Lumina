@@ -79,11 +79,11 @@ static void DumpFunction(const Proto* f, DumpState* D);
 
 static void DumpConstants(const Proto* f, DumpState* D)
 {
- int i,n=f->sizek;
+ int i,n=f->nconstants;
  DumpInt(n,D);
  for (i=0; i<n; i++)
  {
-  const TValue* o=&f->k[i];
+  const TValue* o=&f->constants[i];
   DumpChar(ttype(o),D);
   switch (ttype(o))
   {

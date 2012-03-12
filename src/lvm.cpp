@@ -525,7 +525,7 @@ void luaV_execute (lua_State *L) {
  newframe:  /* reentry point when frame changes (call/return) */
   assert(ci == L->ci);
   cl = clLvalue(ci->func);
-  k = cl->p->k;
+  k = cl->p->constants;
   base = ci->u.l.base;
   /* main loop of interpreter */
   for (;;) {
