@@ -127,5 +127,5 @@ void luaS_initstrt(stringtable * strt) {
 }
 
 void luaS_freestrt (lua_State* L, stringtable* strt) {
-  luaM_freearray(L, strt->hash, strt->size);
+  luaM_freemem(L, strt->hash, strt->size * sizeof(LuaBase*));
 }

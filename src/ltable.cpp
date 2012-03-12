@@ -322,8 +322,11 @@ void luaH_resize (lua_State *L, Table *t, int nasize, int nhsize) {
       setobj(L, luaH_set(L, t, gkey(old)), gval(old));
     }
   }
-  if (!isdummy(nold))
-    luaM_freearray(L, nold, cast(size_t, twoto(oldhsize))); /* free old array */
+  if (!isdummy(nold)) {
+     /* free old array */
+    size_t s = twoto(oldhsize);
+    luaM_freemem(L, nold, s * sizeof(Node));
+  }
 }
 
 

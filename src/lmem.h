@@ -26,16 +26,10 @@ void luaM_freemem(lua_State* L, void * blob, size_t size);
 #define luaM_newvector(L,n,t) cast(t *, luaM_reallocv(L, NULL, 0, n, sizeof(t)))
 
 void* luaM_newobject(lua_State* L, int tag, size_t size);
-//#define luaM_newobject(L,tag,s)	luaM_realloc_(L, NULL, tag, (s))
 
 #define luaM_growvector(L,v,nelems,size,t,limit,e) \
           if ((nelems)+1 > (size)) \
             ((v)=cast(t *, luaM_growaux_(L,v,&(size),sizeof(t),limit,e)))
-
-template<class T>
-void luaM_reallocvector2(lua_State* L, T*& v, size_t oldn, size_t newn) {
-  v = (T*)luaM_reallocv(L, v, oldn, newn, sizeof(T));
-}
 
 l_noret luaM_toobig (lua_State *L);
 

@@ -106,7 +106,7 @@ static void freestack (lua_State *L) {
     return;  /* stack not completely built yet */
   L->ci = &L->base_ci;  /* free the entire 'ci' list */
   luaE_freeCI(L);
-  luaM_freearray(L, L->stack, L->stacksize);  /* free stack array */
+  luaM_freemem(L, L->stack, L->stacksize * sizeof(TValue));
 }
 
 
