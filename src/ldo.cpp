@@ -656,7 +656,11 @@ int luaD_protectedparser (lua_State *L, ZIO *z, const char *name,
   p.dyd.label.arr = NULL; p.dyd.label.size = 0;
   luaZ_initbuffer(L, &p.buff);
   status = luaD_pcall(L, f_parser, &p, savestack(L, L->top), L->errfunc);
-  luaZ_freebuffer(L, &p.buff);
+  
+  luaM_reallocv(L, p.buff.buffer, p.buff.buffsize, 0, sizeof(char));
+  p.buff.buffer = NULL;
+  p.buff.buffsize = 0;
+  
   luaM_freearray(L, p.dyd.actvar.arr, p.dyd.actvar.size);
   luaM_freearray(L, p.dyd.gt.arr, p.dyd.gt.size);
   luaM_freearray(L, p.dyd.label.arr, p.dyd.label.size);

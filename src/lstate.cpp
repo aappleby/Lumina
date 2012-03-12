@@ -174,7 +174,10 @@ static void close_state (lua_State *L) {
   luaF_close(L, L->stack);  /* close all upvalues for this thread */
   luaC_freeallobjects(L);  /* collect all objects */
   luaS_freestrt(L, &G(L)->strt);
-  luaZ_freebuffer(L, &g->buff);
+
+	g->buff.buffer = (char*)luaM_reallocv(L, g->buff.buffer, g->buff.buffsize, 0, sizeof(char));
+	g->buff.buffsize = 0;
+
   freestack(L);
   assert(gettotalbytes(g) == sizeof(LG));
   (*g->frealloc)(L, sizeof(LG), 0);  /* free main block */
