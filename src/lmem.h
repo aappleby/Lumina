@@ -13,13 +13,19 @@
 #include "llimits.h"
 #include "lua.h"
 
-
+/* +1 to avoid warnings */
+/*
 #define luaM_reallocv(L,b,on,n,e) \
-	((cast(size_t, (n)+1) > MAX_SIZET/(e)) ?  /* +1 to avoid warnings */ \
+	((cast(size_t, (n)+1) > MAX_SIZET/(e)) ?   \
 		(luaM_toobig(L), (void *)0) : \
 		luaM_realloc_(L, (b), (on)*(e), (n)*(e)))
+*/
 
-#define luaM_freemem(L, b, s)	luaM_realloc_(L, (b), (s), 0)
+void* luaM_reallocv(lua_State* L, void* block, size_t osize, size_t nsize, size_t esize);
+
+void luaM_freemem(lua_State* L, void * blob, size_t size);
+
+
 #define luaM_free(L, b)		luaM_realloc_(L, (b), sizeof(*(b)), 0)
 #define luaM_freearray(L, b, n)   luaM_reallocv(L, (b), n, 0, sizeof((b)[0]))
 
@@ -27,13 +33,19 @@
 #define luaM_new(L,t)		cast(t *, luaM_malloc(L, sizeof(t)))
 #define luaM_newvector(L,n,t) cast(t *, luaM_reallocv(L, NULL, 0, n, sizeof(t)))
 
-#define luaM_newobject(L,tag,s)	luaM_realloc_(L, NULL, tag, (s))
+void* luaM_newobject(lua_State* L, int tag, size_t size);
+//#define luaM_newobject(L,tag,s)	luaM_realloc_(L, NULL, tag, (s))
 
 #define luaM_growvector(L,v,nelems,size,t,limit,e) \
           if ((nelems)+1 > (size)) \
             ((v)=cast(t *, luaM_growaux_(L,v,&(size),sizeof(t),limit,e)))
 
 #define luaM_reallocvector(L, v,oldn,n,t) ((v)=cast(t *, luaM_reallocv(L, v, oldn, n, sizeof(t))))
+
+template<class T>
+void luaM_reallocvector2(lua_State* L, T*& v, size_t oldn, size_t newn) {
+  v = (T*)luaM_reallocv(L, v, oldn, newn, sizeof(T));
+}
 
 l_noret luaM_toobig (lua_State *L);
 

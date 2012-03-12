@@ -214,12 +214,17 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
 ** object itself (used only by states).
 */
 LuaBase *luaC_newobj (lua_State *L, int tt, size_t sz, LuaBase **list) {
+  void* blob = luaM_newobject(L,tt,sz);
+  LuaBase *o = reinterpret_cast<LuaBase*>(blob);
+  
   global_State *g = G(L);
-  LuaBase *o = obj2gco(cast(char *, luaM_newobject(L, tt, sz)));
   if (list == NULL)
     list = &g->allgc;  /* standard list for collectable objects */
+  
   gch(o)->marked = luaC_white(g);
+  
   gch(o)->tt = tt;
+
   gch(o)->next = *list;
   *list = o;
   return o;

@@ -114,3 +114,19 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
   return newblock;
 }
 
+void* luaM_reallocv(lua_State* L, void* block, size_t osize, size_t nsize, size_t esize) {
+  if((size_t)(nsize+1) > (MAX_SIZET/esize)) {
+    luaM_toobig(L);
+    return 0;
+  }
+  
+  return luaM_realloc_(L, block, osize*esize, nsize*esize);
+}
+
+void * luaM_newobject(lua_State* L, int tag, size_t size) { 
+  return luaM_realloc_(L, NULL, tag, size);
+}
+
+void luaM_freemem(lua_State* L, void * blob, size_t size) {
+  luaM_realloc_(L, blob, size, 0);
+}
