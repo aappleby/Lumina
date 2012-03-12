@@ -130,3 +130,11 @@ void * luaM_newobject(lua_State* L, int tag, size_t size) {
 void luaM_freemem(lua_State* L, void * blob, size_t size) {
   luaM_realloc_(L, blob, size, 0);
 }
+
+void* luaM_alloc(lua_State* L, size_t size) {
+  return luaM_realloc_(L, NULL, 0, size);
+}
+
+void* luaM_allocv(lua_State* L, size_t n, size_t size) {
+  return luaM_reallocv(L, NULL, 0, n, size);
+}

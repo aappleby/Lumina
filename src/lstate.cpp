@@ -61,7 +61,7 @@ void luaE_setdebt (global_State *g, l_mem debt) {
 
 
 CallInfo *luaE_extendCI (lua_State *L) {
-  CallInfo *ci = luaM_new(L, CallInfo);
+  CallInfo *ci = (CallInfo*)luaM_alloc(L, sizeof(CallInfo));
   assert(L->ci->next == NULL);
   L->ci->next = ci;
   ci->previous = L->ci;

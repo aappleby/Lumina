@@ -18,9 +18,10 @@ void* luaM_reallocv(lua_State* L, void* block, size_t osize, size_t nsize, size_
 
 void luaM_freemem(lua_State* L, void * blob, size_t size);
 
+void* luaM_alloc(lua_State* L, size_t size);
 
-#define luaM_malloc(L,s)	luaM_realloc_(L, NULL, 0, (s))
-#define luaM_new(L,t)		cast(t *, luaM_malloc(L, sizeof(t)))
+void* luaM_allocv(lua_State* L, size_t n, size_t size);
+
 #define luaM_newvector(L,n,t) cast(t *, luaM_reallocv(L, NULL, 0, n, sizeof(t)))
 
 void* luaM_newobject(lua_State* L, int tag, size_t size);
