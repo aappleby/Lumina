@@ -213,7 +213,9 @@ static int luaK_code (FuncState *fs, Instruction i) {
   Proto *f = fs->f;
   dischargejpc(fs);  /* `pc' will change */
   /* put new instruction in code array */
-  luaM_growvector(fs->ls->L, f->code, fs->pc, f->sizecode, Instruction, MAX_INT, "opcodes");
+  if(fs->pc >= f->sizecode) {
+    f->code = (Instruction*)luaM_growaux_(fs->ls->L, f->code, f->sizecode, sizeof(Instruction), MAX_INT, "opcodes");
+  }
   f->code[fs->pc] = i;
   /* save corresponding line information */
   luaM_growvector(fs->ls->L, f->lineinfo, fs->pc, f->sizelineinfo, int, MAX_INT, "opcodes");
@@ -305,7 +307,13 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   /* numerical value does not need GC barrier;
      table has no metatable, so it does not need to invalidate cache */
   setnvalue(idx, cast_num(k));
-  luaM_growvector(L, f->constants, k, f->nconstants, TValue, MAXARG_Ax, "constants");
+  
+  //luaM_growvector(L, f->constants, k, f->nconstants, TValue, MAXARG_Ax, "constants");
+//#define luaM_growvector(L,v,nelems,size,t,limit,e)
+  if (k+1 > f->nconstants) {
+    f->constants = (TValue*)luaM_growaux_(L,f->constants,f->nconstants,sizeof(TValue),MAXARG_Ax,"constants");
+  }
+  
   while (oldsize < f->nconstants) setnilvalue(&f->constants[oldsize++]);
   setobj(L, &f->constants[k], v);
   fs->nk++;
