@@ -6,8 +6,8 @@
 
 
 #include <stddef.h>
+#include <memory.h>
 
-#define lmem_c
 #define LUA_CORE
 
 #include "lua.h"
@@ -20,6 +20,109 @@
 #include "lstate.h"
 
 
+Memcontrol l_memcontrol =
+  {0L, 0L, 0L, 0L, {0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L}};
+
+
+/*
+** {======================================================================
+** Controlled version for realloc.
+** =======================================================================
+*/
+
+#define MARK		0x55  /* 01010101 (a nice pattern) */
+
+__declspec(align(8)) union Header {
+  struct {
+    size_t size;
+    int type;
+  } d;
+};
+
+
+#if !defined(EXTERNMEMCHECK)
+
+/* full memory check */
+#define MARKSIZE	16  /* size of marks after each block */
+#define fillmem(mem,size)	memset(mem, -MARK, size)
+
+#else
+
+/* external memory check: don't do it twice */
+#define MARKSIZE	0
+#define fillmem(mem,size)	/* empty */
+
+#endif
+
+
+
+
+
+static void freeblock (Memcontrol *mc, Header *block) {
+  if (block) {
+    size_t size = block->d.size;
+    int i;
+    for (i = 0; i < MARKSIZE; i++)  /* check marks after block */
+      assert(*(cast(char *, block + 1) + size + i) == MARK);
+    mc->objcount[block->d.type]--;
+    fillmem(block, sizeof(Header) + size + MARKSIZE);  /* erase block */
+    free(block);  /* actually free block */
+    mc->numblocks--;  /* update counts */
+    mc->total -= (uint32_t)size;
+  }
+}
+
+
+void *debug_realloc (void *b, size_t oldsize, size_t size) {
+  Memcontrol *mc = &l_memcontrol;
+  Header *block = cast(Header *, b);
+  int type;
+  if (mc->memlimit == 0) {  /* first time? */
+    char *limit = getenv("MEMLIMIT");  /* initialize memory limit */
+    mc->memlimit = limit ? strtoul(limit, NULL, 10) : ULONG_MAX;
+  }
+  if (block == NULL) {
+    type = (oldsize < LUA_NUMTAGS) ? (int)oldsize : 0;
+    oldsize = 0;
+  }
+  else {
+    block--;  /* go to real header */
+    type = block->d.type;
+    assert(oldsize == block->d.size);
+  }
+  if (size == 0) {
+    freeblock(mc, block);
+    return NULL;
+  }
+  else if (size > oldsize && mc->total+size-oldsize > mc->memlimit)
+    return NULL;  /* fake a memory allocation error */
+  else {
+    Header *newblock;
+    int i;
+    size_t commonsize = (oldsize < size) ? oldsize : size;
+    size_t realsize = sizeof(Header) + size + MARKSIZE;
+    if (realsize < size) return NULL;  /* arithmetic overflow! */
+    newblock = cast(Header *, malloc(realsize));  /* alloc a new block */
+    if (newblock == NULL) return NULL;  /* really out of memory? */
+    if (block) {
+      memcpy(newblock + 1, block + 1, commonsize);  /* copy old contents */
+      freeblock(mc, block);  /* erase (and check) old copy */
+    }
+    /* initialize new part of the block with something `weird' */
+    fillmem(cast(char *, newblock + 1) + commonsize, size - commonsize);
+    /* initialize marks after block */
+    for (i = 0; i < MARKSIZE; i++)
+      *(cast(char *, newblock + 1) + size + i) = MARK;
+    newblock->d.size = size;
+    newblock->d.type = type;
+    mc->total += (uint32_t)size;
+    if (mc->total > mc->maxmem)
+      mc->maxmem = mc->total;
+    mc->numblocks++;
+    mc->objcount[type]++;
+    return newblock + 1;
+  }
+}
 
 #define MINSIZEARRAY	4
 

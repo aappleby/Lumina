@@ -13,6 +13,17 @@
 #include "llimits.h"
 #include "lua.h"
 
+/* memory allocator control variables */
+struct Memcontrol {
+  unsigned long numblocks;
+  unsigned long total;
+  unsigned long maxmem;
+  unsigned long memlimit;
+  unsigned long objcount[LUA_NUMTAGS];
+};
+
+extern Memcontrol l_memcontrol;
+
 
 void* luaM_reallocv(lua_State* L, void* block, size_t osize, size_t nsize, size_t esize);
 
