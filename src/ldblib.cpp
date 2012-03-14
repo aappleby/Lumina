@@ -113,8 +113,10 @@ static void treatstackoption (lua_State *L, lua_State *L1, const char *fname) {
     lua_pushvalue(L, -2);
     lua_remove(L, -3);
   }
-  else
+  else {
+    THREAD_CHANGE(L1);
     lua_xmove(L1, L, 1);
+  }
   lua_setfield(L, -2, fname);
 }
 
@@ -126,7 +128,13 @@ static int db_getinfo (lua_State *L) {
   lua_State *L1 = getthread(L, &arg);
   const char *options = luaL_optstring(L, arg+2, "flnStu");
   if (lua_isnumber(L, arg+1)) {
-    if (!lua_getstack(L1, (int)lua_tointeger(L, arg+1), &ar)) {
+    int idx = (int)lua_tointeger(L, arg+1);
+    int result;
+    {
+      THREAD_CHANGE(L1);
+      result = lua_getstack(L1, idx, &ar);
+    }
+    if (!result) {
       lua_pushnil(L);  /* level out of range */
       return 1;
     }
@@ -139,7 +147,12 @@ static int db_getinfo (lua_State *L) {
   }
   else
     return luaL_argerror(L, arg+1, "function or level expected");
-  if (!lua_getinfo(L1, options, &ar))
+  int result;
+  {
+    THREAD_CHANGE(L1);
+    result = lua_getinfo(L1, options, &ar);
+  }
+  if (!result)
     return luaL_argerror(L, arg+2, "invalid option");
   lua_createtable(L, 0, 2);
   if (strchr(options, 'S')) {
@@ -183,11 +196,23 @@ static int db_getlocal (lua_State *L) {
     return 1;
   }
   else {  /* stack-level argument */
-    if (!lua_getstack(L1, luaL_checkint(L, arg+1), &ar))  /* out of range? */
+    int idx = luaL_checkint(L, arg+1);
+    int result;
+    {
+      THREAD_CHANGE(L1);
+      result = lua_getstack(L1, idx, &ar);
+    }
+    if (!result)  /* out of range? */
       return luaL_argerror(L, arg+1, "level out of range");
-    name = lua_getlocal(L1, &ar, nvar);
+    {
+      THREAD_CHANGE(L1);
+      name = lua_getlocal(L1, &ar, nvar);
+    }
     if (name) {
-      lua_xmove(L1, L, 1);  /* push local value */
+      {
+        THREAD_CHANGE(L1);
+        lua_xmove(L1, L, 1);  /* push local value */
+      }
       lua_pushstring(L, name);  /* push name */
       lua_pushvalue(L, -2);  /* re-order */
       return 2;
@@ -205,12 +230,24 @@ static int db_setlocal (lua_State *L) {
   int arg;
   lua_State *L1 = getthread(L, &arg);
   lua_Debug ar;
-  if (!lua_getstack(L1, luaL_checkint(L, arg+1), &ar))  /* out of range? */
+  int idx = luaL_checkint(L, arg+1);
+  int result;
+  {
+    THREAD_CHANGE(L1);
+    result = lua_getstack(L1, idx, &ar);
+  }
+  if (!result)  /* out of range? */
     return luaL_argerror(L, arg+1, "level out of range");
   luaL_checkany(L, arg+3);
   lua_settop(L, arg+3);
   lua_xmove(L, L1, 1);
-  lua_pushstring(L, lua_setlocal(L1, &ar, luaL_checkint(L, arg+2)));
+  idx = luaL_checkint(L, arg+2);
+  const char * result2;
+  {
+    THREAD_CHANGE(L1);
+    result2 = lua_setlocal(L1, &ar, idx);
+  }
+  lua_pushstring(L, result2);
   return 1;
 }
 
@@ -331,7 +368,10 @@ static int db_sethook (lua_State *L) {
   lua_pushvalue(L, arg+1);
   lua_rawsetp(L, -2, L1);  /* set new hook */
   lua_pop(L, 1);  /* remove hook table */
-  lua_sethook(L1, func, mask, count);  /* set hooks */
+  {
+    THREAD_CHANGE(L1);
+    lua_sethook(L1, func, mask, count);  /* set hooks */
+  }
   return 0;
 }
 
@@ -341,8 +381,13 @@ static int db_gethook (lua_State *L) {
   int arg;
   lua_State *L1 = getthread(L, &arg);
   char buff[5];
-  int mask = lua_gethookmask(L1);
-  lua_Hook hook = lua_gethook(L1);
+  int mask;
+  lua_Hook hook;
+  {
+    THREAD_CHANGE(L1);
+    mask = lua_gethookmask(L1);
+    hook = lua_gethook(L1);
+  }
   if (hook != NULL && hook != hookf)  /* external hook? */
     lua_pushliteral(L, "external hook");
   else {
@@ -351,7 +396,12 @@ static int db_gethook (lua_State *L) {
     lua_remove(L, -2);  /* remove hook table */
   }
   lua_pushstring(L, unmakemask(mask, buff));
-  lua_pushinteger(L, lua_gethookcount(L1));
+  int hookcount;
+  {
+    THREAD_CHANGE(L1);
+    hookcount = lua_gethookcount(L1);
+  }
+  lua_pushinteger(L, hookcount);
   return 3;
 }
 

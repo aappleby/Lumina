@@ -713,8 +713,12 @@ static int newstate (lua_State *L) {
   THREAD_CHECK(L);
   lua_State *L1 = lua_newstate();
   if (L1) {
+    THREAD_CHANGE(L1);
     lua_atpanic(L1, tpanic);
-    lua_pushlightuserdata(L, L1);
+    {
+      THREAD_CHANGE(L);
+      lua_pushlightuserdata(L, L1);
+    }
   }
   else
     lua_pushnil(L);
@@ -744,11 +748,14 @@ static int loadlib (lua_State *L) {
   };
   lua_State *L1 = getstate(L);
   int i;
-  luaL_requiref(L1, "package", luaopen_package, 1);
-  luaL_getsubtable(L1, LUA_REGISTRYINDEX, "_PRELOAD");
-  for (i = 0; libs[i].name; i++) {
-    lua_pushcfunction(L1, libs[i].func);
-    lua_setfield(L1, -2, libs[i].name);
+  {
+    THREAD_CHANGE(L1);
+    luaL_requiref(L1, "package", luaopen_package, 1);
+    luaL_getsubtable(L1, LUA_REGISTRYINDEX, "_PRELOAD");
+    for (i = 0; libs[i].name; i++) {
+      lua_pushcfunction(L1, libs[i].func);
+      lua_setfield(L1, -2, libs[i].name);
+    }
   }
   return 0;
 }
@@ -756,7 +763,10 @@ static int loadlib (lua_State *L) {
 static int closestate (lua_State *L) {
   THREAD_CHECK(L);
   lua_State *L1 = getstate(L);
-  lua_close(L1);
+  {
+    THREAD_CHANGE(L1);
+    lua_close(L1);
+  }
   return 0;
 }
 
@@ -766,22 +776,34 @@ static int doremote (lua_State *L) {
   size_t lcode;
   const char *code = luaL_checklstring(L, 2, &lcode);
   int status;
-  lua_settop(L1, 0);
-  status = luaL_loadbuffer(L1, code, lcode, code);
-  if (status == LUA_OK)
-    status = lua_pcall(L1, 0, LUA_MULTRET, 0);
-  if (status != LUA_OK) {
-    lua_pushnil(L);
-    lua_pushstring(L, lua_tostring(L1, -1));
-    lua_pushinteger(L, status);
-    return 3;
-  }
-  else {
-    int i = 0;
-    while (!lua_isnone(L1, ++i))
-      lua_pushstring(L, lua_tostring(L1, i));
-    lua_pop(L1, i-1);
-    return i-1;
+  {
+    THREAD_CHANGE(L1);
+    lua_settop(L1, 0);
+    status = luaL_loadbuffer(L1, code, lcode, code);
+    if (status == LUA_OK)
+      status = lua_pcall(L1, 0, LUA_MULTRET, 0);
+    if (status != LUA_OK) {
+      const char * result = lua_tostring(L1, -1);
+      {
+        THREAD_CHANGE(L);
+        lua_pushnil(L);
+        lua_pushstring(L, result);
+        lua_pushinteger(L, status);
+      }
+      return 3;
+    }
+    else {
+      int i = 0;
+      while (!lua_isnone(L1, ++i)) {
+        const char* result = lua_tostring(L1, i);
+        {
+          THREAD_CHANGE(L);
+          lua_pushstring(L, result);
+        }
+      }
+      lua_pop(L1, i-1);
+      return i-1;
+    }
   }
 }
 
@@ -894,67 +916,93 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
   THREAD_CHECK(L);
   char buff[300];
   int status = 0;
+  int tempindex;
+  const char* tempstring;
+  int tempnum;
   if (pc == NULL) return luaL_error(L, "attempt to runC null script");
   for (;;) {
-    const char *inst = getstring;
+    THREAD_CHANGE(L1);
+    const char *inst;
+    {
+      THREAD_CHANGE(L);
+      inst = getstring;
+    }
     if EQ("") return 0;
     else if EQ("absindex") {
-      lua_pushnumber(L1, lua_absindex(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushnumber(L1, lua_absindex(L1, tempindex));
     }
     else if EQ("isnumber") {
-      lua_pushboolean(L1, lua_isnumber(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushboolean(L1, lua_isnumber(L1, tempindex));
     }
     else if EQ("isstring") {
-      lua_pushboolean(L1, lua_isstring(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushboolean(L1, lua_isstring(L1, tempindex));
     }
     else if EQ("istable") {
-      lua_pushboolean(L1, lua_istable(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushboolean(L1, lua_istable(L1, tempindex));
     }
     else if EQ("iscfunction") {
-      lua_pushboolean(L1, lua_iscfunction(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushboolean(L1, lua_iscfunction(L1, tempindex));
     }
     else if EQ("isfunction") {
-      lua_pushboolean(L1, lua_isfunction(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushboolean(L1, lua_isfunction(L1, tempindex));
     }
     else if EQ("isuserdata") {
-      lua_pushboolean(L1, lua_isuserdata(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushboolean(L1, lua_isuserdata(L1, tempindex));
     }
     else if EQ("isudataval") {
-      lua_pushboolean(L1, lua_islightuserdata(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushboolean(L1, lua_islightuserdata(L1, tempindex));
     }
     else if EQ("isnil") {
-      lua_pushboolean(L1, lua_isnil(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushboolean(L1, lua_isnil(L1, tempindex));
     }
     else if EQ("isnull") {
-      lua_pushboolean(L1, lua_isnone(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushboolean(L1, lua_isnone(L1, tempindex));
     }
     else if EQ("tonumber") {
-      lua_pushnumber(L1, lua_tonumber(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushnumber(L1, lua_tonumber(L1, tempindex));
     }
     else if EQ("topointer") {
-      const void* temp1 = lua_topointer(L1, getindex);
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      const void* temp1 = lua_topointer(L1, tempindex);
       size_t temp2 = reinterpret_cast<size_t>(temp1);
       lua_pushnumber(L1, static_cast<lua_Number>(temp2));
     }
     else if EQ("tostring") {
-      const char *s = lua_tostring(L1, getindex);
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      const char *s = lua_tostring(L1, tempindex);
       const char *s1 = lua_pushstring(L1, s);
       assert((s == NULL && s1 == NULL) || (strcmp)(s, s1) == 0);
     }
     else if EQ("objsize") {
-      lua_pushinteger(L1, lua_rawlen(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushinteger(L1, lua_rawlen(L1, tempindex));
     }
     else if EQ("len") {
-      lua_len(L1, getindex);
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_len(L1, tempindex);
     }
     else if EQ("Llen") {
-      lua_pushinteger(L1, luaL_len(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushinteger(L1, luaL_len(L1, tempindex));
     }
     else if EQ("tocfunction") {
-      lua_pushcfunction(L1, lua_tocfunction(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushcfunction(L1, lua_tocfunction(L1, tempindex));
     }
     else if EQ("func2num") {
-      lua_CFunction func = lua_tocfunction(L1, getindex);
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_CFunction func = lua_tocfunction(L1, tempindex);
       size_t temp = reinterpret_cast<size_t>(func);
       lua_pushnumber(L1, static_cast<double>(temp));
     }
@@ -962,8 +1010,13 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       int n = getnum;
       if (L1 != L) {
         int i;
-        for (i = 0; i < n; i++)
-          lua_pushstring(L, lua_tostring(L1, -(n - i)));
+        for (i = 0; i < n; i++) {
+          const char* result = lua_tostring(L1, -(n - i));
+          {
+            THREAD_CHANGE(L);
+            lua_pushstring(L, result);
+          }
+        }
       }
       return n;
     }
@@ -971,86 +1024,109 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       lua_pushinteger(L1, lua_gettop(L1));
     }
     else if EQ("settop") {
-      lua_settop(L1, getnum);
+      { THREAD_CHANGE(L); tempnum = getnum; }
+      lua_settop(L1, tempnum);
     }
     else if EQ("pop") {
-      lua_pop(L1, getnum);
+      { THREAD_CHANGE(L); tempnum = getnum; }
+      lua_pop(L1, tempnum);
     }
     else if EQ("pushnum") {
-      lua_pushinteger(L1, getnum);
+      { THREAD_CHANGE(L); tempnum = getnum; }
+      lua_pushinteger(L1, tempnum);
     }
     else if EQ("pushstring") {
-      lua_pushstring(L1, getstring);
+      { THREAD_CHANGE(L); tempstring = getstring; }
+      lua_pushstring(L1, tempstring);
     }
     else if EQ("pushnil") {
       lua_pushnil(L1);
     }
     else if EQ("pushbool") {
-      lua_pushboolean(L1, getnum);
+      { THREAD_CHANGE(L); tempnum = getnum; }
+      lua_pushboolean(L1, tempnum);
     }
     else if EQ("newtable") {
       lua_newtable(L1);
     }
     else if EQ("newuserdata") {
-      lua_newuserdata(L1, getnum);
+      { THREAD_CHANGE(L); tempnum = getnum; }
+      lua_newuserdata(L1, tempnum);
     }
     else if EQ("tobool") {
-      lua_pushboolean(L1, lua_toboolean(L1, getindex));
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushboolean(L1, lua_toboolean(L1, tempindex));
     }
     else if EQ("pushvalue") {
-      lua_pushvalue(L1, getindex);
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_pushvalue(L1, tempindex);
     }
     else if EQ("pushcclosure") {
-      lua_pushcclosure(L1, testC, getnum);
+      { THREAD_CHANGE(L); tempnum = getnum; }
+      lua_pushcclosure(L1, testC, tempnum);
     }
     else if EQ("pushupvalueindex") {
-      lua_pushinteger(L1, lua_upvalueindex(getnum));
+      { THREAD_CHANGE(L); tempnum = getnum; }
+      lua_pushinteger(L1, lua_upvalueindex(tempnum));
     }
     else if EQ("remove") {
-      lua_remove(L1, getnum);
+      { THREAD_CHANGE(L); tempnum = getnum; }
+      lua_remove(L1, tempnum);
     }
     else if EQ("insert") {
-      lua_insert(L1, getnum);
+      { THREAD_CHANGE(L); tempnum = getnum; }
+      lua_insert(L1, tempnum);
     }
     else if EQ("replace") {
-      lua_replace(L1, getindex);
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_replace(L1, tempindex);
     }
     else if EQ("copy") {
-      int f = getindex;
-      lua_copy(L1, f, getindex);
+      int f;
+      { THREAD_CHANGE(L); f = getindex; tempindex = getindex; }
+      lua_copy(L1, f, tempindex);
     }
     else if EQ("gettable") {
-      lua_gettable(L1, getindex);
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_gettable(L1, tempindex);
     }
     else if EQ("getglobal") {
-      lua_getglobal(L1, getstring);
+      { THREAD_CHANGE(L); tempstring = getstring; }
+      lua_getglobal(L1, tempstring);
     }
     else if EQ("getfield") {
-      int t = getindex;
-      lua_getfield(L1, t, getstring);
+      int t;
+      { THREAD_CHANGE(L); t = getindex; tempstring = getstring; }
+      lua_getfield(L1, t, tempstring);
     }
     else if EQ("setfield") {
-      int t = getindex;
-      lua_setfield(L1, t, getstring);
+      int t;
+      { THREAD_CHANGE(L); t = getindex; tempstring = getstring; }
+      lua_setfield(L1, t, tempstring);
     }
     else if EQ("rawgeti") {
-      int t = getindex;
-      lua_rawgeti(L1, t, getnum);
+      int t;
+      { THREAD_CHANGE(L); t = getindex; tempnum = getnum; }
+      lua_rawgeti(L1, t, tempnum);
     }
     else if EQ("settable") {
-      lua_settable(L1, getindex);
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_settable(L1, tempindex);
     }
     else if EQ("setglobal") {
-      lua_setglobal(L1, getstring);
+      { THREAD_CHANGE(L); tempstring = getstring; }
+      lua_setglobal(L1, tempstring);
     }
     else if EQ("next") {
       lua_next(L1, -2);
     }
     else if EQ("concat") {
-      lua_concat(L1, getnum);
+      { THREAD_CHANGE(L); tempnum = getnum; }
+      lua_concat(L1, tempnum);
     }
     else if EQ("print") {
-      int n = getnum;
+      int n;
+      { THREAD_CHANGE(L); n = getnum; }
       if (n != 0) {
         printf("%s\n", luaL_tolstring(L1, n, NULL));
         lua_pop(L1, 1);
@@ -1073,79 +1149,84 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       lua_arith(L1, op);
     }
     else if EQ("compare") {
-      int a = getindex;
-      int b = getindex;
-      lua_pushboolean(L1, lua_compare(L1, a, b, getnum));
+      int a, b;
+      { THREAD_CHANGE(L); a = getindex; b = getindex; tempnum = getnum; }
+      lua_pushboolean(L1, lua_compare(L1, a, b, tempnum));
     }
     else if EQ("call") {
-      int narg = getnum;
-      int nres = getnum;
+      int narg, nres;
+      { THREAD_CHANGE(L); narg = getnum; nres = getnum; }
       lua_call(L1, narg, nres);
     }
     else if EQ("pcall") {
-      int narg = getnum;
-      int nres = getnum;
+      int narg, nres;
+      { THREAD_CHANGE(L); narg = getnum; nres = getnum; }
       status = lua_pcall(L1, narg, nres, 0);
     }
     else if EQ("pcallk") {
-      int narg = getnum;
-      int nres = getnum;
-      int i = getindex;
+      int narg, nres, i;
+      { THREAD_CHANGE(L); narg = getnum; nres = getnum; i = getindex;}
       status = lua_pcallk(L1, narg, nres, 0, i, Cfunck);
     }
     else if EQ("callk") {
-      int narg = getnum;
-      int nres = getnum;
-      int i = getindex;
+      int narg, nres, i;
+      { THREAD_CHANGE(L); narg = getnum; nres = getnum; i = getindex;}
       lua_callk(L1, narg, nres, i, Cfunck);
     }
     else if EQ("yield") {
-      return lua_yield(L1, getnum);
+      { THREAD_CHANGE(L); tempnum = getnum; }
+      return lua_yield(L1, tempnum);
     }
     else if EQ("yieldk") {
-      int nres = getnum;
-      int i = getindex;
+      int nres, i;
+      { THREAD_CHANGE(L); nres = getnum; i = getindex; }
       return lua_yieldk(L1, nres, i, Cfunck);
     }
     else if EQ("newthread") {
       lua_newthread(L1);
     }
     else if EQ("resume") {
-      int i = getindex;
-      status = lua_resume(lua_tothread(L1, i), L, getnum);
+      int i;
+      { THREAD_CHANGE(L); i = getindex; tempnum = getnum; }
+      status = lua_resume(lua_tothread(L1, i), L, tempnum);
     }
     else if EQ("pushstatus") {
       pushcode(L1, status);
     }
     else if EQ("xmove") {
-      int f = getindex;
-      int t = getindex;
+      int f, t, n;
+      { THREAD_CHANGE(L); f = getindex; t = getindex; n = getnum; }
       lua_State *fs = (f == 0) ? L1 : lua_tothread(L1, f);
       lua_State *ts = (t == 0) ? L1 : lua_tothread(L1, t);
-      int n = getnum;
       if (n == 0) n = lua_gettop(fs);
       lua_xmove(fs, ts, n);
     }
     else if EQ("loadstring") {
+      { THREAD_CHANGE(L); tempnum = getnum; }
       size_t sl;
-      const char *s = luaL_checklstring(L1, getnum, &sl);
+      const char *s = luaL_checklstring(L1, tempnum, &sl);
       luaL_loadbuffer(L1, s, sl, s);
     }
     else if EQ("loadfile") {
-      luaL_loadfile(L1, luaL_checkstring(L1, getnum));
+      { THREAD_CHANGE(L); tempnum = getnum; }
+      luaL_loadfile(L1, luaL_checkstring(L1, tempnum));
     }
     else if EQ("setmetatable") {
-      lua_setmetatable(L1, getindex);
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      lua_setmetatable(L1, tempindex);
     }
     else if EQ("getmetatable") {
-      if (lua_getmetatable(L1, getindex) == 0)
+      { THREAD_CHANGE(L); tempindex = getindex; }
+      if (lua_getmetatable(L1, tempindex) == 0)
         lua_pushnil(L1);
     }
     else if EQ("type") {
-      lua_pushstring(L1, luaL_typename(L1, getnum));
+      { THREAD_CHANGE(L); tempnum = getnum; }
+      lua_pushstring(L1, luaL_typename(L1, tempnum));
     }
     else if EQ("append") {
-      int t = getindex;
+      int t;
+      { THREAD_CHANGE(L); t = getindex; }
       int i = (int)lua_rawlen(L1, t);
       lua_rawseti(L1, t, i + 1);
     }
@@ -1156,26 +1237,30 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       lua_pushinteger(L1, i);
     }
     else if EQ("checkstack") {
-      int sz = getnum;
-      luaL_checkstack(L1, sz, getstring);
+      int sz;
+      { THREAD_CHANGE(L); sz = getnum; tempstring = getstring; }
+      luaL_checkstack(L1, sz, tempstring);
     }
     else if EQ("newmetatable") {
-      lua_pushboolean(L1, luaL_newmetatable(L1, getstring));
+      { THREAD_CHANGE(L); tempstring = getstring; }
+      lua_pushboolean(L1, luaL_newmetatable(L1, tempstring));
     }
     else if EQ("testudata") {
-      int i = getindex;
-      lua_pushboolean(L1, luaL_testudata(L1, i, getstring) != NULL);
+      int i;
+      { THREAD_CHANGE(L); i = getindex; tempstring = getstring; }
+      lua_pushboolean(L1, luaL_testudata(L1, i, tempstring) != NULL);
     }
     else if EQ("gsub") {
-      int a = getnum; int b = getnum; int c = getnum;
+      int a, b, c;
+      { THREAD_CHANGE(L); a = getnum; b = getnum; c = getnum; }
       luaL_gsub(L1, lua_tostring(L1, a),
                     lua_tostring(L1, b),
                     lua_tostring(L1, c));
     }
     else if EQ("sethook") {
-      int mask = getnum;
-      int count = getnum;
-      sethookaux(L1, mask, count, getstring);
+      int mask, count;
+      { THREAD_CHANGE(L); mask = getnum; count = getnum; tempstring = getstring; }
+      sethookaux(L1, mask, count, tempstring);
     }
     else if EQ("throw") {
 #if defined(__cplusplus)
@@ -1186,7 +1271,10 @@ static struct X { int x; } x;
 #endif
       break;
     }
-    else luaL_error(L, "unknown instruction %s", buff);
+    else {
+      THREAD_CHANGE(L);
+      luaL_error(L, "unknown instruction %s", buff);
+    }
   }
   return 0;
 }
