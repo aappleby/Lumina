@@ -137,13 +137,20 @@ static int luaB_costatus (lua_State *L) {
         lua_pushliteral(L, "suspended");
         break;
       case LUA_OK: {
+        THREAD_CHANGE(co);
         lua_Debug ar;
-        if (lua_getstack(co, 0, &ar) > 0)  /* does it have frames? */
+        if (lua_getstack(co, 0, &ar) > 0) {  /* does it have frames? */
+          THREAD_CHANGE(L);
           lua_pushliteral(L, "normal");  /* it is running */
-        else if (lua_gettop(co) == 0)
-            lua_pushliteral(L, "dead");
-        else
+        }
+        else if (lua_gettop(co) == 0) {
+          THREAD_CHANGE(L);
+          lua_pushliteral(L, "dead");
+        }
+        else {
+          THREAD_CHANGE(L);
           lua_pushliteral(L, "suspended");  /* initial state */
+        }
         break;
       }
       default:  /* some error occurred */

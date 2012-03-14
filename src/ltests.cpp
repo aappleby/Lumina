@@ -679,9 +679,13 @@ static int doonnewstack (lua_State *L) {
   lua_State *L1 = lua_newthread(L);
   size_t l;
   const char *s = luaL_checklstring(L, 1, &l);
-  int status = luaL_loadbuffer(L1, s, l, s);
-  if (status == LUA_OK)
-    status = lua_pcall(L1, 0, 0, 0);
+  int status;
+  {
+    THREAD_CHANGE(L1);
+    status = luaL_loadbuffer(L1, s, l, s);
+    if (status == LUA_OK)
+      status = lua_pcall(L1, 0, 0, 0);
+  }
   lua_pushinteger(L, status);
   return 1;
 }
@@ -846,8 +850,11 @@ static int getnum_aux (lua_State *L, lua_State *L1, const char **pc) {
   int sig = 1;
   skip(pc);
   if (**pc == '.') {
-    res = (int)lua_tointeger(L1, -1);
-    lua_pop(L1, 1);
+    {
+      THREAD_CHANGE(L1);
+      res = (int)lua_tointeger(L1, -1);
+      lua_pop(L1, 1);
+    }
     (*pc)++;
     return res;
   }
@@ -1007,7 +1014,8 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       lua_pushnumber(L1, static_cast<double>(temp));
     }
     else if EQ("return") {
-      int n = getnum;
+      int n;
+      { THREAD_CHANGE(L); n = getnum; }
       if (L1 != L) {
         int i;
         for (i = 0; i < n; i++) {
@@ -1188,7 +1196,11 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     else if EQ("resume") {
       int i;
       { THREAD_CHANGE(L); i = getindex; tempnum = getnum; }
-      status = lua_resume(lua_tothread(L1, i), L, tempnum);
+      lua_State* tempthread = lua_tothread(L1, i);
+      {
+        THREAD_CHANGE(tempthread);
+        status = lua_resume(tempthread, L, tempnum);
+      }
     }
     else if EQ("pushstatus") {
       pushcode(L1, status);
@@ -1198,8 +1210,14 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       { THREAD_CHANGE(L); f = getindex; t = getindex; n = getnum; }
       lua_State *fs = (f == 0) ? L1 : lua_tothread(L1, f);
       lua_State *ts = (t == 0) ? L1 : lua_tothread(L1, t);
-      if (n == 0) n = lua_gettop(fs);
-      lua_xmove(fs, ts, n);
+      if (n == 0) {
+        THREAD_CHANGE(fs);
+        n = lua_gettop(fs);
+      }
+      {
+        THREAD_CHANGE(fs);
+        lua_xmove(fs, ts, n);
+      }
     }
     else if EQ("loadstring") {
       { THREAD_CHANGE(L); tempnum = getnum; }
@@ -1396,7 +1414,10 @@ static int coresume (lua_State *L) {
   int status;
   lua_State *co = lua_tothread(L, 1);
   luaL_argcheck(L, co, 1, "coroutine expected");
-  status = lua_resume(co, L, 0);
+  {
+    THREAD_CHANGE(co);
+    status = lua_resume(co, L, 0);
+  }
   if (status != LUA_OK && status != LUA_YIELD) {
     lua_pushboolean(L, 0);
     lua_insert(L, -2);

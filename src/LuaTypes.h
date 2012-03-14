@@ -20,10 +20,10 @@ public:
   lua_State* oldState;
 };
 
-//#define THREAD_CHECK(A)  assert(thread_L == A);
-//#define THREAD_CHANGE(A) LuaScope luascope(A);
-#define THREAD_CHECK(A)
-#define THREAD_CHANGE(A)
+#define THREAD_CHECK(A)  assert(thread_L == A);
+#define THREAD_CHANGE(A) LuaScope luascope(A);
+//#define THREAD_CHECK(A)
+//#define THREAD_CHANGE(A)
 
 
 #define LUA_NUMBER_DOUBLE
