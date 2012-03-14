@@ -180,7 +180,7 @@ static void close_state (lua_State *L) {
 
   freestack(L);
   assert(gettotalbytes(g) == sizeof(LG));
-  default_alloc(L, sizeof(LG), 0);  /* free main block */
+  default_alloc(L, sizeof(LG), 0, 0);  /* free main block */
 }
 
 
@@ -215,7 +215,7 @@ lua_State *lua_newstate () {
   int i;
   lua_State *L;
   global_State *g;
-  LG *l = cast(LG *, default_alloc(NULL, LUA_TTHREAD, sizeof(LG)));
+  LG *l = cast(LG *, default_alloc(NULL, LUA_TTHREAD, sizeof(LG), 0));
   if (l == NULL) return NULL;
   L = &l->l;
   g = &l->g;

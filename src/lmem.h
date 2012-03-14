@@ -15,11 +15,14 @@
 
 /* memory allocator control variables */
 struct Memcontrol {
-  unsigned long numblocks;
-  unsigned long total;
-  unsigned long maxmem;
-  unsigned long memlimit;
-  unsigned long objcount[LUA_NUMTAGS];
+  Memcontrol();
+
+  size_t numblocks;
+  size_t total;
+  size_t maxmem;
+  size_t memlimit;
+  size_t objcount[256];
+  size_t objcount2[256];
 };
 
 extern Memcontrol l_memcontrol;
@@ -42,7 +45,7 @@ void *luaM_growaux_ (lua_State *L, void *block, int& size,
                                size_t size_elem, int limit,
                                const char *what);
 
-void* default_alloc(void *ptr, size_t osize, size_t nsize);
+void* default_alloc(void *ptr, size_t osize, size_t nsize, int type);
 
 #endif
 

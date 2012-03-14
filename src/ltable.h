@@ -30,12 +30,8 @@ void luaH_resizearray (lua_State *L, Table *t, int nasize);
 void luaH_free (lua_State *L, Table *t);
 int luaH_next (lua_State *L, Table *t, StkId key);
 int luaH_getn (Table *t);
-
-
-#if defined(LUA_DEBUG)
 Node *luaH_mainposition (const Table *t, const TValue *key);
 int luaH_isdummy (Node *n);
-#endif
 
 
 #endif

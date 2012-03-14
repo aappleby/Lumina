@@ -134,7 +134,7 @@ dofile = function (n)
   return f()
 end
 
--- FIXME (or not, main.lua assumes a lot about bash shells & directory separators
+-- FIXME (or not, main.lua assumes a lot about bash shells & directory separators)
 -- dofile('main.lua')
 
 do

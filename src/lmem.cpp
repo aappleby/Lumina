@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 #include <memory.h>
+#include <algorithm>
 
 #define LUA_CORE
 
@@ -20,8 +21,25 @@
 #include "lstate.h"
 
 
+/*
 Memcontrol l_memcontrol =
   {0L, 0L, 0L, 0L, {0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L}};
+  */
+
+Memcontrol l_memcontrol;
+
+Memcontrol::Memcontrol() {
+  numblocks = 0;
+  total = 0;
+  maxmem = 0;
+  memlimit = 0;
+
+  memset(objcount, 0, sizeof(objcount));
+  memset(objcount2, 0, sizeof(objcount2));
+
+  char *limit = getenv("MEMLIMIT");  /* initialize memory limit */
+  l_memcontrol.memlimit = limit ? strtoul(limit, NULL, 10) : ULONG_MAX;
+}
 
 
 /*
@@ -32,96 +50,82 @@ Memcontrol l_memcontrol =
 
 #define MARK		0x55  /* 01010101 (a nice pattern) */
 
-__declspec(align(8)) union Header {
-  struct {
-    size_t size;
-    int type;
-  } d;
+struct Header {
+  size_t size;
+  int type;
 };
-
-
-#if !defined(EXTERNMEMCHECK)
 
 /* full memory check */
 #define MARKSIZE	16  /* size of marks after each block */
-#define fillmem(mem,size)	memset(mem, -MARK, size)
 
-#else
+void checkMark(void* blob, int val, int size) {
+  uint8_t* buf = (uint8_t*)blob;
+  for (int i = 0; i < size; i++) assert(buf[i] == val);
+}
 
-/* external memory check: don't do it twice */
-#define MARKSIZE	0
-#define fillmem(mem,size)	/* empty */
+void freeblock (Header *block) {
+  if (block == NULL) return;
 
-#endif
+  l_memcontrol.numblocks--;
+  l_memcontrol.total -= block->size;
+  l_memcontrol.objcount[block->type]--;
 
+  uint8_t* buf = reinterpret_cast<uint8_t*>(block);
+  checkMark(buf + sizeof(Header) + block->size, MARK, MARKSIZE);
+  //memset(buf, -MARK, sizeof(Header) + block->size + MARKSIZE);
 
+  free(block);
+}
 
+Header* allocblock (size_t size, int type) {
+  uint8_t* buf = (uint8_t*)malloc(sizeof(Header) + size + MARKSIZE);
+  if (buf == NULL) return NULL;
 
+  Header *block = reinterpret_cast<Header*>(buf);
+  block->size = size;
+  block->type = type;
+  //memset(buf + sizeof(Header), -MARK, size);
+  memset(buf + sizeof(Header) + size, MARK, MARKSIZE);
 
-static void freeblock (Memcontrol *mc, Header *block) {
-  if (block) {
-    size_t size = block->d.size;
-    int i;
-    for (i = 0; i < MARKSIZE; i++)  /* check marks after block */
-      assert(*(cast(char *, block + 1) + size + i) == MARK);
-    mc->objcount[block->d.type]--;
-    fillmem(block, sizeof(Header) + size + MARKSIZE);  /* erase block */
-    free(block);  /* actually free block */
-    mc->numblocks--;  /* update counts */
-    mc->total -= (uint32_t)size;
-  }
+  l_memcontrol.numblocks++;
+  l_memcontrol.total += (uint32_t)size;
+  l_memcontrol.objcount[type]++;
+  l_memcontrol.objcount2[type]++;
+  l_memcontrol.maxmem = std::max(l_memcontrol.maxmem, l_memcontrol.total);
+
+  return block;
 }
 
 
-void *debug_realloc (void *b, size_t oldsize, size_t size) {
-  Memcontrol *mc = &l_memcontrol;
-  Header *block = cast(Header *, b);
-  int type;
-  if (mc->memlimit == 0) {  /* first time? */
-    char *limit = getenv("MEMLIMIT");  /* initialize memory limit */
-    mc->memlimit = limit ? strtoul(limit, NULL, 10) : ULONG_MAX;
+void *debug_realloc (void* blob, size_t oldsize, size_t newsize, int type) {
+  if (blob == NULL) {
+    if(newsize == 0) return NULL;
+    if (l_memcontrol.total+newsize > l_memcontrol.memlimit) return NULL;
+    assert(type >= 0);
+    assert(type < 256);
+    Header* newblock = allocblock(newsize, type);
+    return newblock ? newblock + 1 : NULL;
   }
-  if (block == NULL) {
-    type = (oldsize < LUA_NUMTAGS) ? (int)oldsize : 0;
-    oldsize = 0;
-  }
-  else {
-    block--;  /* go to real header */
-    type = block->d.type;
-    assert(oldsize == block->d.size);
-  }
-  if (size == 0) {
-    freeblock(mc, block);
+
+  Header* oldblock = reinterpret_cast<Header*>(blob) - 1;
+  assert(oldsize == oldblock->size);
+
+  if (newsize == 0) {
+    freeblock(oldblock);
     return NULL;
   }
-  else if (size > oldsize && mc->total+size-oldsize > mc->memlimit)
-    return NULL;  /* fake a memory allocation error */
-  else {
-    Header *newblock;
-    int i;
-    size_t commonsize = (oldsize < size) ? oldsize : size;
-    size_t realsize = sizeof(Header) + size + MARKSIZE;
-    if (realsize < size) return NULL;  /* arithmetic overflow! */
-    newblock = cast(Header *, malloc(realsize));  /* alloc a new block */
-    if (newblock == NULL) return NULL;  /* really out of memory? */
-    if (block) {
-      memcpy(newblock + 1, block + 1, commonsize);  /* copy old contents */
-      freeblock(mc, block);  /* erase (and check) old copy */
-    }
-    /* initialize new part of the block with something `weird' */
-    fillmem(cast(char *, newblock + 1) + commonsize, size - commonsize);
-    /* initialize marks after block */
-    for (i = 0; i < MARKSIZE; i++)
-      *(cast(char *, newblock + 1) + size + i) = MARK;
-    newblock->d.size = size;
-    newblock->d.type = type;
-    mc->total += (uint32_t)size;
-    if (mc->total > mc->maxmem)
-      mc->maxmem = mc->total;
-    mc->numblocks++;
-    mc->objcount[type]++;
-    return newblock + 1;
+
+  if (l_memcontrol.total+newsize-oldsize > l_memcontrol.memlimit) {
+    return NULL;
   }
+
+  Header* newblock = allocblock(newsize, oldblock->type);
+  if(newblock == NULL) return NULL;
+
+  memcpy(newblock + 1, oldblock + 1, std::min(oldsize,newsize));
+  freeblock(oldblock);
+
+  return newblock + 1;
 }
 
 #define MINSIZEARRAY	4
@@ -151,24 +155,12 @@ l_noret luaM_toobig (lua_State *L) {
   luaG_runerror(L, "memory allocation error: block too big");
 }
 
-void *l_alloc (void *ptr, size_t osize, size_t nsize) {
-  (void)osize;  /* not used */
-  if (nsize == 0) {
-    free(ptr);
-    return NULL;
-  }
-  else
-    return realloc(ptr, nsize);
-}
-
-void *debug_realloc (void *block, size_t osize, size_t nsize);
-void *l_alloc (void *ptr, size_t osize, size_t nsize);
-
-void* default_alloc(void *ptr, size_t osize, size_t nsize) {
+void* default_alloc(void *ptr, size_t osize, size_t nsize, int type) {
 #ifdef LUA_DEBUG
-  return debug_realloc(ptr,osize,nsize);
+  return debug_realloc(ptr,osize,nsize,type);
 #else
-  return l_alloc(ptr,osize,nsize);
+  (void)osize;
+  return realloc(ptr,nsize);
 #endif
 }
 
@@ -181,13 +173,12 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
   global_State *g = G(L);
   size_t realosize = (block) ? osize : 0;
   assert((realosize == 0) == (block == NULL));
-  newblock = default_alloc(block, osize, nsize);
+  newblock = default_alloc(block, osize, nsize, osize);
   if (newblock == NULL && nsize > 0) {
-    api_check(L, nsize > realosize,
-                 "realloc cannot fail when shrinking a block");
+    api_check(L, nsize > realosize, "realloc cannot fail when shrinking a block");
     if (g->gcrunning) {
       luaC_fullgc(L, 1);  /* try to free some memory... */
-      newblock = default_alloc(block, osize, nsize);  /* try again */
+      newblock = default_alloc(block, osize, nsize, osize);  /* try again */
     }
     if (newblock == NULL)
       luaD_throw(L, LUA_ERRMEM);

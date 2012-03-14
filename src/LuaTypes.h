@@ -5,6 +5,10 @@ class LuaBase;
 class TString;
 class lua_State;
 
+extern __declspec(thread) lua_State* thread_L;
+
+#define THREAD_CHECK()  assert(thread_L == L);
+
 
 #define LUA_NUMBER_DOUBLE
 #define LUA_NUMBER	double

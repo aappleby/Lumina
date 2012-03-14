@@ -53,10 +53,6 @@ static int tpanic (lua_State *L) {
 }
 
 
-/* }====================================================================== */
-
-
-
 /*
 ** {======================================================
 ** Functions to check memory consistency
@@ -379,18 +375,6 @@ static char *buildop (Proto *p, int pc, char *buff) {
   }
   return buff;
 }
-
-
-#if 0
-void luaI_printcode (Proto *pt, int size) {
-  int pc;
-  for (pc=0; pc<size; pc++) {
-    char buff[100];
-    printf("%s\n", buildop(pt, pc, buff));
-  }
-  printf("-------\n");
-}
-#endif
 
 
 static int listcode (lua_State *L) {

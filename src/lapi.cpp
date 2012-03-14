@@ -920,10 +920,10 @@ static void f_call (lua_State *L, void *ud) {
   luaD_call(L, c->func, c->nresults, 0);
 }
 
-
-
 int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
                         int ctx, lua_CFunction k) {
+  //THREAD_CHECK();
+
   struct CallS c;
   int status;
   ptrdiff_t func;

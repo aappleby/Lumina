@@ -19,6 +19,7 @@
 */
 
 #include <string.h>
+#include <new>
 
 #define ltable_c
 #define LUA_CORE
@@ -362,8 +363,36 @@ static void rehash (lua_State *L, Table *t, const TValue *ek) {
 
 
 Table *luaH_new (lua_State *L) {
-  LuaBase* o = luaC_newobj(L, LUA_TTABLE, sizeof(Table), NULL);
-  Table *t = gco2t(o);
+  //LuaBase* o = luaC_newobj(L, LUA_TTABLE, sizeof(Table), NULL);
+
+  //void* blob = luaM_newobject(L,LUA_TTABLE,sizeof(Table));
+
+  global_State *g = G(L);
+  void* newblock = default_alloc(NULL, LUA_TTABLE, sizeof(Table), LUA_TTABLE);
+  if (newblock == NULL) {
+    if (g->gcrunning) {
+      luaC_fullgc(L, 1);  /* try to free some memory... */
+      newblock = default_alloc(NULL, LUA_TTABLE, sizeof(Table), LUA_TTABLE);  /* try again */
+    }
+    if (newblock == NULL)
+      luaD_throw(L, LUA_ERRMEM);
+  }
+  g->GCdebt += sizeof(Table);
+
+  //LuaBase *o = reinterpret_cast<LuaBase*>(newblock);
+
+  Table* t = new(newblock) Table();
+  t->Init(L, LUA_TTABLE);
+  
+  /*
+  t->marked = luaC_white(g);
+  t->tt = LUA_TTABLE;
+  t->next = g->allgc;
+  g->allgc = t;
+  */
+
+
+  //Table *t = gco2t(o);
   t->metatable = NULL;
   t->flags = cast_byte(~0);
   t->array = NULL;
@@ -572,14 +601,8 @@ int luaH_getn (Table *t) {
   else return unbound_search(t, j);
 }
 
-
-
-#if defined(LUA_DEBUG)
-
 Node *luaH_mainposition (const Table *t, const TValue *key) {
   return mainposition(t, key);
 }
 
 int luaH_isdummy (Node *n) { return isdummy(n); }
-
-#endif
