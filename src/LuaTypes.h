@@ -7,7 +7,23 @@ class lua_State;
 
 extern __declspec(thread) lua_State* thread_L;
 
-#define THREAD_CHECK()  assert(thread_L == L);
+class LuaScope {
+public:
+  LuaScope(lua_State* L) {
+    oldState = thread_L;
+    thread_L = L;
+  }
+  ~LuaScope() {
+    thread_L = oldState;
+  }
+
+  lua_State* oldState;
+};
+
+//#define THREAD_CHECK(A)  assert(thread_L == A);
+//#define THREAD_CHANGE(A) LuaScope luascope(A);
+#define THREAD_CHECK(A)
+#define THREAD_CHANGE(A)
 
 
 #define LUA_NUMBER_DOUBLE

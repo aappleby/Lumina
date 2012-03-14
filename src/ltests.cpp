@@ -34,6 +34,7 @@
 
 
 static void setnameval (lua_State *L, const char *name, int val) {
+  THREAD_CHECK(L);
   lua_pushstring(L, name);
   lua_pushinteger(L, val);
   lua_settable(L, -3);
@@ -41,12 +42,14 @@ static void setnameval (lua_State *L, const char *name, int val) {
 
 
 static void pushobject (lua_State *L, const TValue *o) {
+  THREAD_CHECK(L);
   setobj(L, L->top, o);
   api_incr_top(L);
 }
 
 
 static int tpanic (lua_State *L) {
+  THREAD_CHECK(L);
   fprintf(stderr, "PANIC: unprotected error in call to Lua API (%s)\n",
                    lua_tostring(L, -1));
   return (exit(EXIT_FAILURE), 0);  /* do not return to Lua */
@@ -295,6 +298,7 @@ static void checkold (global_State *g, LuaBase *o) {
 
 
 int lua_checkmemory (lua_State *L) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   LuaBase *o;
   UpVal *uv;
@@ -378,6 +382,7 @@ static char *buildop (Proto *p, int pc, char *buff) {
 
 
 static int listcode (lua_State *L) {
+  THREAD_CHECK(L);
   int pc;
   Proto *p;
   luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1),
@@ -397,6 +402,7 @@ static int listcode (lua_State *L) {
 
 
 static int listk (lua_State *L) {
+  THREAD_CHECK(L);
   Proto *p;
   int i;
   luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1),
@@ -412,6 +418,7 @@ static int listk (lua_State *L) {
 
 
 static int listlocals (lua_State *L) {
+  THREAD_CHECK(L);
   Proto *p;
   int pc = luaL_checkint(L, 2) - 1;
   int i = 0;
@@ -430,6 +437,7 @@ static int listlocals (lua_State *L) {
 
 
 static int get_limits (lua_State *L) {
+  THREAD_CHECK(L);
   lua_createtable(L, 0, 5);
   setnameval(L, "BITS_INT", 32);
   setnameval(L, "LFPF", LFIELDS_PER_FLUSH);
@@ -440,6 +448,7 @@ static int get_limits (lua_State *L) {
 
 
 static int mem_query (lua_State *L) {
+  THREAD_CHECK(L);
   if (lua_isnone(L, 1)) {
     lua_pushinteger(L, l_memcontrol.total);
     lua_pushinteger(L, l_memcontrol.numblocks);
@@ -465,6 +474,7 @@ static int mem_query (lua_State *L) {
 
 
 static int get_gccolor (lua_State *L) {
+  THREAD_CHECK(L);
   TValue *o;
   luaL_checkany(L, 1);
   o = obj_at(L, 1);
@@ -494,6 +504,7 @@ static int get_gccolor (lua_State *L) {
 
 
 static int gc_state (lua_State *L) {
+  THREAD_CHECK(L);
   static const char *statenames[] = {"propagate", "atomic",
     "sweepstring", "sweepudata", "sweep", "pause", ""};
   int option = luaL_checkoption(L, 1, "", statenames);
@@ -512,6 +523,7 @@ static int gc_state (lua_State *L) {
 
 
 static int hash_query (lua_State *L) {
+  THREAD_CHECK(L);
   if (lua_isnone(L, 2)) {
     luaL_argcheck(L, lua_type(L, 1) == LUA_TSTRING, 1, "string expected");
     lua_pushinteger(L, tsvalue(obj_at(L, 1))->getHash());
@@ -528,6 +540,7 @@ static int hash_query (lua_State *L) {
 
 
 static int stacklevel (lua_State *L) {
+  THREAD_CHECK(L);
   unsigned long a = 0;
   lua_pushinteger(L, (L->top - L->stack));
   lua_pushinteger(L, (L->stack_last - L->stack));
@@ -537,6 +550,7 @@ static int stacklevel (lua_State *L) {
 
 
 static int table_query (lua_State *L) {
+  THREAD_CHECK(L);
   const Table *t;
   int i = luaL_optint(L, 2, -1);
   luaL_checktype(L, 1, LUA_TTABLE);
@@ -570,6 +584,7 @@ static int table_query (lua_State *L) {
 
 
 static int string_query (lua_State *L) {
+  THREAD_CHECK(L);
   stringtable *tb = &G(L)->strt;
   int s = luaL_optint(L, 2, 0) - 1;
   if (s==-1) {
@@ -592,6 +607,7 @@ static int string_query (lua_State *L) {
 
 
 static int tref (lua_State *L) {
+  THREAD_CHECK(L);
   int level = lua_gettop(L);
   luaL_checkany(L, 1);
   lua_pushvalue(L, 1);
@@ -601,6 +617,7 @@ static int tref (lua_State *L) {
 }
 
 static int getref (lua_State *L) {
+  THREAD_CHECK(L);
   int level = lua_gettop(L);
   lua_rawgeti(L, LUA_REGISTRYINDEX, luaL_checkint(L, 1));
   assert(lua_gettop(L) == level+1);
@@ -608,6 +625,7 @@ static int getref (lua_State *L) {
 }
 
 static int unref (lua_State *L) {
+  THREAD_CHECK(L);
   int level = lua_gettop(L);
   luaL_unref(L, LUA_REGISTRYINDEX, luaL_checkint(L, 1));
   assert(lua_gettop(L) == level);
@@ -616,6 +634,7 @@ static int unref (lua_State *L) {
 
 
 static int upvalue (lua_State *L) {
+  THREAD_CHECK(L);
   int n = luaL_checkint(L, 2);
   luaL_checktype(L, 1, LUA_TFUNCTION);
   if (lua_isnone(L, 3)) {
@@ -633,6 +652,7 @@ static int upvalue (lua_State *L) {
 
 
 static int newuserdata (lua_State *L) {
+  THREAD_CHECK(L);
   size_t size = luaL_checkint(L, 1);
   char *p = cast(char *, lua_newuserdata(L, size));
   while (size--) *p++ = '\0';
@@ -641,18 +661,21 @@ static int newuserdata (lua_State *L) {
 
 
 static int pushuserdata (lua_State *L) {
+  THREAD_CHECK(L);
   lua_pushlightuserdata(L, cast(void *, luaL_checkinteger(L, 1)));
   return 1;
 }
 
 
 static int udataval (lua_State *L) {
+  THREAD_CHECK(L);
   lua_pushinteger(L, cast(long, lua_touserdata(L, 1)));
   return 1;
 }
 
 
 static int doonnewstack (lua_State *L) {
+  THREAD_CHECK(L);
   lua_State *L1 = lua_newthread(L);
   size_t l;
   const char *s = luaL_checklstring(L, 1, &l);
@@ -665,12 +688,14 @@ static int doonnewstack (lua_State *L) {
 
 
 static int s2d (lua_State *L) {
+  THREAD_CHECK(L);
   lua_pushnumber(L, *cast(const double *, luaL_checkstring(L, 1)));
   return 1;
 }
 
 
 static int d2s (lua_State *L) {
+  THREAD_CHECK(L);
   double d = luaL_checknumber(L, 1);
   lua_pushlstring(L, cast(char *, &d), sizeof(d));
   return 1;
@@ -678,12 +703,14 @@ static int d2s (lua_State *L) {
 
 
 static int num2int (lua_State *L) {
+  THREAD_CHECK(L);
   lua_pushinteger(L, lua_tointeger(L, 1));
   return 1;
 }
 
 
 static int newstate (lua_State *L) {
+  THREAD_CHECK(L);
   lua_State *L1 = lua_newstate();
   if (L1) {
     lua_atpanic(L1, tpanic);
@@ -696,6 +723,7 @@ static int newstate (lua_State *L) {
 
 
 static lua_State *getstate (lua_State *L) {
+  THREAD_CHECK(L);
   lua_State *L1 = cast(lua_State *, lua_touserdata(L, 1));
   luaL_argcheck(L, L1 != NULL, 1, "state expected");
   return L1;
@@ -703,6 +731,7 @@ static lua_State *getstate (lua_State *L) {
 
 
 static int loadlib (lua_State *L) {
+  THREAD_CHECK(L);
   static const luaL_Reg libs[] = {
     {"_G", luaopen_base},
     {"coroutine", luaopen_coroutine},
@@ -725,12 +754,14 @@ static int loadlib (lua_State *L) {
 }
 
 static int closestate (lua_State *L) {
+  THREAD_CHECK(L);
   lua_State *L1 = getstate(L);
   lua_close(L1);
   return 0;
 }
 
 static int doremote (lua_State *L) {
+  THREAD_CHECK(L);
   lua_State *L1 = getstate(L);
   size_t lcode;
   const char *code = luaL_checklstring(L, 2, &lcode);
@@ -756,6 +787,7 @@ static int doremote (lua_State *L) {
 
 
 static int int2fb_aux (lua_State *L) {
+  THREAD_CHECK(L);
   int b = luaO_int2fb(luaL_checkint(L, 1));
   lua_pushinteger(L, b);
   lua_pushinteger(L, luaO_fb2int(b));
@@ -787,6 +819,7 @@ static void skip (const char **pc) {
 }
 
 static int getnum_aux (lua_State *L, lua_State *L1, const char **pc) {
+  THREAD_CHECK(L);
   int res = 0;
   int sig = 1;
   skip(pc);
@@ -807,6 +840,7 @@ static int getnum_aux (lua_State *L, lua_State *L1, const char **pc) {
 }
 
 static const char *getstring_aux (lua_State *L, char *buff, const char **pc) {
+  THREAD_CHECK(L);
   int i = 0;
   skip(pc);
   if (**pc == '"' || **pc == '\'') {  /* quoted string? */
@@ -827,6 +861,7 @@ static const char *getstring_aux (lua_State *L, char *buff, const char **pc) {
 
 
 static int getindex_aux (lua_State *L, lua_State *L1, const char **pc) {
+  THREAD_CHECK(L);
   skip(pc);
   switch (*(*pc)++) {
     case 'R': return LUA_REGISTRYINDEX;
@@ -838,6 +873,7 @@ static int getindex_aux (lua_State *L, lua_State *L1, const char **pc) {
 
 
 static void pushcode (lua_State *L, int code) {
+  THREAD_CHECK(L);
   static const char *const codes[] = {"OK", "YIELD", "ERRRUN",
                    "ERRSYNTAX", "ERRMEM", "ERRGCMM", "ERRERR"};
   lua_pushstring(L, codes[code]);
@@ -855,6 +891,7 @@ static int testC (lua_State *L);
 static int Cfunck (lua_State *L);
 
 static int runC (lua_State *L, lua_State *L1, const char *pc) {
+  THREAD_CHECK(L);
   char buff[300];
   int status = 0;
   if (pc == NULL) return luaL_error(L, "attempt to runC null script");
@@ -1156,6 +1193,7 @@ static struct X { int x; } x;
 
 
 static int testC (lua_State *L) {
+  THREAD_CHECK(L);
   lua_State *L1;
   const char *pc;
   if (lua_isuserdata(L, 1)) {
@@ -1175,11 +1213,13 @@ static int testC (lua_State *L) {
 
 
 static int Cfunc (lua_State *L) {
+  THREAD_CHECK(L);
   return runC(L, L, lua_tostring(L, lua_upvalueindex(1)));
 }
 
 
 static int Cfunck (lua_State *L) {
+  THREAD_CHECK(L);
   int i = 0;
   lua_getctx(L, &i);
   return runC(L, L, lua_tostring(L, i));
@@ -1187,6 +1227,7 @@ static int Cfunck (lua_State *L) {
 
 
 static int makeCfunc (lua_State *L) {
+  THREAD_CHECK(L);
   luaL_checkstring(L, 1);
   lua_pushcclosure(L, Cfunc, lua_gettop(L));
   return 1;
@@ -1206,6 +1247,7 @@ static int makeCfunc (lua_State *L) {
 ** C hook that runs the C script stored in registry.C_HOOK[L]
 */
 static void Chook (lua_State *L, lua_Debug *ar) {
+  THREAD_CHECK(L);
   const char *scpt;
   const char *const events [] = {"call", "ret", "line", "count", "tailcall"};
   lua_getfield(L, LUA_REGISTRYINDEX, "C_HOOK");
@@ -1223,6 +1265,7 @@ static void Chook (lua_State *L, lua_Debug *ar) {
 ** sets registry.C_HOOK[L] = scpt and sets Chook as a hook
 */
 static void sethookaux (lua_State *L, int mask, int count, const char *scpt) {
+  THREAD_CHECK(L);
   if (*scpt == '\0') {  /* no script? */
     lua_sethook(L, NULL, 0, 0);  /* turn off hooks */
     return;
@@ -1242,6 +1285,7 @@ static void sethookaux (lua_State *L, int mask, int count, const char *scpt) {
 
 
 static int sethook (lua_State *L) {
+  THREAD_CHECK(L);
   if (lua_isnoneornil(L, 1))
     lua_sethook(L, NULL, 0, 0);  /* turn off hooks */
   else {
@@ -1260,6 +1304,7 @@ static int sethook (lua_State *L) {
 
 
 static int coresume (lua_State *L) {
+  THREAD_CHECK(L);
   int status;
   lua_State *co = lua_tothread(L, 1);
   luaL_argcheck(L, co, 1, "coroutine expected");
@@ -1323,6 +1368,7 @@ static void checkfinalmem (void) {
 
 
 int luaopen_test (lua_State *L) {
+  THREAD_CHECK(L);
   lua_atpanic(L, &tpanic);
   atexit(checkfinalmem);
   luaL_newlib(L, tests_funcs);

@@ -51,6 +51,7 @@ static const luaL_Reg preloadedlibs[] = {
 
 
 void luaL_openlibs (lua_State *L) {
+  THREAD_CHECK(L);
   const luaL_Reg *lib;
   /* call open functions from 'loadedlibs' and set results to global table */
   for (lib = loadedlibs; lib->func; lib++) {

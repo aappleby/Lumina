@@ -484,7 +484,7 @@ static int pmain (lua_State *L) {
 int main (int argc, char **argv) {
   int status, result;
   lua_State *L = luaL_newstate();  /* create state */
-  thread_L = L;
+  THREAD_CHANGE(L);
   if (L == NULL) {
     l_message(argv[0], "cannot create state: not enough memory");
     return EXIT_FAILURE;
@@ -497,7 +497,6 @@ int main (int argc, char **argv) {
   result = lua_toboolean(L, -1);  /* get result */
   finalreport(L, status);
   lua_close(L);
-  thread_L = NULL;
   return (result && status == LUA_OK) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 

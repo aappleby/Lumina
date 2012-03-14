@@ -20,6 +20,7 @@
 
 
 void luaS_resize (lua_State *L, int newsize) {
+  THREAD_CHECK(L);
   int i;
   stringtable *tb = &G(L)->strt;
   /* cannot resize while GC is traversing strings */
@@ -52,6 +53,7 @@ void luaS_resize (lua_State *L, int newsize) {
 
 static TString *newlstr (lua_State *L, const char *str, size_t l,
                                        unsigned int h) {
+  THREAD_CHECK(L);
   size_t totalsize;  /* total size of TString object */
   LuaBase **list;  /* (pointer to) list where it will be inserted */
   TString *ts;
@@ -75,6 +77,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
 
 
 TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
+  THREAD_CHECK(L);
   LuaBase *o;
   unsigned int h = cast(unsigned int, l);  /* seed */
   size_t step = (l>>5)+1;  /* if string is too long, don't hash all its chars */
@@ -98,11 +101,13 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
 
 
 TString *luaS_new (lua_State *L, const char *str) {
+  THREAD_CHECK(L);
   return luaS_newlstr(L, str, strlen(str));
 }
 
 
 Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
+  THREAD_CHECK(L);
   Udata *u;
   if (s > MAX_SIZET - sizeof(Udata))
     luaM_toobig(L);
@@ -117,6 +122,7 @@ Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
 #define sizestring(s)	(sizeof(TString)+((s)->getLen()+1)*sizeof(char))
 
 void luaS_freestr (lua_State* L, TString* ts) {
+  THREAD_CHECK(L);
   luaM_freemem(L, ts, sizestring(ts));
 }
 
@@ -127,5 +133,6 @@ void luaS_initstrt(stringtable * strt) {
 }
 
 void luaS_freestrt (lua_State* L, stringtable* strt) {
+  THREAD_CHECK(L);
   luaM_freemem(L, strt->hash, strt->size * sizeof(LuaBase*));
 }

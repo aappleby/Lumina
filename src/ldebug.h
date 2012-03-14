@@ -15,8 +15,6 @@
 
 #define getfuncline(f,pc)	(((f)->lineinfo) ? (f)->lineinfo[pc] : 0)
 
-#define resethookcount(L)	(L->hookcount = L->basehookcount)
-
 /* Active Lua function (given call info) */
 #define ci_func(ci)		(clLvalue((ci)->func))
 

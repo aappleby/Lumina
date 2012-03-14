@@ -160,6 +160,7 @@ static void DumpHeader(DumpState* D)
 */
 int luaU_dump (lua_State* L, const Proto* f, lua_Writer w, void* data, int strip)
 {
+ THREAD_CHECK(L);
  DumpState D;
  D.L=L;
  D.writer=w;

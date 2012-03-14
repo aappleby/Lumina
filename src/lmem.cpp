@@ -72,7 +72,7 @@ void freeblock (Header *block) {
 
   uint8_t* buf = reinterpret_cast<uint8_t*>(block);
   checkMark(buf + sizeof(Header) + block->size, MARK, MARKSIZE);
-  //memset(buf, -MARK, sizeof(Header) + block->size + MARKSIZE);
+  memset(buf, -MARK, sizeof(Header) + block->size + MARKSIZE);
 
   free(block);
 }
@@ -84,7 +84,7 @@ Header* allocblock (size_t size, int type) {
   Header *block = reinterpret_cast<Header*>(buf);
   block->size = size;
   block->type = type;
-  //memset(buf + sizeof(Header), -MARK, size);
+  memset(buf + sizeof(Header), -MARK, size);
   memset(buf + sizeof(Header) + size, MARK, MARKSIZE);
 
   l_memcontrol.numblocks++;
@@ -133,6 +133,7 @@ void *debug_realloc (void* blob, size_t oldsize, size_t newsize, int type) {
 
 void *luaM_growaux_ (lua_State *L, void *block, int& size, size_t size_elems,
                      int limit, const char *what) {
+  THREAD_CHECK(L);
   void *newblock;
   int newsize;
   if (size >= limit/2) {  /* cannot double it? */
@@ -152,6 +153,7 @@ void *luaM_growaux_ (lua_State *L, void *block, int& size, size_t size_elems,
 
 
 l_noret luaM_toobig (lua_State *L) {
+  THREAD_CHECK(L);
   luaG_runerror(L, "memory allocation error: block too big");
 }
 
@@ -169,6 +171,7 @@ void* default_alloc(void *ptr, size_t osize, size_t nsize, int type) {
 ** generic allocation routine.
 */
 void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
+  THREAD_CHECK(L);
   void *newblock;
   global_State *g = G(L);
   size_t realosize = (block) ? osize : 0;
@@ -190,6 +193,7 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
 }
 
 void* luaM_reallocv(lua_State* L, void* block, size_t osize, size_t nsize, size_t esize) {
+  THREAD_CHECK(L);
   if((size_t)(nsize+1) > (MAX_SIZET/esize)) {
     luaM_toobig(L);
     return 0;
@@ -199,17 +203,21 @@ void* luaM_reallocv(lua_State* L, void* block, size_t osize, size_t nsize, size_
 }
 
 void * luaM_newobject(lua_State* L, int tag, size_t size) { 
+  THREAD_CHECK(L);
   return luaM_realloc_(L, NULL, tag, size);
 }
 
 void luaM_freemem(lua_State* L, void * blob, size_t size) {
+  THREAD_CHECK(L);
   luaM_realloc_(L, blob, size, 0);
 }
 
 void* luaM_alloc(lua_State* L, size_t size) {
+  THREAD_CHECK(L);
   return luaM_realloc_(L, NULL, 0, size);
 }
 
 void* luaM_allocv(lua_State* L, size_t n, size_t size) {
+  THREAD_CHECK(L);
   return luaM_reallocv(L, NULL, 0, n, size);
 }

@@ -1603,6 +1603,7 @@ static void statement (LexState *ls) {
 
 Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
                     Dyndata *dyd, const char *name, int firstchar) {
+  THREAD_CHECK(L);
   LexState lexstate;
   FuncState funcstate;
   BlockCnt bl;

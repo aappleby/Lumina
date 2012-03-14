@@ -44,6 +44,7 @@ const char lua_ident[] =
 
 
 static TValue *index2addr (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   CallInfo *ci = L->ci;
   if (idx > 0) {
     TValue *o = ci->func + idx;
@@ -75,12 +76,14 @@ static TValue *index2addr (lua_State *L, int idx) {
 ** capturing memory errors
 */
 static void growstack (lua_State *L, void *ud) {
+  THREAD_CHECK(L);
   int size = *(int *)ud;
   luaD_growstack(L, size);
 }
 
 
 int lua_checkstack (lua_State *L, int size) {
+  THREAD_CHECK(L);
   int res;
   CallInfo *ci = L->ci;
   lua_lock(L);
@@ -101,6 +104,7 @@ int lua_checkstack (lua_State *L, int size) {
 
 
 void lua_xmove (lua_State *from, lua_State *to, int n) {
+  THREAD_CHECK(from);
   int i;
   if (from == to) return;
   lua_lock(to);
@@ -108,14 +112,18 @@ void lua_xmove (lua_State *from, lua_State *to, int n) {
   api_check(from, G(from) == G(to), "moving among independent states");
   api_check(from, to->ci->top - to->top >= n, "not enough elements to move");
   from->top -= n;
-  for (i = 0; i < n; i++) {
-    setobj(to, to->top++, from->top + i);
+  {
+    THREAD_CHANGE(to);
+    for (i = 0; i < n; i++) {
+      setobj(to, to->top++, from->top + i);
+    }
   }
   lua_unlock(to);
 }
 
 
 lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf) {
+  THREAD_CHECK(L);
   lua_CFunction old;
   lua_lock(L);
   old = G(L)->panic;
@@ -126,6 +134,7 @@ lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf) {
 
 
 const lua_Number *lua_version (lua_State *L) {
+  //THREAD_CHECK(L);
   static const lua_Number version = LUA_VERSION_NUM;
   if (L == NULL) return &version;
   else return G(L)->version;
@@ -142,6 +151,7 @@ const lua_Number *lua_version (lua_State *L) {
 ** convert an acceptable stack index into an absolute index
 */
 int lua_absindex (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   return (idx > 0 || idx <= LUA_REGISTRYINDEX)
          ? idx
          : cast_int(L->top - L->ci->func + idx);
@@ -154,6 +164,7 @@ int lua_gettop (lua_State *L) {
 
 
 void lua_settop (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId func = L->ci->func;
   lua_lock(L);
   if (idx >= 0) {
@@ -171,6 +182,7 @@ void lua_settop (lua_State *L, int idx) {
 
 
 void lua_remove (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId p;
   lua_lock(L);
   p = index2addr(L, idx);
@@ -182,6 +194,7 @@ void lua_remove (lua_State *L, int idx) {
 
 
 void lua_insert (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId p;
   StkId q;
   lua_lock(L);
@@ -194,6 +207,7 @@ void lua_insert (lua_State *L, int idx) {
 
 
 static void moveto (lua_State *L, TValue *fr, int idx) {
+  THREAD_CHECK(L);
   TValue *to = index2addr(L, idx);
   api_checkvalidindex(L, to);
   setobj(L, to, fr);
@@ -205,6 +219,7 @@ static void moveto (lua_State *L, TValue *fr, int idx) {
 
 
 void lua_replace (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   lua_lock(L);
   api_checknelems(L, 1);
   moveto(L, L->top - 1, idx);
@@ -214,6 +229,7 @@ void lua_replace (lua_State *L, int idx) {
 
 
 void lua_copy (lua_State *L, int fromidx, int toidx) {
+  THREAD_CHECK(L);
   TValue *fr;
   lua_lock(L);
   fr = index2addr(L, fromidx);
@@ -224,6 +240,7 @@ void lua_copy (lua_State *L, int fromidx, int toidx) {
 
 
 void lua_pushvalue (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   lua_lock(L);
   setobj(L, L->top, index2addr(L, idx));
   api_incr_top(L);
@@ -238,24 +255,28 @@ void lua_pushvalue (lua_State *L, int idx) {
 
 
 int lua_type (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
   return (isvalid(o) ? ttypenv(o) : LUA_TNONE);
 }
 
 
 const char *lua_typename (lua_State *L, int t) {
+  THREAD_CHECK(L);
   UNUSED(L);
   return ttypename(t);
 }
 
 
 int lua_iscfunction (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
   return (ttislcf(o) || (ttisCclosure(o)));
 }
 
 
 int lua_isnumber (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   TValue n;
   const TValue *o = index2addr(L, idx);
   return tonumber(o, &n);
@@ -263,18 +284,21 @@ int lua_isnumber (lua_State *L, int idx) {
 
 
 int lua_isstring (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   int t = lua_type(L, idx);
   return (t == LUA_TSTRING || t == LUA_TNUMBER);
 }
 
 
 int lua_isuserdata (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   const TValue *o = index2addr(L, idx);
   return (ttisuserdata(o) || ttislightuserdata(o));
 }
 
 
 int lua_rawequal (lua_State *L, int index1, int index2) {
+  THREAD_CHECK(L);
   StkId o1 = index2addr(L, index1);
   StkId o2 = index2addr(L, index2);
   return (isvalid(o1) && isvalid(o2)) ? luaV_rawequalobj(o1, o2) : 0;
@@ -282,6 +306,7 @@ int lua_rawequal (lua_State *L, int index1, int index2) {
 
 
 void  lua_arith (lua_State *L, int op) {
+  THREAD_CHECK(L);
   StkId o1;  /* 1st operand */
   StkId o2;  /* 2nd operand */
   lua_lock(L);
@@ -305,6 +330,7 @@ void  lua_arith (lua_State *L, int op) {
 
 
 int lua_compare (lua_State *L, int index1, int index2, int op) {
+  THREAD_CHECK(L);
   StkId o1, o2;
   int i = 0;
   lua_lock(L);  /* may call tag method */
@@ -324,6 +350,7 @@ int lua_compare (lua_State *L, int index1, int index2, int op) {
 
 
 lua_Number lua_tonumberx (lua_State *L, int idx, int *isnum) {
+  THREAD_CHECK(L);
   TValue n;
   const TValue *o = index2addr(L, idx);
   if (tonumber(o, &n)) {
@@ -338,6 +365,7 @@ lua_Number lua_tonumberx (lua_State *L, int idx, int *isnum) {
 
 
 lua_Integer lua_tointegerx (lua_State *L, int idx, int *isnum) {
+  THREAD_CHECK(L);
   TValue n;
   const TValue *o = index2addr(L, idx);
   if (tonumber(o, &n)) {
@@ -355,6 +383,7 @@ lua_Integer lua_tointegerx (lua_State *L, int idx, int *isnum) {
 
 
 lua_Unsigned lua_tounsignedx (lua_State *L, int idx, int *isnum) {
+  THREAD_CHECK(L);
   TValue n;
   const TValue *o = index2addr(L, idx);
   if (tonumber(o, &n)) {
@@ -372,12 +401,14 @@ lua_Unsigned lua_tounsignedx (lua_State *L, int idx, int *isnum) {
 
 
 int lua_toboolean (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   const TValue *o = index2addr(L, idx);
   return !l_isfalse(o);
 }
 
 
 const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
+  THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
   if (!ttisstring(o)) {
     lua_lock(L);  /* `luaV_tostring' may create a new string */
@@ -396,6 +427,7 @@ const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
 
 
 size_t lua_rawlen (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
   switch (ttypenv(o)) {
     case LUA_TSTRING: return tsvalue(o)->getLen();
@@ -407,6 +439,7 @@ size_t lua_rawlen (lua_State *L, int idx) {
 
 
 lua_CFunction lua_tocfunction (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
   if (ttislcf(o)) return fvalue(o);
   else if (ttisCclosure(o))
@@ -416,6 +449,7 @@ lua_CFunction lua_tocfunction (lua_State *L, int idx) {
 
 
 void *lua_touserdata (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
   switch (ttypenv(o)) {
     case LUA_TUSERDATA: return (uvalue(o) + 1);
@@ -426,12 +460,14 @@ void *lua_touserdata (lua_State *L, int idx) {
 
 
 lua_State *lua_tothread (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
   return (!ttisthread(o)) ? NULL : thvalue(o);
 }
 
 
 const void *lua_topointer (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
   switch (ttype(o)) {
     case LUA_TTABLE: return hvalue(o);
@@ -454,6 +490,7 @@ const void *lua_topointer (lua_State *L, int idx) {
 
 
 void lua_pushnil (lua_State *L) {
+  THREAD_CHECK(L);
   lua_lock(L);
   setnilvalue(L->top);
   api_incr_top(L);
@@ -462,6 +499,7 @@ void lua_pushnil (lua_State *L) {
 
 
 void lua_pushnumber (lua_State *L, lua_Number n) {
+  THREAD_CHECK(L);
   lua_lock(L);
   setnvalue(L->top, n);
   luai_checknum(L, L->top,
@@ -472,6 +510,7 @@ void lua_pushnumber (lua_State *L, lua_Number n) {
 
 
 void lua_pushinteger (lua_State *L, lua_Integer n) {
+  THREAD_CHECK(L);
   lua_lock(L);
   setnvalue(L->top, cast_num(n));
   api_incr_top(L);
@@ -480,6 +519,7 @@ void lua_pushinteger (lua_State *L, lua_Integer n) {
 
 
 void lua_pushunsigned (lua_State *L, lua_Unsigned u) {
+  THREAD_CHECK(L);
   lua_Number n;
   lua_lock(L);
   n = lua_unsigned2number(u);
@@ -490,6 +530,7 @@ void lua_pushunsigned (lua_State *L, lua_Unsigned u) {
 
 
 const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
+  THREAD_CHECK(L);
   TString *ts;
   lua_lock(L);
   luaC_checkGC(L);
@@ -502,6 +543,7 @@ const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
 
 
 const char *lua_pushstring (lua_State *L, const char *s) {
+  THREAD_CHECK(L);
   if (s == NULL) {
     lua_pushnil(L);
     return NULL;
@@ -521,6 +563,7 @@ const char *lua_pushstring (lua_State *L, const char *s) {
 
 const char *lua_pushvfstring (lua_State *L, const char *fmt,
                                       va_list argp) {
+  THREAD_CHECK(L);
   const char *ret;
   lua_lock(L);
   luaC_checkGC(L);
@@ -531,6 +574,7 @@ const char *lua_pushvfstring (lua_State *L, const char *fmt,
 
 
 const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
+  THREAD_CHECK(L);
   const char *ret;
   va_list argp;
   lua_lock(L);
@@ -544,6 +588,7 @@ const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
 
 
 void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
+  THREAD_CHECK(L);
   lua_lock(L);
   if (n == 0) {
     setfvalue(L->top, fn);
@@ -566,6 +611,7 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
 
 
 void lua_pushboolean (lua_State *L, int b) {
+  THREAD_CHECK(L);
   lua_lock(L);
   setbvalue(L->top, (b != 0));  /* ensure that true is 1 */
   api_incr_top(L);
@@ -574,6 +620,7 @@ void lua_pushboolean (lua_State *L, int b) {
 
 
 void lua_pushlightuserdata (lua_State *L, void *p) {
+  THREAD_CHECK(L);
   lua_lock(L);
   setpvalue(L->top, p);
   api_incr_top(L);
@@ -582,6 +629,7 @@ void lua_pushlightuserdata (lua_State *L, void *p) {
 
 
 int lua_pushthread (lua_State *L) {
+  THREAD_CHECK(L);
   lua_lock(L);
   setthvalue(L, L->top, L);
   api_incr_top(L);
@@ -597,6 +645,7 @@ int lua_pushthread (lua_State *L) {
 
 
 void lua_getglobal (lua_State *L, const char *var) {
+  THREAD_CHECK(L);
   Table *reg = hvalue(&G(L)->l_registry);
   const TValue *gt;  /* global table */
   lua_lock(L);
@@ -608,6 +657,7 @@ void lua_getglobal (lua_State *L, const char *var) {
 
 
 void lua_gettable (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId t;
   lua_lock(L);
   t = index2addr(L, idx);
@@ -618,6 +668,7 @@ void lua_gettable (lua_State *L, int idx) {
 
 
 void lua_getfield (lua_State *L, int idx, const char *k) {
+  THREAD_CHECK(L);
   StkId t;
   lua_lock(L);
   t = index2addr(L, idx);
@@ -630,6 +681,7 @@ void lua_getfield (lua_State *L, int idx, const char *k) {
 
 
 void lua_rawget (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId t;
   lua_lock(L);
   t = index2addr(L, idx);
@@ -640,6 +692,7 @@ void lua_rawget (lua_State *L, int idx) {
 
 
 void lua_rawgeti (lua_State *L, int idx, int n) {
+  THREAD_CHECK(L);
   StkId t;
   lua_lock(L);
   t = index2addr(L, idx);
@@ -651,6 +704,7 @@ void lua_rawgeti (lua_State *L, int idx, int n) {
 
 
 void lua_rawgetp (lua_State *L, int idx, const void *p) {
+  THREAD_CHECK(L);
   StkId t;
   TValue k;
   lua_lock(L);
@@ -664,6 +718,7 @@ void lua_rawgetp (lua_State *L, int idx, const void *p) {
 
 
 void lua_createtable (lua_State *L, int narray, int nrec) {
+  THREAD_CHECK(L);
   Table *t;
   lua_lock(L);
   luaC_checkGC(L);
@@ -677,6 +732,7 @@ void lua_createtable (lua_State *L, int narray, int nrec) {
 
 
 int lua_getmetatable (lua_State *L, int objindex) {
+  THREAD_CHECK(L);
   const TValue *obj;
   Table *mt = NULL;
   int res;
@@ -706,6 +762,7 @@ int lua_getmetatable (lua_State *L, int objindex) {
 
 
 void lua_getuservalue (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId o;
   lua_lock(L);
   o = index2addr(L, idx);
@@ -726,6 +783,7 @@ void lua_getuservalue (lua_State *L, int idx) {
 
 
 void lua_setglobal (lua_State *L, const char *var) {
+  THREAD_CHECK(L);
   Table *reg = hvalue(&G(L)->l_registry);
   const TValue *gt;  /* global table */
   lua_lock(L);
@@ -739,6 +797,7 @@ void lua_setglobal (lua_State *L, const char *var) {
 
 
 void lua_settable (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId t;
   lua_lock(L);
   api_checknelems(L, 2);
@@ -751,6 +810,7 @@ void lua_settable (lua_State *L, int idx) {
 
 
 void lua_setfield (lua_State *L, int idx, const char *k) {
+  THREAD_CHECK(L);
   StkId t;
   lua_lock(L);
   api_checknelems(L, 1);
@@ -764,6 +824,7 @@ void lua_setfield (lua_State *L, int idx, const char *k) {
 
 
 void lua_rawset (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId t;
   lua_lock(L);
   api_checknelems(L, 2);
@@ -778,6 +839,7 @@ void lua_rawset (lua_State *L, int idx) {
 
 
 void lua_rawseti (lua_State *L, int idx, int n) {
+  THREAD_CHECK(L);
   StkId t;
   lua_lock(L);
   api_checknelems(L, 1);
@@ -791,6 +853,7 @@ void lua_rawseti (lua_State *L, int idx, int n) {
 
 
 void lua_rawsetp (lua_State *L, int idx, const void *p) {
+  THREAD_CHECK(L);
   StkId t;
   TValue k;
   lua_lock(L);
@@ -806,6 +869,7 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
 
 
 int lua_setmetatable (lua_State *L, int objindex) {
+  THREAD_CHECK(L);
   TValue *obj;
   Table *mt;
   lua_lock(L);
@@ -846,6 +910,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
 
 
 void lua_setuservalue (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId o;
   lua_lock(L);
   api_checknelems(L, 1);
@@ -875,6 +940,7 @@ void lua_setuservalue (lua_State *L, int idx) {
 
 
 int lua_getctx (lua_State *L, int *ctx) {
+  THREAD_CHECK(L);
   if (L->ci->callstatus & CIST_YIELDED) {
     if (ctx) *ctx = L->ci->u.c.ctx;
     return L->ci->u.c.status;
@@ -885,6 +951,7 @@ int lua_getctx (lua_State *L, int *ctx) {
 
 void lua_callk (lua_State *L, int nargs, int nresults, int ctx,
                         lua_CFunction k) {
+  THREAD_CHECK(L);
   StkId func;
   lua_lock(L);
   api_check(L, k == NULL || !isLua(L->ci),
@@ -922,7 +989,7 @@ static void f_call (lua_State *L, void *ud) {
 
 int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
                         int ctx, lua_CFunction k) {
-  //THREAD_CHECK();
+  THREAD_CHECK(L);
 
   struct CallS c;
   int status;
@@ -969,6 +1036,8 @@ int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
 
 int lua_load (lua_State *L, lua_Reader reader, void *data,
                       const char *chunkname, const char *mode) {
+  THREAD_CHECK(L);
+
   ZIO z;
   int status;
   lua_lock(L);
@@ -992,6 +1061,7 @@ int lua_load (lua_State *L, lua_Reader reader, void *data,
 
 
 int lua_dump (lua_State *L, lua_Writer writer, void *data) {
+  THREAD_CHECK(L);
   int status;
   TValue *o;
   lua_lock(L);
@@ -1016,6 +1086,7 @@ int  lua_status (lua_State *L) {
 */
 
 int lua_gc (lua_State *L, int what, int data) {
+  THREAD_CHECK(L);
   int res = 0;
   global_State *g;
   lua_lock(L);
@@ -1100,6 +1171,7 @@ int lua_gc (lua_State *L, int what, int data) {
 
 
 int lua_error (lua_State *L) {
+  THREAD_CHECK(L);
   lua_lock(L);
   api_checknelems(L, 1);
   luaG_errormsg(L);
@@ -1109,6 +1181,7 @@ int lua_error (lua_State *L) {
 
 
 int lua_next (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId t;
   int more;
   lua_lock(L);
@@ -1126,6 +1199,7 @@ int lua_next (lua_State *L, int idx) {
 
 
 void lua_concat (lua_State *L, int n) {
+  THREAD_CHECK(L);
   lua_lock(L);
   api_checknelems(L, n);
   if (n >= 2) {
@@ -1142,6 +1216,7 @@ void lua_concat (lua_State *L, int n) {
 
 
 void lua_len (lua_State *L, int idx) {
+  THREAD_CHECK(L);
   StkId t;
   lua_lock(L);
   t = index2addr(L, idx);
@@ -1152,6 +1227,7 @@ void lua_len (lua_State *L, int idx) {
 
 
 void *lua_newuserdata (lua_State *L, size_t size) {
+  THREAD_CHECK(L);
   Udata *u;
   lua_lock(L);
   luaC_checkGC(L);
@@ -1190,6 +1266,7 @@ static const char *aux_upvalue (StkId fi, int n, TValue **val,
 
 
 const char *lua_getupvalue (lua_State *L, int funcindex, int n) {
+  THREAD_CHECK(L);
   const char *name;
   TValue *val = NULL;  /* to avoid warnings */
   lua_lock(L);
@@ -1204,6 +1281,7 @@ const char *lua_getupvalue (lua_State *L, int funcindex, int n) {
 
 
 const char *lua_setupvalue (lua_State *L, int funcindex, int n) {
+  THREAD_CHECK(L);
   const char *name;
   TValue *val = NULL;  /* to avoid warnings */
   LuaBase *owner = NULL;  /* to avoid warnings */
@@ -1223,6 +1301,7 @@ const char *lua_setupvalue (lua_State *L, int funcindex, int n) {
 
 
 static UpVal **getupvalref (lua_State *L, int fidx, int n, LClosure **pf) {
+  THREAD_CHECK(L);
   LClosure *f;
   StkId fi = index2addr(L, fidx);
   api_check(L, ttisLclosure(fi), "Lua function expected");
@@ -1234,6 +1313,7 @@ static UpVal **getupvalref (lua_State *L, int fidx, int n, LClosure **pf) {
 
 
 void *lua_upvalueid (lua_State *L, int fidx, int n) {
+  THREAD_CHECK(L);
   StkId fi = index2addr(L, fidx);
   switch (ttype(fi)) {
     case LUA_TLCL: {  /* lua closure */
@@ -1254,6 +1334,7 @@ void *lua_upvalueid (lua_State *L, int fidx, int n) {
 
 void lua_upvaluejoin (lua_State *L, int fidx1, int n1,
                                             int fidx2, int n2) {
+  THREAD_CHECK(L);
   LClosure *f1;
   UpVal **up1 = getupvalref(L, fidx1, n1, &f1);
   UpVal **up2 = getupvalref(L, fidx2, n2, NULL);

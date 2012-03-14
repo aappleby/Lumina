@@ -4,6 +4,7 @@
 #include "lstate.h"
 
 void LuaBase::Init(lua_State* L, int type) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
 
   marked = luaC_white(g);

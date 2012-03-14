@@ -164,41 +164,41 @@ struct TValue {
   { TValue *io=(obj); io->b=(x); settt_(io, LUA_TBOOLEAN); }
 
 #define setgcovalue(L,obj,x) \
-  { TValue *io=(obj); LuaBase *i_g=(x); \
+  { THREAD_CHECK(L); TValue *io=(obj); LuaBase *i_g=(x); \
     io->gc=i_g; settt_(io, ctb(gch(i_g)->tt)); }
 
 #define setsvalue(L,obj,x) \
-  { TValue *io=(obj); \
+  { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TSTRING)); \
     checkliveness(G(L),io); }
 
 #define setuvalue(L,obj,x) \
-  { TValue *io=(obj); \
+  { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TUSERDATA)); \
     checkliveness(G(L),io); }
 
 #define setthvalue(L,obj,x) \
-  { TValue *io=(obj); \
+  { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TTHREAD)); \
     checkliveness(G(L),io); }
 
 #define setclLvalue(L,obj,x) \
-  { TValue *io=(obj); \
+  { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TLCL)); \
     checkliveness(G(L),io); }
 
 #define setclCvalue(L,obj,x) \
-  { TValue *io=(obj); \
+  { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TCCL)); \
     checkliveness(G(L),io); }
 
 #define sethvalue(L,obj,x) \
-  { TValue *io=(obj); \
+  { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TTABLE)); \
     checkliveness(G(L),io); }
 
 #define setptvalue(L,obj,x) \
-  { TValue *io=(obj); \
+  { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TPROTO)); \
     checkliveness(G(L),io); }
 
@@ -207,7 +207,7 @@ struct TValue {
 
 
 #define setobj(L,obj1,obj2) \
-	{ const TValue *io2=(obj2); TValue *io1=(obj1); \
+	{ THREAD_CHECK(L); const TValue *io2=(obj2); TValue *io1=(obj1); \
 	  io1->bytes = io2->bytes; io1->tt_ = io2->tt_; \
 	  checkliveness(G(L),io1); }
 

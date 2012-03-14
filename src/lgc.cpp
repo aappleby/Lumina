@@ -137,6 +137,7 @@ static int iscleared (const TValue *o) {
 ** being pointed by a black object.
 */
 void luaC_barrier_ (lua_State *L, LuaBase *o, LuaBase *v) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
   assert(isgenerational(g) || g->gcstate != GCSpause);
@@ -157,6 +158,7 @@ void luaC_barrier_ (lua_State *L, LuaBase *o, LuaBase *v) {
 ** different types.)
 */
 void luaC_barrierback_ (lua_State *L, LuaBase *o) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   assert(isblack(o) && !isdead(g, o) && gch(o)->tt == LUA_TTABLE);
   black2gray(o);  /* make object gray (again) */
@@ -174,6 +176,7 @@ void luaC_barrierback_ (lua_State *L, LuaBase *o) {
 ** possible instances.
 */
 void luaC_barrierproto_ (lua_State *L, Proto *p, Closure *c) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   assert(isblack(obj2gco(p)));
   if (p->cache == NULL) {  /* first time? */
@@ -214,6 +217,7 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
 ** object itself (used only by states).
 */
 LuaBase *luaC_newobj (lua_State *L, int tt, size_t sz, LuaBase **list) {
+  THREAD_CHECK(L);
   void* blob = luaM_newobject(L,tt,sz);
   LuaBase *o = reinterpret_cast<LuaBase*>(blob);
   
@@ -667,12 +671,18 @@ static LuaBase **sweeplist (lua_State *L, LuaBase **p, size_t count);
 ** list of call-info structures.
 */
 static void sweepthread (lua_State *L, lua_State *L1) {
+  THREAD_CHECK(L);
   if (L1->stack == NULL) return;  /* stack not completely built yet */
   sweepwholelist(L, &L1->openupval);  /* sweep open upvalues */
-  luaE_freeCI(L1);  /* free extra CallInfo slots */
+  {
+    THREAD_CHANGE(L1);
+    luaE_freeCI(L1);  /* free extra CallInfo slots */
+  }
   /* should not change the stack during an emergency gc cycle */
-  if (G(L)->gckind != KGC_EMERGENCY)
+  if (G(L)->gckind != KGC_EMERGENCY) {
+    THREAD_CHANGE(L1);
     luaD_shrinkstack(L1);
+  }
 }
 
 
@@ -688,6 +698,7 @@ static void sweepthread (lua_State *L, lua_State *L1) {
 ** When object is a thread, sweep its list of open upvalues too.
 */
 static LuaBase **sweeplist (lua_State *L, LuaBase **p, size_t count) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   int ow = otherwhite(g);
   int toclear, toset;  /* bits to clear and to set in all live objects */
@@ -737,6 +748,7 @@ static LuaBase **sweeplist (lua_State *L, LuaBase **p, size_t count) {
 */
 
 static void checkSizes (lua_State *L) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   if (g->gckind != KGC_EMERGENCY) {  /* do not change sizes in emergency */
     int hs = g->strt.size / 2;  /* half the size of the string table */
@@ -764,12 +776,14 @@ static LuaBase *udata2finalize (global_State *g) {
 
 
 static void dothecall (lua_State *L, void *ud) {
+  THREAD_CHECK(L);
   UNUSED(ud);
   luaD_call(L, L->top - 2, 0, 0);
 }
 
 
 static void GCTM (lua_State *L, int propagateerrors) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   const TValue *tm;
   TValue v;
@@ -804,6 +818,7 @@ static void GCTM (lua_State *L, int propagateerrors) {
 ** finalization from list 'finobj' to list 'tobefnz' (to be finalized)
 */
 static void separatetobefnz (lua_State *L, int all) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   LuaBase **p = &g->finobj;
   LuaBase *curr;
@@ -832,6 +847,7 @@ static void separatetobefnz (lua_State *L, int all) {
 ** search the list to find it) and link it in 'finobj' list.
 */
 void luaC_checkfinalizer (lua_State *L, LuaBase *o, Table *mt) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   if (testbit(gch(o)->marked, SEPARATED) || /* obj. is already separated... */
       isfinalized(o) ||                           /* ... or is finalized... */
@@ -865,6 +881,7 @@ void luaC_checkfinalizer (lua_State *L, LuaBase *o, Table *mt) {
 ** change GC mode
 */
 void luaC_changemode (lua_State *L, int mode) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   if (mode == g->gckind) return;  /* nothing to change */
   if (mode == KGC_GEN) {  /* change to generational mode */
@@ -888,6 +905,7 @@ void luaC_changemode (lua_State *L, int mode) {
 ** call all pending finalizers
 */
 static void callallpendingfinalizers (lua_State *L, int propagateerrors) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   while (g->tobefnz) {
     resetoldbit(g->tobefnz);
@@ -897,6 +915,7 @@ static void callallpendingfinalizers (lua_State *L, int propagateerrors) {
 
 
 void luaC_freeallobjects (lua_State *L) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   int i;
   separatetobefnz(L, 1);  /* separate all objects with finalizers */
@@ -913,6 +932,7 @@ void luaC_freeallobjects (lua_State *L) {
 
 
 static void atomic (lua_State *L) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   LuaBase *origweak, *origall;
   assert(!iswhite(obj2gco(g->mainthread)));
@@ -948,6 +968,7 @@ static void atomic (lua_State *L) {
 
 
 static l_mem singlestep (lua_State *L) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   switch (g->gcstate) {
     case GCSpause: {
@@ -1014,6 +1035,7 @@ static l_mem singlestep (lua_State *L) {
 ** by 'statemask'
 */
 void luaC_runtilstate (lua_State *L, int statesmask) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   while (!testbit(statesmask, g->gcstate))
     singlestep(L);
@@ -1021,6 +1043,7 @@ void luaC_runtilstate (lua_State *L, int statesmask) {
 
 
 static void generationalcollection (lua_State *L) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   if (g->lastmajormem == 0) {  /* signal for another major collection? */
     luaC_fullgc(L, 0);  /* perform a full regular collection */
@@ -1037,6 +1060,7 @@ static void generationalcollection (lua_State *L) {
 
 
 static void step (lua_State *L) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   l_mem lim = g->gcstepmul;  /* how much to work */
   do {  /* always perform at least one single step */
@@ -1053,6 +1077,7 @@ static void step (lua_State *L) {
 ** performs a basic GC step even if the collector is stopped
 */
 void luaC_forcestep (lua_State *L) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   int i;
   if (isgenerational(g)) generationalcollection(L);
@@ -1066,6 +1091,7 @@ void luaC_forcestep (lua_State *L) {
 ** performs a basic GC step only if collector is running
 */
 void luaC_step (lua_State *L) {
+  THREAD_CHECK(L);
   if (G(L)->gcrunning) luaC_forcestep(L);
 }
 
@@ -1075,6 +1101,7 @@ void luaC_step (lua_State *L) {
 ** finalizers (which could change stack positions)
 */
 void luaC_fullgc (lua_State *L, int isemergency) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   int origkind = g->gckind;
   assert(origkind != KGC_EMERGENCY);

@@ -45,6 +45,7 @@ const TValue *luaV_tonumber (const TValue *obj, TValue *n) {
 
 
 int luaV_tostring (lua_State *L, StkId obj) {
+  THREAD_CHECK(L);
   if (!ttisnumber(obj))
     return 0;
   else {
@@ -58,10 +59,11 @@ int luaV_tostring (lua_State *L, StkId obj) {
 
 
 static void traceexec (lua_State *L) {
+  THREAD_CHECK(L);
   CallInfo *ci = L->ci;
   uint8_t mask = L->hookmask;
   if ((mask & LUA_MASKCOUNT) && L->hookcount == 0) {
-    resethookcount(L);
+    L->hookcount = L->basehookcount;
     luaD_hook(L, LUA_HOOKCOUNT, -1);
   }
   if (mask & LUA_MASKLINE) {
@@ -83,6 +85,7 @@ static void traceexec (lua_State *L) {
 
 static void callTM (lua_State *L, const TValue *f, const TValue *p1,
                     const TValue *p2, TValue *p3, int hasres) {
+  THREAD_CHECK(L);
   ptrdiff_t result = savestack(L, p3);
   setobj(L, L->top++, f);  /* push function */
   setobj(L, L->top++, p1);  /* 1st argument */
@@ -100,6 +103,7 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
 
 
 void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
+  THREAD_CHECK(L);
   int loop;
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
     const TValue *tm;
@@ -126,6 +130,7 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
 
 
 void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
+  THREAD_CHECK(L);
   int loop;
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
     const TValue *tm;
@@ -166,6 +171,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
 
 static int call_binTM (lua_State *L, const TValue *p1, const TValue *p2,
                        StkId res, TMS event) {
+  THREAD_CHECK(L);
   const TValue *tm = luaT_gettmbyobj(L, p1, event);  /* try first operand */
   if (ttisnil(tm))
     tm = luaT_gettmbyobj(L, p2, event);  /* try second operand */
@@ -177,6 +183,7 @@ static int call_binTM (lua_State *L, const TValue *p1, const TValue *p2,
 
 static const TValue *get_equalTM (lua_State *L, Table *mt1, Table *mt2,
                                   TMS event) {
+  THREAD_CHECK(L);
   const TValue *tm1 = fasttm(L, mt1, event);
   const TValue *tm2;
   if (tm1 == NULL) return NULL;  /* no metamethod */
@@ -191,6 +198,7 @@ static const TValue *get_equalTM (lua_State *L, Table *mt1, Table *mt2,
 
 static int call_orderTM (lua_State *L, const TValue *p1, const TValue *p2,
                          TMS event) {
+  THREAD_CHECK(L);
   if (!call_binTM(L, p1, p2, L->top, event))
     return -1;  /* no metamethod */
   else
@@ -221,6 +229,7 @@ static int l_strcmp (const TString *ls, const TString *rs) {
 
 
 int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
+  THREAD_CHECK(L);
   int res;
   if (ttisnumber(l) && ttisnumber(r))
     return luai_numlt(L, nvalue(l), nvalue(r));
@@ -233,6 +242,7 @@ int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
 
 
 int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
+  THREAD_CHECK(L);
   int res;
   if (ttisnumber(l) && ttisnumber(r))
     return luai_numle(L, nvalue(l), nvalue(r));
@@ -250,6 +260,7 @@ int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
 ** equality of Lua values. L == NULL means raw equality (no metamethods)
 */
 int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
+  THREAD_CHECK(L);
   const TValue *tm;
   assert(ttisequal(t1, t2));
   switch (ttype(t1)) {
@@ -280,8 +291,27 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
   return !l_isfalse(L->top);
 }
 
+int luaV_equalobj2_ (const TValue *t1, const TValue *t2) {
+  assert(ttisequal(t1, t2));
+  switch (ttype(t1)) {
+    case LUA_TNIL: return 1;
+    case LUA_TNUMBER: return luai_numeq(nvalue(t1), nvalue(t2));
+    case LUA_TBOOLEAN: return bvalue(t1) == bvalue(t2);  /* true must be 1 !! */
+    case LUA_TLIGHTUSERDATA: return pvalue(t1) == pvalue(t2);
+    case LUA_TLCF: return fvalue(t1) == fvalue(t2);
+    case LUA_TSTRING: return eqstr(tsvalue(t1), tsvalue(t2));
+    case LUA_TUSERDATA: return uvalue(t1) == uvalue(t2);
+    case LUA_TTABLE: return hvalue(t1) == hvalue(t2);
+    default:
+      assert(iscollectable(t1));
+      return gcvalue(t1) == gcvalue(t2);
+  }
+  return 0;
+}
+
 
 void luaV_concat (lua_State *L, int total) {
+  THREAD_CHECK(L);
   assert(total >= 2);
   do {
     StkId top = L->top;
@@ -324,6 +354,7 @@ void luaV_concat (lua_State *L, int total) {
 
 
 void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
+  THREAD_CHECK(L);
   const TValue *tm;
   switch (ttypenv(rb)) {
     case LUA_TTABLE: {
@@ -350,6 +381,7 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
 
 void luaV_arith (lua_State *L, StkId ra, const TValue *rb,
                  const TValue *rc, TMS op) {
+  THREAD_CHECK(L);
   TValue tempb, tempc;
   const TValue *b, *c;
   if ((b = luaV_tonumber(rb, &tempb)) != NULL &&
@@ -391,6 +423,7 @@ static Closure *getcached (Proto *p, UpVal **encup, StkId base) {
 */
 static void pushclosure (lua_State *L, Proto *p, UpVal **encup, StkId base,
                          StkId ra) {
+  THREAD_CHECK(L);
   int nup = p->sizeupvalues;
   Upvaldesc *uv = p->upvalues;
   int i;
@@ -411,6 +444,7 @@ static void pushclosure (lua_State *L, Proto *p, UpVal **encup, StkId base,
 ** finish execution of an opcode interrupted by an yield
 */
 void luaV_finishOp (lua_State *L) {
+  THREAD_CHECK(L);
   CallInfo *ci = L->ci;
   StkId base = ci->u.l.base;
   Instruction inst = *(ci->u.l.savedpc - 1);  /* interrupted instruction */
@@ -518,6 +552,7 @@ void luaV_finishOp (lua_State *L) {
 #define vmcasenb(l,b)	case l: {b}		/* nb = no break */
 
 void luaV_execute (lua_State *L) {
+  THREAD_CHECK(L);
   CallInfo *ci = L->ci;
   LClosure *cl;
   TValue *k;

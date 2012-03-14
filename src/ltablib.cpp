@@ -20,25 +20,8 @@
 	(luaL_checktype(L, n, LUA_TTABLE), luaL_len(L, n))
 
 
-#if defined(LUA_COMPAT_MAXN)
-static int maxn (lua_State *L) {
-  lua_Number max = 0;
-  luaL_checktype(L, 1, LUA_TTABLE);
-  lua_pushnil(L);  /* first key */
-  while (lua_next(L, 1)) {
-    lua_pop(L, 1);  /* remove value */
-    if (lua_type(L, -1) == LUA_TNUMBER) {
-      lua_Number v = lua_tonumber(L, -1);
-      if (v > max) max = v;
-    }
-  }
-  lua_pushnumber(L, max);
-  return 1;
-}
-#endif
-
-
 static int tinsert (lua_State *L) {
+  THREAD_CHECK(L);
   int e = aux_getn(L, 1) + 1;  /* first empty element */
   int pos;  /* where to insert new element */
   switch (lua_gettop(L)) {
@@ -66,6 +49,7 @@ static int tinsert (lua_State *L) {
 
 
 static int tremove (lua_State *L) {
+  THREAD_CHECK(L);
   int e = aux_getn(L, 1);
   int pos = luaL_optint(L, 2, e);
   if (!(1 <= pos && pos <= e))  /* position is outside bounds? */
@@ -82,6 +66,7 @@ static int tremove (lua_State *L) {
 
 
 static void addfield (lua_State *L, luaL_Buffer *b, int i) {
+  THREAD_CHECK(L);
   lua_rawgeti(L, 1, i);
   if (!lua_isstring(L, -1))
     luaL_error(L, "invalid value (%s) at index %d in table for "
@@ -91,6 +76,7 @@ static void addfield (lua_State *L, luaL_Buffer *b, int i) {
 
 
 static int tconcat (lua_State *L) {
+  THREAD_CHECK(L);
   luaL_Buffer b;
   size_t lsep;
   int i, last;
@@ -117,6 +103,7 @@ static int tconcat (lua_State *L) {
 */
 
 static int pack (lua_State *L) {
+  THREAD_CHECK(L);
   int n = lua_gettop(L);  /* number of elements to pack */
   lua_createtable(L, n, 1);  /* create result table */
   lua_pushinteger(L, n);
@@ -134,6 +121,7 @@ static int pack (lua_State *L) {
 
 
 static int unpack (lua_State *L) {
+  THREAD_CHECK(L);
   int i, e, n;
   luaL_checktype(L, 1, LUA_TTABLE);
   i = luaL_optint(L, 2, 1);
@@ -162,11 +150,13 @@ static int unpack (lua_State *L) {
 
 
 static void set2 (lua_State *L, int i, int j) {
+  THREAD_CHECK(L);
   lua_rawseti(L, 1, i);
   lua_rawseti(L, 1, j);
 }
 
 static int sort_comp (lua_State *L, int a, int b) {
+  THREAD_CHECK(L);
   if (!lua_isnil(L, 2)) {  /* function? */
     int res;
     lua_pushvalue(L, 2);
@@ -182,6 +172,7 @@ static int sort_comp (lua_State *L, int a, int b) {
 }
 
 static void auxsort (lua_State *L, int l, int u) {
+  THREAD_CHECK(L);
   while (l < u) {  /* for tail recursion */
     int i, j;
     /* sort elements a[l], a[(l+u)/2] and a[u] */
@@ -245,6 +236,7 @@ static void auxsort (lua_State *L, int l, int u) {
 }
 
 static int sort (lua_State *L) {
+  THREAD_CHECK(L);
   int n = aux_getn(L, 1);
   luaL_checkstack(L, 40, "");  /* assume array is smaller than 2^40 */
   if (!lua_isnoneornil(L, 2))  /* is there a 2nd argument? */
@@ -269,6 +261,7 @@ static const luaL_Reg tab_funcs[] = {
 
 
 int luaopen_table (lua_State *L) {
+  THREAD_CHECK(L);
   luaL_newlib(L, tab_funcs);
   return 1;
 }

@@ -37,6 +37,7 @@ const char *const luaT_typenames_[LUA_TOTALTAGS] = {
 
 
 void luaT_init (lua_State *L) {
+  THREAD_CHECK(L);
   static const char *const luaT_eventname[] = {  /* ORDER TM */
     "__index", "__newindex",
     "__gc", "__mode", "__len", "__eq",
@@ -68,6 +69,7 @@ const TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
 
 
 const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
+  THREAD_CHECK(L);
   Table *mt;
   switch (ttypenv(o)) {
     case LUA_TTABLE:

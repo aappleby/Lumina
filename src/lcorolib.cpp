@@ -18,8 +18,15 @@
 
 
 static int auxresume (lua_State *L, lua_State *co, int narg) {
+  THREAD_CHECK(L);
   int status;
-  if (!lua_checkstack(co, narg)) {
+
+  int checkresult;
+  {
+    THREAD_CHANGE(co);
+    checkresult = lua_checkstack(co, narg);
+  }
+  if (!checkresult) {
     lua_pushliteral(L, "too many arguments to resume");
     return -1;  /* error flag */
   }
@@ -28,18 +35,32 @@ static int auxresume (lua_State *L, lua_State *co, int narg) {
     return -1;  /* error flag */
   }
   lua_xmove(L, co, narg);
-  status = lua_resume(co, L, narg);
+  {
+    THREAD_CHANGE(co);
+    status = lua_resume(co, L, narg);
+  }
   if (status == LUA_OK || status == LUA_YIELD) {
-    int nres = lua_gettop(co);
+    int nres;
+    {
+      THREAD_CHANGE(co);
+      nres = lua_gettop(co);
+    }
     if (!lua_checkstack(L, nres + 1)) {
-      lua_pop(co, nres);  /* remove results anyway */
+      {
+        THREAD_CHANGE(co);
+        lua_pop(co, nres);  /* remove results anyway */
+      }
       lua_pushliteral(L, "too many results to resume");
       return -1;  /* error flag */
     }
-    lua_xmove(co, L, nres);  /* move yielded values */
+    {
+      THREAD_CHANGE(co);
+      lua_xmove(co, L, nres);  /* move yielded values */
+    }
     return nres;
   }
   else {
+    THREAD_CHANGE(co);
     lua_xmove(co, L, 1);  /* move error message */
     return -1;  /* error flag */
   }
@@ -47,6 +68,7 @@ static int auxresume (lua_State *L, lua_State *co, int narg) {
 
 
 static int luaB_coresume (lua_State *L) {
+  THREAD_CHECK(L);
   lua_State *co = lua_tothread(L, 1);
   int r;
   luaL_argcheck(L, co, 1, "coroutine expected");
@@ -65,6 +87,7 @@ static int luaB_coresume (lua_State *L) {
 
 
 static int luaB_auxwrap (lua_State *L) {
+  THREAD_CHECK(L);
   lua_State *co = lua_tothread(L, lua_upvalueindex(1));
   int r = auxresume(L, co, lua_gettop(L));
   if (r < 0) {
@@ -80,6 +103,7 @@ static int luaB_auxwrap (lua_State *L) {
 
 
 static int luaB_cocreate (lua_State *L) {
+  THREAD_CHECK(L);
   lua_State *NL = lua_newthread(L);
   luaL_checktype(L, 1, LUA_TFUNCTION);
   lua_pushvalue(L, 1);  /* move function to top */
@@ -89,6 +113,7 @@ static int luaB_cocreate (lua_State *L) {
 
 
 static int luaB_cowrap (lua_State *L) {
+  THREAD_CHECK(L);
   luaB_cocreate(L);
   lua_pushcclosure(L, luaB_auxwrap, 1);
   return 1;
@@ -96,11 +121,13 @@ static int luaB_cowrap (lua_State *L) {
 
 
 static int luaB_yield (lua_State *L) {
+  THREAD_CHECK(L);
   return lua_yield(L, lua_gettop(L));
 }
 
 
 static int luaB_costatus (lua_State *L) {
+  THREAD_CHECK(L);
   lua_State *co = lua_tothread(L, 1);
   luaL_argcheck(L, co, 1, "coroutine expected");
   if (L == co) lua_pushliteral(L, "running");
@@ -129,6 +156,7 @@ static int luaB_costatus (lua_State *L) {
 
 
 static int luaB_corunning (lua_State *L) {
+  THREAD_CHECK(L);
   int ismain = lua_pushthread(L);
   lua_pushboolean(L, ismain);
   return 2;
@@ -148,6 +176,7 @@ static const luaL_Reg co_funcs[] = {
 
 
 int luaopen_coroutine (lua_State *L) {
+  THREAD_CHECK(L);
   luaL_newlib(L, co_funcs);
   return 1;
 }

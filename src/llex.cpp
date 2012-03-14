@@ -64,6 +64,7 @@ static void save (LexState *ls, int c) {
 
 
 void luaX_init (lua_State *L) {
+  THREAD_CHECK(L);
   int i;
   for (i=0; i<NUM_RESERVED; i++) {
     TString *ts = luaS_new(L, luaX_tokens[i]);
@@ -156,6 +157,7 @@ static void inclinenumber (LexState *ls) {
 
 void luaX_setinput (lua_State *L, LexState *ls, ZIO *z, TString *source,
                     int firstchar) {
+  THREAD_CHECK(L);
   ls->decpoint = '.';
   ls->L = L;
   ls->current = firstchar;

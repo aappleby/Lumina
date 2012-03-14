@@ -204,6 +204,7 @@ static void LoadHeader(LoadState* S)
 */
 Proto* luaU_undump (lua_State* L, ZIO* Z, Mbuffer* buff, const char* name)
 {
+ THREAD_CHECK(L);
  LoadState S;
  if (*name=='@' || *name=='=')
   S.name=name+1;

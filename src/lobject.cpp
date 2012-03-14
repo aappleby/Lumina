@@ -171,6 +171,7 @@ int luaO_str2d (const char *s, size_t len, lua_Number *result) {
 
 
 static void pushstr (lua_State *L, const char *str, size_t l) {
+  THREAD_CHECK(L);
   setsvalue(L, L->top, luaS_newlstr(L, str, l));
   incr_top(L);
 }
@@ -178,6 +179,7 @@ static void pushstr (lua_State *L, const char *str, size_t l) {
 
 /* this function handles only `%d', `%c', %f, %p, and `%s' formats */
 const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
+  THREAD_CHECK(L);
   int n = 0;
   for (;;) {
     const char *e = strchr(fmt, '%');
@@ -233,6 +235,7 @@ const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
 
 
 const char *luaO_pushfstring (lua_State *L, const char *fmt, ...) {
+  THREAD_CHECK(L);
   const char *msg;
   va_list argp;
   va_start(argp, fmt);

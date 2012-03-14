@@ -21,6 +21,7 @@
 
 
 Closure *luaF_newCclosure (lua_State *L, int n) {
+  THREAD_CHECK(L);
   LuaBase* o = luaC_newobj(L, LUA_TFUNCTION, sizeCclosure(n), NULL);
   Closure *c = gco2cl(o);
   c->c.isC = 1;
@@ -30,6 +31,7 @@ Closure *luaF_newCclosure (lua_State *L, int n) {
 
 
 Closure *luaF_newLclosure (lua_State *L, Proto *p) {
+  THREAD_CHECK(L);
   int n = p->sizeupvalues;
   LuaBase* o = luaC_newobj(L, LUA_TFUNCTION, sizeLclosure(n), NULL);
   Closure *c = gco2cl(o);
@@ -42,6 +44,7 @@ Closure *luaF_newLclosure (lua_State *L, Proto *p) {
 
 
 UpVal *luaF_newupval (lua_State *L) {
+  THREAD_CHECK(L);
   LuaBase *o = luaC_newobj(L, LUA_TUPVAL, sizeof(UpVal), NULL);
   UpVal *uv = gco2uv(o);
   uv->v = &uv->u.value;
@@ -51,6 +54,7 @@ UpVal *luaF_newupval (lua_State *L) {
 
 
 UpVal *luaF_findupval (lua_State *L, StkId level) {
+  THREAD_CHECK(L);
   global_State *g = G(L);
   LuaBase **pp = &L->openupval;
   UpVal *p;
@@ -87,6 +91,7 @@ static void unlinkupval (UpVal *uv) {
 
 
 void luaF_freeupval (lua_State *L, UpVal *uv) {
+  THREAD_CHECK(L);
   if (uv->v != &uv->u.value)  /* is it open? */
     unlinkupval(uv);  /* remove from open list */
   luaM_freemem(L, uv, sizeof(UpVal));  /* free upvalue */
@@ -94,6 +99,7 @@ void luaF_freeupval (lua_State *L, UpVal *uv) {
 
 
 void luaF_close (lua_State *L, StkId level) {
+  THREAD_CHECK(L);
   UpVal *uv;
   global_State *g = G(L);
   while (L->openupval != NULL && (uv = gco2uv(L->openupval))->v >= level) {
@@ -115,6 +121,7 @@ void luaF_close (lua_State *L, StkId level) {
 
 
 Proto *luaF_newproto (lua_State *L) {
+  THREAD_CHECK(L);
   LuaBase* o = luaC_newobj(L, LUA_TPROTO, sizeof(Proto), NULL);
   Proto* f = gco2p(o);
   f->constants = NULL;
@@ -141,6 +148,7 @@ Proto *luaF_newproto (lua_State *L) {
 
 
 void luaF_freeproto (lua_State *L, Proto *f) {
+  THREAD_CHECK(L);
   luaM_freemem(L, f->code, f->sizecode * sizeof(Instruction));
   luaM_freemem(L, f->p, f->sizep * sizeof(Proto*));
   luaM_freemem(L, f->constants, f->nconstants * sizeof(TValue));
@@ -152,6 +160,7 @@ void luaF_freeproto (lua_State *L, Proto *f) {
 
 
 void luaF_freeclosure (lua_State *L, Closure *c) {
+  THREAD_CHECK(L);
   int size = (c->c.isC) ? sizeCclosure(c->c.nupvalues) :
                           sizeLclosure(c->l.nupvalues);
   luaM_freemem(L, c, size);

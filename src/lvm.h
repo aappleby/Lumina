@@ -20,11 +20,12 @@
 #define equalobj(L,o1,o2)  (ttisequal(o1, o2) && luaV_equalobj_(L, o1, o2))
 
 #define luaV_rawequalobj(t1,t2)  \
-        (ttisequal(t1,t2) && luaV_equalobj_(NULL,t1,t2))
+        (ttisequal(t1,t2) && luaV_equalobj2_(t1,t2))
 
 
 /* not to called directly */
 int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2);
+int luaV_equalobj2_ (const TValue *t1, const TValue *t2);
 
 
 int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r);
