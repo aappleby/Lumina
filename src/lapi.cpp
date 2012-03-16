@@ -503,7 +503,7 @@ void lua_pushnumber (lua_State *L, lua_Number n) {
   lua_lock(L);
   setnvalue(L->top, n);
   luai_checknum(L, L->top,
-    luaG_runerror(L, "C API - attempt to push a signaling NaN"));
+    luaG_runerror("C API - attempt to push a signaling NaN"));
   api_incr_top(L);
   lua_unlock(L);
 }
@@ -567,7 +567,7 @@ const char *lua_pushvfstring (lua_State *L, const char *fmt,
   const char *ret;
   lua_lock(L);
   luaC_checkGC(L);
-  ret = luaO_pushvfstring(L, fmt, argp);
+  ret = luaO_pushvfstring(fmt, argp);
   lua_unlock(L);
   return ret;
 }
@@ -580,7 +580,7 @@ const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
   lua_lock(L);
   luaC_checkGC(L);
   va_start(argp, fmt);
-  ret = luaO_pushvfstring(L, fmt, argp);
+  ret = luaO_pushvfstring(fmt, argp);
   va_end(argp);
   lua_unlock(L);
   return ret;
@@ -1174,7 +1174,7 @@ int lua_error (lua_State *L) {
   THREAD_CHECK(L);
   lua_lock(L);
   api_checknelems(L, 1);
-  luaG_errormsg(L);
+  luaG_errormsg();
   lua_unlock(L);
   return 0;  /* to avoid warnings */
 }

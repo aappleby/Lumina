@@ -118,14 +118,14 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       /* else will try the tag method */
     }
     else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_INDEX)))
-      luaG_typeerror(L, t, "index");
+      luaG_typeerror(t, "index");
     if (ttisfunction(tm)) {
       callTM(L, tm, t, key, val, 1);
       return;
     }
     t = tm;  /* else repeat with 'tm' */
   }
-  luaG_runerror(L, "loop in gettable");
+  luaG_runerror("loop in gettable");
 }
 
 
@@ -157,7 +157,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
     }
     else  /* not a table; check metamethod */
       if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX)))
-        luaG_typeerror(L, t, "index");
+        luaG_typeerror(t, "index");
     /* there is a metamethod */
     if (ttisfunction(tm)) {
       callTM(L, tm, t, key, val, 0);
@@ -165,7 +165,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
     }
     t = tm;  /* else repeat with 'tm' */
   }
-  luaG_runerror(L, "loop in settable");
+  luaG_runerror("loop in settable");
 }
 
 
@@ -236,7 +236,7 @@ int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
   else if (ttisstring(l) && ttisstring(r))
     return l_strcmp(tsvalue(l), tsvalue(r)) < 0;
   else if ((res = call_orderTM(L, l, r, TM_LT)) < 0)
-    luaG_ordererror(L, l, r);
+    luaG_ordererror(l, r);
   return res;
 }
 
@@ -251,7 +251,7 @@ int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
   else if ((res = call_orderTM(L, l, r, TM_LE)) >= 0)  /* first try `le' */
     return res;
   else if ((res = call_orderTM(L, r, l, TM_LT)) < 0)  /* else try `lt' */
-    luaG_ordererror(L, l, r);
+    luaG_ordererror(l, r);
   return !res;
 }
 
@@ -318,7 +318,7 @@ void luaV_concat (lua_State *L, int total) {
     int n = 2;  /* number of elements handled in this pass (at least 2) */
     if (!(ttisstring(top-2) || ttisnumber(top-2)) || !tostring(L, top-1)) {
       if (!call_binTM(L, top-2, top-1, top-2, TM_CONCAT))
-        luaG_concaterror(L, top-2, top-1);
+        luaG_concaterror(top-2, top-1);
     }
     else if (tsvalue(top-1)->getLen() == 0)  /* second operand is empty? */
       (void)tostring(L, top - 2);  /* result is first operand */
@@ -334,7 +334,7 @@ void luaV_concat (lua_State *L, int total) {
       for (i = 1; i < total && tostring(L, top-i-1); i++) {
         size_t l = tsvalue(top-i-1)->getLen();
         if (l >= (MAX_SIZET/sizeof(char)) - tl)
-          luaG_runerror(L, "string length overflow");
+          luaG_runerror("string length overflow");
         tl += l;
       }
       buffer = luaZ_openspace(L, &G(L)->buff, tl);
@@ -371,7 +371,7 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
     default: {  /* try metamethod */
       tm = luaT_gettmbyobj(L, rb, TM_LEN);
       if (ttisnil(tm))  /* no metamethod? */
-        luaG_typeerror(L, rb, "get length of");
+        luaG_typeerror(rb, "get length of");
       break;
     }
   }
@@ -390,7 +390,7 @@ void luaV_arith (lua_State *L, StkId ra, const TValue *rb,
     setnvalue(ra, res);
   }
   else if (!call_binTM(L, rb, rc, ra, op))
-    luaG_aritherror(L, rb, rc);
+    luaG_aritherror(rb, rc);
 }
 
 
@@ -808,11 +808,11 @@ void luaV_execute (lua_State *L) {
         const TValue *plimit = ra+1;
         const TValue *pstep = ra+2;
         if (!tonumber(init, ra))
-          luaG_runerror(L, LUA_QL("for") " initial value must be a number");
+          luaG_runerror(LUA_QL("for") " initial value must be a number");
         else if (!tonumber(plimit, ra+1))
-          luaG_runerror(L, LUA_QL("for") " limit must be a number");
+          luaG_runerror(LUA_QL("for") " limit must be a number");
         else if (!tonumber(pstep, ra+2))
-          luaG_runerror(L, LUA_QL("for") " step must be a number");
+          luaG_runerror(LUA_QL("for") " step must be a number");
         setnvalue(ra, luai_numsub(L, nvalue(ra), nvalue(pstep)));
         ci->savedpc += GETARG_sBx(i);
       )

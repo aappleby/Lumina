@@ -506,8 +506,8 @@ static const char *getupvalname (CallInfo *ci, const TValue *o,
 }
 
 
-l_noret luaG_typeerror (lua_State *L, const TValue *o, const char *op) {
-  THREAD_CHECK(L);
+l_noret luaG_typeerror (const TValue *o, const char *op) {
+  lua_State*L = thread_L;
   CallInfo *ci = L->ci;
   const char *name = NULL;
   const char *t = objtypename(o);
@@ -519,43 +519,40 @@ l_noret luaG_typeerror (lua_State *L, const TValue *o, const char *op) {
                         cast_int(o - ci->base), &name);
   }
   if (kind)
-    luaG_runerror(L, "attempt to %s %s " LUA_QS " (a %s value)",
+    luaG_runerror("attempt to %s %s " LUA_QS " (a %s value)",
                 op, kind, name, t);
   else
-    luaG_runerror(L, "attempt to %s a %s value", op, t);
+    luaG_runerror("attempt to %s a %s value", op, t);
 }
 
 
-l_noret luaG_concaterror (lua_State *L, StkId p1, StkId p2) {
-  THREAD_CHECK(L);
+l_noret luaG_concaterror (StkId p1, StkId p2) {
   if (ttisstring(p1) || ttisnumber(p1)) p1 = p2;
   assert(!ttisstring(p1) && !ttisnumber(p2));
-  luaG_typeerror(L, p1, "concatenate");
+  luaG_typeerror(p1, "concatenate");
 }
 
 
-l_noret luaG_aritherror (lua_State *L, const TValue *p1, const TValue *p2) {
-  THREAD_CHECK(L);
+l_noret luaG_aritherror (const TValue *p1, const TValue *p2) {
   TValue temp;
   if (luaV_tonumber(p1, &temp) == NULL)
     p2 = p1;  /* first operand is wrong */
-  luaG_typeerror(L, p2, "perform arithmetic on");
+  luaG_typeerror(p2, "perform arithmetic on");
 }
 
 
-l_noret luaG_ordererror (lua_State *L, const TValue *p1, const TValue *p2) {
-  THREAD_CHECK(L);
+l_noret luaG_ordererror (const TValue *p1, const TValue *p2) {
   const char *t1 = objtypename(p1);
   const char *t2 = objtypename(p2);
   if (t1 == t2)
-    luaG_runerror(L, "attempt to compare two %s values", t1);
+    luaG_runerror("attempt to compare two %s values", t1);
   else
-    luaG_runerror(L, "attempt to compare %s with %s", t1, t2);
+    luaG_runerror("attempt to compare %s with %s", t1, t2);
 }
 
 
-static void addinfo (lua_State *L, const char *msg) {
-  THREAD_CHECK(L);
+static void addinfo (const char *msg) {
+  lua_State* L = thread_L;
   CallInfo *ci = L->ci;
   if (isLua(ci)) {  /* is Lua code? */
     char buff[LUA_IDSIZE];  /* add file:line information */
@@ -571,8 +568,8 @@ static void addinfo (lua_State *L, const char *msg) {
 }
 
 
-l_noret luaG_errormsg (lua_State *L) {
-  THREAD_CHECK(L);
+l_noret luaG_errormsg () {
+  lua_State *L = thread_L;
   if (L->errfunc != 0) {  /* is there an error handling function? */
     StkId errfunc = restorestack(L, L->errfunc);
     if (!ttisfunction(errfunc)) luaD_throw(L, LUA_ERRERR);
@@ -585,12 +582,11 @@ l_noret luaG_errormsg (lua_State *L) {
 }
 
 
-l_noret luaG_runerror (lua_State *L, const char *fmt, ...) {
-  THREAD_CHECK(L);
+l_noret luaG_runerror (const char *fmt, ...) {
   va_list argp;
   va_start(argp, fmt);
-  addinfo(L, luaO_pushvfstring(L, fmt, argp));
+  addinfo(luaO_pushvfstring(fmt, argp));
   va_end(argp);
-  luaG_errormsg(L);
+  luaG_errormsg();
 }
 

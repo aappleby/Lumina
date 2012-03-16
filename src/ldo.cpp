@@ -190,7 +190,7 @@ void luaD_growstack (lua_State *L, int n) {
     if (newsize < needed) newsize = needed;
     if (newsize > LUAI_MAXSTACK) {  /* stack overflow? */
       luaD_reallocstack(L, ERRORSTACKSIZE);
-      luaG_runerror(L, "stack overflow");
+      luaG_runerror("stack overflow");
     }
     else
       luaD_reallocstack(L, newsize);
@@ -287,7 +287,7 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
   StkId p;
   ptrdiff_t funcr = savestack(L, func);
   if (!ttisfunction(tm))
-    luaG_typeerror(L, func, "call");
+    luaG_typeerror(func, "call");
   /* Open a hole inside the stack at `func' */
   for (p = L->top; p > func; p--) setobj(L, p, p-1);
   incr_top(L);
@@ -399,7 +399,7 @@ void luaD_call (lua_State *L, StkId func, int nResults, int allowyield) {
   THREAD_CHECK(L);
   if (++L->nCcalls >= LUAI_MAXCCALLS) {
     if (L->nCcalls == LUAI_MAXCCALLS)
-      luaG_runerror(L, "C stack overflow");
+      luaG_runerror("C stack overflow");
     else if (L->nCcalls >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3)))
       luaD_throw(L, LUA_ERRERR);  /* error while handing stack error */
   }
@@ -580,9 +580,9 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   api_checknelems(L, nresults);
   if (L->nny > 0) {
     if (L != G(L)->mainthread)
-      luaG_runerror(L, "attempt to yield across metamethod/C-call boundary");
+      luaG_runerror("attempt to yield across metamethod/C-call boundary");
     else
-      luaG_runerror(L, "attempt to yield from outside a coroutine");
+      luaG_runerror("attempt to yield from outside a coroutine");
   }
   L->status = LUA_YIELD;
   if (isLua(ci)) {  /* inside a hook? */

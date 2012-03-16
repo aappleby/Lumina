@@ -178,8 +178,8 @@ static void pushstr (lua_State *L, const char *str, size_t l) {
 
 
 /* this function handles only `%d', `%c', %f, %p, and `%s' formats */
-const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
-  THREAD_CHECK(L);
+const char *luaO_pushvfstring (const char *fmt, va_list argp) {
+  lua_State* L = thread_L;
   int n = 0;
   for (;;) {
     const char *e = strchr(fmt, '%');
@@ -220,9 +220,7 @@ const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
         break;
       }
       default: {
-        luaG_runerror(L,
-            "invalid option " LUA_QL("%%%c") " to " LUA_QL("lua_pushfstring"),
-            *(e + 1));
+        luaG_runerror("invalid option " LUA_QL("%%%c") " to " LUA_QL("lua_pushfstring"), *(e + 1));
       }
     }
     n += 2;
@@ -239,7 +237,7 @@ const char *luaO_pushfstring (lua_State *L, const char *fmt, ...) {
   const char *msg;
   va_list argp;
   va_start(argp, fmt);
-  msg = luaO_pushvfstring(L, fmt, argp);
+  msg = luaO_pushvfstring(fmt, argp);
   va_end(argp);
   return msg;
 }

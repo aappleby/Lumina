@@ -2,10 +2,10 @@
 #include "LuaBase.h"
 #include "LuaValue.h"
 
-struct Node;
 class Table;
 
-struct Node {
+class Node {
+public:
   TValue i_val;
   TValue i_key;
   Node *next;  /* for chaining */

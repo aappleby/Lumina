@@ -160,7 +160,7 @@ int luaO_ceillog2 (unsigned int x);
 lua_Number luaO_arith (int op, lua_Number v1, lua_Number v2);
 int luaO_str2d (const char *s, size_t len, lua_Number *result);
 int luaO_hexavalue (int c);
-const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp);
+const char *luaO_pushvfstring (const char *fmt, va_list argp);
 const char *luaO_pushfstring (lua_State *L, const char *fmt, ...);
 void luaO_chunkid (char *out, const char *source, size_t len);
 
