@@ -35,7 +35,7 @@ static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name);
 
 static int currentpc (CallInfo *ci) {
   assert(isLua(ci));
-  return pcRel(ci->u.l.savedpc, ci_func(ci)->p);
+  return pcRel(ci->savedpc, ci_func(ci)->p);
 }
 
 
@@ -54,7 +54,7 @@ int lua_sethook (lua_State *L, lua_Hook func, int mask, int count) {
     func = NULL;
   }
   if (isLua(L->ci))
-    L->oldpc = L->ci->u.l.savedpc;
+    L->oldpc = L->ci->savedpc;
   L->hook = func;
   L->basehookcount = count;
   L->hookcount = L->basehookcount;
@@ -108,7 +108,7 @@ static const char *upvalname (Proto *p, int uv) {
 
 static const char *findvararg (CallInfo *ci, int n, StkId *pos) {
   int nparams = clLvalue(ci->func)->p->numparams;
-  if (n >= ci->u.l.base - ci->func - nparams)
+  if (n >= ci->base - ci->func - nparams)
     return NULL;  /* no such vararg */
   else {
     *pos = ci->func + nparams + n;
@@ -126,7 +126,7 @@ static const char *findlocal (lua_State *L, CallInfo *ci, int n,
     if (n < 0)  /* access to vararg values? */
       return findvararg(ci, -n, pos);
     else {
-      base = ci->u.l.base;
+      base = ci->base;
       name = luaF_getlocalname(ci_func(ci)->p, n, currentpc(ci));
     }
   }
@@ -486,7 +486,7 @@ static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name) {
 */
 static int isinstack (CallInfo *ci, const TValue *o) {
   StkId p;
-  for (p = ci->u.l.base; p < ci->top; p++)
+  for (p = ci->base; p < ci->top; p++)
     if (o == p) return 1;
   return 0;
 }
@@ -516,7 +516,7 @@ l_noret luaG_typeerror (lua_State *L, const TValue *o, const char *op) {
     kind = getupvalname(ci, o, &name);  /* check whether 'o' is an upvalue */
     if (!kind && isinstack(ci, o))  /* no? try a register */
       kind = getobjname(ci_func(ci)->p, currentpc(ci),
-                        cast_int(o - ci->u.l.base), &name);
+                        cast_int(o - ci->base), &name);
   }
   if (kind)
     luaG_runerror(L, "attempt to %s %s " LUA_QS " (a %s value)",

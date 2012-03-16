@@ -153,7 +153,7 @@ static void correctstack (lua_State *L, TValue *oldstack) {
     ci->top = (ci->top - oldstack) + L->stack;
     ci->func = (ci->func - oldstack) + L->stack;
     if (isLua(ci))
-      ci->u.l.base = (ci->u.l.base - oldstack) + L->stack;
+      ci->base = (ci->base - oldstack) + L->stack;
   }
 }
 
@@ -253,14 +253,14 @@ void luaD_hook (lua_State *L, int event, int line) {
 static void callhook (lua_State *L, CallInfo *ci) {
   THREAD_CHECK(L);
   int hook = LUA_HOOKCALL;
-  ci->u.l.savedpc++;  /* hooks assume 'pc' is already incremented */
+  ci->savedpc++;  /* hooks assume 'pc' is already incremented */
   if (isLua(ci->previous) &&
-      GET_OPCODE(*(ci->previous->u.l.savedpc - 1)) == OP_TAILCALL) {
+      GET_OPCODE(*(ci->previous->savedpc - 1)) == OP_TAILCALL) {
     ci->callstatus |= CIST_TAIL;
     hook = LUA_HOOKTAILCALL;
   }
   luaD_hook(L, hook, -1);
-  ci->u.l.savedpc--;  /* correct 'pc' */
+  ci->savedpc--;  /* correct 'pc' */
 }
 
 
@@ -345,10 +345,10 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
       ci = next_ci(L);  /* now 'enter' new function */
       ci->nresults = nresults;
       ci->func = func;
-      ci->u.l.base = base;
+      ci->base = base;
       ci->top = base + p->maxstacksize;
       assert(ci->top <= L->stack_last);
-      ci->u.l.savedpc = p->code;  /* starting point */
+      ci->savedpc = p->code;  /* starting point */
       ci->callstatus = CIST_LUA;
       L->top = ci->top;
       if (L->hookmask & LUA_MASKCALL)
@@ -374,7 +374,7 @@ int luaD_poscall (lua_State *L, StkId firstResult) {
       luaD_hook(L, LUA_HOOKRET, -1);
       firstResult = restorestack(L, fr);
     }
-    L->oldpc = ci->previous->u.l.savedpc;  /* 'oldpc' for caller function */
+    L->oldpc = ci->previous->savedpc;  /* 'oldpc' for caller function */
   }
   res = ci->func;  /* res == final position of 1st result */
   wanted = ci->nresults;
@@ -416,7 +416,7 @@ static void finishCcall (lua_State *L) {
   THREAD_CHECK(L);
   CallInfo *ci = L->ci;
   int n;
-  assert(ci->u.c.k != NULL);  /* must have a continuation */
+  assert(ci->k != NULL);  /* must have a continuation */
   assert(L->nny == 0);
   /* finish 'luaD_call' */
   L->nCcalls--;
@@ -424,11 +424,11 @@ static void finishCcall (lua_State *L) {
   adjustresults(L, ci->nresults);
   /* call continuation function */
   if (!(ci->callstatus & CIST_STAT))  /* no call status? */
-    ci->u.c.status = LUA_YIELD;  /* 'default' status */
-  assert(ci->u.c.status != LUA_OK);
+    ci->status = LUA_YIELD;  /* 'default' status */
+  assert(ci->status != LUA_OK);
   ci->callstatus = (ci->callstatus & ~(CIST_YPCALL | CIST_STAT)) | CIST_YIELDED;
   lua_unlock(L);
-  n = (*ci->u.c.k)(L);
+  n = (*ci->k)(L);
   lua_lock(L);
   api_checknelems(L, n);
   /* finish 'luaD_precall' */
@@ -472,16 +472,16 @@ static int recover (lua_State *L, int status) {
   CallInfo *ci = findpcall(L);
   if (ci == NULL) return 0;  /* no recovery point */
   /* "finish" luaD_pcall */
-  oldtop = restorestack(L, ci->u.c.extra);
+  oldtop = restorestack(L, ci->extra);
   luaF_close(L, oldtop);
   seterrorobj(L, status, oldtop);
   L->ci = ci;
-  L->allowhook = ci->u.c.old_allowhook;
+  L->allowhook = ci->old_allowhook;
   L->nny = 0;  /* should be zero to be yieldable */
   luaD_shrinkstack(L);
-  L->errfunc = ci->u.c.old_errfunc;
+  L->errfunc = ci->old_errfunc;
   ci->callstatus |= CIST_STAT;  /* call has error status */
-  ci->u.c.status = status;  /* (here it is) */
+  ci->status = status;  /* (here it is) */
   return 1;  /* continue running the coroutine */
 }
 
@@ -523,13 +523,13 @@ static void resume (lua_State *L, void *ud) {
     if (isLua(ci))  /* yielded inside a hook? */
       luaV_execute(L);  /* just continue running Lua code */
     else {  /* 'common' yield */
-      ci->func = restorestack(L, ci->u.c.extra);
-      if (ci->u.c.k != NULL) {  /* does it have a continuation? */
+      ci->func = restorestack(L, ci->extra);
+      if (ci->k != NULL) {  /* does it have a continuation? */
         int n;
-        ci->u.c.status = LUA_YIELD;  /* 'default' status */
+        ci->status = LUA_YIELD;  /* 'default' status */
         ci->callstatus |= CIST_YIELDED;
         lua_unlock(L);
-        n = (*ci->u.c.k)(L);  /* call continuation */
+        n = (*ci->k)(L);  /* call continuation */
         lua_lock(L);
         api_checknelems(L, n);
         firstArg = L->top - n;  /* yield results come from continuation */
@@ -589,9 +589,9 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
     api_check(L, k == NULL, "hooks cannot continue after yielding");
   }
   else {
-    if ((ci->u.c.k = k) != NULL)  /* is there a continuation? */
-      ci->u.c.ctx = ctx;  /* save context */
-    ci->u.c.extra = savestack(L, ci->func);  /* save current 'func' */
+    if ((ci->k = k) != NULL)  /* is there a continuation? */
+      ci->ctx = ctx;  /* save context */
+    ci->extra = savestack(L, ci->func);  /* save current 'func' */
     ci->func = L->top - nresults - 1;  /* protect stack below results */
     luaD_throw(L, LUA_YIELD);
   }

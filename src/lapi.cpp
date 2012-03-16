@@ -942,8 +942,8 @@ void lua_setuservalue (lua_State *L, int idx) {
 int lua_getctx (lua_State *L, int *ctx) {
   THREAD_CHECK(L);
   if (L->ci->callstatus & CIST_YIELDED) {
-    if (ctx) *ctx = L->ci->u.c.ctx;
-    return L->ci->u.c.status;
+    if (ctx) *ctx = L->ci->ctx;
+    return L->ci->status;
   }
   else return LUA_OK;
 }
@@ -961,8 +961,8 @@ void lua_callk (lua_State *L, int nargs, int nresults, int ctx,
   checkresults(L, nargs, nresults);
   func = L->top - (nargs+1);
   if (k != NULL && L->nny == 0) {  /* need to prepare continuation? */
-    L->ci->u.c.k = k;  /* save continuation */
-    L->ci->u.c.ctx = ctx;  /* save context */
+    L->ci->k = k;  /* save continuation */
+    L->ci->ctx = ctx;  /* save context */
     luaD_call(L, func, nresults, 1);  /* do the call */
   }
   else  /* no continuation or no yieldable */
@@ -1014,18 +1014,18 @@ int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
   }
   else {  /* prepare continuation (call is already protected by 'resume') */
     CallInfo *ci = L->ci;
-    ci->u.c.k = k;  /* save continuation */
-    ci->u.c.ctx = ctx;  /* save context */
+    ci->k = k;  /* save continuation */
+    ci->ctx = ctx;  /* save context */
     /* save information for error recovery */
-    ci->u.c.extra = savestack(L, c.func);
-    ci->u.c.old_allowhook = L->allowhook;
-    ci->u.c.old_errfunc = L->errfunc;
+    ci->extra = savestack(L, c.func);
+    ci->old_allowhook = L->allowhook;
+    ci->old_errfunc = L->errfunc;
     L->errfunc = func;
     /* mark that function may do error recovery */
     ci->callstatus |= CIST_YPCALL;
     luaD_call(L, c.func, nresults, 1);  /* do the call */
     ci->callstatus &= ~CIST_YPCALL;
-    L->errfunc = ci->u.c.old_errfunc;
+    L->errfunc = ci->old_errfunc;
     status = LUA_OK;  /* if it is here, there were no errors */
   }
   adjustresults(L, nresults);
