@@ -333,8 +333,8 @@ int lua_checkmemory (lua_State *L) {
                gch(o)->tt == LUA_TTABLE);
   }
   /* check 'uvhead' list */
-  for (uv = g->uvhead.u.l.next; uv != &g->uvhead; uv = uv->u.l.next) {
-    assert(uv->u.l.next->u.l.prev == uv && uv->u.l.prev->u.l.next == uv);
+  for (uv = g->uvhead.u.l.unext; uv != &g->uvhead; uv = uv->u.l.unext) {
+    assert(uv->u.l.unext->u.l.uprev == uv && uv->u.l.uprev->u.l.unext == uv);
     assert(uv->v != &uv->u.value);  /* must be open */
     assert(!isblack(obj2gco(uv)));  /* open upvalues are never black */
     if (isdead(g, obj2gco(uv)))

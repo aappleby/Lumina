@@ -387,20 +387,9 @@ Table *luaH_new (lua_State *L) {
   }
   g->GCdebt += sizeof(Table);
 
-  //LuaBase *o = reinterpret_cast<LuaBase*>(newblock);
-
   Table* t = new(newblock) Table();
   t->Init(L, LUA_TTABLE);
   
-  /*
-  t->marked = luaC_white(g);
-  t->tt = LUA_TTABLE;
-  t->next = g->allgc;
-  g->allgc = t;
-  */
-
-
-  //Table *t = gco2t(o);
   t->metatable = NULL;
   t->flags = cast_byte(~0);
   t->array = NULL;

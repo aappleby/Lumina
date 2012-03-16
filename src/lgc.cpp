@@ -325,7 +325,7 @@ static void markbeingfnz (global_State *g) {
 */
 static void remarkupvals (global_State *g) {
   UpVal *uv;
-  for (uv = g->uvhead.u.l.next; uv != &g->uvhead; uv = uv->u.l.next) {
+  for (uv = g->uvhead.u.l.unext; uv != &g->uvhead; uv = uv->u.l.unext) {
     if (isgray(obj2gco(uv)))
       markvalue(g, uv->v);
   }

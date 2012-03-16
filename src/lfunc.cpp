@@ -68,25 +68,25 @@ UpVal *luaF_findupval (lua_State *L, StkId level) {
       return p;
     }
     resetoldbit(o);  /* may create a newer upval after this one */
-    pp = &p->next;
+    pp = &(p->next);
   }
   /* not found: create a new one */
   LuaBase* o = luaC_newobj(L, LUA_TUPVAL, sizeof(UpVal), pp);
   uv = gco2uv(o);
   uv->v = level;  /* current value lives in the stack */
-  uv->u.l.prev = &g->uvhead;  /* double link it in `uvhead' list */
-  uv->u.l.next = g->uvhead.u.l.next;
-  uv->u.l.next->u.l.prev = uv;
-  g->uvhead.u.l.next = uv;
-  assert(uv->u.l.next->u.l.prev == uv && uv->u.l.prev->u.l.next == uv);
+  uv->u.l.uprev = &g->uvhead;  /* double link it in `uvhead' list */
+  uv->u.l.unext = g->uvhead.u.l.unext;
+  uv->u.l.unext->u.l.uprev = uv;
+  g->uvhead.u.l.unext = uv;
+  assert(uv->u.l.unext->u.l.uprev == uv && uv->u.l.uprev->u.l.unext == uv);
   return uv;
 }
 
 
 static void unlinkupval (UpVal *uv) {
-  assert(uv->u.l.next->u.l.prev == uv && uv->u.l.prev->u.l.next == uv);
-  uv->u.l.next->u.l.prev = uv->u.l.prev;  /* remove from `uvhead' list */
-  uv->u.l.prev->u.l.next = uv->u.l.next;
+  assert(uv->u.l.unext->u.l.uprev == uv && uv->u.l.uprev->u.l.unext == uv);
+  uv->u.l.unext->u.l.uprev = uv->u.l.uprev;  /* remove from `uvhead' list */
+  uv->u.l.uprev->u.l.unext = uv->u.l.unext;
 }
 
 

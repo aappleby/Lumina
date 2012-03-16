@@ -99,12 +99,10 @@ public:
   struct {
     TValue value;  // the value (when closed)
     struct {  // double linked list (when open)
-      UpVal *prev;
-      UpVal *next;
+      UpVal *uprev;
+      UpVal *unext;
     } l;
   } u;
-
-  char pad[128];
 
   /*
   TValue value;  // the value (when closed)
