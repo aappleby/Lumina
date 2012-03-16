@@ -47,7 +47,7 @@ UpVal *luaF_newupval (lua_State *L) {
   THREAD_CHECK(L);
   LuaBase *o = luaC_newobj(L, LUA_TUPVAL, sizeof(UpVal), NULL);
   UpVal *uv = gco2uv(o);
-  uv->v = &uv->u.value;
+  uv->v = &uv->value;
   setnilvalue(uv->v);
   return uv;
 }
@@ -56,12 +56,12 @@ UpVal *luaF_newupval (lua_State *L) {
 UpVal *luaF_findupval (lua_State *L, StkId level) {
   THREAD_CHECK(L);
   global_State *g = G(L);
-  LuaBase **pp = reinterpret_cast<LuaBase**>(&L->openupval);
+  LuaBase **pp = &L->openupval;
   UpVal *p;
   UpVal *uv;
   while (*pp != NULL && (p = gco2uv(*pp))->v >= level) {
     LuaBase *o = obj2gco(p);
-    assert(p->v != &p->u.value);
+    assert(p->v != &p->value);
     if (p->v == level) {  /* found a corresponding upvalue? */
       if (isdead(g, o))  /* is it dead? */
         changewhite(o);  /* resurrect it */
@@ -74,25 +74,25 @@ UpVal *luaF_findupval (lua_State *L, StkId level) {
   LuaBase* o = luaC_newobj(L, LUA_TUPVAL, sizeof(UpVal), pp);
   uv = gco2uv(o);
   uv->v = level;  /* current value lives in the stack */
-  uv->u.l.uprev = &g->uvhead;  /* double link it in `uvhead' list */
-  uv->u.l.unext = g->uvhead.u.l.unext;
-  uv->u.l.unext->u.l.uprev = uv;
-  g->uvhead.u.l.unext = uv;
-  assert(uv->u.l.unext->u.l.uprev == uv && uv->u.l.uprev->u.l.unext == uv);
+  uv->uprev = &g->uvhead;  /* double link it in `uvhead' list */
+  uv->unext = g->uvhead.unext;
+  uv->unext->uprev = uv;
+  g->uvhead.unext = uv;
+  assert(uv->unext->uprev == uv && uv->uprev->unext == uv);
   return uv;
 }
 
 
 static void unlinkupval (UpVal *uv) {
-  assert(uv->u.l.unext->u.l.uprev == uv && uv->u.l.uprev->u.l.unext == uv);
-  uv->u.l.unext->u.l.uprev = uv->u.l.uprev;  /* remove from `uvhead' list */
-  uv->u.l.uprev->u.l.unext = uv->u.l.unext;
+  assert(uv->unext->uprev == uv && uv->uprev->unext == uv);
+  uv->unext->uprev = uv->uprev;  /* remove from `uvhead' list */
+  uv->uprev->unext = uv->unext;
 }
 
 
 void luaF_freeupval (lua_State *L, UpVal *uv) {
   THREAD_CHECK(L);
-  if (uv->v != &uv->u.value)  /* is it open? */
+  if (uv->v != &uv->value)  /* is it open? */
     unlinkupval(uv);  /* remove from open list */
   luaM_freemem(L, uv, sizeof(UpVal));  /* free upvalue */
 }
@@ -104,14 +104,14 @@ void luaF_close (lua_State *L, StkId level) {
   global_State *g = G(L);
   while (L->openupval != NULL && (uv = gco2uv(L->openupval))->v >= level) {
     LuaBase *o = obj2gco(uv);
-    assert(!isblack(o) && uv->v != &uv->u.value);
-    L->openupval = reinterpret_cast<UpVal*>(uv->next);  /* remove from `open' list */
+    assert(!isblack(o) && uv->v != &uv->value);
+    L->openupval = uv->next;  /* remove from `open' list */
     if (isdead(g, o))
       luaF_freeupval(L, uv);  /* free upvalue */
     else {
       unlinkupval(uv);  /* remove upvalue from 'uvhead' list */
-      setobj(L, &uv->u.value, uv->v);  /* move value to upvalue slot */
-      uv->v = &uv->u.value;  /* now current value lives here */
+      setobj(L, &uv->value, uv->v);  /* move value to upvalue slot */
+      uv->v = &uv->value;  /* now current value lives here */
       gch(o)->next = g->allgc;  /* link upvalue into 'allgc' list */
       g->allgc = o;
       luaC_checkupvalcolor(g, uv);

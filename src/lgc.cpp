@@ -269,7 +269,7 @@ static void reallymarkobject (global_State *g, LuaBase *o) {
     case LUA_TUPVAL: {
       UpVal *uv = gco2uv(o);
       markvalue(g, uv->v);
-      if (uv->v == &uv->u.value)  /* closed? (open upvalues remain gray) */
+      if (uv->v == &uv->value)  /* closed? (open upvalues remain gray) */
         gray2black(o);  /* make it black */
       return;
     }
@@ -325,7 +325,7 @@ static void markbeingfnz (global_State *g) {
 */
 static void remarkupvals (global_State *g) {
   UpVal *uv;
-  for (uv = g->uvhead.u.l.unext; uv != &g->uvhead; uv = uv->u.l.unext) {
+  for (uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {
     if (isgray(obj2gco(uv)))
       markvalue(g, uv->v);
   }
@@ -673,7 +673,7 @@ static LuaBase **sweeplist (lua_State *L, LuaBase **p, size_t count);
 static void sweepthread (lua_State *L, lua_State *L1) {
   THREAD_CHECK(L);
   if (L1->stack == NULL) return;  /* stack not completely built yet */
-  sweepwholelist(L, reinterpret_cast<LuaBase**>(&L1->openupval));  /* sweep open upvalues */
+  sweepwholelist(L, &L1->openupval);  /* sweep open upvalues */
   {
     THREAD_CHANGE(L1);
     luaE_freeCI(L1);  /* free extra CallInfo slots */

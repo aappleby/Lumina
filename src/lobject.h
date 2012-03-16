@@ -96,19 +96,9 @@ class UpVal : public LuaBase {
 public:
   TValue *v;  /* points to stack or to its own value */
 
-  struct {
-    TValue value;  // the value (when closed)
-    struct {  // double linked list (when open)
-      UpVal *uprev;
-      UpVal *unext;
-    } l;
-  } u;
-
-  /*
   TValue value;  // the value (when closed)
-  UpVal *prev;
-  UpVal *next;
-  */
+  UpVal *uprev;
+  UpVal *unext;
 };
 
 

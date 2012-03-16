@@ -159,7 +159,7 @@ public:
   int basehookcount;
   int hookcount;
   lua_Hook hook;
-  UpVal *openupval;  /* list of open upvalues in this stack */
+  LuaBase *openupval;  /* list of open upvalues in this stack */
   LuaBase *gclist;
   lua_longjmp *errorJmp;  /* current error recover point */
   ptrdiff_t errfunc;  /* current error handling function (stack index) */

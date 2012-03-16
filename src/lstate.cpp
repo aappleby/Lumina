@@ -239,8 +239,8 @@ lua_State *lua_newstate () {
   g->gckind = KGC_NORMAL;
   preinit_state(L, g);
   g->mainthread = L;
-  g->uvhead.u.l.uprev = &g->uvhead;
-  g->uvhead.u.l.unext = &g->uvhead;
+  g->uvhead.uprev = &g->uvhead;
+  g->uvhead.unext = &g->uvhead;
   g->gcrunning = 0;  /* no GC while building state */
   g->lastmajormem = 0;
   luaS_initstrt(&g->strt);

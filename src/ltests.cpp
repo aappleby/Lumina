@@ -190,7 +190,7 @@ static void checkstack (global_State *g, lua_State *L1) {
   assert(!isdead(g, obj2gco(L1)));
   for (uvo = L1->openupval; uvo != NULL; uvo = gch(uvo)->next) {
     UpVal *uv = gco2uv(uvo);
-    assert(uv->v != &uv->u.value);  /* must be open */
+    assert(uv->v != &uv->value);  /* must be open */
     assert(!isblack(uvo));  /* open upvalues cannot be black */
   }
   for (ci = L1->ci; ci != NULL; ci = ci->previous) {
@@ -214,7 +214,7 @@ static void checkobject (global_State *g, LuaBase *o) {
     switch (gch(o)->tt) {
       case LUA_TUPVAL: {
         UpVal *uv = gco2uv(o);
-        assert(uv->v == &uv->u.value);  /* must be closed */
+        assert(uv->v == &uv->value);  /* must be closed */
         assert(!isgray(o));  /* closed upvalues are never gray */
         checkvalref(g, o, uv->v);
         break;
@@ -333,9 +333,9 @@ int lua_checkmemory (lua_State *L) {
                gch(o)->tt == LUA_TTABLE);
   }
   /* check 'uvhead' list */
-  for (uv = g->uvhead.u.l.unext; uv != &g->uvhead; uv = uv->u.l.unext) {
-    assert(uv->u.l.unext->u.l.uprev == uv && uv->u.l.uprev->u.l.unext == uv);
-    assert(uv->v != &uv->u.value);  /* must be open */
+  for (uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {
+    assert(uv->unext->uprev == uv && uv->uprev->unext == uv);
+    assert(uv->v != &uv->value);  /* must be open */
     assert(!isblack(obj2gco(uv)));  /* open upvalues are never black */
     if (isdead(g, obj2gco(uv)))
       assert(issweepphase(g));
