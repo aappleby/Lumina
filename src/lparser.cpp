@@ -149,7 +149,7 @@ static TString *str_checkname (LexState *ls) {
 static void init_exp (expdesc *e, expkind k, int i) {
   e->f = e->t = NO_JUMP;
   e->k = k;
-  e->u.info = i;
+  e->info = i;
 }
 
 
@@ -241,7 +241,7 @@ static int newupvalue (FuncState *fs, TString *name, expdesc *v) {
   }
   while (oldsize < f->sizeupvalues) f->upvalues[oldsize++].name = NULL;
   f->upvalues[fs->nups].instack = (v->k == VLOCAL);
-  f->upvalues[fs->nups].idx = cast_byte(v->u.info);
+  f->upvalues[fs->nups].idx = cast_byte(v->info);
   f->upvalues[fs->nups].name = name;
   luaC_objbarrier(fs->ls->L, f, name);
   return fs->nups++;
@@ -678,7 +678,7 @@ static void recfield (LexState *ls, struct ConsControl *cc) {
   checknext(ls, '=');
   rkkey = luaK_exp2RK(fs, &key);
   expr(ls, &val);
-  luaK_codeABC(fs, OP_SETTABLE, cc->t->u.info, rkkey, luaK_exp2RK(fs, &val));
+  luaK_codeABC(fs, OP_SETTABLE, cc->t->info, rkkey, luaK_exp2RK(fs, &val));
   fs->freereg = reg;  /* free registers */
 }
 
@@ -688,7 +688,7 @@ static void closelistfield (FuncState *fs, struct ConsControl *cc) {
   luaK_exp2nextreg(fs, &cc->v);
   cc->v.k = VVOID;
   if (cc->tostore == LFIELDS_PER_FLUSH) {
-    luaK_setlist(fs, cc->t->u.info, cc->na, cc->tostore);  /* flush */
+    luaK_setlist(fs, cc->t->info, cc->na, cc->tostore);  /* flush */
     cc->tostore = 0;  /* no more items pending */
   }
 }
@@ -698,13 +698,13 @@ static void lastlistfield (FuncState *fs, struct ConsControl *cc) {
   if (cc->tostore == 0) return;
   if (hasmultret(cc->v.k)) {
     luaK_setmultret(fs, &cc->v);
-    luaK_setlist(fs, cc->t->u.info, cc->na, LUA_MULTRET);
+    luaK_setlist(fs, cc->t->info, cc->na, LUA_MULTRET);
     cc->na--;  /* do not count last expression (unknown number of elements) */
   }
   else {
     if (cc->v.k != VVOID)
       luaK_exp2nextreg(fs, &cc->v);
-    luaK_setlist(fs, cc->t->u.info, cc->na, cc->tostore);
+    luaK_setlist(fs, cc->t->info, cc->na, cc->tostore);
   }
 }
 
@@ -862,7 +862,7 @@ static void funcargs (LexState *ls, expdesc *f, int line) {
     }
   }
   assert(f->k == VNONRELOC);
-  base = f->u.info;  /* base register for call */
+  base = f->info;  /* base register for call */
   if (hasmultret(args.k))
     nparams = LUA_MULTRET;  /* open call */
   else {
@@ -952,7 +952,7 @@ static void simpleexp (LexState *ls, expdesc *v) {
   switch (ls->t.token) {
     case TK_NUMBER: {
       init_exp(v, VKNUM, 0);
-      v->u.nval = ls->t.seminfo.r;
+      v->nval = ls->t.seminfo.r;
       break;
     }
     case TK_STRING: {
@@ -1124,22 +1124,22 @@ static void check_conflict (LexState *ls, struct LHS_assign *lh, expdesc *v) {
   for (; lh; lh = lh->prev) {  /* check all previous assignments */
     if (lh->v.k == VINDEXED) {  /* assigning to a table? */
       /* table is the upvalue/local being assigned now? */
-      if (lh->v.u.ind.vt == v->k && lh->v.u.ind.t == v->u.info) {
+      if (lh->v.vt == v->k && lh->v.tr == v->info) {
         conflict = 1;
-        lh->v.u.ind.vt = VLOCAL;
-        lh->v.u.ind.t = extra;  /* previous assignment will use safe copy */
+        lh->v.vt = VLOCAL;
+        lh->v.tr = extra;  /* previous assignment will use safe copy */
       }
       /* index is the local being assigned? (index cannot be upvalue) */
-      if (v->k == VLOCAL && lh->v.u.ind.idx == v->u.info) {
+      if (v->k == VLOCAL && lh->v.idx == v->info) {
         conflict = 1;
-        lh->v.u.ind.idx = extra;  /* previous assignment will use safe copy */
+        lh->v.idx = extra;  /* previous assignment will use safe copy */
       }
     }
   }
   if (conflict) {
     /* copy upvalue/local value to a temporary (in position 'extra') */
     OpCode op = (v->k == VLOCAL) ? OP_MOVE : OP_GETUPVAL;
-    luaK_codeABC(fs, op, extra, v->u.info, 0);
+    luaK_codeABC(fs, op, extra, v->info, 0);
     luaK_reserveregs(fs, 1);
   }
 }
@@ -1282,7 +1282,7 @@ static int exp1 (LexState *ls) {
   expr(ls, &e);
   luaK_exp2nextreg(ls->fs, &e);
   assert(e.k == VNONRELOC);
-  reg = e.u.info;
+  reg = e.info;
   return reg;
 }
 
@@ -1433,7 +1433,7 @@ static void localfunc (LexState *ls) {
   adjustlocalvars(ls, 1);  /* enter its scope */
   body(ls, &b, 0, ls->linenumber);  /* function created in next register */
   /* debug information will only see the variable after this point! */
-  getlocvar(fs, b.u.info)->startpc = fs->pc;
+  getlocvar(fs, b.info)->startpc = fs->pc;
 }
 
 

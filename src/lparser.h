@@ -39,15 +39,11 @@ typedef enum {
 
 struct expdesc {
   expkind k;
-  struct {
-    struct {  /* for indexed variables (VINDEXED) */
-      short idx;  /* index (R/K) */
-      uint8_t t;  /* table (register or upvalue) */
-      uint8_t vt;  /* whether 't' is register (VLOCAL) or upvalue (VUPVAL) */
-    } ind;
-    int info;  /* for generic use */
-    lua_Number nval;  /* for VKNUM */
-  } u;
+  short idx;  /* index (R/K) */
+  uint8_t tr;  /* table (register or upvalue) */
+  uint8_t vt;  /* whether 't' is register (VLOCAL) or upvalue (VUPVAL) */
+  int info;  /* for generic use */
+  lua_Number nval;  /* for VKNUM */
   int t;  /* patch list of `exit when true' */
   int f;  /* patch list of `exit when false' */
 };
