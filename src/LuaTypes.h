@@ -4,9 +4,11 @@
 class LuaBase;
 class TString;
 class lua_State;
+class global_State;
 class Closure;
 
 extern __declspec(thread) lua_State* thread_L;
+//extern __declspec(thread) global_State* thread_G;
 
 class LuaScope {
 public:
@@ -21,8 +23,25 @@ public:
   lua_State* oldState;
 };
 
+class LuaGlobalScope {
+public:
+  LuaGlobalScope(lua_State* L) {
+    oldState = thread_L;
+    thread_L = L;
+    //thread_G = thread_L->l_G;
+  }
+  ~LuaGlobalScope() {
+    thread_L = oldState;
+    //thread_G = thread_L->l_G;
+  }
+
+  lua_State* oldState;
+};
+
 #define THREAD_CHECK(A)  assert(thread_L == A);
+//#define THREAD_CHECK(A)  assert((thread_L == A) && (thread_G == A->l_G));
 #define THREAD_CHANGE(A) LuaScope luascope(A);
+#define GLOBAL_CHANGE(A) LuaGlobalScope luascope(A);
 //#define THREAD_CHECK(A)
 //#define THREAD_CHANGE(A)
 

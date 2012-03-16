@@ -15,6 +15,8 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lstate.h" // for THREAD_CHECK
+
 
 
 static int auxresume (lua_State *L, lua_State *co, int narg) {

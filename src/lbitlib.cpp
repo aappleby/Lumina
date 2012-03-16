@@ -11,6 +11,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lstate.h" // for THREAD_CHECK
 
 
 /* number of bits to consider in a number */

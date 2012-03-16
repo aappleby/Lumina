@@ -20,6 +20,7 @@
 
 #include "lualib.h"
 #include "lauxlib.h"
+#include "lstate.h" // for THREAD_CHECK
 
 
 /*

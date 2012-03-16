@@ -14,6 +14,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lstate.h" // for THREAD_CHECK
 
 
 #define aux_getn(L,n)  \

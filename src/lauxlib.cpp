@@ -24,6 +24,8 @@
 #include "lauxlib.h"
 #include "lmem.h"
 
+#include "lstate.h" // for THREAD_CHECK
+
 
 /*
 ** {======================================================
