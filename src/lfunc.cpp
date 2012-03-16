@@ -56,7 +56,7 @@ UpVal *luaF_newupval (lua_State *L) {
 UpVal *luaF_findupval (lua_State *L, StkId level) {
   THREAD_CHECK(L);
   global_State *g = G(L);
-  LuaBase **pp = &L->openupval;
+  LuaBase **pp = reinterpret_cast<LuaBase**>(&L->openupval);
   UpVal *p;
   UpVal *uv;
   while (*pp != NULL && (p = gco2uv(*pp))->v >= level) {
@@ -105,7 +105,7 @@ void luaF_close (lua_State *L, StkId level) {
   while (L->openupval != NULL && (uv = gco2uv(L->openupval))->v >= level) {
     LuaBase *o = obj2gco(uv);
     assert(!isblack(o) && uv->v != &uv->u.value);
-    L->openupval = uv->next;  /* remove from `open' list */
+    L->openupval = reinterpret_cast<UpVal*>(uv->next);  /* remove from `open' list */
     if (isdead(g, o))
       luaF_freeupval(L, uv);  /* free upvalue */
     else {

@@ -92,15 +92,25 @@ struct Proto : public LuaBase {
 /*
 ** Lua Upvalues
 */
-struct UpVal : public LuaBase {
+class UpVal : public LuaBase {
+public:
   TValue *v;  /* points to stack or to its own value */
-  union {
-    TValue value;  /* the value (when closed) */
-    struct {  /* double linked list (when open) */
-      struct UpVal *prev;
-      struct UpVal *next;
+
+  struct {
+    TValue value;  // the value (when closed)
+    struct {  // double linked list (when open)
+      UpVal *prev;
+      UpVal *next;
     } l;
   } u;
+
+  char pad[128];
+
+  /*
+  TValue value;  // the value (when closed)
+  UpVal *prev;
+  UpVal *next;
+  */
 };
 
 

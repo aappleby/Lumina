@@ -673,7 +673,7 @@ static LuaBase **sweeplist (lua_State *L, LuaBase **p, size_t count);
 static void sweepthread (lua_State *L, lua_State *L1) {
   THREAD_CHECK(L);
   if (L1->stack == NULL) return;  /* stack not completely built yet */
-  sweepwholelist(L, &L1->openupval);  /* sweep open upvalues */
+  sweepwholelist(L, reinterpret_cast<LuaBase**>(&L1->openupval));  /* sweep open upvalues */
   {
     THREAD_CHANGE(L1);
     luaE_freeCI(L1);  /* free extra CallInfo slots */
