@@ -4,6 +4,7 @@
 class LuaBase;
 class TString;
 class lua_State;
+class Closure;
 
 extern __declspec(thread) lua_State* thread_L;
 

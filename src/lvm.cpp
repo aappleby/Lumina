@@ -407,7 +407,7 @@ static Closure *getcached (Proto *p, UpVal **encup, StkId base) {
     int i;
     for (i = 0; i < nup; i++) {  /* check whether it has right upvalues */
       TValue *v = uv[i].instack ? base + uv[i].idx : encup[uv[i].idx]->v;
-      if (c->l.upvals[i]->v != v)
+      if (c->upvals[i]->v != v)
         return NULL;  /* wrong upvalue; cannot reuse closure */
     }
   }
@@ -431,9 +431,9 @@ static void pushclosure (lua_State *L, Proto *p, UpVal **encup, StkId base,
   setclLvalue(L, ra, ncl);  /* anchor new closure in stack */
   for (i = 0; i < nup; i++) {  /* fill in its upvalues */
     if (uv[i].instack)  /* upvalue refers to local variable? */
-      ncl->l.upvals[i] = luaF_findupval(L, base + uv[i].idx);
+      ncl->upvals[i] = luaF_findupval(L, base + uv[i].idx);
     else  /* get upvalue from enclosing function */
-      ncl->l.upvals[i] = encup[uv[i].idx];
+      ncl->upvals[i] = encup[uv[i].idx];
   }
   luaC_barrierproto(L, p, ncl);
   p->cache = ncl;  /* save it on cache for reuse */
@@ -554,7 +554,7 @@ void luaV_finishOp (lua_State *L) {
 void luaV_execute (lua_State *L) {
   THREAD_CHECK(L);
   CallInfo *ci = L->ci;
-  LClosure *cl;
+  Closure *cl;
   TValue *k;
   StkId base;
  newframe:  /* reentry point when frame changes (call/return) */

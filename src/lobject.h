@@ -72,7 +72,7 @@ struct Proto : public LuaBase {
   int *lineinfo;  /* map from opcodes to source lines (debug information) */
   LocVar *locvars;  /* information about local variables (debug information) */
   Upvaldesc *upvalues;  /* upvalue information */
-  union Closure *cache;  /* last created closure with this prototype */
+  Closure *cache;  /* last created closure with this prototype */
   TString  *source;  /* used for debug information */
   int sizeupvalues;  /* size of 'upvalues' */
   int sizecode;
@@ -108,27 +108,18 @@ struct UpVal : public LuaBase {
 ** Closures
 */
 
-struct CClosure : public LuaBase {
+
+class Closure : public LuaBase {
+public:
   uint8_t isC;
   uint8_t nupvalues;
   LuaBase *gclist;
+
   lua_CFunction f;
   TValue upvalue[1];  /* list of upvalues */
-};
 
-
-struct LClosure : public LuaBase {
-  uint8_t isC;
-  uint8_t nupvalues;
-  LuaBase *gclist;
   struct Proto *p;
   UpVal *upvals[1];  /* list of upvalues */
-};
-
-
-union Closure {
-  CClosure c;
-  LClosure l;
 };
 
 

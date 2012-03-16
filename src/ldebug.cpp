@@ -181,14 +181,14 @@ const char *lua_setlocal (lua_State *L, const lua_Debug *ar, int n) {
 
 
 static void funcinfo (lua_Debug *ar, Closure *cl) {
-  if (cl == NULL || cl->c.isC) {
+  if (cl == NULL || cl->isC) {
     ar->source = "=[C]";
     ar->linedefined = -1;
     ar->lastlinedefined = -1;
     ar->what = "C";
   }
   else {
-    Proto *p = cl->l.p;
+    Proto *p = cl->p;
     ar->source = p->source ? p->source->c_str() : "=?";
     ar->linedefined = p->linedefined;
     ar->lastlinedefined = p->lastlinedefined;
@@ -200,19 +200,19 @@ static void funcinfo (lua_Debug *ar, Closure *cl) {
 
 static void collectvalidlines (lua_State *L, Closure *f) {
   THREAD_CHECK(L);
-  if (f == NULL || f->c.isC) {
+  if (f == NULL || f->isC) {
     setnilvalue(L->top);
     incr_top(L);
   }
   else {
     int i;
     TValue v;
-    int *lineinfo = f->l.p->lineinfo;
+    int *lineinfo = f->p->lineinfo;
     Table *t = luaH_new(L);  /* new table to store active lines */
     sethvalue(L, L->top, t);  /* push it on stack */
     incr_top(L);
     setbvalue(&v, 1);  /* boolean 'true' to be the value of all indices */
-    for (i = 0; i < f->l.p->sizelineinfo; i++)  /* for all lines with code */
+    for (i = 0; i < f->p->sizelineinfo; i++)  /* for all lines with code */
       luaH_setint(L, t, lineinfo[i], &v);  /* table[line] = true */
   }
 }
@@ -233,14 +233,14 @@ static int auxgetinfo (lua_State *L, const char *what, lua_Debug *ar,
         break;
       }
       case 'u': {
-        ar->nups = (f == NULL) ? 0 : f->c.nupvalues;
-        if (f == NULL || f->c.isC) {
+        ar->nups = (f == NULL) ? 0 : f->nupvalues;
+        if (f == NULL || f->isC) {
           ar->isvararg = 1;
           ar->nparams = 0;
         }
         else {
-          ar->isvararg = f->l.p->is_vararg;
-          ar->nparams = f->l.p->numparams;
+          ar->isvararg = f->p->is_vararg;
+          ar->nparams = f->p->numparams;
         }
         break;
       }
@@ -494,7 +494,7 @@ static int isinstack (CallInfo *ci, const TValue *o) {
 
 static const char *getupvalname (CallInfo *ci, const TValue *o,
                                  const char **name) {
-  LClosure *c = ci_func(ci);
+  Closure *c = ci_func(ci);
   int i;
   for (i = 0; i < c->nupvalues; i++) {
     if (c->upvals[i]->v == o) {

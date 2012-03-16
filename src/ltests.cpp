@@ -152,19 +152,19 @@ static void checkproto (global_State *g, Proto *f) {
 
 static void checkclosure (global_State *g, Closure *cl) {
   LuaBase *clgc = obj2gco(cl);
-  if (cl->c.isC) {
+  if (cl->isC) {
     int i;
-    for (i=0; i<cl->c.nupvalues; i++)
-      checkvalref(g, clgc, &cl->c.upvalue[i]);
+    for (i=0; i<cl->nupvalues; i++)
+      checkvalref(g, clgc, &cl->upvalue[i]);
   }
   else {
     int i;
-    assert(cl->l.nupvalues == cl->l.p->sizeupvalues);
-    checkobjref(g, clgc, cl->l.p);
-    for (i=0; i<cl->l.nupvalues; i++) {
-      if (cl->l.upvals[i]) {
-        assert(cl->l.upvals[i]->tt == LUA_TUPVAL);
-        checkobjref(g, clgc, cl->l.upvals[i]);
+    assert(cl->nupvalues == cl->p->sizeupvalues);
+    checkobjref(g, clgc, cl->p);
+    for (i=0; i<cl->nupvalues; i++) {
+      if (cl->upvals[i]) {
+        assert(cl->upvals[i]->tt == LUA_TUPVAL);
+        checkobjref(g, clgc, cl->upvals[i]);
       }
     }
   }
@@ -256,7 +256,7 @@ static void checkgraylist (LuaBase *l) {
     l_setbit(l->marked, TESTGRAYBIT);
     switch (gch(l)->tt) {
       case LUA_TTABLE: l = gco2t(l)->gclist; break;
-      case LUA_TFUNCTION: l = gco2cl(l)->c.gclist; break;
+      case LUA_TFUNCTION: l = gco2cl(l)->gclist; break;
       case LUA_TTHREAD: l = gco2th(l)->gclist; break;
       case LUA_TPROTO: l = gco2p(l)->gclist; break;
       default: assert(0);  /* other objects cannot be gray */

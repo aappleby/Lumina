@@ -11,11 +11,8 @@
 #include "lobject.h"
 
 
-#define sizeCclosure(n)	(cast(int, sizeof(CClosure)) + \
-                         cast(int, sizeof(TValue)*((n)-1)))
-
-#define sizeLclosure(n)	(cast(int, sizeof(LClosure)) + \
-                         cast(int, sizeof(TValue *)*((n)-1)))
+#define sizeCclosure(n)	(cast(int, sizeof(Closure)) + cast(int, sizeof(TValue)*((n)-1)))
+#define sizeLclosure(n)	(cast(int, sizeof(Closure)) + cast(int, sizeof(TValue *)*((n)-1)))
 
 
 Proto *luaF_newproto (lua_State *L);

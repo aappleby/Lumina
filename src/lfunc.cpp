@@ -24,8 +24,8 @@ Closure *luaF_newCclosure (lua_State *L, int n) {
   THREAD_CHECK(L);
   LuaBase* o = luaC_newobj(L, LUA_TFUNCTION, sizeCclosure(n), NULL);
   Closure *c = gco2cl(o);
-  c->c.isC = 1;
-  c->c.nupvalues = cast_byte(n);
+  c->isC = 1;
+  c->nupvalues = cast_byte(n);
   return c;
 }
 
@@ -35,10 +35,10 @@ Closure *luaF_newLclosure (lua_State *L, Proto *p) {
   int n = p->sizeupvalues;
   LuaBase* o = luaC_newobj(L, LUA_TFUNCTION, sizeLclosure(n), NULL);
   Closure *c = gco2cl(o);
-  c->l.isC = 0;
-  c->l.p = p;
-  c->l.nupvalues = cast_byte(n);
-  while (n--) c->l.upvals[n] = NULL;
+  c->isC = 0;
+  c->p = p;
+  c->nupvalues = cast_byte(n);
+  while (n--) c->upvals[n] = NULL;
   return c;
 }
 
@@ -161,8 +161,8 @@ void luaF_freeproto (lua_State *L, Proto *f) {
 
 void luaF_freeclosure (lua_State *L, Closure *c) {
   THREAD_CHECK(L);
-  int size = (c->c.isC) ? sizeCclosure(c->c.nupvalues) :
-                          sizeLclosure(c->l.nupvalues);
+  int size = (c->isC) ? sizeCclosure(c->nupvalues) :
+                        sizeLclosure(c->nupvalues);
   luaM_freemem(L, c, size);
 }
 

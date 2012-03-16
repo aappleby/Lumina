@@ -274,7 +274,7 @@ static void reallymarkobject (global_State *g, LuaBase *o) {
       return;
     }
     case LUA_TFUNCTION: {
-      gco2cl(o)->c.gclist = g->gray;
+      gco2cl(o)->gclist = g->gray;
       g->gray = o;
       break;
     }
@@ -478,19 +478,19 @@ static int traverseproto (global_State *g, Proto *f) {
 
 
 static int traverseclosure (global_State *g, Closure *cl) {
-  if (cl->c.isC) {
+  if (cl->isC) {
     int i;
-    for (i=0; i<cl->c.nupvalues; i++)  /* mark its upvalues */
-      markvalue(g, &cl->c.upvalue[i]);
+    for (i=0; i<cl->nupvalues; i++)  /* mark its upvalues */
+      markvalue(g, &cl->upvalue[i]);
   }
   else {
     int i;
-    assert(cl->l.nupvalues == cl->l.p->sizeupvalues);
-    markobject(g, cl->l.p);  /* mark its prototype */
-    for (i=0; i<cl->l.nupvalues; i++)  /* mark its upvalues */
-      markobject(g, cl->l.upvals[i]);
+    assert(cl->nupvalues == cl->p->sizeupvalues);
+    markobject(g, cl->p);  /* mark its prototype */
+    for (i=0; i<cl->nupvalues; i++)  /* mark its upvalues */
+      markobject(g, cl->upvals[i]);
   }
-  return TRAVCOST + cl->c.nupvalues;
+  return TRAVCOST + cl->nupvalues;
 }
 
 
@@ -526,7 +526,7 @@ static int propagatemark (global_State *g) {
     }
     case LUA_TFUNCTION: {
       Closure *cl = gco2cl(o);
-      g->gray = cl->c.gclist;
+      g->gray = cl->gclist;
       return traverseclosure(g, cl);
     }
     case LUA_TTHREAD: {
