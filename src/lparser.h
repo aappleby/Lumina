@@ -39,7 +39,7 @@ typedef enum {
 
 struct expdesc {
   expkind k;
-  union {
+  struct {
     struct {  /* for indexed variables (VINDEXED) */
       short idx;  /* index (R/K) */
       uint8_t t;  /* table (register or upvalue) */

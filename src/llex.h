@@ -34,10 +34,10 @@ enum RESERVED {
 #define NUM_RESERVED	(cast(int, TK_WHILE-FIRST_RESERVED+1))
 
 
-typedef union {
+struct SemInfo{
   lua_Number r;
   TString *ts;
-} SemInfo;  /* semantics information */
+};  /* semantics information */
 
 
 typedef struct Token {
