@@ -175,7 +175,8 @@ static void close_state (lua_State *L) {
   delete G(L)->strt;
   G(L)->strt = NULL;
 
-	g->buff.buffer = (char*)luaM_reallocv(g->buff.buffer, g->buff.buffsize, 0, sizeof(char));
+  luaM_free(g->buff.buffer, g->buff.buffsize);
+	g->buff.buffer = NULL;
 	g->buff.buffsize = 0;
 
   freestack(L);

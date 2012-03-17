@@ -316,7 +316,12 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
         luaH_setint(t, i + 1, &t->array[i]);
     }
     /* shrink array */
-    t->array = (TValue*)luaM_reallocv(t->array, oldasize, nasize, sizeof(TValue));
+    if(nasize) {
+      t->array = (TValue*)luaM_reallocv(t->array, oldasize, nasize, sizeof(TValue));
+    } else {
+      luaM_free(t->array, oldasize * sizeof(TValue));
+      t->array = NULL;
+    }
   }
   /* re-insert elements from hash part */
   for (i = twoto(oldhsize) - 1; i >= 0; i--) {

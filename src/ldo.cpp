@@ -688,7 +688,7 @@ int luaD_protectedparser (lua_State *L, ZIO *z, const char *name,
   luaZ_initbuffer(L, &p.buff);
   status = luaD_pcall(L, f_parser, &p, savestack(L, L->top), L->errfunc);
   
-  luaM_reallocv(p.buff.buffer, p.buff.buffsize, 0, sizeof(char));
+  luaM_free(p.buff.buffer, p.buff.buffsize);
   p.buff.buffer = NULL;
   p.buff.buffsize = 0;
   

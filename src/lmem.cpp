@@ -230,8 +230,8 @@ void *luaM_growaux_ (void *block, int& size, size_t size_elems, int limit, const
 }
 
 void* luaM_reallocv(void* block, size_t osize, size_t nsize, size_t esize) {
-  //assert(block);
-  //assert(nsize);
+  assert(block);
+  assert(nsize);
   return luaM_realloc_(block, osize*esize, nsize*esize, 0);
 }
 
