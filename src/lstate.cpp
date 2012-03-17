@@ -41,16 +41,6 @@
 #define MEMERRMSG       "not enough memory"
 
 /*
-** Main thread combines a thread state and the global state
-*/
-typedef struct LG {
-  lua_State l;
-  global_State g;
-} LG;
-
-
-
-/*
 ** set GCdebt to a new value keeping the value (totalbytes + GCdebt)
 ** invariant
 */
@@ -187,8 +177,9 @@ static void close_state (lua_State *L) {
 	g->buff.buffsize = 0;
 
   freestack(L);
-  assert(gettotalbytes(g) == sizeof(LG));
-  default_alloc(L, sizeof(LG), 0, 0);  /* free main block */
+  assert(gettotalbytes(g) == (sizeof(lua_State) + sizeof(global_State)));
+  default_alloc(L, sizeof(lua_State), 0, 0);  /* free main block */
+  default_alloc(g, sizeof(global_State), 0, 0);
 }
 
 
@@ -228,10 +219,13 @@ lua_State *lua_newstate () {
   int i;
   lua_State *L;
   global_State *g;
-  LG *l = cast(LG *, default_alloc(NULL, LUA_TTHREAD, sizeof(LG), 0));
-  if (l == NULL) return NULL;
-  L = &l->l;
-  g = &l->g;
+  L = (lua_State*)default_alloc(NULL, LUA_TTHREAD, sizeof(lua_State), 0);
+  if(L == NULL) { return NULL; }
+  g = (global_State*)default_alloc(NULL, 0, sizeof(global_State), 0);
+  if(g == NULL) {
+    default_alloc(L, sizeof(lua_State), 0, 0);
+    return NULL;
+  }
   L->next = NULL;
   L->tt = LUA_TTHREAD;
   g->currentwhite = bit2mask(WHITE0BIT, FIXEDBIT);
@@ -254,7 +248,7 @@ lua_State *lua_newstate () {
   g->tobefnz = NULL;
   g->gray = g->grayagain = NULL;
   g->weak = g->ephemeron = g->allweak = NULL;
-  g->totalbytes = sizeof(LG);
+  g->totalbytes = sizeof(lua_State) + sizeof(global_State);
   g->GCdebt = 0;
   g->gcpause = LUAI_GCPAUSE;
   g->gcmajorinc = LUAI_GCMAJOR;
