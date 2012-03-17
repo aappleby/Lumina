@@ -167,17 +167,17 @@ void* default_alloc(void *ptr, size_t osize, size_t nsize, int type) {
 /*
 ** generic allocation routine.
 */
-void *luaM_realloc_ (void *block, size_t osize, size_t nsize) {
+void *luaM_realloc_ (void *block, size_t osize, size_t nsize, int type) {
   void *newblock;
   global_State *g = thread_G;
   size_t realosize = (block) ? osize : 0;
   assert((realosize == 0) == (block == NULL));
-  newblock = default_alloc(block, osize, nsize, osize);
+  newblock = default_alloc(block, osize, nsize, type);
   if (newblock == NULL && nsize > 0) {
     api_check(nsize > realosize, "realloc cannot fail when shrinking a block");
     if (g->gcrunning) {
       luaC_fullgc(1);  /* try to free some memory... */
-      newblock = default_alloc(block, osize, nsize, osize);  /* try again */
+      newblock = default_alloc(block, osize, nsize, type);  /* try again */
     }
     if (newblock == NULL)
       luaD_throw(LUA_ERRMEM);
@@ -194,19 +194,19 @@ void* luaM_reallocv(void* block, size_t osize, size_t nsize, size_t esize) {
     return 0;
   }
   
-  return luaM_realloc_(block, osize*esize, nsize*esize);
+  return luaM_realloc_(block, osize*esize, nsize*esize, 0);
 }
 
 void * luaM_newobject(int tag, size_t size) { 
-  return luaM_realloc_(NULL, tag, size);
+  return luaM_realloc_(NULL, tag, size, tag);
 }
 
 void luaM_freemem(void * blob, size_t size) {
-  luaM_realloc_(blob, size, 0);
+  luaM_realloc_(blob, size, 0, 0);
 }
 
 void* luaM_alloc(size_t size) {
-  return luaM_realloc_(NULL, 0, size);
+  return luaM_realloc_(NULL, 0, size, 0);
 }
 
 void* luaM_allocv(size_t n, size_t size) {

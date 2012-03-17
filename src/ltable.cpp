@@ -363,17 +363,7 @@ static void rehash (Table *t, const TValue *ek) {
 
 
 Table *luaH_new () {
-  global_State *g = thread_G;
-  void* newblock = default_alloc(NULL, LUA_TTABLE, sizeof(Table), LUA_TTABLE);
-  if (newblock == NULL) {
-    if (g->gcrunning) {
-      luaC_fullgc(1);  /* try to free some memory... */
-      newblock = default_alloc(NULL, LUA_TTABLE, sizeof(Table), LUA_TTABLE);  /* try again */
-    }
-    if (newblock == NULL)
-      luaD_throw(LUA_ERRMEM);
-  }
-  g->GCdebt += sizeof(Table);
+  void* newblock = luaM_newobject(LUA_TTABLE, sizeof(Table));
 
   Table* t = new(newblock) Table();
   t->Init(LUA_TTABLE);
