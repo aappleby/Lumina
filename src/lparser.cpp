@@ -570,7 +570,11 @@ static void close_func (LexState *ls) {
   if(f->p) {
     f->p = (Proto**)luaM_reallocv(f->p, f->sizep, fs->np, sizeof(Proto*));
   } else {
-    f->p = (Proto**)luaM_alloc(fs->np * sizeof(Proto*));
+    if(fs->np) {
+      f->p = (Proto**)luaM_alloc(fs->np * sizeof(Proto*));
+    } else {
+      f->p = NULL;
+    }
   }
   f->sizep = fs->np;
   if(f->locvars) {

@@ -35,6 +35,7 @@ Memcontrol::Memcontrol() {
   total = 0;
   maxmem = 0;
   memlimit = 0;
+  limitEnabled = true;
 
   memset(objcount, 0, sizeof(objcount));
   memset(objcount2, 0, sizeof(objcount2));
@@ -60,7 +61,17 @@ bool Memcontrol::alloc(size_t size, int type) {
 }
 
 bool Memcontrol::canAlloc(size_t size) {
-  return total+size <= memlimit;
+  return !limitEnabled || (total+size <= memlimit);
+}
+
+void Memcontrol::enableLimit() {
+  assert(!limitEnabled);
+  limitEnabled = true;
+}
+
+void Memcontrol::disableLimit() { 
+  assert(limitEnabled);
+  limitEnabled = false;
 }
 
 /*
@@ -140,12 +151,18 @@ void* default_realloc (void* blob, size_t oldsize, size_t newsize, int type) {
   Header* oldblock = reinterpret_cast<Header*>(blob) - 1;
   assert(oldsize == oldblock->size);
 
+  /*
+  if(oldsize && newsize && (newsize < oldsize) && !l_memcontrol.canAlloc(newsize)) {
+    printf("xxx");
+  }
+  */
+
   if (newsize == 0) {
     freeblock(oldblock);
     return NULL;
   }
 
-  if (!l_memcontrol.canAlloc(newsize-oldsize)) {
+  if (!l_memcontrol.canAlloc(newsize)) {
     return NULL;
   }
 
@@ -191,7 +208,7 @@ void *luaM_realloc_ (void *block, size_t osize, size_t nsize, int type) {
   assert((realosize == 0) == (block == NULL));
   newblock = default_realloc(block, osize, nsize, type);
   if (newblock == NULL && nsize > 0) {
-    api_check(nsize > realosize, "realloc cannot fail when shrinking a block");
+    //api_check(nsize > realosize, "realloc cannot fail when shrinking a block");
     if (g->gcrunning) {
       luaC_fullgc(1);  /* try to free some memory... */
       newblock = default_realloc(block, osize, nsize, type);  /* try again */
@@ -203,6 +220,36 @@ void *luaM_realloc_ (void *block, size_t osize, size_t nsize, int type) {
   g->GCdebt = (g->GCdebt + nsize) - realosize;
 
   return newblock;
+}
+
+//-----------------------------------------------------------------------------
+
+void* luaM_reallocv(void* block, size_t osize, size_t nsize, size_t esize) {
+  assert(block);
+  assert(osize);
+  assert(nsize);
+  return luaM_realloc_(block, osize*esize, nsize*esize, 0);
+}
+
+void * luaM_newobject(int tag, size_t size) { 
+  return luaM_alloc_(size, tag);
+}
+
+void luaM_free(void * blob, size_t size) {
+//  assert(blob);
+//  assert(size);
+  luaM_free_(blob, size);
+}
+
+void* luaM_alloc(size_t size) {
+  //assert(size);
+  return luaM_realloc_(NULL, 0, size, 0);
+}
+
+void* luaM_allocv(size_t n, size_t size) {
+  //assert(n);
+  //assert(size);
+  return luaM_alloc_(n*size, 0);
 }
 
 //-----------------------------------------------------------------------------
@@ -229,24 +276,3 @@ void *luaM_growaux_ (void *block, int& size, size_t size_elems, int limit, const
   return newblock;
 }
 
-void* luaM_reallocv(void* block, size_t osize, size_t nsize, size_t esize) {
-  assert(block);
-  assert(nsize);
-  return luaM_realloc_(block, osize*esize, nsize*esize, 0);
-}
-
-void * luaM_newobject(int tag, size_t size) { 
-  return luaM_alloc_(size, tag);
-}
-
-void luaM_free(void * blob, size_t size) {
-  luaM_free_(blob, size);
-}
-
-void* luaM_alloc(size_t size) {
-  return luaM_realloc_(NULL, 0, size, 0);
-}
-
-void* luaM_allocv(size_t n, size_t size) {
-  return luaM_alloc_(n*size, 0);
-}

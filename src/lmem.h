@@ -21,6 +21,10 @@ struct Memcontrol {
   bool free(size_t size, int type);
   bool canAlloc(size_t size);
 
+  void enableLimit();
+  void disableLimit();
+
+  bool limitEnabled;
   size_t numblocks;
   size_t total;
   size_t maxmem;

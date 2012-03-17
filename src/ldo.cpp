@@ -615,6 +615,10 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
   L->errfunc = ef;
   status = luaD_rawrunprotected(L, func, u);
   if (status != LUA_OK) {  /* an error occurred? */
+    // Error handling gets an exemption from the memory limit. Not doing so would mean that
+    // reporting an out-of-memory error could itself cause another out-of-memory error, ad infinitum.
+    l_memcontrol.disableLimit();
+
     StkId oldtop = restorestack(L, old_top);
     luaF_close(L, oldtop);  /* close possible pending closures */
     seterrorobj(L, status, oldtop);
@@ -622,6 +626,8 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
     L->allowhook = old_allowhooks;
     L->nny = old_nny;
     luaD_shrinkstack(L);
+
+    l_memcontrol.enableLimit();
   }
   L->errfunc = old_errfunc;
   return status;
