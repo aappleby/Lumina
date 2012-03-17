@@ -30,7 +30,7 @@ typedef struct {
 static void error(LoadState* S, const char* why)
 {
  luaO_pushfstring(S->L,"%s: %s precompiled chunk",S->name,why);
- luaD_throw(S->L,LUA_ERRSYNTAX);
+ luaD_throw(LUA_ERRSYNTAX);
 }
 
 #define LoadMem(S,b,n,size)	LoadBlock(S,b,(n)*(size))
@@ -86,7 +86,7 @@ static TString* LoadString(LoadState* S)
 static void LoadCode(LoadState* S, Proto* f)
 {
  int n=LoadInt(S);
- f->code = (Instruction*)luaM_allocv(S->L,n,sizeof(Instruction));
+ f->code = (Instruction*)luaM_allocv(n,sizeof(Instruction));
  f->sizecode=n;
  LoadVector(S,f->code,n,sizeof(Instruction));
 }
@@ -97,7 +97,7 @@ static void LoadConstants(LoadState* S, Proto* f)
 {
  int i,n;
  n=LoadInt(S);
- f->constants = (TValue*)luaM_allocv(S->L,n,sizeof(TValue));
+ f->constants = (TValue*)luaM_allocv(n,sizeof(TValue));
  f->nconstants=n;
  for (i=0; i<n; i++) setnilvalue(&f->constants[i]);
  for (i=0; i<n; i++)
@@ -121,7 +121,7 @@ static void LoadConstants(LoadState* S, Proto* f)
   }
  }
  n=LoadInt(S);
- f->p = (Proto**)luaM_allocv(S->L,n,sizeof(Proto*));
+ f->p = (Proto**)luaM_allocv(n,sizeof(Proto*));
  f->sizep=n;
  for (i=0; i<n; i++) f->p[i]=NULL;
  for (i=0; i<n; i++) f->p[i]=LoadFunction(S);
@@ -131,7 +131,7 @@ static void LoadUpvalues(LoadState* S, Proto* f)
 {
  int i,n;
  n=LoadInt(S);
- f->upvalues = (Upvaldesc*)luaM_allocv(S->L,n,sizeof(Upvaldesc));
+ f->upvalues = (Upvaldesc*)luaM_allocv(n,sizeof(Upvaldesc));
  f->sizeupvalues=n;
  for (i=0; i<n; i++) f->upvalues[i].name=NULL;
  for (i=0; i<n; i++)
@@ -146,11 +146,11 @@ static void LoadDebug(LoadState* S, Proto* f)
  int i,n;
  f->source=LoadString(S);
  n=LoadInt(S);
- f->lineinfo = (int*)luaM_allocv(S->L,n,sizeof(int));
+ f->lineinfo = (int*)luaM_allocv(n,sizeof(int));
  f->sizelineinfo=n;
  LoadVector(S,f->lineinfo,n,sizeof(int));
  n=LoadInt(S);
- f->locvars = (LocVar*)luaM_allocv(S->L,n,sizeof(LocVar));
+ f->locvars = (LocVar*)luaM_allocv(n,sizeof(LocVar));
  f->sizelocvars=n;
  for (i=0; i<n; i++) f->locvars[i].varname=NULL;
  for (i=0; i<n; i++)

@@ -17,8 +17,7 @@
 #define adjustresults(L,nres) \
     { if ((nres) == LUA_MULTRET && L->ci->top < L->top) L->ci->top = L->top; }
 
-#define api_checknelems(L,n)	api_check((n) < (L->top - L->ci->func), \
-				  "not enough elements in the stack")
+void api_checknelems(lua_State* L, int n);
 
 
 #endif

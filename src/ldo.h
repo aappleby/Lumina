@@ -38,7 +38,7 @@ void luaD_reallocstack (lua_State *L, int newsize);
 void luaD_growstack (lua_State *L, int n);
 void luaD_shrinkstack (lua_State *L);
 
-l_noret luaD_throw (lua_State *L, int errcode);
+l_noret luaD_throw (int errcode);
 int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud);
 
 #endif

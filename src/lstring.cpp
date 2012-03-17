@@ -26,7 +26,7 @@ void luaS_resize (lua_State *L, int newsize) {
   /* cannot resize while GC is traversing strings */
   luaC_runtilstate(L, ~bitmask(GCSsweepstring));
   if (newsize > tb->size) {
-    tb->hash = (LuaBase**)luaM_reallocv(L, tb->hash, tb->size, newsize, sizeof(LuaBase*));
+    tb->hash = (LuaBase**)luaM_reallocv(tb->hash, tb->size, newsize, sizeof(LuaBase*));
     for (i = tb->size; i < newsize; i++) tb->hash[i] = NULL;
   }
   /* rehash */
@@ -45,7 +45,7 @@ void luaS_resize (lua_State *L, int newsize) {
   if (newsize < tb->size) {
     /* shrinking slice must be empty */
     assert(tb->hash[newsize] == NULL && tb->hash[tb->size - 1] == NULL);
-    tb->hash = (LuaBase**)luaM_reallocv(L, tb->hash, tb->size, newsize, sizeof(LuaBase*));
+    tb->hash = (LuaBase**)luaM_reallocv(tb->hash, tb->size, newsize, sizeof(LuaBase*));
   }
   tb->size = newsize;
 }
@@ -59,7 +59,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   TString *ts;
   stringtable *tb = G(L)->strt;
   if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
-    luaM_toobig(L);
+    luaM_toobig();
   if (tb->nuse >= cast(uint32_t, tb->size) && tb->size <= MAX_INT/2)
     luaS_resize(L, tb->size*2);  /* too crowded */
   totalsize = sizeof(TString) + ((l + 1) * sizeof(char));
@@ -110,7 +110,7 @@ Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
   THREAD_CHECK(L);
   Udata *u;
   if (s > MAX_SIZET - sizeof(Udata))
-    luaM_toobig(L);
+    luaM_toobig();
   LuaBase* o = luaC_newobj(L, LUA_TUSERDATA, sizeof(Udata) + s, NULL);
   u = gco2u(o);
   u->len = s;
@@ -123,7 +123,7 @@ Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
 
 void luaS_freestr (lua_State* L, TString* ts) {
   THREAD_CHECK(L);
-  luaM_freemem(L, ts, sizestring(ts));
+  luaM_freemem(ts, sizestring(ts));
 }
 
 void luaS_initstrt(stringtable * strt) {
@@ -134,5 +134,5 @@ void luaS_initstrt(stringtable * strt) {
 
 void luaS_freestrt (lua_State* L, stringtable* strt) {
   THREAD_CHECK(L);
-  luaM_freemem(L, strt->hash, strt->size * sizeof(LuaBase*));
+  luaM_freemem(strt->hash, strt->size * sizeof(LuaBase*));
 }

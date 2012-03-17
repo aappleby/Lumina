@@ -266,7 +266,7 @@ static int numusehash (const Table *t, int *nums, int *pnasize) {
 static void setarrayvector (lua_State *L, Table *t, int size) {
   THREAD_CHECK(L);
   int i;
-  t->array = (TValue*)luaM_reallocv(L, t->array, t->sizearray, size, sizeof(TValue));
+  t->array = (TValue*)luaM_reallocv(t->array, t->sizearray, size, sizeof(TValue));
   for (i=t->sizearray; i<size; i++)
      setnilvalue(&t->array[i]);
   t->sizearray = size;
@@ -286,7 +286,7 @@ static void setnodevector (lua_State *L, Table *t, int size) {
     if (lsize > MAXBITS)
       luaG_runerror("table overflow");
     size = twoto(lsize);
-    t->node = (Node*)luaM_allocv(L, size, sizeof(Node));
+    t->node = (Node*)luaM_allocv(size, sizeof(Node));
     for (i=0; i<size; i++) {
       Node *n = gnode(t, i);
       gnext(n) = NULL;
@@ -317,7 +317,7 @@ void luaH_resize (lua_State *L, Table *t, int nasize, int nhsize) {
         luaH_setint(L, t, i + 1, &t->array[i]);
     }
     /* shrink array */
-    t->array = (TValue*)luaM_reallocv(L, t->array, oldasize, nasize, sizeof(TValue));
+    t->array = (TValue*)luaM_reallocv(t->array, oldasize, nasize, sizeof(TValue));
   }
   /* re-insert elements from hash part */
   for (i = twoto(oldhsize) - 1; i >= 0; i--) {
@@ -331,7 +331,7 @@ void luaH_resize (lua_State *L, Table *t, int nasize, int nhsize) {
   if (!isdummy(nold)) {
      /* free old array */
     size_t s = twoto(oldhsize);
-    luaM_freemem(L, nold, s * sizeof(Node));
+    luaM_freemem(nold, s * sizeof(Node));
   }
 }
 
@@ -371,19 +371,15 @@ static void rehash (lua_State *L, Table *t, const TValue *ek) {
 
 Table *luaH_new (lua_State *L) {
   THREAD_CHECK(L);
-  //LuaBase* o = luaC_newobj(L, LUA_TTABLE, sizeof(Table), NULL);
-
-  //void* blob = luaM_newobject(L,LUA_TTABLE,sizeof(Table));
-
   global_State *g = G(L);
   void* newblock = default_alloc(NULL, LUA_TTABLE, sizeof(Table), LUA_TTABLE);
   if (newblock == NULL) {
     if (g->gcrunning) {
-      luaC_fullgc(L, 1);  /* try to free some memory... */
+      luaC_fullgc(1);  /* try to free some memory... */
       newblock = default_alloc(NULL, LUA_TTABLE, sizeof(Table), LUA_TTABLE);  /* try again */
     }
     if (newblock == NULL)
-      luaD_throw(L, LUA_ERRMEM);
+      luaD_throw(LUA_ERRMEM);
   }
   g->GCdebt += sizeof(Table);
 
@@ -402,10 +398,10 @@ Table *luaH_new (lua_State *L) {
 void luaH_free (lua_State *L, Table *t) {
   THREAD_CHECK(L);
   if (!isdummy(t->node)) {
-    luaM_freemem(L, t->node, sizenode(t) * sizeof(Node));
+    luaM_freemem(t->node, sizenode(t) * sizeof(Node));
   }
-  luaM_freemem(L, t->array, t->sizearray * sizeof(TValue));
-  luaM_freemem(L, t, sizeof(Table));
+  luaM_freemem(t->array, t->sizearray * sizeof(TValue));
+  luaM_freemem(t, sizeof(Table));
 }
 
 

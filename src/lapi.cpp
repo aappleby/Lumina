@@ -40,7 +40,11 @@ const char lua_ident[] =
 /* corresponding test */
 #define isvalid(o)	((o) != luaO_nilobject)
 
-#define api_checkvalidindex(L, i)  api_check(isvalid(i), "invalid index")
+#define api_checkvalidindex(i)  api_check(isvalid(i), "invalid index")
+
+void api_checknelems(lua_State* L, int n) {
+  api_check((n) < (L->top - L->ci->func), "not enough elements in the stack");
+}
 
 
 static TValue *index2addr (lua_State *L, int idx) {
@@ -186,7 +190,7 @@ void lua_remove (lua_State *L, int idx) {
   StkId p;
   lua_lock(L);
   p = index2addr(L, idx);
-  api_checkvalidindex(L, p);
+  api_checkvalidindex(p);
   while (++p < L->top) setobj(L, p-1, p);
   L->top--;
   lua_unlock(L);
@@ -199,7 +203,7 @@ void lua_insert (lua_State *L, int idx) {
   StkId q;
   lua_lock(L);
   p = index2addr(L, idx);
-  api_checkvalidindex(L, p);
+  api_checkvalidindex(p);
   for (q = L->top; q>p; q--) setobj(L, q, q-1);
   setobj(L, p, L->top);
   lua_unlock(L);
@@ -209,7 +213,7 @@ void lua_insert (lua_State *L, int idx) {
 static void moveto (lua_State *L, TValue *fr, int idx) {
   THREAD_CHECK(L);
   TValue *to = index2addr(L, idx);
-  api_checkvalidindex(L, to);
+  api_checkvalidindex(to);
   setobj(L, to, fr);
   if (idx < LUA_REGISTRYINDEX)  /* function upvalue? */
     luaC_barrier(L, clCvalue(L->ci->func), fr);
@@ -233,7 +237,7 @@ void lua_copy (lua_State *L, int fromidx, int toidx) {
   TValue *fr;
   lua_lock(L);
   fr = index2addr(L, fromidx);
-  api_checkvalidindex(L, fr);
+  api_checkvalidindex(fr);
   moveto(L, fr, toidx);
   lua_unlock(L);
 }
@@ -661,7 +665,7 @@ void lua_gettable (lua_State *L, int idx) {
   StkId t;
   lua_lock(L);
   t = index2addr(L, idx);
-  api_checkvalidindex(L, t);
+  api_checkvalidindex(t);
   luaV_gettable(L, t, L->top - 1, L->top - 1);
   lua_unlock(L);
 }
@@ -672,7 +676,7 @@ void lua_getfield (lua_State *L, int idx, const char *k) {
   StkId t;
   lua_lock(L);
   t = index2addr(L, idx);
-  api_checkvalidindex(L, t);
+  api_checkvalidindex(t);
   setsvalue(L, L->top, luaS_new(L, k));
   api_incr_top(L);
   luaV_gettable(L, t, L->top - 1, L->top - 1);
@@ -766,7 +770,7 @@ void lua_getuservalue (lua_State *L, int idx) {
   StkId o;
   lua_lock(L);
   o = index2addr(L, idx);
-  api_checkvalidindex(L, o);
+  api_checkvalidindex(o);
   api_check(ttisuserdata(o), "userdata expected");
   if (uvalue(o)->env) {
     sethvalue(L, L->top, uvalue(o)->env);
@@ -802,7 +806,7 @@ void lua_settable (lua_State *L, int idx) {
   lua_lock(L);
   api_checknelems(L, 2);
   t = index2addr(L, idx);
-  api_checkvalidindex(L, t);
+  api_checkvalidindex(t);
   luaV_settable(L, t, L->top - 2, L->top - 1);
   L->top -= 2;  /* pop index and value */
   lua_unlock(L);
@@ -815,7 +819,7 @@ void lua_setfield (lua_State *L, int idx, const char *k) {
   lua_lock(L);
   api_checknelems(L, 1);
   t = index2addr(L, idx);
-  api_checkvalidindex(L, t);
+  api_checkvalidindex(t);
   setsvalue(L, L->top++, luaS_new(L, k));
   luaV_settable(L, t, L->top - 1, L->top - 2);
   L->top -= 2;  /* pop value and key */
@@ -875,7 +879,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
   lua_lock(L);
   api_checknelems(L, 1);
   obj = index2addr(L, objindex);
-  api_checkvalidindex(L, obj);
+  api_checkvalidindex(obj);
   if (ttisnil(L->top - 1))
     mt = NULL;
   else {
@@ -915,7 +919,7 @@ void lua_setuservalue (lua_State *L, int idx) {
   lua_lock(L);
   api_checknelems(L, 1);
   o = index2addr(L, idx);
-  api_checkvalidindex(L, o);
+  api_checkvalidindex(o);
   api_check(ttisuserdata(o), "userdata expected");
   if (ttisnil(L->top - 1))
     uvalue(o)->env = NULL;
@@ -1004,7 +1008,7 @@ int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
     func = 0;
   else {
     StkId o = index2addr(L, errfunc);
-    api_checkvalidindex(L, o);
+    api_checkvalidindex(o);
     func = savestack(L, o);
   }
   c.func = L->top - (nargs+1);  /* function to be called */
@@ -1102,7 +1106,7 @@ int lua_gc (lua_State *L, int what, int data) {
       break;
     }
     case LUA_GCCOLLECT: {
-      luaC_fullgc(L, 0);
+      luaC_fullgc(0);
       break;
     }
     case LUA_GCCOUNT: {

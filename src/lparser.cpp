@@ -168,7 +168,7 @@ static int registerlocalvar (LexState *ls, TString *varname) {
   Proto *f = fs->f;
   int oldsize = f->sizelocvars;
   if(fs->nlocvars >= f->sizelocvars) {
-    f->locvars = (LocVar*)luaM_growaux_(ls->L, f->locvars, f->sizelocvars, sizeof(LocVar), SHRT_MAX, "local variables");
+    f->locvars = (LocVar*)luaM_growaux_(f->locvars, f->sizelocvars, sizeof(LocVar), SHRT_MAX, "local variables");
   }
   
   while (oldsize < f->sizelocvars) f->locvars[oldsize++].varname = NULL;
@@ -185,7 +185,7 @@ static void new_localvar (LexState *ls, TString *name) {
   checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal,
                   MAXVARS, "local variables");
   if(dyd->actvar.n+1 >= dyd->actvar.size) {
-    dyd->actvar.arr = (Vardesc*)luaM_growaux_(ls->L, dyd->actvar.arr, dyd->actvar.size, sizeof(Vardesc), MAX_INT, "local variables");
+    dyd->actvar.arr = (Vardesc*)luaM_growaux_(dyd->actvar.arr, dyd->actvar.size, sizeof(Vardesc), MAX_INT, "local variables");
   }
   dyd->actvar.arr[dyd->actvar.n++].idx = cast(short, reg);
 }
@@ -237,7 +237,7 @@ static int newupvalue (FuncState *fs, TString *name, expdesc *v) {
   int oldsize = f->sizeupvalues;
   checklimit(fs, fs->nups + 1, MAXUPVAL, "upvalues");
   if(fs->nups >= f->sizeupvalues) {
-    f->upvalues = (Upvaldesc*)luaM_growaux_(fs->ls->L, f->upvalues, f->sizeupvalues, sizeof(Upvaldesc), MAXUPVAL, "upvalues");
+    f->upvalues = (Upvaldesc*)luaM_growaux_(f->upvalues, f->sizeupvalues, sizeof(Upvaldesc), MAXUPVAL, "upvalues");
   }
   while (oldsize < f->sizeupvalues) f->upvalues[oldsize++].name = NULL;
   f->upvalues[fs->nups].instack = (v->k == VLOCAL);
@@ -390,7 +390,7 @@ static int newlabelentry (LexState *ls, Labellist *l, TString *name,
                           int line, int pc) {
   int n = l->n;
   if(n >= l->size) {
-    l->arr = (Labeldesc*)luaM_growaux_(ls->L, l->arr, l->size, sizeof(Labeldesc), SHRT_MAX, "labels/gotos");
+    l->arr = (Labeldesc*)luaM_growaux_(l->arr, l->size, sizeof(Labeldesc), SHRT_MAX, "labels/gotos");
   }
   l->arr[n].name = name;
   l->arr[n].line = line;
@@ -508,7 +508,7 @@ static void codeclosure (LexState *ls, Proto *clp, expdesc *v) {
   if (fs->np >= f->sizep) {
     int oldsize = f->sizep;
     if(fs->np >= f->sizep) {
-      f->p = (Proto**)luaM_growaux_(ls->L, f->p, f->sizep, sizeof(Proto*), MAXARG_Bx, "functions");
+      f->p = (Proto**)luaM_growaux_(f->p, f->sizep, sizeof(Proto*), MAXARG_Bx, "functions");
     }
     while (oldsize < f->sizep) f->p[oldsize++] = NULL;
   }
@@ -557,17 +557,17 @@ static void close_func (LexState *ls) {
   Proto *f = fs->f;
   luaK_ret(fs, 0, 0);  /* final return */
   leaveblock(fs);
-  f->code = (Instruction*)luaM_reallocv(L, f->code, f->sizecode, fs->pc, sizeof(Instruction));
+  f->code = (Instruction*)luaM_reallocv(f->code, f->sizecode, fs->pc, sizeof(Instruction));
   f->sizecode = fs->pc;
-  f->lineinfo = (int*)luaM_reallocv(L, f->lineinfo, f->sizelineinfo, fs->pc, sizeof(int));
+  f->lineinfo = (int*)luaM_reallocv(f->lineinfo, f->sizelineinfo, fs->pc, sizeof(int));
   f->sizelineinfo = fs->pc;
-  f->constants = (TValue*)luaM_reallocv(L, f->constants, f->nconstants, fs->nk, sizeof(TValue));
+  f->constants = (TValue*)luaM_reallocv(f->constants, f->nconstants, fs->nk, sizeof(TValue));
   f->nconstants = fs->nk;
-  f->p = (Proto**)luaM_reallocv(L, f->p, f->sizep, fs->np, sizeof(Proto*));
+  f->p = (Proto**)luaM_reallocv(f->p, f->sizep, fs->np, sizeof(Proto*));
   f->sizep = fs->np;
-  f->locvars = (LocVar*)luaM_reallocv(L, f->locvars, f->sizelocvars, fs->nlocvars, sizeof(LocVar));
+  f->locvars = (LocVar*)luaM_reallocv(f->locvars, f->sizelocvars, fs->nlocvars, sizeof(LocVar));
   f->sizelocvars = fs->nlocvars;
-  f->upvalues = (Upvaldesc*)luaM_reallocv(L, f->upvalues, f->sizeupvalues, fs->nups, sizeof(Upvaldesc));
+  f->upvalues = (Upvaldesc*)luaM_reallocv(f->upvalues, f->sizeupvalues, fs->nups, sizeof(Upvaldesc));
   f->sizeupvalues = fs->nups;
   assert(fs->bl == NULL);
   ls->fs = fs->prev;

@@ -52,7 +52,7 @@ void luaE_setdebt (global_State *g, l_mem debt) {
 
 CallInfo *luaE_extendCI (lua_State *L) {
   THREAD_CHECK(L);
-  CallInfo *ci = (CallInfo*)luaM_alloc(L, sizeof(CallInfo));
+  CallInfo *ci = (CallInfo*)luaM_alloc(sizeof(CallInfo));
   assert(L->ci->next == NULL);
   L->ci->next = ci;
   ci->previous = L->ci;
@@ -68,7 +68,7 @@ void luaE_freeCI (lua_State *L) {
   ci->next = NULL;
   while ((ci = next) != NULL) {
     next = ci->next;
-    luaM_freemem(L, ci, sizeof(CallInfo));
+    luaM_freemem(ci, sizeof(CallInfo));
   }
 }
 
@@ -77,7 +77,7 @@ static void stack_init (lua_State *L1, lua_State *L) {
   THREAD_CHECK(L);
   int i; CallInfo *ci;
   /* initialize stack array */
-  L1->stack = (TValue*)luaM_allocv(L, BASIC_STACK_SIZE, sizeof(TValue));
+  L1->stack = (TValue*)luaM_allocv(BASIC_STACK_SIZE, sizeof(TValue));
   L1->stacksize = BASIC_STACK_SIZE;
   for (i = 0; i < BASIC_STACK_SIZE; i++)
     setnilvalue(L1->stack + i);  /* erase new stack */
@@ -100,7 +100,7 @@ static void freestack (lua_State *L) {
     return;  /* stack not completely built yet */
   L->ci = &L->base_ci;  /* free the entire 'ci' list */
   luaE_freeCI(L);
-  luaM_freemem(L, L->stack, L->stacksize * sizeof(TValue));
+  luaM_freemem(L->stack, L->stacksize * sizeof(TValue));
 }
 
 
@@ -175,7 +175,7 @@ static void close_state (lua_State *L) {
   delete G(L)->strt;
   G(L)->strt = NULL;
 
-	g->buff.buffer = (char*)luaM_reallocv(L, g->buff.buffer, g->buff.buffsize, 0, sizeof(char));
+	g->buff.buffer = (char*)luaM_reallocv(g->buff.buffer, g->buff.buffsize, 0, sizeof(char));
 	g->buff.buffsize = 0;
 
   freestack(L);
@@ -214,7 +214,7 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
     assert(L1->openupval == NULL);
     freestack(L1);
   }
-  luaM_freemem(L, L1, sizeof(lua_State));
+  luaM_freemem(L1, sizeof(lua_State));
 }
 
 

@@ -572,13 +572,13 @@ l_noret luaG_errormsg () {
   lua_State *L = thread_L;
   if (L->errfunc != 0) {  /* is there an error handling function? */
     StkId errfunc = restorestack(L, L->errfunc);
-    if (!ttisfunction(errfunc)) luaD_throw(L, LUA_ERRERR);
+    if (!ttisfunction(errfunc)) luaD_throw(LUA_ERRERR);
     setobj(L, L->top, L->top - 1);  /* move argument */
     setobj(L, L->top - 1, errfunc);  /* push function */
     incr_top(L);
     luaD_call(L, L->top - 2, 1, 0);  /* call it */
   }
-  luaD_throw(L, LUA_ERRRUN);
+  luaD_throw(LUA_ERRRUN);
 }
 
 

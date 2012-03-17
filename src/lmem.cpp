@@ -131,9 +131,7 @@ void *debug_realloc (void* blob, size_t oldsize, size_t newsize, int type) {
 #define MINSIZEARRAY	4
 
 
-void *luaM_growaux_ (lua_State *L, void *block, int& size, size_t size_elems,
-                     int limit, const char *what) {
-  THREAD_CHECK(L);
+void *luaM_growaux_ (void *block, int& size, size_t size_elems, int limit, const char *what) {
   void *newblock;
   int newsize;
   if (size >= limit/2) {  /* cannot double it? */
@@ -146,14 +144,13 @@ void *luaM_growaux_ (lua_State *L, void *block, int& size, size_t size_elems,
     if (newsize < MINSIZEARRAY)
       newsize = MINSIZEARRAY;  /* minimum size */
   }
-  newblock = luaM_reallocv(L, block, size, newsize, size_elems);
+  newblock = luaM_reallocv(block, size, newsize, size_elems);
   size = newsize;  /* update only when everything else is OK */
   return newblock;
 }
 
 
-l_noret luaM_toobig (lua_State *L) {
-  THREAD_CHECK(L);
+l_noret luaM_toobig () {
   luaG_runerror("memory allocation error: block too big");
 }
 
@@ -170,21 +167,20 @@ void* default_alloc(void *ptr, size_t osize, size_t nsize, int type) {
 /*
 ** generic allocation routine.
 */
-void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
-  THREAD_CHECK(L);
+void *luaM_realloc_ (void *block, size_t osize, size_t nsize) {
   void *newblock;
-  global_State *g = G(L);
+  global_State *g = G(thread_L);
   size_t realosize = (block) ? osize : 0;
   assert((realosize == 0) == (block == NULL));
   newblock = default_alloc(block, osize, nsize, osize);
   if (newblock == NULL && nsize > 0) {
     api_check(nsize > realosize, "realloc cannot fail when shrinking a block");
     if (g->gcrunning) {
-      luaC_fullgc(L, 1);  /* try to free some memory... */
+      luaC_fullgc(1);  /* try to free some memory... */
       newblock = default_alloc(block, osize, nsize, osize);  /* try again */
     }
     if (newblock == NULL)
-      luaD_throw(L, LUA_ERRMEM);
+      luaD_throw(LUA_ERRMEM);
   }
   assert((nsize == 0) == (newblock == NULL));
   g->GCdebt = (g->GCdebt + nsize) - realosize;
@@ -192,32 +188,27 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
   return newblock;
 }
 
-void* luaM_reallocv(lua_State* L, void* block, size_t osize, size_t nsize, size_t esize) {
-  THREAD_CHECK(L);
+void* luaM_reallocv(void* block, size_t osize, size_t nsize, size_t esize) {
   if((size_t)(nsize+1) > (MAX_SIZET/esize)) {
-    luaM_toobig(L);
+    luaM_toobig();
     return 0;
   }
   
-  return luaM_realloc_(L, block, osize*esize, nsize*esize);
+  return luaM_realloc_(block, osize*esize, nsize*esize);
 }
 
-void * luaM_newobject(lua_State* L, int tag, size_t size) { 
-  THREAD_CHECK(L);
-  return luaM_realloc_(L, NULL, tag, size);
+void * luaM_newobject(int tag, size_t size) { 
+  return luaM_realloc_(NULL, tag, size);
 }
 
-void luaM_freemem(lua_State* L, void * blob, size_t size) {
-  THREAD_CHECK(L);
-  luaM_realloc_(L, blob, size, 0);
+void luaM_freemem(void * blob, size_t size) {
+  luaM_realloc_(blob, size, 0);
 }
 
-void* luaM_alloc(lua_State* L, size_t size) {
-  THREAD_CHECK(L);
-  return luaM_realloc_(L, NULL, 0, size);
+void* luaM_alloc(size_t size) {
+  return luaM_realloc_(NULL, 0, size);
 }
 
-void* luaM_allocv(lua_State* L, size_t n, size_t size) {
-  THREAD_CHECK(L);
-  return luaM_reallocv(L, NULL, 0, n, size);
+void* luaM_allocv(size_t n, size_t size) {
+  return luaM_reallocv(NULL, 0, n, size);
 }

@@ -218,7 +218,7 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
 */
 LuaBase *luaC_newobj (lua_State *L, int tt, size_t sz, LuaBase **list) {
   THREAD_CHECK(L);
-  void* blob = luaM_newobject(L,tt,sz);
+  void* blob = luaM_newobject(tt,sz);
   LuaBase *o = reinterpret_cast<LuaBase*>(blob);
   
   global_State *g = G(L);
@@ -651,7 +651,7 @@ static void freeobj (lua_State *L, LuaBase *o) {
     case LUA_TUPVAL: luaF_freeupval(L, gco2uv(o)); break;
     case LUA_TTABLE: luaH_free(L, gco2t(o)); break;
     case LUA_TTHREAD: luaE_freethread(L, gco2th(o)); break;
-    case LUA_TUSERDATA: luaM_freemem(L, o, sizeudata(gco2u(o))); break;
+    case LUA_TUSERDATA: luaM_freemem(o, sizeudata(gco2u(o))); break;
     case LUA_TSTRING: {
       G(L)->strt->nuse--;
       luaS_freestr(L, gco2ts(o));
@@ -754,7 +754,7 @@ static void checkSizes (lua_State *L) {
     int hs = g->strt->size / 2;  /* half the size of the string table */
     if (g->strt->nuse < cast(uint32_t, hs))  /* using less than that half? */
       luaS_resize(L, hs);  /* halve its size */
-    luaM_reallocv(L, g->buff.buffer, g->buff.buffsize, 0, sizeof(char));
+    luaM_reallocv(g->buff.buffer, g->buff.buffsize, 0, sizeof(char));
     g->buff.buffer = NULL;
     g->buff.buffsize = 0;
   }
@@ -807,7 +807,7 @@ static void GCTM (lua_State *L, int propagateerrors) {
                                         lua_tostring(L, -1));
         status = LUA_ERRGCMM;  /* error in __gc metamethod */
       }
-      luaD_throw(L, status);  /* re-send error */
+      luaD_throw(status);  /* re-send error */
     }
   }
 }
@@ -1046,7 +1046,7 @@ static void generationalcollection (lua_State *L) {
   THREAD_CHECK(L);
   global_State *g = G(L);
   if (g->lastmajormem == 0) {  /* signal for another major collection? */
-    luaC_fullgc(L, 0);  /* perform a full regular collection */
+    luaC_fullgc(0);  /* perform a full regular collection */
     g->lastmajormem = gettotalbytes(g);  /* update control */
   }
   else {
@@ -1100,8 +1100,8 @@ void luaC_step (lua_State *L) {
 ** performs a full GC cycle; if "isemergency", does not call
 ** finalizers (which could change stack positions)
 */
-void luaC_fullgc (lua_State *L, int isemergency) {
-  THREAD_CHECK(L);
+void luaC_fullgc (int isemergency) {
+  lua_State *L = thread_L;
   global_State *g = G(L);
   int origkind = g->gckind;
   assert(origkind != KGC_EMERGENCY);

@@ -78,7 +78,7 @@ static void traceexec (lua_State *L) {
   L->oldpc = ci->savedpc;
   if (L->status == LUA_YIELD) {  /* did hook yield? */
     ci->savedpc--;  /* undo increment (resume will increment it again) */
-    luaD_throw(L, LUA_YIELD);
+    luaD_throw(LUA_YIELD);
   }
 }
 

@@ -101,8 +101,8 @@ static void seterrorobj (lua_State *L, int errcode, StkId oldtop) {
 }
 
 
-l_noret luaD_throw (lua_State *L, int errcode) {
-  THREAD_CHECK(L);
+l_noret luaD_throw (int errcode) {
+  lua_State* L = thread_L;
   if (L->errorJmp) {  /* thread has an error handler? */
     L->errorJmp->status = errcode;  /* set status */
     LUAI_THROW(L, L->errorJmp);  /* jump to it */
@@ -111,7 +111,10 @@ l_noret luaD_throw (lua_State *L, int errcode) {
     L->status = cast_byte(errcode);  /* mark it as dead */
     if (G(L)->mainthread->errorJmp) {  /* main thread has a handler? */
       setobj(L, G(L)->mainthread->top++, L->top - 1);  /* copy error obj. */
-      luaD_throw(G(L)->mainthread, errcode);  /* re-throw in main thread */
+      {
+        THREAD_CHANGE(G(L)->mainthread);
+        luaD_throw(errcode);  /* re-throw in main thread */
+      }
     }
     else {  /* no handler at all; abort */
       if (G(L)->panic) {  /* panic function? */
@@ -168,7 +171,7 @@ void luaD_reallocstack (lua_State *L, int newsize) {
   int lim = L->stacksize;
   assert(newsize <= LUAI_MAXSTACK || newsize == ERRORSTACKSIZE);
   assert(L->stack_last - L->stack == L->stacksize - EXTRA_STACK);
-  L->stack = (TValue*)luaM_reallocv(L, L->stack, L->stacksize, newsize, sizeof(TValue));
+  L->stack = (TValue*)luaM_reallocv(L->stack, L->stacksize, newsize, sizeof(TValue));
 
   for (; lim < newsize; lim++)
     setnilvalue(L->stack + lim); /* erase new segment */
@@ -182,7 +185,7 @@ void luaD_growstack (lua_State *L, int n) {
   THREAD_CHECK(L);
   int size = L->stacksize;
   if (size > LUAI_MAXSTACK)  /* error after extra size? */
-    luaD_throw(L, LUA_ERRERR);
+    luaD_throw(LUA_ERRERR);
   else {
     int needed = cast_int(L->top - L->stack) + n + EXTRA_STACK;
     int newsize = 2 * size;
@@ -401,7 +404,7 @@ void luaD_call (lua_State *L, StkId func, int nResults, int allowyield) {
     if (L->nCcalls == LUAI_MAXCCALLS)
       luaG_runerror("C stack overflow");
     else if (L->nCcalls >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3)))
-      luaD_throw(L, LUA_ERRERR);  /* error while handing stack error */
+      luaD_throw(LUA_ERRERR);  /* error while handing stack error */
   }
   if (!allowyield) L->nny++;
   if (!luaD_precall(L, func, nResults))  /* is a Lua function? */
@@ -496,7 +499,7 @@ static l_noret resume_error (lua_State *L, const char *msg, StkId firstArg) {
   L->top = firstArg;  /* remove args from the stack */
   setsvalue(L, L->top, luaS_new(L, msg));  /* push error message */
   incr_top(L);
-  luaD_throw(L, -1);  /* jump back to 'lua_resume' */
+  luaD_throw(-1);  /* jump back to 'lua_resume' */
 }
 
 
@@ -593,7 +596,7 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
       ci->ctx = ctx;  /* save context */
     ci->extra = savestack(L, ci->func);  /* save current 'func' */
     ci->func = L->top - nresults - 1;  /* protect stack below results */
-    luaD_throw(L, LUA_YIELD);
+    luaD_throw(LUA_YIELD);
   }
   assert(ci->callstatus & CIST_HOOKED);  /* must be inside a hook */
   lua_unlock(L);
@@ -643,7 +646,7 @@ static void checkmode (lua_State *L, const char *mode, const char *x) {
   if (mode && strchr(mode, x[0]) == NULL) {
     luaO_pushfstring(L,
        "attempt to load a %s chunk (mode is " LUA_QS ")", x, mode);
-    luaD_throw(L, LUA_ERRSYNTAX);
+    luaD_throw(LUA_ERRSYNTAX);
   }
 }
 
@@ -685,13 +688,13 @@ int luaD_protectedparser (lua_State *L, ZIO *z, const char *name,
   luaZ_initbuffer(L, &p.buff);
   status = luaD_pcall(L, f_parser, &p, savestack(L, L->top), L->errfunc);
   
-  luaM_reallocv(L, p.buff.buffer, p.buff.buffsize, 0, sizeof(char));
+  luaM_reallocv(p.buff.buffer, p.buff.buffsize, 0, sizeof(char));
   p.buff.buffer = NULL;
   p.buff.buffsize = 0;
   
-  luaM_freemem(L, p.dyd.actvar.arr, p.dyd.actvar.size * sizeof(Vardesc));
-  luaM_freemem(L, p.dyd.gt.arr, p.dyd.gt.size * sizeof(Labeldesc));
-  luaM_freemem(L, p.dyd.label.arr, p.dyd.label.size * sizeof(Labeldesc));
+  luaM_freemem(p.dyd.actvar.arr, p.dyd.actvar.size * sizeof(Vardesc));
+  luaM_freemem(p.dyd.gt.arr, p.dyd.gt.size * sizeof(Labeldesc));
+  luaM_freemem(p.dyd.label.arr, p.dyd.label.size * sizeof(Labeldesc));
   
   L->nny--;
   return status;
