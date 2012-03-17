@@ -19,16 +19,16 @@
 
 
 const TValue *luaH_getint (Table *t, int key);
-void luaH_setint (lua_State *L, Table *t, int key, TValue *value);
+void luaH_setint (Table *t, int key, TValue *value);
 const TValue *luaH_getstr (Table *t, TString *key);
 const TValue *luaH_get (Table *t, const TValue *key);
-TValue *luaH_newkey (lua_State *L, Table *t, const TValue *key);
-TValue *luaH_set (lua_State *L, Table *t, const TValue *key);
-Table *luaH_new (lua_State *L);
-void luaH_resize (lua_State *L, Table *t, int nasize, int nhsize);
-void luaH_resizearray (lua_State *L, Table *t, int nasize);
-void luaH_free (lua_State *L, Table *t);
-int luaH_next (lua_State *L, Table *t, StkId key);
+TValue *luaH_newkey (Table *t, const TValue *key);
+TValue *luaH_set (Table *t, const TValue *key);
+Table *luaH_new ();
+void luaH_resize (Table *t, int nasize, int nhsize);
+void luaH_resizearray (Table *t, int nasize);
+void luaH_free (Table *t);
+int luaH_next (Table *t, StkId key);
 int luaH_getn (Table *t);
 Node *luaH_mainposition (const Table *t, const TValue *key);
 int luaH_isdummy (Node *n);

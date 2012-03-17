@@ -135,7 +135,7 @@ static int iscleared (const TValue *o) {
 ** being pointed by a black object.
 */
 void luaC_barrier_ (LuaBase *o, LuaBase *v) {
-  global_State *g = G(thread_L);
+  global_State *g = thread_G;
   assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
   assert(isgenerational(g) || g->gcstate != GCSpause);
   assert(gch(o)->tt != LUA_TTABLE);
@@ -155,7 +155,7 @@ void luaC_barrier_ (LuaBase *o, LuaBase *v) {
 ** different types.)
 */
 void luaC_barrierback_ (LuaBase *o) {
-  global_State *g = G(thread_L);
+  global_State *g = thread_G;
   assert(isblack(o) && !isdead(g, o) && gch(o)->tt == LUA_TTABLE);
   black2gray(o);  /* make object gray (again) */
   gco2t(o)->gclist = g->grayagain;
@@ -172,7 +172,7 @@ void luaC_barrierback_ (LuaBase *o) {
 ** possible instances.
 */
 void luaC_barrierproto_ (Proto *p, Closure *c) {
-  global_State *g = G(thread_L);
+  global_State *g = thread_G;
   assert(isblack(obj2gco(p)));
   if (p->cache == NULL) {  /* first time? */
     luaC_objbarrier(L, p, c);
@@ -212,7 +212,7 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
 ** object itself (used only by states).
 */
 LuaBase *luaC_newobj (int tt, size_t sz, LuaBase **list) {
-  global_State *g = G(thread_L);
+  global_State *g = thread_G;
   void* blob = luaM_newobject(tt,sz);
   LuaBase *o = reinterpret_cast<LuaBase*>(blob);
   
@@ -641,7 +641,7 @@ static void freeobj (lua_State *L, LuaBase *o) {
     case LUA_TPROTO: luaF_freeproto(L, gco2p(o)); break;
     case LUA_TFUNCTION: luaF_freeclosure(L, gco2cl(o)); break;
     case LUA_TUPVAL: luaF_freeupval(L, gco2uv(o)); break;
-    case LUA_TTABLE: luaH_free(L, gco2t(o)); break;
+    case LUA_TTABLE: luaH_free(gco2t(o)); break;
     case LUA_TTHREAD: luaE_freethread(L, gco2th(o)); break;
     case LUA_TUSERDATA: luaM_freemem(o, sizeudata(gco2u(o))); break;
     case LUA_TSTRING: {
@@ -810,7 +810,7 @@ static void GCTM (lua_State *L, int propagateerrors) {
 ** finalization from list 'finobj' to list 'tobefnz' (to be finalized)
 */
 static void separatetobefnz (int all) {
-  global_State *g = G(thread_L);
+  global_State *g = thread_G;
   LuaBase **p = &g->finobj;
   LuaBase *curr;
   LuaBase **lastnext = &g->tobefnz;
@@ -838,7 +838,7 @@ static void separatetobefnz (int all) {
 ** search the list to find it) and link it in 'finobj' list.
 */
 void luaC_checkfinalizer (LuaBase *o, Table *mt) {
-  global_State *g = G(thread_L);
+  global_State *g = thread_G;
   if (testbit(gch(o)->marked, SEPARATED) || /* obj. is already separated... */
       isfinalized(o) ||                           /* ... or is finalized... */
       gfasttm(g, mt, TM_GC) == NULL)                /* or has no finalizer? */
@@ -922,7 +922,7 @@ void luaC_freeallobjects (lua_State *L) {
 
 
 static void atomic () {
-  global_State *g = G(thread_L);
+  global_State *g = thread_G;
   LuaBase *origweak, *origall;
   assert(!iswhite(obj2gco(g->mainthread)));
   markobject(g, thread_L);  /* mark running thread */

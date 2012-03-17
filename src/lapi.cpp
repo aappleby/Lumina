@@ -726,11 +726,11 @@ void lua_createtable (lua_State *L, int narray, int nrec) {
   Table *t;
   lua_lock(L);
   luaC_checkGC(L);
-  t = luaH_new(L);
+  t = luaH_new();
   sethvalue(L, L->top, t);
   api_incr_top(L);
   if (narray > 0 || nrec > 0)
-    luaH_resize(L, t, narray, nrec);
+    luaH_resize(t, narray, nrec);
   lua_unlock(L);
 }
 
@@ -834,7 +834,7 @@ void lua_rawset (lua_State *L, int idx) {
   api_checknelems(L, 2);
   t = index2addr(L, idx);
   api_check(ttistable(t), "table expected");
-  setobj(L, luaH_set(L, hvalue(t), L->top-2), L->top-1);
+  setobj(L, luaH_set(hvalue(t), L->top-2), L->top-1);
   invalidateTMcache(hvalue(t));
   luaC_barrierback(gcvalue(t), L->top-1);
   L->top -= 2;
@@ -849,7 +849,7 @@ void lua_rawseti (lua_State *L, int idx, int n) {
   api_checknelems(L, 1);
   t = index2addr(L, idx);
   api_check(ttistable(t), "table expected");
-  luaH_setint(L, hvalue(t), n, L->top - 1);
+  luaH_setint(hvalue(t), n, L->top - 1);
   luaC_barrierback(gcvalue(t), L->top-1);
   L->top--;
   lua_unlock(L);
@@ -865,7 +865,7 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
   t = index2addr(L, idx);
   api_check(ttistable(t), "table expected");
   setpvalue(&k, cast(void *, p));
-  setobj(L, luaH_set(L, hvalue(t), &k), L->top - 1);
+  setobj(L, luaH_set(hvalue(t), &k), L->top - 1);
   luaC_barrierback(gcvalue(t), L->top - 1);
   L->top--;
   lua_unlock(L);
@@ -1191,7 +1191,7 @@ int lua_next (lua_State *L, int idx) {
   lua_lock(L);
   t = index2addr(L, idx);
   api_check(ttistable(t), "table expected");
-  more = luaH_next(L, hvalue(t), L->top - 1);
+  more = luaH_next(hvalue(t), L->top - 1);
   if (more) {
     api_incr_top(L);
   }

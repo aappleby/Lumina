@@ -4,7 +4,7 @@
 class LuaBase {
 public:
 
-  void Init(lua_State* L, int type);
+  void Init(int type);
 
   LuaBase *next;
   uint8_t tt;

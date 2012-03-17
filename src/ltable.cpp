@@ -135,8 +135,7 @@ static int arrayindex (const TValue *key) {
 ** elements in the array part, then elements in the hash part. The
 ** beginning of a traversal is signaled by -1.
 */
-static int findindex (lua_State *L, Table *t, StkId key) {
-  THREAD_CHECK(L);
+static int findindex (Table *t, StkId key) {
   int i;
   if (ttisnil(key)) return -1;  /* first iteration */
   i = arrayindex(key);
@@ -161,20 +160,19 @@ static int findindex (lua_State *L, Table *t, StkId key) {
 }
 
 
-int luaH_next (lua_State *L, Table *t, StkId key) {
-  THREAD_CHECK(L);
-  int i = findindex(L, t, key);  /* find original element */
+int luaH_next (Table *t, StkId key) {
+  int i = findindex(t, key);  /* find original element */
   for (i++; i < t->sizearray; i++) {  /* try first array part */
     if (!ttisnil(&t->array[i])) {  /* a non-nil value? */
       setnvalue(key, cast_num(i+1));
-      setobj(L, key+1, &t->array[i]);
+      setobj(thread_L, key+1, &t->array[i]);
       return 1;
     }
   }
   for (i -= t->sizearray; i < sizenode(t); i++) {  /* then hash part */
     if (!ttisnil(gval(gnode(t, i)))) {  /* a non-nil value? */
-      setobj(L, key, gkey(gnode(t, i)));
-      setobj(L, key+1, gval(gnode(t, i)));
+      setobj(thread_L, key, gkey(gnode(t, i)));
+      setobj(thread_L, key+1, gval(gnode(t, i)));
       return 1;
     }
   }
@@ -263,8 +261,7 @@ static int numusehash (const Table *t, int *nums, int *pnasize) {
 }
 
 
-static void setarrayvector (lua_State *L, Table *t, int size) {
-  THREAD_CHECK(L);
+static void setarrayvector (Table *t, int size) {
   int i;
   t->array = (TValue*)luaM_reallocv(t->array, t->sizearray, size, sizeof(TValue));
   for (i=t->sizearray; i<size; i++)
@@ -273,8 +270,7 @@ static void setarrayvector (lua_State *L, Table *t, int size) {
 }
 
 
-static void setnodevector (lua_State *L, Table *t, int size) {
-  THREAD_CHECK(L);
+static void setnodevector (Table *t, int size) {
   int lsize;
   if (size == 0) {  /* no elements to hash part? */
     t->node = cast(Node *, dummynode);  /* use common `dummynode' */
@@ -299,22 +295,21 @@ static void setnodevector (lua_State *L, Table *t, int size) {
 }
 
 
-void luaH_resize (lua_State *L, Table *t, int nasize, int nhsize) {
-  THREAD_CHECK(L);
+void luaH_resize (Table *t, int nasize, int nhsize) {
   int i;
   int oldasize = t->sizearray;
   int oldhsize = t->lsizenode;
   Node *nold = t->node;  /* save old hash ... */
   if (nasize > oldasize)  /* array part must grow? */
-    setarrayvector(L, t, nasize);
+    setarrayvector(t, nasize);
   /* create new hash part with appropriate size */
-  setnodevector(L, t, nhsize);
+  setnodevector(t, nhsize);
   if (nasize < oldasize) {  /* array part must shrink? */
     t->sizearray = nasize;
     /* re-insert elements from vanishing slice */
     for (i=nasize; i<oldasize; i++) {
       if (!ttisnil(&t->array[i]))
-        luaH_setint(L, t, i + 1, &t->array[i]);
+        luaH_setint(t, i + 1, &t->array[i]);
     }
     /* shrink array */
     t->array = (TValue*)luaM_reallocv(t->array, oldasize, nasize, sizeof(TValue));
@@ -325,7 +320,7 @@ void luaH_resize (lua_State *L, Table *t, int nasize, int nhsize) {
     if (!ttisnil(gval(old))) {
       /* doesn't need barrier/invalidate cache, as entry was
          already present in the table */
-      setobj(L, luaH_set(L, t, gkey(old)), gval(old));
+      setobj(thread_L, luaH_set(t, gkey(old)), gval(old));
     }
   }
   if (!isdummy(nold)) {
@@ -336,15 +331,13 @@ void luaH_resize (lua_State *L, Table *t, int nasize, int nhsize) {
 }
 
 
-void luaH_resizearray (lua_State *L, Table *t, int nasize) {
-  THREAD_CHECK(L);
+void luaH_resizearray (Table *t, int nasize) {
   int nsize = isdummy(t->node) ? 0 : sizenode(t);
-  luaH_resize(L, t, nasize, nsize);
+  luaH_resize(t, nasize, nsize);
 }
 
 
-static void rehash (lua_State *L, Table *t, const TValue *ek) {
-  THREAD_CHECK(L);
+static void rehash (Table *t, const TValue *ek) {
   int nasize, na;
   int nums[MAXBITS+1];  /* nums[i] = number of keys with 2^(i-1) < k <= 2^i */
   int i;
@@ -359,7 +352,7 @@ static void rehash (lua_State *L, Table *t, const TValue *ek) {
   /* compute new size for array part */
   na = computesizes(nums, &nasize);
   /* resize the table to new computed sizes */
-  luaH_resize(L, t, nasize, totaluse - na);
+  luaH_resize(t, nasize, totaluse - na);
 }
 
 
@@ -369,9 +362,8 @@ static void rehash (lua_State *L, Table *t, const TValue *ek) {
 */
 
 
-Table *luaH_new (lua_State *L) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+Table *luaH_new () {
+  global_State *g = thread_G;
   void* newblock = default_alloc(NULL, LUA_TTABLE, sizeof(Table), LUA_TTABLE);
   if (newblock == NULL) {
     if (g->gcrunning) {
@@ -384,19 +376,18 @@ Table *luaH_new (lua_State *L) {
   g->GCdebt += sizeof(Table);
 
   Table* t = new(newblock) Table();
-  t->Init(L, LUA_TTABLE);
+  t->Init(LUA_TTABLE);
   
   t->metatable = NULL;
   t->flags = cast_byte(~0);
   t->array = NULL;
   t->sizearray = 0;
-  setnodevector(L, t, 0);
+  setnodevector(t, 0);
   return t;
 }
 
 
-void luaH_free (lua_State *L, Table *t) {
-  THREAD_CHECK(L);
+void luaH_free (Table *t) {
   if (!isdummy(t->node)) {
     luaM_freemem(t->node, sizenode(t) * sizeof(Node));
   }
@@ -423,8 +414,7 @@ static Node *getfreepos (Table *t) {
 ** put new key in its main position; otherwise (colliding node is in its main
 ** position), new key goes to an empty position.
 */
-TValue *luaH_newkey (lua_State *L, Table *t, const TValue *key) {
-  THREAD_CHECK(L);
+TValue *luaH_newkey (Table *t, const TValue *key) {
   Node *mp;
   if (ttisnil(key)) luaG_runerror("table index is nil");
   else if (ttisnumber(key) && luai_numisnan(L, nvalue(key)))
@@ -434,9 +424,9 @@ TValue *luaH_newkey (lua_State *L, Table *t, const TValue *key) {
     Node *othern;
     Node *n = getfreepos(t);  /* get a free place */
     if (n == NULL) {  /* cannot find a free place? */
-      rehash(L, t, key);  /* grow table */
+      rehash(t, key);  /* grow table */
       /* whatever called 'newkey' take care of TM cache and GC barrier */
-      return luaH_set(L, t, key);  /* insert key into grown table */
+      return luaH_set(t, key);  /* insert key into grown table */
     }
     assert(!isdummy(n));
     othern = mainposition(t, gkey(mp));
@@ -455,7 +445,7 @@ TValue *luaH_newkey (lua_State *L, Table *t, const TValue *key) {
       mp = n;
     }
   }
-  setobj(L, gkey(mp), key);
+  setobj(thread_L, gkey(mp), key);
   luaC_barrierback(obj2gco(t), key);
   assert(ttisnil(gval(mp)));
   return gval(mp);
@@ -528,17 +518,15 @@ const TValue *luaH_get (Table *t, const TValue *key) {
 ** beware: when using this function you probably need to check a GC
 ** barrier and invalidate the TM cache.
 */
-TValue *luaH_set (lua_State *L, Table *t, const TValue *key) {
-  THREAD_CHECK(L);
+TValue *luaH_set (Table *t, const TValue *key) {
   const TValue *p = luaH_get(t, key);
   if (p != luaO_nilobject)
     return cast(TValue *, p);
-  else return luaH_newkey(L, t, key);
+  else return luaH_newkey(t, key);
 }
 
 
-void luaH_setint (lua_State *L, Table *t, int key, TValue *value) {
-  THREAD_CHECK(L);
+void luaH_setint (Table *t, int key, TValue *value) {
   const TValue *p = luaH_getint(t, key);
   TValue *cell;
   if (p != luaO_nilobject)
@@ -546,9 +534,9 @@ void luaH_setint (lua_State *L, Table *t, int key, TValue *value) {
   else {
     TValue k;
     setnvalue(&k, cast_num(key));
-    cell = luaH_newkey(L, t, &k);
+    cell = luaH_newkey(t, &k);
   }
-  setobj(L, cell, value);
+  setobj(thread_L, cell, value);
 }
 
 

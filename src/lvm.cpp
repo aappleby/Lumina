@@ -146,7 +146,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
          (oldval != luaO_nilobject ||
          /* no previous entry; must create one. (The next test is
             always true; we only need the assignment.) */
-         (oldval = luaH_newkey(L, h, key), 1)))) {
+         (oldval = luaH_newkey(h, key), 1)))) {
         /* no metamethod and (now) there is an entry with given key */
         setobj(L, oldval, val);  /* assign new value to that entry */
         invalidateTMcache(h);
@@ -624,10 +624,10 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_NEWTABLE,
         int b = GETARG_B(i);
         int c = GETARG_C(i);
-        Table *t = luaH_new(L);
+        Table *t = luaH_new();
         sethvalue(L, ra, t);
         if (b != 0 || c != 0)
-          luaH_resize(L, t, luaO_fb2int(b), luaO_fb2int(c));
+          luaH_resize(t, luaO_fb2int(b), luaO_fb2int(c));
         checkGC(L,
           L->top = ra + 1;  /* limit of live values */
           luaC_step(L);
@@ -850,10 +850,10 @@ void luaV_execute (lua_State *L) {
         h = hvalue(ra);
         last = ((c-1)*LFIELDS_PER_FLUSH) + n;
         if (last > h->sizearray)  /* needs more space? */
-          luaH_resizearray(L, h, last);  /* pre-allocate it at once */
+          luaH_resizearray(h, last);  /* pre-allocate it at once */
         for (; n > 0; n--) {
           TValue *val = ra+n;
-          luaH_setint(L, h, last--, val);
+          luaH_setint(h, last--, val);
           luaC_barrierback(obj2gco(h), val);
         }
         L->top = ci->top;  /* correct top (in case of previous open call) */

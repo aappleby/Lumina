@@ -543,7 +543,7 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   /* anchor prototype (to avoid being collected) */
   setptvalue(L, L->top, f);
   incr_top(L);
-  fs->h = luaH_new(L);
+  fs->h = luaH_new();
   /* anchor table of constants (to avoid being collected) */
   sethvalue(L, L->top, fs->h);
   incr_top(L);

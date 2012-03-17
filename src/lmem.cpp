@@ -169,7 +169,7 @@ void* default_alloc(void *ptr, size_t osize, size_t nsize, int type) {
 */
 void *luaM_realloc_ (void *block, size_t osize, size_t nsize) {
   void *newblock;
-  global_State *g = G(thread_L);
+  global_State *g = thread_G;
   size_t realosize = (block) ? osize : 0;
   assert((realosize == 0) == (block == NULL));
   newblock = default_alloc(block, osize, nsize, osize);

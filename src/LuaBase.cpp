@@ -3,9 +3,8 @@
 #include "lgc.h"
 #include "lstate.h"
 
-void LuaBase::Init(lua_State* L, int type) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+void LuaBase::Init(int type) {
+  global_State *g = thread_G;
 
   marked = luaC_white(g);
   tt = type;

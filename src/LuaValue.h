@@ -205,7 +205,7 @@ struct TValue {
 #define setdeadvalue(obj)	settt_(obj, LUA_TDEADKEY)
 
 
-
+// can't remove L here yet
 #define setobj(L,obj1,obj2) \
 	{ THREAD_CHECK(L); const TValue *io2=(obj2); TValue *io1=(obj1); \
 	  io1->bytes = io2->bytes; io1->tt_ = io2->tt_; \

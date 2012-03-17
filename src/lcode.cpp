@@ -319,7 +319,7 @@ static void freeexp (FuncState *fs, expdesc *e) {
 static int addk (FuncState *fs, TValue *key, TValue *v) {
   THREAD_CHECK(fs->ls->L);
   lua_State *L = fs->ls->L;
-  TValue *idx = luaH_set(L, fs->h, key);
+  TValue *idx = luaH_set(fs->h, key);
   Proto *f = fs->f;
   int k, oldsize;
   if (ttisnumber(idx)) {
