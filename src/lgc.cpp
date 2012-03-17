@@ -76,11 +76,9 @@
 #define checkconsistency(obj) assert(!iscollectable(obj) || righttt(obj))
 
 
-#define markvalue(g,o) { checkconsistency(o); \
-  if (valiswhite(o)) reallymarkobject(g,gcvalue(o)); }
+#define markvalue(g,o) { checkconsistency(o); if (valiswhite(o)) reallymarkobject(g,gcvalue(o)); }
 
-#define markobject(g,t) { if ((t) && iswhite(obj2gco(t))) \
-		reallymarkobject(g, obj2gco(t)); }
+#define markobject(g,t) { if ((t) && iswhite(obj2gco(t))) reallymarkobject(g, obj2gco(t)); }
 
 static void reallymarkobject (global_State *g, LuaBase *o);
 
@@ -136,9 +134,8 @@ static int iscleared (const TValue *o) {
 ** barrier that moves collector forward, that is, mark the white object
 ** being pointed by a black object.
 */
-void luaC_barrier_ (lua_State *L, LuaBase *o, LuaBase *v) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+void luaC_barrier_ (LuaBase *o, LuaBase *v) {
+  global_State *g = G(thread_L);
   assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
   assert(isgenerational(g) || g->gcstate != GCSpause);
   assert(gch(o)->tt != LUA_TTABLE);
@@ -157,9 +154,8 @@ void luaC_barrier_ (lua_State *L, LuaBase *o, LuaBase *v) {
 ** only works for tables; access to 'gclist' is not uniform across
 ** different types.)
 */
-void luaC_barrierback_ (lua_State *L, LuaBase *o) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+void luaC_barrierback_ (LuaBase *o) {
+  global_State *g = G(thread_L);
   assert(isblack(o) && !isdead(g, o) && gch(o)->tt == LUA_TTABLE);
   black2gray(o);  /* make object gray (again) */
   gco2t(o)->gclist = g->grayagain;
@@ -175,9 +171,8 @@ void luaC_barrierback_ (lua_State *L, LuaBase *o) {
 ** it again. Otherwise, use a backward barrier, to avoid marking all
 ** possible instances.
 */
-void luaC_barrierproto_ (lua_State *L, Proto *p, Closure *c) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+void luaC_barrierproto_ (Proto *p, Closure *c) {
+  global_State *g = G(thread_L);
   assert(isblack(obj2gco(p)));
   if (p->cache == NULL) {  /* first time? */
     luaC_objbarrier(L, p, c);
@@ -216,19 +211,16 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
 ** it to '*list'. 'offset' tells how many bytes to allocate before the
 ** object itself (used only by states).
 */
-LuaBase *luaC_newobj (lua_State *L, int tt, size_t sz, LuaBase **list) {
-  THREAD_CHECK(L);
+LuaBase *luaC_newobj (int tt, size_t sz, LuaBase **list) {
+  global_State *g = G(thread_L);
   void* blob = luaM_newobject(tt,sz);
   LuaBase *o = reinterpret_cast<LuaBase*>(blob);
   
-  global_State *g = G(L);
   if (list == NULL)
     list = &g->allgc;  /* standard list for collectable objects */
   
   gch(o)->marked = luaC_white(g);
-  
   gch(o)->tt = tt;
-
   gch(o)->next = *list;
   *list = o;
   return o;
@@ -817,9 +809,8 @@ static void GCTM (lua_State *L, int propagateerrors) {
 ** move all unreachable objects (or 'all' objects) that need
 ** finalization from list 'finobj' to list 'tobefnz' (to be finalized)
 */
-static void separatetobefnz (lua_State *L, int all) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+static void separatetobefnz (int all) {
+  global_State *g = G(thread_L);
   LuaBase **p = &g->finobj;
   LuaBase *curr;
   LuaBase **lastnext = &g->tobefnz;
@@ -846,9 +837,8 @@ static void separatetobefnz (lua_State *L, int all) {
 ** if object 'o' has a finalizer, remove it from 'allgc' list (must
 ** search the list to find it) and link it in 'finobj' list.
 */
-void luaC_checkfinalizer (lua_State *L, LuaBase *o, Table *mt) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+void luaC_checkfinalizer (LuaBase *o, Table *mt) {
+  global_State *g = G(thread_L);
   if (testbit(gch(o)->marked, SEPARATED) || /* obj. is already separated... */
       isfinalized(o) ||                           /* ... or is finalized... */
       gfasttm(g, mt, TM_GC) == NULL)                /* or has no finalizer? */
@@ -918,7 +908,7 @@ void luaC_freeallobjects (lua_State *L) {
   THREAD_CHECK(L);
   global_State *g = G(L);
   int i;
-  separatetobefnz(L, 1);  /* separate all objects with finalizers */
+  separatetobefnz(1);  /* separate all objects with finalizers */
   assert(g->finobj == NULL);
   callallpendingfinalizers(L, 0);
   g->currentwhite = WHITEBITS; /* this "white" makes all objects look dead */
@@ -931,12 +921,11 @@ void luaC_freeallobjects (lua_State *L) {
 }
 
 
-static void atomic (lua_State *L) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+static void atomic () {
+  global_State *g = G(thread_L);
   LuaBase *origweak, *origall;
   assert(!iswhite(obj2gco(g->mainthread)));
-  markobject(g, L);  /* mark running thread */
+  markobject(g, thread_L);  /* mark running thread */
   /* registry and global metatables may be changed by API */
   markvalue(g, &g->l_registry);
   markmt(g);  /* mark basic metatables */
@@ -950,7 +939,7 @@ static void atomic (lua_State *L) {
   clearvalues(g->weak, NULL);
   clearvalues(g->allweak, NULL);
   origweak = g->weak; origall = g->allweak;
-  separatetobefnz(L, 0);  /* separate objects to be finalized */
+  separatetobefnz(0);  /* separate objects to be finalized */
   markbeingfnz(g);  /* mark userdata that will be finalized */
   propagateall(g);  /* remark, to propagate `preserveness' */
   convergeephemerons(g);
@@ -985,7 +974,7 @@ static l_mem singlestep (lua_State *L) {
         return propagatemark(g);
       else {  /* no more `gray' objects */
         g->gcstate = GCSatomic;  /* finish mark phase */
-        atomic(L);
+        atomic();
         return GCATOMICCOST;
       }
     }

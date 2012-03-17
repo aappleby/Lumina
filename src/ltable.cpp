@@ -456,7 +456,7 @@ TValue *luaH_newkey (lua_State *L, Table *t, const TValue *key) {
     }
   }
   setobj(L, gkey(mp), key);
-  luaC_barrierback(L, obj2gco(t), key);
+  luaC_barrierback(obj2gco(t), key);
   assert(ttisnil(gval(mp)));
   return gval(mp);
 }

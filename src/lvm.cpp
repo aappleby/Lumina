@@ -150,7 +150,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
         /* no metamethod and (now) there is an entry with given key */
         setobj(L, oldval, val);  /* assign new value to that entry */
         invalidateTMcache(h);
-        luaC_barrierback(L, obj2gco(h), val);
+        luaC_barrierback(obj2gco(h), val);
         return;
       }
       /* else will try the metamethod */
@@ -435,7 +435,7 @@ static void pushclosure (lua_State *L, Proto *p, UpVal **encup, StkId base,
     else  /* get upvalue from enclosing function */
       ncl->upvals[i] = encup[uv[i].idx];
   }
-  luaC_barrierproto(L, p, ncl);
+  luaC_barrierproto(p, ncl);
   p->cache = ncl;  /* save it on cache for reuse */
 }
 
@@ -616,7 +616,7 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_SETUPVAL,
         UpVal *uv = cl->upvals[GETARG_B(i)];
         setobj(L, uv->v, ra);
-        luaC_barrier(L, uv, ra);
+        luaC_barrier(uv, ra);
       )
       vmcase(OP_SETTABLE,
         Protect(luaV_settable(L, ra, RKB(i), RKC(i)));
@@ -854,7 +854,7 @@ void luaV_execute (lua_State *L) {
         for (; n > 0; n--) {
           TValue *val = ra+n;
           luaH_setint(L, h, last--, val);
-          luaC_barrierback(L, obj2gco(h), val);
+          luaC_barrierback(obj2gco(h), val);
         }
         L->top = ci->top;  /* correct top (in case of previous open call) */
       )

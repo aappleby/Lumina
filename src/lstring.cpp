@@ -64,7 +64,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
     luaS_resize(L, tb->size*2);  /* too crowded */
   totalsize = sizeof(TString) + ((l + 1) * sizeof(char));
   list = &tb->hash[lmod(h, tb->size)];
-  LuaBase* o = luaC_newobj(L, LUA_TSTRING, totalsize, list);
+  LuaBase* o = luaC_newobj(LUA_TSTRING, totalsize, list);
   ts = gco2ts(o);
   ts->setLen(l);
   ts->setHash(h);
@@ -111,7 +111,7 @@ Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
   Udata *u;
   if (s > MAX_SIZET - sizeof(Udata))
     luaM_toobig();
-  LuaBase* o = luaC_newobj(L, LUA_TUSERDATA, sizeof(Udata) + s, NULL);
+  LuaBase* o = luaC_newobj(LUA_TUSERDATA, sizeof(Udata) + s, NULL);
   u = gco2u(o);
   u->len = s;
   u->metatable = NULL;

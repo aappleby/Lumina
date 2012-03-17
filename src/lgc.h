@@ -106,32 +106,29 @@
 #define luaC_checkGC(L)		luaC_condGC(L, luaC_step(L);)
 
 
-#define luaC_barrier(L,p,v) { if (valiswhite(v) && isblack(obj2gco(p)))  \
-	luaC_barrier_(L,obj2gco(p),gcvalue(v)); }
-
-#define luaC_barrierback(L,p,v) { if (valiswhite(v) && isblack(obj2gco(p)))  \
-	luaC_barrierback_(L,p); }
+#define luaC_barrier(p,v) { if (valiswhite(v) && isblack(obj2gco(p)))	luaC_barrier_(obj2gco(p),gcvalue(v)); }
+#define luaC_barrierback(p,v) { if (valiswhite(v) && isblack(obj2gco(p))) luaC_barrierback_(p); }
 
 #define luaC_objbarrier(L,p,o)  \
 	{ if (iswhite(obj2gco(o)) && isblack(obj2gco(p))) \
-		luaC_barrier_(L,obj2gco(p),obj2gco(o)); }
+		luaC_barrier_(obj2gco(p),obj2gco(o)); }
 
 #define luaC_objbarrierback(L,p,o)  \
-   { if (iswhite(obj2gco(o)) && isblack(obj2gco(p))) luaC_barrierback_(L,p); }
+   { if (iswhite(obj2gco(o)) && isblack(obj2gco(p))) luaC_barrierback_(p); }
 
-#define luaC_barrierproto(L,p,c) \
-   { if (isblack(obj2gco(p))) luaC_barrierproto_(L,p,c); }
+#define luaC_barrierproto(p,c) \
+   { if (isblack(obj2gco(p))) luaC_barrierproto_(p,c); }
 
 void luaC_freeallobjects (lua_State *L);
 void luaC_step (lua_State *L);
 void luaC_forcestep (lua_State *L);
 void luaC_runtilstate (lua_State *L, int statesmask);
 void luaC_fullgc (int isemergency);
-LuaBase *luaC_newobj (lua_State *L, int tt, size_t sz, LuaBase **list);
-void luaC_barrier_ (lua_State *L, LuaBase *o, LuaBase *v);
-void luaC_barrierback_ (lua_State *L, LuaBase *o);
-void luaC_barrierproto_ (lua_State *L, Proto *p, Closure *c);
-void luaC_checkfinalizer (lua_State *L, LuaBase *o, Table *mt);
+LuaBase *luaC_newobj (int tt, size_t sz, LuaBase **list);
+void luaC_barrier_ (LuaBase *o, LuaBase *v);
+void luaC_barrierback_ (LuaBase *o);
+void luaC_barrierproto_ (Proto *p, Closure *c);
+void luaC_checkfinalizer (LuaBase *o, Table *mt);
 void luaC_checkupvalcolor (global_State *g, UpVal *uv);
 void luaC_changemode (lua_State *L, int mode);
 

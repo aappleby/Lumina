@@ -216,7 +216,7 @@ static void moveto (lua_State *L, TValue *fr, int idx) {
   api_checkvalidindex(to);
   setobj(L, to, fr);
   if (idx < LUA_REGISTRYINDEX)  /* function upvalue? */
-    luaC_barrier(L, clCvalue(L->ci->func), fr);
+    luaC_barrier(clCvalue(L->ci->func), fr);
   /* LUA_REGISTRYINDEX does not need gc barrier
      (collector revisits it before finishing collection) */
 }
@@ -836,7 +836,7 @@ void lua_rawset (lua_State *L, int idx) {
   api_check(ttistable(t), "table expected");
   setobj(L, luaH_set(L, hvalue(t), L->top-2), L->top-1);
   invalidateTMcache(hvalue(t));
-  luaC_barrierback(L, gcvalue(t), L->top-1);
+  luaC_barrierback(gcvalue(t), L->top-1);
   L->top -= 2;
   lua_unlock(L);
 }
@@ -850,7 +850,7 @@ void lua_rawseti (lua_State *L, int idx, int n) {
   t = index2addr(L, idx);
   api_check(ttistable(t), "table expected");
   luaH_setint(L, hvalue(t), n, L->top - 1);
-  luaC_barrierback(L, gcvalue(t), L->top-1);
+  luaC_barrierback(gcvalue(t), L->top-1);
   L->top--;
   lua_unlock(L);
 }
@@ -866,7 +866,7 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
   api_check(ttistable(t), "table expected");
   setpvalue(&k, cast(void *, p));
   setobj(L, luaH_set(L, hvalue(t), &k), L->top - 1);
-  luaC_barrierback(L, gcvalue(t), L->top - 1);
+  luaC_barrierback(gcvalue(t), L->top - 1);
   L->top--;
   lua_unlock(L);
 }
@@ -891,14 +891,14 @@ int lua_setmetatable (lua_State *L, int objindex) {
       hvalue(obj)->metatable = mt;
       if (mt)
         luaC_objbarrierback(L, gcvalue(obj), mt);
-        luaC_checkfinalizer(L, gcvalue(obj), mt);
+        luaC_checkfinalizer(gcvalue(obj), mt);
       break;
     }
     case LUA_TUSERDATA: {
       uvalue(obj)->metatable = mt;
       if (mt) {
         luaC_objbarrier(L, uvalue(obj), mt);
-        luaC_checkfinalizer(L, gcvalue(obj), mt);
+        luaC_checkfinalizer(gcvalue(obj), mt);
       }
       break;
     }
@@ -1056,7 +1056,7 @@ int lua_load (lua_State *L, lua_Reader reader, void *data,
       const TValue *gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
       /* set global table as 1st upvalue of 'f' (may be LUA_ENV) */
       setobj(L, f->upvals[0]->v, gt);
-      luaC_barrier(L, f->upvals[0], gt);
+      luaC_barrier(f->upvals[0], gt);
     }
   }
   lua_unlock(L);
@@ -1297,7 +1297,7 @@ const char *lua_setupvalue (lua_State *L, int funcindex, int n) {
   if (name) {
     L->top--;
     setobj(L, val, L->top);
-    luaC_barrier(L, owner, L->top);
+    luaC_barrier(owner, L->top);
   }
   lua_unlock(L);
   return name;
