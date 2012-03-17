@@ -87,17 +87,17 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
                     const TValue *p2, TValue *p3, int hasres) {
   THREAD_CHECK(L);
   ptrdiff_t result = savestack(L, p3);
-  setobj(L, L->top++, f);  /* push function */
-  setobj(L, L->top++, p1);  /* 1st argument */
-  setobj(L, L->top++, p2);  /* 2nd argument */
+  setobj(L->top++, f);  /* push function */
+  setobj(L->top++, p1);  /* 1st argument */
+  setobj(L->top++, p2);  /* 2nd argument */
   if (!hasres)  /* no result? 'p3' is third argument */
-    setobj(L, L->top++, p3);  /* 3rd argument */
+    setobj(L->top++, p3);  /* 3rd argument */
   luaD_checkstack(L, 0);
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->top - (4 - hasres), hasres, isLua(L->ci));
   if (hasres) {  /* if has result, move it to its place */
     p3 = restorestack(L, result);
-    setobj(L, p3, --L->top);
+    setobj(p3, --L->top);
   }
 }
 
@@ -112,7 +112,7 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       const TValue *res = luaH_get(h, key); /* do a primitive get */
       if (!ttisnil(res) ||  /* result is not nil? */
           (tm = fasttm(L, h->metatable, TM_INDEX)) == NULL) { /* or no TM? */
-        setobj(L, val, res);
+        setobj(val, res);
         return;
       }
       /* else will try the tag method */
@@ -148,7 +148,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
             always true; we only need the assignment.) */
          (oldval = luaH_newkey(h, key), 1)))) {
         /* no metamethod and (now) there is an entry with given key */
-        setobj(L, oldval, val);  /* assign new value to that entry */
+        setobj(oldval, val);  /* assign new value to that entry */
         invalidateTMcache(h);
         luaC_barrierback(obj2gco(h), val);
         return;
@@ -453,7 +453,7 @@ void luaV_finishOp (lua_State *L) {
     case OP_ADD: case OP_SUB: case OP_MUL: case OP_DIV:
     case OP_MOD: case OP_POW: case OP_UNM: case OP_LEN:
     case OP_GETTABUP: case OP_GETTABLE: case OP_SELF: {
-      setobj(L, base + GETARG_A(inst), --L->top);
+      setobj(base + GETARG_A(inst), --L->top);
       break;
     }
     case OP_LE: case OP_LT: case OP_EQ: {
@@ -473,13 +473,13 @@ void luaV_finishOp (lua_State *L) {
       StkId top = L->top - 1;  /* top when 'call_binTM' was called */
       int b = GETARG_B(inst);      /* first element to concatenate */
       int total = cast_int(top - 1 - (base + b));  /* yet to concatenate */
-      setobj(L, top - 2, top);  /* put TM result in proper position */
+      setobj(top - 2, top);  /* put TM result in proper position */
       if (total > 1) {  /* are there elements to concat? */
         L->top = top - 1;  /* top is one after last element (at top-2) */
         luaV_concat(L, total);  /* concat them (may yield again) */
       }
       /* move final result to final position */
-      setobj(L, ci->base + GETARG_A(inst), L->top - 1);
+      setobj(ci->base + GETARG_A(inst), L->top - 1);
       L->top = ci->top;  /* restore top */
       break;
     }
@@ -576,17 +576,17 @@ void luaV_execute (lua_State *L) {
     assert(base <= L->top && L->top < L->stack + L->stacksize);
     vmdispatch (GET_OPCODE(i)) {
       vmcase(OP_MOVE,
-        setobj(L, ra, RB(i));
+        setobj(ra, RB(i));
       )
       vmcase(OP_LOADK,
         TValue *rb = k + GETARG_Bx(i);
-        setobj(L, ra, rb);
+        setobj(ra, rb);
       )
       vmcase(OP_LOADKX,
         TValue *rb;
         assert(GET_OPCODE(*ci->savedpc) == OP_EXTRAARG);
         rb = k + GETARG_Ax(*ci->savedpc++);
-        setobj(L, ra, rb);
+        setobj(ra, rb);
       )
       vmcase(OP_LOADBOOL,
         setbvalue(ra, GETARG_B(i));
@@ -600,7 +600,7 @@ void luaV_execute (lua_State *L) {
       )
       vmcase(OP_GETUPVAL,
         int b = GETARG_B(i);
-        setobj(L, ra, cl->upvals[b]->v);
+        setobj(ra, cl->upvals[b]->v);
       )
       vmcase(OP_GETTABUP,
         int b = GETARG_B(i);
@@ -615,7 +615,7 @@ void luaV_execute (lua_State *L) {
       )
       vmcase(OP_SETUPVAL,
         UpVal *uv = cl->upvals[GETARG_B(i)];
-        setobj(L, uv->v, ra);
+        setobj(uv->v, ra);
         luaC_barrier(uv, ra);
       )
       vmcase(OP_SETTABLE,
@@ -636,7 +636,7 @@ void luaV_execute (lua_State *L) {
       )
       vmcase(OP_SELF,
         StkId rb = RB(i);
-        setobj(L, ra+1, rb);
+        setobj(ra+1, rb);
         Protect(luaV_gettable(L, rb, RKC(i), ra));
       )
       vmcase(OP_ADD,
@@ -683,7 +683,7 @@ void luaV_execute (lua_State *L) {
         Protect(luaV_concat(L, c - b + 1));
         ra = RA(i);  /* 'luav_concat' may invoke TMs and move the stack */
         rb = b + base;
-        setobj(L, ra, rb);
+        setobj(ra, rb);
         checkGC(L,
           L->top = (ra >= rb ? ra + 1 : rb);  /* limit of live values */
           luaC_step(L);
@@ -730,7 +730,7 @@ void luaV_execute (lua_State *L) {
         if (GETARG_C(i) ? l_isfalse(rb) : !l_isfalse(rb))
           ci->savedpc++;
         else {
-          setobj(L, ra, rb);
+          setobj(ra, rb);
           donextjump(ci);
         }
       )
@@ -767,7 +767,7 @@ void luaV_execute (lua_State *L) {
           if (cl->p->sizep > 0) luaF_close(L, oci->base);
           /* move new frame into old one */
           for (aux = 0; nfunc + aux < lim; aux++)
-            setobj(L, ofunc + aux, nfunc + aux);
+            setobj(ofunc + aux, nfunc + aux);
           oci->base = ofunc + (nci->base - nfunc);  /* correct base */
           oci->top = L->top = ofunc + (L->top - nfunc);  /* correct top */
           oci->savedpc = nci->savedpc;
@@ -818,9 +818,9 @@ void luaV_execute (lua_State *L) {
       )
       vmcasenb(OP_TFORCALL,
         StkId cb = ra + 3;  /* call base */
-        setobj(L, cb+2, ra+2);
-        setobj(L, cb+1, ra+1);
-        setobj(L, cb, ra);
+        setobj(cb+2, ra+2);
+        setobj(cb+1, ra+1);
+        setobj(cb, ra);
         L->top = cb + 3;  /* func. + 2 args (state and index) */
         Protect(luaD_call(L, cb, GETARG_C(i), 1));
         L->top = ci->top;
@@ -832,7 +832,7 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_TFORLOOP,
         l_tforloop:
         if (!ttisnil(ra + 1)) {  /* continue loop? */
-          setobj(L, ra, ra + 1);  /* save control variable */
+          setobj(ra, ra + 1);  /* save control variable */
            ci->savedpc += GETARG_sBx(i);  /* jump back */
         }
       )
@@ -883,7 +883,7 @@ void luaV_execute (lua_State *L) {
         }
         for (j = 0; j < b; j++) {
           if (j < n) {
-            setobj(L, ra + j, base - n + j);
+            setobj(ra + j, base - n + j);
           }
           else {
             setnilvalue(ra + j);

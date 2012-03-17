@@ -91,7 +91,7 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
     if (h == ts->getHash() &&
         ts->getLen() == l &&
         (memcmp(str, ts->c_str(), l * sizeof(char)) == 0)) {
-      if (isdead(G(L), o))  /* string is dead (but was not collected yet)? */
+      if (isdead(o))  /* string is dead (but was not collected yet)? */
         changewhite(o);  /* resurrect it */
       return ts;
     }

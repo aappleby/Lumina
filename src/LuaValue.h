@@ -141,7 +141,7 @@ struct TValue {
 /* Macros for internal tests */
 #define righttt(obj)		(ttypenv(obj) == gcvalue(obj)->tt)
 
-#define checkliveness(g,obj) assert(!iscollectable(obj) || (righttt(obj) && !isdead(g,gcvalue(obj))))
+#define checkliveness(obj) assert(!iscollectable(obj) || (righttt(obj) && !isdead(gcvalue(obj))))
 
 
 /* Macros to set values */
@@ -170,46 +170,45 @@ struct TValue {
 #define setsvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TSTRING)); \
-    checkliveness(G(L),io); }
+    checkliveness(io); }
 
 #define setuvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TUSERDATA)); \
-    checkliveness(G(L),io); }
+    checkliveness(io); }
 
 #define setthvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TTHREAD)); \
-    checkliveness(G(L),io); }
+    checkliveness(io); }
 
 #define setclLvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TLCL)); \
-    checkliveness(G(L),io); }
+    checkliveness(io); }
 
 #define setclCvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TCCL)); \
-    checkliveness(G(L),io); }
+    checkliveness(io); }
 
 #define sethvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TTABLE)); \
-    checkliveness(G(L),io); }
+    checkliveness(io); }
 
 #define setptvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TPROTO)); \
-    checkliveness(G(L),io); }
+    checkliveness(io); }
 
 #define setdeadvalue(obj)	settt_(obj, LUA_TDEADKEY)
 
 
-// can't remove L here yet
-#define setobj(L,obj1,obj2) \
-	{ THREAD_CHECK(L); const TValue *io2=(obj2); TValue *io1=(obj1); \
+#define setobj(obj1,obj2) \
+	{ const TValue *io2=(obj2); TValue *io1=(obj1); \
 	  io1->bytes = io2->bytes; io1->tt_ = io2->tt_; \
-	  checkliveness(G(L),io1); }
+	  checkliveness(io1); }
 
 
 #define luai_checknum(L,o,c)	{ /* empty */ }

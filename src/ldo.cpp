@@ -93,7 +93,7 @@ static void seterrorobj (lua_State *L, int errcode, StkId oldtop) {
       break;
     }
     default: {
-      setobj(L, oldtop, L->top - 1);  /* error message on current top */
+      setobj(oldtop, L->top - 1);  /* error message on current top */
       break;
     }
   }
@@ -110,7 +110,7 @@ l_noret luaD_throw (int errcode) {
   else {  /* thread has no error handler */
     L->status = cast_byte(errcode);  /* mark it as dead */
     if (G(L)->mainthread->errorJmp) {  /* main thread has a handler? */
-      setobj(L, G(L)->mainthread->top++, L->top - 1);  /* copy error obj. */
+      setobj(G(L)->mainthread->top++, L->top - 1);  /* copy error obj. */
       {
         THREAD_CHANGE(G(L)->mainthread);
         luaD_throw(errcode);  /* re-throw in main thread */
@@ -277,7 +277,7 @@ static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
   fixed = L->top - actual;  /* first fixed argument */
   base = L->top;  /* final position of first argument */
   for (i=0; i<nfixargs; i++) {
-    setobj(L, L->top++, fixed + i);
+    setobj(L->top++, fixed + i);
     setnilvalue(fixed + i);
   }
   return base;
@@ -292,10 +292,10 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
   if (!ttisfunction(tm))
     luaG_typeerror(func, "call");
   /* Open a hole inside the stack at `func' */
-  for (p = L->top; p > func; p--) setobj(L, p, p-1);
+  for (p = L->top; p > func; p--) setobj(p, p-1);
   incr_top(L);
   func = restorestack(L, funcr);  /* previous call may change stack */
-  setobj(L, func, tm);  /* tag method is the new function to be called */
+  setobj(func, tm);  /* tag method is the new function to be called */
   return func;
 }
 
@@ -384,7 +384,7 @@ int luaD_poscall (lua_State *L, StkId firstResult) {
   L->ci = ci = ci->previous;  /* back to caller */
   /* move results to correct place */
   for (i = wanted; i != 0 && firstResult < L->top; i--)
-    setobj(L, res++, firstResult++);
+    setobj(res++, firstResult++);
   while (i-- > 0)
     setnilvalue(res++);
   L->top = res;

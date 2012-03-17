@@ -136,7 +136,7 @@ static int iscleared (const TValue *o) {
 */
 void luaC_barrier_ (LuaBase *o, LuaBase *v) {
   global_State *g = thread_G;
-  assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
+  assert(isblack(o) && iswhite(v) && !isdead(v) && !isdead(o));
   assert(isgenerational(g) || g->gcstate != GCSpause);
   assert(gch(o)->tt != LUA_TTABLE);
   if (keepinvariant(g))  /* must keep invariant? */
@@ -156,7 +156,7 @@ void luaC_barrier_ (LuaBase *o, LuaBase *v) {
 */
 void luaC_barrierback_ (LuaBase *o) {
   global_State *g = thread_G;
-  assert(isblack(o) && !isdead(g, o) && gch(o)->tt == LUA_TTABLE);
+  assert(isblack(o) && !isdead(o) && gch(o)->tt == LUA_TTABLE);
   black2gray(o);  /* make object gray (again) */
   gco2t(o)->gclist = g->grayagain;
   g->grayagain = o;
@@ -245,7 +245,7 @@ LuaBase *luaC_newobj (int tt, size_t sz, LuaBase **list) {
 ** linked in 'headuv' list.)
 */
 static void reallymarkobject (global_State *g, LuaBase *o) {
-  assert(iswhite(o) && !isdead(g, o));
+  assert(iswhite(o) && !isdead(o));
   white2gray(o);
   switch (gch(o)->tt) {
     case LUA_TSTRING: {
@@ -692,7 +692,7 @@ static void sweepthread (lua_State *L, lua_State *L1) {
 static LuaBase **sweeplist (lua_State *L, LuaBase **p, size_t count) {
   THREAD_CHECK(L);
   global_State *g = G(L);
-  int ow = otherwhite(g);
+  int ow = otherwhite();
   int toclear, toset;  /* bits to clear and to set in all live objects */
   int tostop;  /* stop sweep when this is true */
   l_mem debt = g->GCdebt;  /* current debt */
@@ -787,8 +787,8 @@ static void GCTM (lua_State *L, int propagateerrors) {
     int running  = g->gcrunning;
     L->allowhook = 0;  /* stop debug hooks during GC metamethod */
     g->gcrunning = 0;  /* avoid GC steps */
-    setobj(L, L->top, tm);  /* push finalizer... */
-    setobj(L, L->top + 1, &v);  /* ... and its argument */
+    setobj(L->top, tm);  /* push finalizer... */
+    setobj(L->top + 1, &v);  /* ... and its argument */
     L->top += 2;  /* and (next line) call the finalizer */
     status = luaD_pcall(L, dothecall, NULL, savestack(L, L->top - 2), 0);
     L->allowhook = oldah;  /* restore hooks */
@@ -952,7 +952,7 @@ static void atomic () {
   clearvalues(g->allweak, origall);
   g->sweepstrgc = 0;  /* prepare to sweep strings */
   g->gcstate = GCSsweepstring;
-  g->currentwhite = cast_byte(otherwhite(g));  /* flip current white */
+  g->currentwhite = cast_byte(otherwhite());  /* flip current white */
 }
 
 

@@ -158,7 +158,7 @@ const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n) {
     StkId pos = 0;  /* to avoid warnings */
     name = findlocal(L, ar->i_ci, n, &pos);
     if (name) {
-      setobj(L, L->top, pos);
+      setobj(L->top, pos);
       api_incr_top(L);
     }
   }
@@ -173,7 +173,7 @@ const char *lua_setlocal (lua_State *L, const lua_Debug *ar, int n) {
   const char *name = findlocal(L, ar->i_ci, n, &pos);
   lua_lock(L);
   if (name)
-    setobj(L, pos, L->top - 1);
+    setobj(pos, L->top - 1);
   L->top--;  /* pop value */
   lua_unlock(L);
   return name;
@@ -292,7 +292,7 @@ int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
   cl = ttisclosure(func) ? clvalue(func) : NULL;
   status = auxgetinfo(L, what, ar, cl, ci);
   if (strchr(what, 'f')) {
-    setobj(L, L->top, func);
+    setobj(L->top, func);
     incr_top(L);
   }
   if (strchr(what, 'L'))
@@ -573,8 +573,8 @@ l_noret luaG_errormsg () {
   if (L->errfunc != 0) {  /* is there an error handling function? */
     StkId errfunc = restorestack(L, L->errfunc);
     if (!ttisfunction(errfunc)) luaD_throw(LUA_ERRERR);
-    setobj(L, L->top, L->top - 1);  /* move argument */
-    setobj(L, L->top - 1, errfunc);  /* push function */
+    setobj(L->top, L->top - 1);  /* move argument */
+    setobj(L->top - 1, errfunc);  /* push function */
     incr_top(L);
     luaD_call(L, L->top - 2, 1, 0);  /* call it */
   }

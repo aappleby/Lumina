@@ -89,9 +89,9 @@
    a GC list, its old bit must be cleared */
 #define resetoldbit(o)	resetbit((o)->marked, OLDBIT)
 
-#define otherwhite(g)	(g->currentwhite ^ WHITEBITS)
+#define otherwhite()	(thread_G->currentwhite ^ WHITEBITS)
 #define isdeadm(ow,m)	(!(((m) ^ WHITEBITS) & (ow)))
-#define isdead(g,v)	isdeadm(otherwhite(g), (v)->marked)
+#define isdead(v)	isdeadm(otherwhite(), (v)->marked)
 
 #define changewhite(x)	((x)->marked ^= WHITEBITS)
 #define gray2black(x)	l_setbit((x)->marked, BLACKBIT)

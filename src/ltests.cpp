@@ -43,7 +43,7 @@ static void setnameval (lua_State *L, const char *name, int val) {
 
 static void pushobject (lua_State *L, const TValue *o) {
   THREAD_CHECK(L);
-  setobj(L, L->top, o);
+  setobj(L->top, o);
   api_incr_top(L);
 }
 
@@ -64,7 +64,7 @@ static int tpanic (lua_State *L) {
 
 
 static int testobjref1 (global_State *g, LuaBase *f, LuaBase *t) {
-  if (isdead(g,t)) return 0;
+  if (isdead(t)) return 0;
   if (isgenerational(g) || !issweepphase(g))
     return !isblack(f) || !iswhite(t);
   else return 1;
@@ -77,7 +77,7 @@ static void printobj (global_State *g, LuaBase *o) {
   for (p = g->allgc; p != o && p != NULL; p = gch(p)->next) i++;
   if (p == NULL) i = -1;
   printf("%d:%s(%p)-%c(%02X)", i, ttypename(gch(o)->tt), (void *)o,
-           isdead(g,o)?'d':isblack(o)?'b':iswhite(o)?'w':'g', gch(o)->marked);
+           isdead(o)?'d':isblack(o)?'b':iswhite(o)?'w':'g', gch(o)->marked);
 }
 
 
@@ -187,7 +187,7 @@ static void checkstack (global_State *g, lua_State *L1) {
   StkId o;
   CallInfo *ci;
   LuaBase *uvo;
-  assert(!isdead(g, obj2gco(L1)));
+  assert(!isdead(obj2gco(L1)));
   for (uvo = L1->openupval; uvo != NULL; uvo = gch(uvo)->next) {
     UpVal *uv = gco2uv(uvo);
     assert(uv->v != &uv->value);  /* must be open */
@@ -199,14 +199,14 @@ static void checkstack (global_State *g, lua_State *L1) {
   }
   if (L1->stack) {
     for (o = L1->stack; o < L1->top; o++)
-      checkliveness(g, o);
+      checkliveness(o);
   }
   else assert(L1->stacksize == 0);
 }
 
 
 static void checkobject (global_State *g, LuaBase *o) {
-  if (isdead(g, o))
+  if (isdead(o))
     assert(issweepphase(g));
   else {
     if (g->gcstate == GCSpause && !isgenerational(g))
@@ -306,7 +306,7 @@ int lua_checkmemory (lua_State *L) {
     assert(!iswhite(obj2gco(g->mainthread)));
     assert(!iswhite(gcvalue(&g->l_registry)));
   }
-  assert(!isdead(g, gcvalue(&g->l_registry)));
+  assert(!isdead(gcvalue(&g->l_registry)));
   checkstack(g, g->mainthread);
   resetbit(g->mainthread->marked, TESTGRAYBIT);
   /* check 'allgc' list */
@@ -319,7 +319,7 @@ int lua_checkmemory (lua_State *L) {
   /* check 'finobj' list */
   checkold(g, g->finobj);
   for (o = g->finobj; o != NULL; o = gch(o)->next) {
-    assert(!isdead(g, o) && testbit(o->marked, SEPARATED));
+    assert(!isdead(o) && testbit(o->marked, SEPARATED));
     assert(gch(o)->tt == LUA_TUSERDATA ||
                gch(o)->tt == LUA_TTABLE);
     checkobject(g, o);
@@ -328,7 +328,7 @@ int lua_checkmemory (lua_State *L) {
   checkold(g, g->tobefnz);
   for (o = g->tobefnz; o != NULL; o = gch(o)->next) {
     assert(!iswhite(o));
-    assert(!isdead(g, o) && testbit(o->marked, SEPARATED));
+    assert(!isdead(o) && testbit(o->marked, SEPARATED));
     assert(gch(o)->tt == LUA_TUSERDATA ||
                gch(o)->tt == LUA_TTABLE);
   }
@@ -337,7 +337,7 @@ int lua_checkmemory (lua_State *L) {
     assert(uv->unext->uprev == uv && uv->uprev->unext == uv);
     assert(uv->v != &uv->value);  /* must be open */
     assert(!isblack(obj2gco(uv)));  /* open upvalues are never black */
-    if (isdead(g, obj2gco(uv)))
+    if (isdead(obj2gco(uv)))
       assert(issweepphase(g));
     else
       checkvalref(g, obj2gco(uv), uv->v);
