@@ -176,7 +176,11 @@ void luaX_setinput (lua_State *L, LexState *ls, ZIO *z, TString *source,
   ls->source = source;
   ls->envn = luaS_new(L, LUA_ENV);  /* create env name */
   luaS_fix(ls->envn);  /* never collect this name */
-	ls->buff->buffer = (char*)luaM_reallocv(ls->buff->buffer, ls->buff->buffsize, LUA_MINBUFFER, sizeof(char));
+  if(ls->buff->buffer) {
+	  ls->buff->buffer = (char*)luaM_reallocv(ls->buff->buffer, ls->buff->buffsize, LUA_MINBUFFER, sizeof(char));
+  } else {
+    ls->buff->buffer = (char*)luaM_alloc(LUA_MINBUFFER * sizeof(char));
+  }
 	ls->buff->buffsize = LUA_MINBUFFER;
 }
 

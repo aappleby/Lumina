@@ -71,7 +71,11 @@ char *luaZ_openspace (lua_State *L, Mbuffer *buff, size_t n) {
   if (n > buff->buffsize) {
     if (n < LUA_MINBUFFER) n = LUA_MINBUFFER;
 
-    buff->buffer = (char*)luaM_reallocv(buff->buffer, buff->buffsize, n, sizeof(char));
+    if(buff->buffer) {
+      buff->buffer = (char*)luaM_reallocv(buff->buffer, buff->buffsize, n, sizeof(char));
+    } else {
+      buff->buffer = (char*)luaM_alloc(n * sizeof(char));
+    }
     buff->buffsize = n;
   }
   return buff->buffer;

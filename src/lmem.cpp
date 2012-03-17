@@ -220,12 +220,18 @@ void *luaM_growaux_ (void *block, int& size, size_t size_elems, int limit, const
     if (newsize < MINSIZEARRAY)
       newsize = MINSIZEARRAY;  /* minimum size */
   }
-  newblock = luaM_reallocv(block, size, newsize, size_elems);
+  if(block) {
+    newblock = luaM_reallocv(block, size, newsize, size_elems);
+  } else {
+    newblock = luaM_alloc(newsize * size_elems);
+  }
   size = newsize;  /* update only when everything else is OK */
   return newblock;
 }
 
 void* luaM_reallocv(void* block, size_t osize, size_t nsize, size_t esize) {
+  //assert(block);
+  //assert(nsize);
   return luaM_realloc_(block, osize*esize, nsize*esize, 0);
 }
 
@@ -242,5 +248,5 @@ void* luaM_alloc(size_t size) {
 }
 
 void* luaM_allocv(size_t n, size_t size) {
-  return luaM_reallocv(NULL, 0, n, size);
+  return luaM_alloc_(n*size, 0);
 }

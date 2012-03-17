@@ -26,7 +26,11 @@ void luaS_resize (lua_State *L, int newsize) {
   /* cannot resize while GC is traversing strings */
   luaC_runtilstate(L, ~bitmask(GCSsweepstring));
   if (newsize > tb->size) {
-    tb->hash = (LuaBase**)luaM_reallocv(tb->hash, tb->size, newsize, sizeof(LuaBase*));
+    if(tb->hash) {
+      tb->hash = (LuaBase**)luaM_reallocv(tb->hash, tb->size, newsize, sizeof(LuaBase*));
+    } else {
+      tb->hash = (LuaBase**)luaM_alloc(newsize * sizeof(LuaBase*));
+    }
     for (i = tb->size; i < newsize; i++) tb->hash[i] = NULL;
   }
   /* rehash */
