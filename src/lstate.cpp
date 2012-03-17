@@ -215,7 +215,7 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
     assert(L1->openupval == NULL);
     freestack(L1);
   }
-  luaM_free(L1, sizeof(lua_State), LUA_TTHREAD);
+  luaM_delobject(L1, sizeof(lua_State), LUA_TTHREAD);
 }
 
 

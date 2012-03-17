@@ -391,7 +391,7 @@ void luaH_free (Table *t) {
     luaM_free(t->node, sizenode(t) * sizeof(Node), 0);
   }
   luaM_free(t->array, t->sizearray * sizeof(TValue), 0);
-  luaM_free(t, sizeof(Table), LUA_TTABLE);
+  luaM_delobject(t, sizeof(Table), LUA_TTABLE);
 }
 
 

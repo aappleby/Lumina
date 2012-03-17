@@ -94,7 +94,7 @@ void luaF_freeupval (lua_State *L, UpVal *uv) {
   THREAD_CHECK(L);
   if (uv->v != &uv->value)  /* is it open? */
     unlinkupval(uv);  /* remove from open list */
-  luaM_free(uv, sizeof(UpVal), LUA_TUPVAL);  /* free upvalue */
+  luaM_delobject(uv, sizeof(UpVal), LUA_TUPVAL);  /* free upvalue */
 }
 
 
@@ -155,7 +155,7 @@ void luaF_freeproto (lua_State *L, Proto *f) {
   luaM_free(f->lineinfo, f->sizelineinfo * sizeof(int), 0);
   luaM_free(f->locvars, f->sizelocvars * sizeof(LocVar), 0);
   luaM_free(f->upvalues, f->sizeupvalues * sizeof(Upvaldesc), 0);
-  luaM_free(f, sizeof(Proto), LUA_TPROTO);
+  luaM_delobject(f, sizeof(Proto), LUA_TPROTO);
 }
 
 
@@ -164,10 +164,10 @@ void luaF_freeclosure (lua_State *L, Closure *c) {
 
   if(c->isC) {
     int size = sizeCclosure(c->nupvalues);
-    luaM_free(c, size, LUA_TFUNCTION);
+    luaM_delobject(c, size, LUA_TFUNCTION);
   } else {
     int size = sizeLclosure(c->nupvalues);
-    luaM_free(c, size, LUA_TFUNCTION);
+    luaM_delobject(c, size, LUA_TFUNCTION);
   }
 }
 

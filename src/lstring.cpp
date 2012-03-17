@@ -127,7 +127,8 @@ Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
 
 void luaS_freestr (lua_State* L, TString* ts) {
   THREAD_CHECK(L);
-  luaM_free(ts, sizestring(ts), LUA_TSTRING);
+  G(L)->strt->nuse--;
+  luaM_delobject(ts, sizestring(ts), LUA_TSTRING);
 }
 
 void luaS_initstrt(stringtable * strt) {

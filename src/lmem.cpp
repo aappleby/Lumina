@@ -225,9 +225,17 @@ void * luaM_newobject(int tag, size_t size) {
   return luaM_alloc_(size, tag);
 }
 
+void luaM_delobject(void * blob, size_t size, int type) {
+//  assert(blob);
+//  assert(size);
+  assert(type);
+  luaM_free_(blob, size, type);
+}
+
 void luaM_free(void * blob, size_t size, int type) {
 //  assert(blob);
 //  assert(size);
+  assert(type == 0);
   luaM_free_(blob, size, type);
 }
 
