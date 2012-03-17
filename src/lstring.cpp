@@ -22,7 +22,7 @@
 void luaS_resize (lua_State *L, int newsize) {
   THREAD_CHECK(L);
   int i;
-  stringtable *tb = &G(L)->strt;
+  stringtable *tb = G(L)->strt;
   /* cannot resize while GC is traversing strings */
   luaC_runtilstate(L, ~bitmask(GCSsweepstring));
   if (newsize > tb->size) {
@@ -57,7 +57,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   size_t totalsize;  /* total size of TString object */
   LuaBase **list;  /* (pointer to) list where it will be inserted */
   TString *ts;
-  stringtable *tb = &G(L)->strt;
+  stringtable *tb = G(L)->strt;
   if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
     luaM_toobig(L);
   if (tb->nuse >= cast(uint32_t, tb->size) && tb->size <= MAX_INT/2)
@@ -84,7 +84,7 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   size_t l1;
   for (l1=l; l1>=step; l1-=step)  /* compute hash */
     h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
-  for (o = G(L)->strt.hash[lmod(h, G(L)->strt.size)];
+  for (o = G(L)->strt->hash[lmod(h, G(L)->strt->size)];
        o != NULL;
        o = gch(o)->next) {
     TString *ts = gco2ts(o);

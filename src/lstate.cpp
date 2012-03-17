@@ -171,15 +171,18 @@ static void close_state (lua_State *L) {
   global_State *g = G(L);
   luaF_close(L, L->stack);  /* close all upvalues for this thread */
   luaC_freeallobjects(L);  /* collect all objects */
-  luaS_freestrt(L, &G(L)->strt);
+  luaS_freestrt(L, G(L)->strt);
+  delete G(L)->strt;
+  G(L)->strt = NULL;
 
 	g->buff.buffer = (char*)luaM_reallocv(L, g->buff.buffer, g->buff.buffsize, 0, sizeof(char));
 	g->buff.buffsize = 0;
 
   freestack(L);
   assert(gettotalbytes(g) == (sizeof(lua_State) + sizeof(global_State)));
-  default_alloc(L, sizeof(lua_State), 0, 0);  /* free main block */
   default_alloc(g, sizeof(global_State), 0, 0);
+  L->l_G = NULL;
+  default_alloc(L, sizeof(lua_State), 0, 0);  /* free main block */
 }
 
 
@@ -237,7 +240,8 @@ lua_State *lua_newstate () {
   g->uvhead.unext = &g->uvhead;
   g->gcrunning = 0;  /* no GC while building state */
   g->lastmajormem = 0;
-  luaS_initstrt(&g->strt);
+  g->strt = new stringtable();
+  luaS_initstrt(g->strt);
   setnilvalue(&g->l_registry);
   luaZ_initbuffer(L, &g->buff);
   g->panic = NULL;

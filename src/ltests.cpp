@@ -585,7 +585,7 @@ static int table_query (lua_State *L) {
 
 static int string_query (lua_State *L) {
   THREAD_CHECK(L);
-  stringtable *tb = &G(L)->strt;
+  stringtable *tb = G(L)->strt;
   int s = luaL_optint(L, 2, 0) - 1;
   if (s==-1) {
     lua_pushinteger(L ,tb->nuse);

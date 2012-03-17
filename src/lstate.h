@@ -105,7 +105,7 @@ public:
   size_t totalbytes;  /* number of bytes currently allocated - GCdebt */
   l_mem GCdebt;  /* bytes allocated not yet compensated by the collector */
   size_t lastmajormem;  /* memory in use after last major collection */
-  stringtable strt;  /* hash table for strings */
+  stringtable* strt;  /* hash table for strings */
   TValue l_registry;
   uint8_t currentwhite;
   uint8_t gcstate;  /* state of garbage collector */

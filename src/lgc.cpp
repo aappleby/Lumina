@@ -653,7 +653,7 @@ static void freeobj (lua_State *L, LuaBase *o) {
     case LUA_TTHREAD: luaE_freethread(L, gco2th(o)); break;
     case LUA_TUSERDATA: luaM_freemem(L, o, sizeudata(gco2u(o))); break;
     case LUA_TSTRING: {
-      G(L)->strt.nuse--;
+      G(L)->strt->nuse--;
       luaS_freestr(L, gco2ts(o));
       break;
     }
@@ -751,8 +751,8 @@ static void checkSizes (lua_State *L) {
   THREAD_CHECK(L);
   global_State *g = G(L);
   if (g->gckind != KGC_EMERGENCY) {  /* do not change sizes in emergency */
-    int hs = g->strt.size / 2;  /* half the size of the string table */
-    if (g->strt.nuse < cast(uint32_t, hs))  /* using less than that half? */
+    int hs = g->strt->size / 2;  /* half the size of the string table */
+    if (g->strt->nuse < cast(uint32_t, hs))  /* using less than that half? */
       luaS_resize(L, hs);  /* halve its size */
     luaM_reallocv(L, g->buff.buffer, g->buff.buffsize, 0, sizeof(char));
     g->buff.buffer = NULL;
@@ -925,9 +925,9 @@ void luaC_freeallobjects (lua_State *L) {
   g->gckind = KGC_NORMAL;
   sweepwholelist(L, &g->finobj);  /* finalizers can create objs. in 'finobj' */
   sweepwholelist(L, &g->allgc);
-  for (i = 0; i < g->strt.size; i++)  /* free all string lists */
-    sweepwholelist(L, &g->strt.hash[i]);
-  assert(g->strt.nuse == 0);
+  for (i = 0; i < g->strt->size; i++)  /* free all string lists */
+    sweepwholelist(L, &g->strt->hash[i]);
+  assert(g->strt->nuse == 0);
 }
 
 
@@ -990,8 +990,8 @@ static l_mem singlestep (lua_State *L) {
       }
     }
     case GCSsweepstring: {
-      if (g->sweepstrgc < g->strt.size) {
-        sweepwholelist(L, &g->strt.hash[g->sweepstrgc++]);
+      if (g->sweepstrgc < g->strt->size) {
+        sweepwholelist(L, &g->strt->hash[g->sweepstrgc++]);
         return GCSWEEPCOST;
       }
       else {  /* no more strings to sweep */
