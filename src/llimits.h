@@ -21,8 +21,7 @@
 
 
 #define check_exp(c,e)		(assert(c), (e))
-#define luai_apicheck(L,e)	assert(e)
-#define api_check(l,e,msg)	luai_apicheck(l,(e) && msg)
+#define api_check(e,msg)	assert((e) && msg)
 #define UNUSED(x)	((void)(x))	/* to avoid warnings */
 
 

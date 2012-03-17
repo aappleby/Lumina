@@ -178,7 +178,7 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
   assert((realosize == 0) == (block == NULL));
   newblock = default_alloc(block, osize, nsize, osize);
   if (newblock == NULL && nsize > 0) {
-    api_check(L, nsize > realosize, "realloc cannot fail when shrinking a block");
+    api_check(nsize > realosize, "realloc cannot fail when shrinking a block");
     if (g->gcrunning) {
       luaC_fullgc(L, 1);  /* try to free some memory... */
       newblock = default_alloc(block, osize, nsize, osize);  /* try again */
