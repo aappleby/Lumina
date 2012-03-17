@@ -16,7 +16,7 @@
 #include "lobject.h"
 #include "lstate.h"
 #include "lstring.h"
-
+#include "ldebug.h"
 
 
 void luaS_resize (lua_State *L, int newsize) {
@@ -59,7 +59,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   TString *ts;
   stringtable *tb = G(L)->strt;
   if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
-    luaM_toobig();
+    luaG_runerror("memory allocation error: string too big");
   if (tb->nuse >= cast(uint32_t, tb->size) && tb->size <= MAX_INT/2)
     luaS_resize(L, tb->size*2);  /* too crowded */
   totalsize = sizeof(TString) + ((l + 1) * sizeof(char));
@@ -110,7 +110,7 @@ Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
   THREAD_CHECK(L);
   Udata *u;
   if (s > MAX_SIZET - sizeof(Udata))
-    luaM_toobig();
+    luaG_runerror("memory allocation error: udata too big");
   LuaBase* o = luaC_newobj(LUA_TUSERDATA, sizeof(Udata) + s, NULL);
   u = gco2u(o);
   u->len = s;
@@ -123,7 +123,7 @@ Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
 
 void luaS_freestr (lua_State* L, TString* ts) {
   THREAD_CHECK(L);
-  luaM_freemem(ts, sizestring(ts));
+  luaM_free(ts, sizestring(ts));
 }
 
 void luaS_initstrt(stringtable * strt) {
@@ -134,5 +134,5 @@ void luaS_initstrt(stringtable * strt) {
 
 void luaS_freestrt (lua_State* L, stringtable* strt) {
   THREAD_CHECK(L);
-  luaM_freemem(strt->hash, strt->size * sizeof(LuaBase*));
+  luaM_free(strt->hash, strt->size * sizeof(LuaBase*));
 }

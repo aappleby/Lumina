@@ -17,6 +17,10 @@
 struct Memcontrol {
   Memcontrol();
 
+  bool alloc(size_t size, int type);
+  bool free(size_t size, int type);
+  bool canAlloc(size_t size);
+
   size_t numblocks;
   size_t total;
   size_t maxmem;
@@ -30,7 +34,7 @@ extern Memcontrol l_memcontrol;
 
 void* luaM_reallocv(void* block, size_t osize, size_t nsize, size_t esize);
 
-void luaM_freemem(void * blob, size_t size);
+void luaM_free(void * blob, size_t size);
 
 void* luaM_alloc(size_t size);
 
@@ -38,12 +42,10 @@ void* luaM_allocv(size_t n, size_t size);
 
 void* luaM_newobject(int tag, size_t size);
 
-l_noret luaM_toobig ();
-
 /* not to be called directly */
 void *luaM_growaux_ (void *block, int& size, size_t size_elem, int limit, const char *what);
 
-void* default_alloc(void *ptr, size_t osize, size_t nsize, int type);
+void* default_realloc(void *ptr, size_t osize, size_t nsize, int type);
 
 #endif
 

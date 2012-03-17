@@ -326,7 +326,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   if (!isdummy(nold)) {
      /* free old array */
     size_t s = twoto(oldhsize);
-    luaM_freemem(nold, s * sizeof(Node));
+    luaM_free(nold, s * sizeof(Node));
   }
 }
 
@@ -379,10 +379,10 @@ Table *luaH_new () {
 
 void luaH_free (Table *t) {
   if (!isdummy(t->node)) {
-    luaM_freemem(t->node, sizenode(t) * sizeof(Node));
+    luaM_free(t->node, sizenode(t) * sizeof(Node));
   }
-  luaM_freemem(t->array, t->sizearray * sizeof(TValue));
-  luaM_freemem(t, sizeof(Table));
+  luaM_free(t->array, t->sizearray * sizeof(TValue));
+  luaM_free(t, sizeof(Table));
 }
 
 

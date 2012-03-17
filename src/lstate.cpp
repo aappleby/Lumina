@@ -68,7 +68,7 @@ void luaE_freeCI (lua_State *L) {
   ci->next = NULL;
   while ((ci = next) != NULL) {
     next = ci->next;
-    luaM_freemem(ci, sizeof(CallInfo));
+    luaM_free(ci, sizeof(CallInfo));
   }
 }
 
@@ -100,7 +100,7 @@ static void freestack (lua_State *L) {
     return;  /* stack not completely built yet */
   L->ci = &L->base_ci;  /* free the entire 'ci' list */
   luaE_freeCI(L);
-  luaM_freemem(L->stack, L->stacksize * sizeof(TValue));
+  luaM_free(L->stack, L->stacksize * sizeof(TValue));
 }
 
 
@@ -180,9 +180,9 @@ static void close_state (lua_State *L) {
 
   freestack(L);
   assert(gettotalbytes(g) == (sizeof(lua_State) + sizeof(global_State)));
-  default_alloc(g, sizeof(global_State), 0, 0);
+  default_realloc(g, sizeof(global_State), 0, 0);
   L->l_G = NULL;
-  default_alloc(L, sizeof(lua_State), 0, 0);  /* free main block */
+  default_realloc(L, sizeof(lua_State), 0, 0);  /* free main block */
 }
 
 
@@ -214,7 +214,7 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
     assert(L1->openupval == NULL);
     freestack(L1);
   }
-  luaM_freemem(L1, sizeof(lua_State));
+  luaM_free(L1, sizeof(lua_State));
 }
 
 
@@ -222,11 +222,11 @@ lua_State *lua_newstate () {
   int i;
   lua_State *L;
   global_State *g;
-  L = (lua_State*)default_alloc(NULL, LUA_TTHREAD, sizeof(lua_State), 0);
+  L = (lua_State*)default_realloc(NULL, LUA_TTHREAD, sizeof(lua_State), 0);
   if(L == NULL) { return NULL; }
-  g = (global_State*)default_alloc(NULL, 0, sizeof(global_State), 0);
+  g = (global_State*)default_realloc(NULL, 0, sizeof(global_State), 0);
   if(g == NULL) {
-    default_alloc(L, sizeof(lua_State), 0, 0);
+    default_realloc(L, sizeof(lua_State), 0, 0);
     return NULL;
   }
   L->next = NULL;

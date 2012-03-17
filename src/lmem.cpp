@@ -20,6 +20,8 @@
 #include "lobject.h"
 #include "lstate.h"
 
+#define MINSIZEARRAY	4
+
 
 /*
 Memcontrol l_memcontrol =
@@ -38,9 +40,28 @@ Memcontrol::Memcontrol() {
   memset(objcount2, 0, sizeof(objcount2));
 
   char *limit = getenv("MEMLIMIT");  /* initialize memory limit */
-  l_memcontrol.memlimit = limit ? strtoul(limit, NULL, 10) : ULONG_MAX;
+  memlimit = limit ? strtoul(limit, NULL, 10) : ULONG_MAX;
 }
 
+bool Memcontrol::free(size_t size, int type) {
+  numblocks--;
+  total -= size;
+  objcount[type]--;
+  return true;
+}
+
+bool Memcontrol::alloc(size_t size, int type) {
+  numblocks++;
+  total += (uint32_t)size;
+  objcount[type]++;
+  objcount2[type]++;
+  maxmem = std::max(maxmem, total);
+  return true;
+}
+
+bool Memcontrol::canAlloc(size_t size) {
+  return total+size <= memlimit;
+}
 
 /*
 ** {======================================================================
@@ -49,33 +70,14 @@ Memcontrol::Memcontrol() {
 */
 
 #define MARK		0x55  /* 01010101 (a nice pattern) */
+#define MARKSIZE	16  /* size of marks after each block */
 
 struct Header {
   size_t size;
   int type;
 };
 
-/* full memory check */
-#define MARKSIZE	16  /* size of marks after each block */
-
-void checkMark(void* blob, int val, int size) {
-  uint8_t* buf = (uint8_t*)blob;
-  for (int i = 0; i < size; i++) assert(buf[i] == val);
-}
-
-void freeblock (Header *block) {
-  if (block == NULL) return;
-
-  l_memcontrol.numblocks--;
-  l_memcontrol.total -= block->size;
-  l_memcontrol.objcount[block->type]--;
-
-  uint8_t* buf = reinterpret_cast<uint8_t*>(block);
-  checkMark(buf + sizeof(Header) + block->size, MARK, MARKSIZE);
-  memset(buf, -MARK, sizeof(Header) + block->size + MARKSIZE);
-
-  free(block);
-}
+//-----------------------------------------------------------------------------
 
 Header* allocblock (size_t size, int type) {
   uint8_t* buf = (uint8_t*)malloc(sizeof(Header) + size + MARKSIZE);
@@ -87,24 +89,52 @@ Header* allocblock (size_t size, int type) {
   memset(buf + sizeof(Header), -MARK, size);
   memset(buf + sizeof(Header) + size, MARK, MARKSIZE);
 
-  l_memcontrol.numblocks++;
-  l_memcontrol.total += (uint32_t)size;
-  l_memcontrol.objcount[type]++;
-  l_memcontrol.objcount2[type]++;
-  l_memcontrol.maxmem = std::max(l_memcontrol.maxmem, l_memcontrol.total);
+  l_memcontrol.alloc(size,type);
 
   return block;
 }
 
+//----------
 
-void *debug_realloc (void* blob, size_t oldsize, size_t newsize, int type) {
+void freeblock (Header *block) {
+  if (block == NULL) return;
+
+  l_memcontrol.free(block->size, block->type);
+
+  uint8_t* buf = reinterpret_cast<uint8_t*>(block);
+  uint8_t* mark = buf + sizeof(Header) + block->size;
+  for (int i = 0; i < MARKSIZE; i++) assert(mark[i] == MARK);
+  memset(buf, -MARK, sizeof(Header) + block->size + MARKSIZE);
+
+  free(block);
+}
+
+//----------
+
+Header* resizeblock (Header* oldblock, size_t newsize) {
+  Header* newblock = allocblock(newsize, oldblock->type);
+  if(newblock == NULL) return NULL;
+
+  memcpy(newblock + 1, oldblock + 1, std::min(oldblock->size,newsize));
+  freeblock(oldblock);
+
+  return newblock;
+}
+
+//-----------------------------------------------------------------------------
+
+void* default_alloc(size_t size, int type) {
+  if(size == 0) return NULL;
+  if (!l_memcontrol.canAlloc(size)) return NULL;
+  assert(type >= 0);
+  assert(type < 256);
+  Header* newblock = allocblock(size, type);
+  return newblock ? newblock + 1 : NULL;
+}
+
+void* default_realloc (void* blob, size_t oldsize, size_t newsize, int type) {
   if (blob == NULL) {
-    if(newsize == 0) return NULL;
-    if (l_memcontrol.total+newsize > l_memcontrol.memlimit) return NULL;
-    assert(type >= 0);
-    assert(type < 256);
-    Header* newblock = allocblock(newsize, type);
-    return newblock ? newblock + 1 : NULL;
+    return default_alloc(newsize,type);
   }
 
   Header* oldblock = reinterpret_cast<Header*>(blob) - 1;
@@ -115,7 +145,7 @@ void *debug_realloc (void* blob, size_t oldsize, size_t newsize, int type) {
     return NULL;
   }
 
-  if (l_memcontrol.total+newsize-oldsize > l_memcontrol.memlimit) {
+  if (!l_memcontrol.canAlloc(newsize-oldsize)) {
     return NULL;
   }
 
@@ -128,8 +158,54 @@ void *debug_realloc (void* blob, size_t oldsize, size_t newsize, int type) {
   return newblock + 1;
 }
 
-#define MINSIZEARRAY	4
+//-----------------------------------------------------------------------------
 
+void *luaM_alloc_ (size_t size, int type) {
+  if(size == 0) return NULL;
+
+  void* newblock = default_realloc(NULL, 0, size, type);
+  if (newblock == NULL) {
+    if (thread_G->gcrunning) {
+      luaC_fullgc(1);  /* try to free some memory... */
+      newblock = default_realloc(NULL, 0, size, type);  /* try again */
+    }
+    if (newblock == NULL)
+      luaD_throw(LUA_ERRMEM);
+  }
+
+  thread_G->GCdebt += size;
+
+  return newblock;
+}
+
+void luaM_free_ (void *block, size_t size) {
+  if(block == NULL) return;
+  default_realloc(block, size, 0, 0);
+  thread_G->GCdebt -= size;
+}
+
+void *luaM_realloc_ (void *block, size_t osize, size_t nsize, int type) {
+  void *newblock;
+  global_State *g = thread_G;
+  size_t realosize = (block) ? osize : 0;
+  assert((realosize == 0) == (block == NULL));
+  newblock = default_realloc(block, osize, nsize, type);
+  if (newblock == NULL && nsize > 0) {
+    api_check(nsize > realosize, "realloc cannot fail when shrinking a block");
+    if (g->gcrunning) {
+      luaC_fullgc(1);  /* try to free some memory... */
+      newblock = default_realloc(block, osize, nsize, type);  /* try again */
+    }
+    if (newblock == NULL)
+      luaD_throw(LUA_ERRMEM);
+  }
+  assert((nsize == 0) == (newblock == NULL));
+  g->GCdebt = (g->GCdebt + nsize) - realosize;
+
+  return newblock;
+}
+
+//-----------------------------------------------------------------------------
 
 void *luaM_growaux_ (void *block, int& size, size_t size_elems, int limit, const char *what) {
   void *newblock;
@@ -149,60 +225,16 @@ void *luaM_growaux_ (void *block, int& size, size_t size_elems, int limit, const
   return newblock;
 }
 
-
-l_noret luaM_toobig () {
-  luaG_runerror("memory allocation error: block too big");
-}
-
-void* default_alloc(void *ptr, size_t osize, size_t nsize, int type) {
-#ifdef LUA_DEBUG
-  return debug_realloc(ptr,osize,nsize,type);
-#else
-  (void)osize;
-  return realloc(ptr,nsize);
-#endif
-}
-
-
-/*
-** generic allocation routine.
-*/
-void *luaM_realloc_ (void *block, size_t osize, size_t nsize, int type) {
-  void *newblock;
-  global_State *g = thread_G;
-  size_t realosize = (block) ? osize : 0;
-  assert((realosize == 0) == (block == NULL));
-  newblock = default_alloc(block, osize, nsize, type);
-  if (newblock == NULL && nsize > 0) {
-    api_check(nsize > realosize, "realloc cannot fail when shrinking a block");
-    if (g->gcrunning) {
-      luaC_fullgc(1);  /* try to free some memory... */
-      newblock = default_alloc(block, osize, nsize, type);  /* try again */
-    }
-    if (newblock == NULL)
-      luaD_throw(LUA_ERRMEM);
-  }
-  assert((nsize == 0) == (newblock == NULL));
-  g->GCdebt = (g->GCdebt + nsize) - realosize;
-
-  return newblock;
-}
-
 void* luaM_reallocv(void* block, size_t osize, size_t nsize, size_t esize) {
-  if((size_t)(nsize+1) > (MAX_SIZET/esize)) {
-    luaM_toobig();
-    return 0;
-  }
-  
   return luaM_realloc_(block, osize*esize, nsize*esize, 0);
 }
 
 void * luaM_newobject(int tag, size_t size) { 
-  return luaM_realloc_(NULL, tag, size, tag);
+  return luaM_alloc_(size, tag);
 }
 
-void luaM_freemem(void * blob, size_t size) {
-  luaM_realloc_(blob, size, 0, 0);
+void luaM_free(void * blob, size_t size) {
+  luaM_free_(blob, size);
 }
 
 void* luaM_alloc(size_t size) {
