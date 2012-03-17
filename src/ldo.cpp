@@ -694,13 +694,13 @@ int luaD_protectedparser (lua_State *L, ZIO *z, const char *name,
   luaZ_initbuffer(L, &p.buff);
   status = luaD_pcall(L, f_parser, &p, savestack(L, L->top), L->errfunc);
   
-  luaM_free(p.buff.buffer, p.buff.buffsize);
+  luaM_free(p.buff.buffer, p.buff.buffsize, 0);
   p.buff.buffer = NULL;
   p.buff.buffsize = 0;
   
-  luaM_free(p.dyd.actvar.arr, p.dyd.actvar.size * sizeof(Vardesc));
-  luaM_free(p.dyd.gt.arr, p.dyd.gt.size * sizeof(Labeldesc));
-  luaM_free(p.dyd.label.arr, p.dyd.label.size * sizeof(Labeldesc));
+  luaM_free(p.dyd.actvar.arr, p.dyd.actvar.size * sizeof(Vardesc), 0);
+  luaM_free(p.dyd.gt.arr, p.dyd.gt.size * sizeof(Labeldesc), 0);
+  luaM_free(p.dyd.label.arr, p.dyd.label.size * sizeof(Labeldesc), 0);
   
   L->nny--;
   return status;

@@ -68,7 +68,7 @@ void luaE_freeCI (lua_State *L) {
   ci->next = NULL;
   while ((ci = next) != NULL) {
     next = ci->next;
-    luaM_free(ci, sizeof(CallInfo));
+    luaM_free(ci, sizeof(CallInfo), 0);
   }
 }
 
@@ -100,7 +100,7 @@ static void freestack (lua_State *L) {
     return;  /* stack not completely built yet */
   L->ci = &L->base_ci;  /* free the entire 'ci' list */
   luaE_freeCI(L);
-  luaM_free(L->stack, L->stacksize * sizeof(TValue));
+  luaM_free(L->stack, L->stacksize * sizeof(TValue), 0);
 }
 
 
@@ -175,7 +175,7 @@ static void close_state (lua_State *L) {
   delete G(L)->strt;
   G(L)->strt = NULL;
 
-  luaM_free(g->buff.buffer, g->buff.buffsize);
+  luaM_free(g->buff.buffer, g->buff.buffsize, 0);
 	g->buff.buffer = NULL;
 	g->buff.buffsize = 0;
 
@@ -215,7 +215,7 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
     assert(L1->openupval == NULL);
     freestack(L1);
   }
-  luaM_free(L1, sizeof(lua_State));
+  luaM_free(L1, sizeof(lua_State), LUA_TTHREAD);
 }
 
 

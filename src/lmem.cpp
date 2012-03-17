@@ -120,18 +120,6 @@ void freeblock (Header *block) {
   free(block);
 }
 
-//----------
-
-Header* resizeblock (Header* oldblock, size_t newsize) {
-  Header* newblock = allocblock(newsize, oldblock->type);
-  if(newblock == NULL) return NULL;
-
-  memcpy(newblock + 1, oldblock + 1, std::min(oldblock->size,newsize));
-  freeblock(oldblock);
-
-  return newblock;
-}
-
 //-----------------------------------------------------------------------------
 
 void* default_alloc(size_t size, int type) {
@@ -139,8 +127,16 @@ void* default_alloc(size_t size, int type) {
   if (!l_memcontrol.canAlloc(size)) return NULL;
   assert(type >= 0);
   assert(type < 256);
+
   Header* newblock = allocblock(size, type);
   return newblock ? newblock + 1 : NULL;
+}
+
+void default_free(void * blob, size_t size, int type) {
+  Header* oldblock = reinterpret_cast<Header*>(blob) - 1;
+  assert(oldblock->size == size);
+  assert(oldblock->type == type);
+  freeblock(oldblock);
 }
 
 void* default_realloc (void* blob, size_t oldsize, size_t newsize, int type) {
@@ -150,12 +146,6 @@ void* default_realloc (void* blob, size_t oldsize, size_t newsize, int type) {
 
   Header* oldblock = reinterpret_cast<Header*>(blob) - 1;
   assert(oldsize == oldblock->size);
-
-  /*
-  if(oldsize && newsize && (newsize < oldsize) && !l_memcontrol.canAlloc(newsize)) {
-    printf("xxx");
-  }
-  */
 
   if (newsize == 0) {
     freeblock(oldblock);
@@ -195,9 +185,9 @@ void *luaM_alloc_ (size_t size, int type) {
   return newblock;
 }
 
-void luaM_free_ (void *block, size_t size) {
+void luaM_free_ (void *block, size_t size, int type) {
   if(block == NULL) return;
-  default_realloc(block, size, 0, 0);
+  default_free(block, size, type);
   thread_G->GCdebt -= size;
 }
 
@@ -235,10 +225,10 @@ void * luaM_newobject(int tag, size_t size) {
   return luaM_alloc_(size, tag);
 }
 
-void luaM_free(void * blob, size_t size) {
+void luaM_free(void * blob, size_t size, int type) {
 //  assert(blob);
 //  assert(size);
-  luaM_free_(blob, size);
+  luaM_free_(blob, size, type);
 }
 
 void* luaM_alloc(size_t size) {

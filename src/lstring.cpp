@@ -127,7 +127,7 @@ Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
 
 void luaS_freestr (lua_State* L, TString* ts) {
   THREAD_CHECK(L);
-  luaM_free(ts, sizestring(ts));
+  luaM_free(ts, sizestring(ts), LUA_TSTRING);
 }
 
 void luaS_initstrt(stringtable * strt) {
@@ -138,5 +138,5 @@ void luaS_initstrt(stringtable * strt) {
 
 void luaS_freestrt (lua_State* L, stringtable* strt) {
   THREAD_CHECK(L);
-  luaM_free(strt->hash, strt->size * sizeof(LuaBase*));
+  luaM_free(strt->hash, strt->size * sizeof(LuaBase*), 0);
 }

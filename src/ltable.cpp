@@ -319,7 +319,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
     if(nasize) {
       t->array = (TValue*)luaM_reallocv(t->array, oldasize, nasize, sizeof(TValue));
     } else {
-      luaM_free(t->array, oldasize * sizeof(TValue));
+      luaM_free(t->array, oldasize * sizeof(TValue), 0);
       t->array = NULL;
     }
   }
@@ -335,7 +335,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   if (!isdummy(nold)) {
      /* free old array */
     size_t s = twoto(oldhsize);
-    luaM_free(nold, s * sizeof(Node));
+    luaM_free(nold, s * sizeof(Node), 0);
   }
 }
 
@@ -388,10 +388,10 @@ Table *luaH_new () {
 
 void luaH_free (Table *t) {
   if (!isdummy(t->node)) {
-    luaM_free(t->node, sizenode(t) * sizeof(Node));
+    luaM_free(t->node, sizenode(t) * sizeof(Node), 0);
   }
-  luaM_free(t->array, t->sizearray * sizeof(TValue));
-  luaM_free(t, sizeof(Table));
+  luaM_free(t->array, t->sizearray * sizeof(TValue), 0);
+  luaM_free(t, sizeof(Table), LUA_TTABLE);
 }
 
 

@@ -643,7 +643,7 @@ static void freeobj (lua_State *L, LuaBase *o) {
     case LUA_TUPVAL: luaF_freeupval(L, gco2uv(o)); break;
     case LUA_TTABLE: luaH_free(gco2t(o)); break;
     case LUA_TTHREAD: luaE_freethread(L, gco2th(o)); break;
-    case LUA_TUSERDATA: luaM_free(o, sizeudata(gco2u(o))); break;
+    case LUA_TUSERDATA: luaM_free(o, sizeudata(gco2u(o)), LUA_TUSERDATA); break;
     case LUA_TSTRING: {
       G(L)->strt->nuse--;
       luaS_freestr(L, gco2ts(o));
@@ -747,7 +747,7 @@ static void checkSizes (lua_State *L) {
     if (g->strt->nuse < cast(uint32_t, hs))  /* using less than that half? */
       luaS_resize(L, hs);  /* halve its size */
     //luaM_reallocv(g->buff.buffer, g->buff.buffsize, 0, sizeof(char));
-    luaM_free(g->buff.buffer, g->buff.buffsize);
+    luaM_free(g->buff.buffer, g->buff.buffsize, 0);
     g->buff.buffer = NULL;
     g->buff.buffsize = 0;
   }

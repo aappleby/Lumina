@@ -38,7 +38,7 @@ extern Memcontrol l_memcontrol;
 
 void* luaM_reallocv(void* block, size_t osize, size_t nsize, size_t esize);
 
-void luaM_free(void * blob, size_t size);
+void luaM_free(void * blob, size_t size, int type);
 
 void* luaM_alloc(size_t size);
 
