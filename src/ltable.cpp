@@ -320,7 +320,10 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
     if (!ttisnil(gval(old))) {
       /* doesn't need barrier/invalidate cache, as entry was
          already present in the table */
-      setobj(luaH_set(t, gkey(old)), gval(old));
+      TValue* key = gkey(old);
+      TValue* val = gval(old);
+      TValue* n = luaH_set(t, key);
+      setobj(n, val);
     }
   }
   if (!isdummy(nold)) {
