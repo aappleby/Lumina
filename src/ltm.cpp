@@ -35,20 +35,42 @@ const char *const luaT_typenames_[LUA_TOTALTAGS] = {
   "upval"
 };
 
+/* ORDER TM */
+static const char *const luaT_eventname[] = {
+  "__index",
+  "__newindex",
+  "__gc",
+  "__mode",
+  "__len",
+  "__eq",
+  "__add",
+  "__sub",
+  "__mul",
+  "__div",
+  "__mod",
+  "__pow",
+  "__unm",
+  "__lt",
+  "__le",
+  "__concat",
+  "__call"
+};
 
-void luaT_init (lua_State *L) {
-  THREAD_CHECK(L);
-  static const char *const luaT_eventname[] = {  /* ORDER TM */
-    "__index", "__newindex",
-    "__gc", "__mode", "__len", "__eq",
-    "__add", "__sub", "__mul", "__div", "__mod",
-    "__pow", "__unm", "__lt", "__le",
-    "__concat", "__call"
-  };
+const char* ttypename(int tag) {
+  return luaT_typenames_[tag + 1];
+}
+
+const char* objtypename(const TValue* v) {
+  return luaT_typenames_[v->basetype() + 1];
+}
+
+
+
+void luaT_init() {
   int i;
   for (i=0; i<TM_N; i++) {
-    G(L)->tmname[i] = luaS_new(L, luaT_eventname[i]);
-    luaS_fix(G(L)->tmname[i]);  /* never collect these names */
+    thread_G->tmname[i] = luaS_new(thread_L, luaT_eventname[i]);
+    luaS_fix(thread_G->tmname[i]);  /* never collect these names */
   }
 }
 
@@ -60,7 +82,7 @@ void luaT_init (lua_State *L) {
 const TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
   const TValue *tm = luaH_getstr(events, ename);
   assert(event <= TM_EQ);
-  if (ttisnil(tm)) {  /* no tag method? */
+  if (tm->isNil()) {  /* no tag method? */
     events->flags |= cast_byte(1u<<event);  /* cache this fact */
     return NULL;
   }
@@ -68,8 +90,7 @@ const TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
 }
 
 
-const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
-  THREAD_CHECK(L);
+const TValue *luaT_gettmbyobj (const TValue *o, TMS event) {
   Table *mt;
   switch (ttypenv(o)) {
     case LUA_TTABLE:
@@ -79,8 +100,14 @@ const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
       mt = uvalue(o)->metatable;
       break;
     default:
-      mt = G(L)->mt[ttypenv(o)];
+      mt = thread_G->mt[ttypenv(o)];
   }
-  return (mt ? luaH_getstr(mt, G(L)->tmname[event]) : luaO_nilobject);
+  if(mt == NULL) return luaO_nilobject;
+  return luaH_getstr(mt, thread_G->tmname[event]);
 }
 
+const TValue* fasttm ( Table* table, TMS tag) {
+  if(table == NULL) return NULL;
+  if(table->flags & (1<<tag)) return NULL;
+  return luaT_gettm(table, tag, thread_G->tmname[tag]);
+}

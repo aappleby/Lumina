@@ -425,7 +425,7 @@ static void traversestrongtable (global_State *g, Table *h) {
 
 
 static int traversetable (global_State *g, Table *h) {
-  const TValue *mode = gfasttm(g, h->metatable, TM_MODE);
+  const TValue *mode = fasttm(h->metatable, TM_MODE);
   markobject(g, h->metatable);
   if (mode && ttisstring(mode)) {  /* is there a weak mode? */
     int weakkey = (strchr(tsvalue(mode)->c_str(), 'k') != NULL);
@@ -777,7 +777,7 @@ static void GCTM (lua_State *L, int propagateerrors) {
   const TValue *tm;
   TValue v;
   setgcovalue(L, &v, udata2finalize(g));
-  tm = luaT_gettmbyobj(L, &v, TM_GC);
+  tm = luaT_gettmbyobj(&v, TM_GC);
   if (tm != NULL && ttisfunction(tm)) {  /* is there a finalizer? */
     int status;
     uint8_t oldah = L->allowhook;
@@ -838,7 +838,7 @@ void luaC_checkfinalizer (LuaObject *o, Table *mt) {
   global_State *g = thread_G;
   if (testbit(gch(o)->marked, SEPARATED) || /* obj. is already separated... */
       isfinalized(o) ||                           /* ... or is finalized... */
-      gfasttm(g, mt, TM_GC) == NULL)                /* or has no finalizer? */
+      fasttm(mt, TM_GC) == NULL)                /* or has no finalizer? */
     return;  /* nothing to be done */
   else {  /* move 'o' to 'finobj' list */
     LuaObject **p;

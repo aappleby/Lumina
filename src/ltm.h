@@ -9,7 +9,7 @@
 
 
 #include "lobject.h"
-
+#include "LuaTypes.h"
 
 /*
 * WARNING: if you change the order of this enumeration,
@@ -38,20 +38,13 @@ typedef enum {
 
 
 
-#define gfasttm(g,et,e) ((et) == NULL ? NULL : \
-  ((et)->flags & (1u<<(e))) ? NULL : luaT_gettm(et, e, (g)->tmname[e]))
-
-#define fasttm(l,et,e)	gfasttm(G(l), et, e)
-
-#define ttypename(x)	luaT_typenames_[(x) + 1]
-#define objtypename(x)	ttypename(ttypenv(x))
-
-extern const char *const luaT_typenames_[LUA_TOTALTAGS];
-
+const char* ttypename(int tag);
+const char* objtypename(const TValue* v);
 
 const TValue *luaT_gettm (Table *events, TMS event, TString *ename);
-const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o,
-                                                       TMS event);
-void luaT_init (lua_State *L);
+const TValue *luaT_gettmbyobj (const TValue *o, TMS event);
+void luaT_init ();
+
+const TValue* fasttm  ( Table* table, TMS tag);
 
 #endif

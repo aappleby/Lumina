@@ -31,10 +31,8 @@ int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r);
 int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r);
 const TValue *luaV_tonumber (const TValue *obj, TValue *n);
 int luaV_tostring (lua_State *L, StkId obj);
-void luaV_gettable (lua_State *L, const TValue *t, TValue *key,
-                                            StkId val);
-void luaV_settable (lua_State *L, const TValue *t, TValue *key,
-                                            StkId val);
+void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val);
+void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val);
 void luaV_finishOp (lua_State *L);
 void luaV_execute (lua_State *L);
 void luaV_concat (lua_State *L, int total);

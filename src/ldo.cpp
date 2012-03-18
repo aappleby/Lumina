@@ -285,7 +285,7 @@ static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
 
 static StkId tryfuncTM (lua_State *L, StkId func) {
   THREAD_CHECK(L);
-  const TValue *tm = luaT_gettmbyobj(L, func, TM_CALL);
+  const TValue *tm = luaT_gettmbyobj(func, TM_CALL);
   StkId p;
   ptrdiff_t funcr = savestack(L, func);
   if (!ttisfunction(tm))

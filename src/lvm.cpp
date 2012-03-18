@@ -111,13 +111,13 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       Table *h = hvalue(t);
       const TValue *res = luaH_get(h, key); /* do a primitive get */
       if (!ttisnil(res) ||  /* result is not nil? */
-          (tm = fasttm(L, h->metatable, TM_INDEX)) == NULL) { /* or no TM? */
+          (tm = fasttm(h->metatable, TM_INDEX)) == NULL) { /* or no TM? */
         setobj(val, res);
         return;
       }
       /* else will try the tag method */
     }
-    else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_INDEX)))
+    else if (ttisnil(tm = luaT_gettmbyobj(t, TM_INDEX)))
       luaG_typeerror(t, "index");
     if (ttisfunction(tm)) {
       callTM(L, tm, t, key, val, 1);
@@ -141,7 +141,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
          in the table; moreover, a metamethod has no relevance */
       if (!ttisnil(oldval) ||
          /* previous value is nil; must check the metamethod */
-         ((tm = fasttm(L, h->metatable, TM_NEWINDEX)) == NULL &&
+         ((tm = fasttm(h->metatable, TM_NEWINDEX)) == NULL &&
          /* no metamethod; is there a previous entry in the table? */
          (oldval != luaO_nilobject ||
          /* no previous entry; must create one. (The next test is
@@ -157,7 +157,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       /* else will try the metamethod */
     }
     else  /* not a table; check metamethod */
-      if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX)))
+      if (ttisnil(tm = luaT_gettmbyobj(t, TM_NEWINDEX)))
         luaG_typeerror(t, "index");
     /* there is a metamethod */
     if (ttisfunction(tm)) {
@@ -173,9 +173,9 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
 static int call_binTM (lua_State *L, const TValue *p1, const TValue *p2,
                        StkId res, TMS event) {
   THREAD_CHECK(L);
-  const TValue *tm = luaT_gettmbyobj(L, p1, event);  /* try first operand */
+  const TValue *tm = luaT_gettmbyobj(p1, event);  /* try first operand */
   if (ttisnil(tm))
-    tm = luaT_gettmbyobj(L, p2, event);  /* try second operand */
+    tm = luaT_gettmbyobj(p2, event);  /* try second operand */
   if (ttisnil(tm)) return 0;
   callTM(L, tm, p1, p2, res, 1);
   return 1;
@@ -185,11 +185,11 @@ static int call_binTM (lua_State *L, const TValue *p1, const TValue *p2,
 static const TValue *get_equalTM (lua_State *L, Table *mt1, Table *mt2,
                                   TMS event) {
   THREAD_CHECK(L);
-  const TValue *tm1 = fasttm(L, mt1, event);
+  const TValue *tm1 = fasttm(mt1, event);
   const TValue *tm2;
   if (tm1 == NULL) return NULL;  /* no metamethod */
   if (mt1 == mt2) return tm1;  /* same metatables => same metamethods */
-  tm2 = fasttm(L, mt2, event);
+  tm2 = fasttm(mt2, event);
   if (tm2 == NULL) return NULL;  /* no metamethod */
   if (luaV_rawequalobj(tm1, tm2))  /* same metamethods? */
     return tm1;
@@ -360,7 +360,7 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
   switch (ttypenv(rb)) {
     case LUA_TTABLE: {
       Table *h = hvalue(rb);
-      tm = fasttm(L, h->metatable, TM_LEN);
+      tm = fasttm(h->metatable, TM_LEN);
       if (tm) break;  /* metamethod? break switch to call it */
       setnvalue(ra, cast_num(luaH_getn(h)));  /* else primitive len */
       return;
@@ -370,7 +370,7 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
       return;
     }
     default: {  /* try metamethod */
-      tm = luaT_gettmbyobj(L, rb, TM_LEN);
+      tm = luaT_gettmbyobj(rb, TM_LEN);
       if (ttisnil(tm))  /* no metamethod? */
         luaG_typeerror(rb, "get length of");
       break;
@@ -463,7 +463,7 @@ void luaV_finishOp (lua_State *L) {
       /* metamethod should not be called when operand is K */
       assert(!ISK(GETARG_B(inst)));
       if (op == OP_LE &&  /* "<=" using "<" instead? */
-          ttisnil(luaT_gettmbyobj(L, base + GETARG_B(inst), TM_LE)))
+          ttisnil(luaT_gettmbyobj(base + GETARG_B(inst), TM_LE)))
         res = !res;  /* invert result */
       assert(GET_OPCODE(*ci->savedpc) == OP_JMP);
       if (res != GETARG_A(inst))  /* condition failed? */
