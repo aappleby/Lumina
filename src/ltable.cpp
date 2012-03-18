@@ -46,8 +46,6 @@
 #define MAXASIZE	(1 << MAXBITS)
 
 
-//#define hashpow2(t,n)      (gnode(t, lmod((n), sizenode(t))))
-
 Node* hashpow2(const Table* t, uint32_t n) {
   uint32_t mask = (1 << t->lsizenode) - 1;
   return &t->node[n & mask];
@@ -183,7 +181,7 @@ int luaH_next (Table *t, StkId key) {
   for (i -= t->sizearray; i < sizenode(t); i++) {  /* then hash part */
     if (!ttisnil(gval(gnode(t, i)))) {  /* a non-nil value? */
       setobj(key, &gnode(t, i)->i_key);
-      setobj(key+1, gval(gnode(t, i)));
+      setobj(key+1, &gnode(t, i)->i_val);
       return 1;
     }
   }
@@ -262,7 +260,7 @@ static int numusehash (const Table *t, int *nums, int *pnasize) {
   int i = sizenode(t);
   while (i--) {
     Node *n = &t->node[i];
-    if (!ttisnil(gval(n))) {
+    if (!ttisnil(&n->i_val)) {
       ause += countint(&n->i_key, nums);
       totaluse++;
     }
@@ -298,7 +296,7 @@ static void setnodevector (Table *t, int size) {
       Node *n = gnode(t, i);
       gnext(n) = NULL;
       setnilvalue(&n->i_key);
-      setnilvalue(gval(n));
+      setnilvalue(&n->i_val);
     }
   }
   t->lsizenode = cast_byte(lsize);
@@ -328,7 +326,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   /* re-insert elements from hash part */
   for (i = twoto(oldhsize) - 1; i >= 0; i--) {
     Node *old = nold+i;
-    if (!ttisnil(gval(old))) {
+    if (!ttisnil(&old->i_val)) {
       /* doesn't need barrier/invalidate cache, as entry was
          already present in the table */
       TValue* key = &old->i_key;
@@ -468,7 +466,7 @@ const TValue *luaH_getint (Table *t, int key) {
     Node *n = hashnum(t, nk);
     do {  /* check whether `key' is somewhere in the chain */
       if (ttisnumber(&n->i_key) && luai_numeq(nvalue(&n->i_key), nk))
-        return gval(n);  /* that's it */
+        return &n->i_val;  /* that's it */
       else n = gnext(n);
     } while (n);
     return luaO_nilobject;
@@ -483,7 +481,7 @@ const TValue *luaH_getstr (Table *t, TString *key) {
   Node *n = hashstr(t, key);
   do {  /* check whether `key' is somewhere in the chain */
     if (ttisstring(&n->i_key) && eqstr(tsvalue(&n->i_key), key))
-      return gval(n);  /* that's it */
+      return &n->i_val;  /* that's it */
     else n = gnext(n);
   } while (n);
   return luaO_nilobject;
@@ -509,7 +507,7 @@ const TValue *luaH_get (Table *t, const TValue *key) {
       Node *n = mainposition(t, key);
       do {  /* check whether `key' is somewhere in the chain */
         if (luaV_rawequalobj(&n->i_key, key))
-          return gval(n);  /* that's it */
+          return &n->i_val;  /* that's it */
         else n = gnext(n);
       } while (n);
       return luaO_nilobject;

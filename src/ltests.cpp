@@ -113,10 +113,10 @@ static void checktable (global_State *g, Table *h) {
   for (i = 0; i < h->sizearray; i++)
     checkvalref(g, hgc, &h->array[i]);
   for (n = gnode(h, 0); n < limit; n++) {
-    if (!ttisnil(gval(n))) {
+    if (!ttisnil(&n->i_val)) {
       assert(!ttisnil(&n->i_key));
       checkvalref(g, hgc, &n->i_key);
-      checkvalref(g, hgc, gval(n));
+      checkvalref(g, hgc, &n->i_val);
     }
   }
 }

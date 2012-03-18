@@ -70,7 +70,7 @@
 
 #define isfinalized(x)		testbit(gch(x)->marked, FINALIZEDBIT)
 
-#define checkdeadkey(n)	assert(!ttisdeadkey(&n->i_key) || ttisnil(gval(n)))
+#define checkdeadkey(n)	assert(!ttisdeadkey(&n->i_key) || ttisnil(&n->i_val))
 
 
 #define checkconsistency(obj) assert(!iscollectable(obj) || righttt(obj))
@@ -107,7 +107,7 @@ static void reallymarkobject (global_State *g, LuaBase *o);
 ** from the table)
 */
 static void removeentry (Node *n) {
-  assert(ttisnil(gval(n)));
+  assert(ttisnil(&n->i_val));
   if (valiswhite(&n->i_key))
     setdeadvalue(&n->i_key);  /* unused and unmarked key; remove it */
 }
@@ -353,12 +353,12 @@ static void traverseweakvalue (global_State *g, Table *h) {
   int hasclears = (h->sizearray > 0);
   for (n = gnode(h, 0); n < limit; n++) {
     checkdeadkey(n);
-    if (ttisnil(gval(n)))  /* entry is empty? */
+    if (ttisnil(&n->i_val))  /* entry is empty? */
       removeentry(n);  /* remove it */
     else {
       assert(!ttisnil(&n->i_key));
       markvalue(g, &n->i_key);  /* mark key */
-      if (!hasclears && iscleared(gval(n)))  /* is there a white value? */
+      if (!hasclears && iscleared(&n->i_val))  /* is there a white value? */
         hasclears = 1;  /* table will have to be cleared */
     }
   }
@@ -385,16 +385,16 @@ static int traverseephemeron (global_State *g, Table *h) {
   /* traverse hash part */
   for (n = gnode(h, 0); n < limit; n++) {
     checkdeadkey(n);
-    if (ttisnil(gval(n)))  /* entry is empty? */
+    if (ttisnil(&n->i_val))  /* entry is empty? */
       removeentry(n);  /* remove it */
     else if (iscleared(&n->i_key)) {  /* key is not marked (yet)? */
       hasclears = 1;  /* table must be cleared */
-      if (valiswhite(gval(n)))  /* value not marked yet? */
+      if (valiswhite(&n->i_val))  /* value not marked yet? */
         prop = 1;  /* must propagate again */
     }
-    else if (valiswhite(gval(n))) {  /* value not marked yet? */
+    else if (valiswhite(&n->i_val)) {  /* value not marked yet? */
       marked = 1;
-      reallymarkobject(g, gcvalue(gval(n)));  /* mark it now */
+      reallymarkobject(g, gcvalue(&n->i_val));  /* mark it now */
     }
   }
   if (prop)
@@ -414,12 +414,12 @@ static void traversestrongtable (global_State *g, Table *h) {
     markvalue(g, &h->array[i]);
   for (n = gnode(h, 0); n < limit; n++) {  /* traverse hash part */
     checkdeadkey(n);
-    if (ttisnil(gval(n)))  /* entry is empty? */
+    if (ttisnil(&n->i_val))  /* entry is empty? */
       removeentry(n);  /* remove it */
     else {
       assert(!ttisnil(&n->i_key));
       markvalue(g, &n->i_key);  /* mark key */
-      markvalue(g, gval(n));  /* mark value */
+      markvalue(g, &n->i_val);  /* mark value */
     }
   }
 }
@@ -607,8 +607,8 @@ static void clearkeys (LuaBase *l, LuaBase *f) {
     Table *h = gco2t(l);
     Node *n, *limit = gnodelast(h);
     for (n = gnode(h, 0); n < limit; n++) {
-      if (!ttisnil(gval(n)) && (iscleared(&n->i_key))) {
-        setnilvalue(gval(n));  /* remove value ... */
+      if (!ttisnil(&n->i_val) && (iscleared(&n->i_key))) {
+        setnilvalue(&n->i_val);  /* remove value ... */
         removeentry(n);  /* and remove entry from table */
       }
     }
@@ -631,8 +631,8 @@ static void clearvalues (LuaBase *l, LuaBase *f) {
         setnilvalue(o);  /* remove value */
     }
     for (n = gnode(h, 0); n < limit; n++) {
-      if (!ttisnil(gval(n)) && iscleared(gval(n))) {
-        setnilvalue(gval(n));  /* remove value ... */
+      if (!ttisnil(&n->i_val) && iscleared(&n->i_val)) {
+        setnilvalue(&n->i_val);  /* remove value ... */
         removeentry(n);  /* and remove entry from table */
       }
     }
