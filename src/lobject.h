@@ -136,7 +136,7 @@ public:
 
 
 #define twoto(x)	(1ull<<(x))
-#define sizenode(t)	(twoto((t)->lsizenode))
+#define sizenode(t)	((t)->sizenode)
 
 
 /*

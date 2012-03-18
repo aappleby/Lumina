@@ -47,7 +47,7 @@
 
 
 Node* hashpow2(const Table* t, uint32_t n) {
-  uint32_t mask = (1 << t->lsizenode) - 1;
+  uint32_t mask = t->sizenode - 1;
   return &t->node[n & mask];
 }
 
@@ -299,7 +299,7 @@ static void setnodevector (Table *t, int size) {
       setnilvalue(&n->i_val);
     }
   }
-  t->lsizenode = cast_byte(lsize);
+  t->sizenode = (1 << lsize);
   t->lastfree = gnode(t, size);  /* all positions are free */
 }
 
@@ -307,7 +307,7 @@ static void setnodevector (Table *t, int size) {
 void luaH_resize (Table *t, int nasize, int nhsize) {
   int i;
   int oldasize = t->sizearray;
-  int oldhsize = t->lsizenode;
+  int oldhsize = t->sizenode;
   Node *nold = t->node;  /* save old hash ... */
   if (nasize > oldasize)  /* array part must grow? */
     setarrayvector(t, nasize);
@@ -324,7 +324,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
     t->array.resize(nasize);
   }
   /* re-insert elements from hash part */
-  for (i = twoto(oldhsize) - 1; i >= 0; i--) {
+  for (i = oldhsize - 1; i >= 0; i--) {
     Node *old = nold+i;
     if (!ttisnil(&old->i_val)) {
       /* doesn't need barrier/invalidate cache, as entry was
@@ -337,7 +337,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   }
   if (!isdummy(nold)) {
      /* free old array */
-    size_t s = twoto(oldhsize);
+    size_t s = oldhsize;
     luaM_free(nold, s * sizeof(Node), 0);
   }
 }
