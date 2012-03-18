@@ -184,8 +184,8 @@ static void new_localvar (LexState *ls, TString *name) {
   int reg = registerlocalvar(ls, name);
   checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal,
                   MAXVARS, "local variables");
-  if(dyd->actvar.n+1 >= dyd->actvar.size) {
-    dyd->actvar.arr = (Vardesc*)luaM_growaux_(dyd->actvar.arr, dyd->actvar.size, sizeof(Vardesc), MAX_INT, "local variables");
+  if(dyd->actvar.n+1 >= dyd->actvar.arr.size()) {
+    dyd->actvar.arr.grow();
   }
   dyd->actvar.arr[dyd->actvar.n++].idx = cast(short, reg);
 }
@@ -389,8 +389,8 @@ static int findlabel (LexState *ls, int g) {
 static int newlabelentry (LexState *ls, Labellist *l, TString *name,
                           int line, int pc) {
   int n = l->n;
-  if(n >= l->size) {
-    l->arr = (Labeldesc*)luaM_growaux_(l->arr, l->size, sizeof(Labeldesc), SHRT_MAX, "labels/gotos");
+  if(n >= l->arr.size()) {
+    l->arr.grow();
   }
   l->arr[n].name = name;
   l->arr[n].line = line;

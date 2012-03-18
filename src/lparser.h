@@ -66,18 +66,16 @@ struct Labeldesc {
 
 /* list of labels or gotos */
 typedef struct Labellist {
-  Labeldesc *arr;  /* array */
+  LuaVector<Labeldesc> arr;
   int n;  /* number of entries in use */
-  int size;  /* array size */
 } Labellist;
 
 
 /* dynamic structures used by the parser */
 struct Dyndata {
   struct {  /* list of active local variables */
-    Vardesc *arr;
+    LuaVector<Vardesc> arr;
     int n;
-    int size;
   } actvar;
   Labellist gt;  /* list of pending gotos */
   Labellist label;   /* list of active labels */

@@ -36,8 +36,6 @@ struct Memcontrol {
 extern Memcontrol l_memcontrol;
 
 
-void* luaM_reallocv(void* block, size_t osize, size_t nsize, size_t esize);
-
 void luaM_free(void * blob, size_t size, int type);
 
 void* luaM_alloc(size_t size);
@@ -46,10 +44,6 @@ void* luaM_allocv(size_t n, size_t size);
 
 void* luaM_newobject(int tag, size_t size);
 void  luaM_delobject(void * blob, size_t size, int type);
-
-/* not to be called directly */
-void *luaM_growaux_ (void *block, int& size, size_t size_elem, int limit, const char *what);
-
 
 void* default_alloc   (size_t size, int type);
 void  default_free    (void * blob, size_t size, int type);

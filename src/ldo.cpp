@@ -688,18 +688,18 @@ int luaD_protectedparser (lua_State *L, ZIO *z, const char *name,
   int status;
   L->nny++;  /* cannot yield during parsing */
   p.z = z; p.name = name; p.mode = mode;
-  p.dyd.actvar.arr = NULL; p.dyd.actvar.size = 0;
-  p.dyd.gt.arr = NULL; p.dyd.gt.size = 0;
-  p.dyd.label.arr = NULL; p.dyd.label.size = 0;
+  p.dyd.actvar.arr.init();
+  p.dyd.gt.arr.init();
+  p.dyd.label.arr.init();
   p.buff.buffer.init();
 
   status = luaD_pcall(L, f_parser, &p, savestack(L, L->top), L->errfunc);
 
   p.buff.buffer.clear();
   
-  luaM_free(p.dyd.actvar.arr, p.dyd.actvar.size * sizeof(Vardesc), 0);
-  luaM_free(p.dyd.gt.arr, p.dyd.gt.size * sizeof(Labeldesc), 0);
-  luaM_free(p.dyd.label.arr, p.dyd.label.size * sizeof(Labeldesc), 0);
+  p.dyd.actvar.arr.clear();
+  p.dyd.gt.arr.clear();
+  p.dyd.label.arr.clear();
   
   L->nny--;
   return status;
