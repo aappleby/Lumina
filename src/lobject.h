@@ -127,18 +127,6 @@ public:
 #include "LuaTable.h"
 
 
-
-/*
-** `module' operation for hashing (size is always a power of 2)
-*/
-#define lmod(s,size) \
-	(check_exp((size&(size-1))==0, (cast(int, (s) & ((size)-1)))))
-
-
-#define twoto(x)	(1ull<<(x))
-#define sizenode(t)	((t)->sizenode)
-
-
 /*
 ** (address of) a fixed nil value
 */

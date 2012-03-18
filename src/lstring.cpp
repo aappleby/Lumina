@@ -10,6 +10,8 @@
 #define lstring_c
 #define LUA_CORE
 
+#include "MurmurHash3.h"
+
 #include "lua.h"
 
 #include "lmem.h"
@@ -18,6 +20,7 @@
 #include "lstring.h"
 #include "ldebug.h"
 
+#define lmod(s,size) cast(int, (s) & ((size)-1))
 
 void luaS_resize (lua_State *L, int newsize) {
   THREAD_CHECK(L);
@@ -79,11 +82,13 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
 TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   THREAD_CHECK(L);
   LuaObject *o;
-  unsigned int h = cast(unsigned int, l);  /* seed */
-  size_t step = (l>>5)+1;  /* if string is too long, don't hash all its chars */
+
+  unsigned int h = cast(unsigned int, l);  // seed
+  size_t step = (l>>5)+1;  // if string is too long, don't hash all its chars
   size_t l1;
-  for (l1=l; l1>=step; l1-=step)  /* compute hash */
+  for (l1=l; l1>=step; l1-=step)  // compute hash
     h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
+
   for (o = G(L)->strt->hash[lmod(h, G(L)->strt->size)];
        o != NULL;
        o = gch(o)->next) {

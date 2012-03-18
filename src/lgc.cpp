@@ -93,7 +93,7 @@ static void reallymarkobject (global_State *g, LuaObject *o);
 /*
 ** one after last element in a hash array
 */
-#define gnodelast(h)	gnode(h, cast(size_t, sizenode(h)))
+#define gnodelast(h)	gnode(h, cast(size_t, h->sizenode))
 
 
 /*
@@ -434,11 +434,11 @@ static int traversetable (global_State *g, Table *h) {
       black2gray(obj2gco(h));  /* keep table gray */
       if (!weakkey) {  /* strong keys? */
         traverseweakvalue(g, h);
-        return TRAVCOST + sizenode(h);
+        return TRAVCOST + h->sizenode;
       }
       else if (!weakvalue) {  /* strong values? */
         traverseephemeron(g, h);
-        return TRAVCOST + h->sizearray + sizenode(h);
+        return TRAVCOST + h->sizearray + h->sizenode;
       }
       else {
         linktable(h, &g->allweak);  /* nothing to traverse now */
@@ -447,7 +447,7 @@ static int traversetable (global_State *g, Table *h) {
     }  /* else go through */
   }
   traversestrongtable(g, h);
-  return TRAVCOST + h->sizearray + (2 * sizenode(h));
+  return TRAVCOST + h->sizearray + (2 * h->sizenode);
 }
 
 

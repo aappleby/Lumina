@@ -106,7 +106,7 @@ static void checkvalref (global_State *g, LuaObject *f, const TValue *t) {
 
 static void checktable (global_State *g, Table *h) {
   int i;
-  Node *n, *limit = gnode(h, sizenode(h));
+  Node *n, *limit = gnode(h, h->sizenode);
   LuaObject *hgc = obj2gco(h);
   if (h->metatable)
     checkobjref(g, hgc, h->metatable);
@@ -557,7 +557,7 @@ static int table_query (lua_State *L) {
   t = hvalue(obj_at(L, 1));
   if (i == -1) {
     lua_pushinteger(L, t->sizearray);
-    lua_pushinteger(L, luaH_isdummy(t->node) ? 0 : sizenode(t));
+    lua_pushinteger(L, luaH_isdummy(t->node) ? 0 : t->sizenode);
     lua_pushinteger(L, t->lastfree - t->node);
   }
   else if (i < t->sizearray) {
@@ -565,7 +565,7 @@ static int table_query (lua_State *L) {
     pushobject(L, &t->array[i]);
     lua_pushnil(L);
   }
-  else if ((i -= t->sizearray) < sizenode(t)) {
+  else if ((i -= t->sizearray) < t->sizenode) {
     if (!ttisnil(&gnode(t, i)->i_val) ||
         ttisnil(&gnode(t, i)->i_key) ||
         ttisnumber(&gnode(t, i)->i_key)) {

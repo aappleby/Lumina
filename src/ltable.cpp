@@ -45,34 +45,7 @@
 #define MAXBITS		30
 #define MAXASIZE	(1 << MAXBITS)
 
-
-Node* hashpow2(const Table* t, uint32_t n) {
-  uint32_t mask = t->sizenode - 1;
-  return &t->node[n & mask];
-}
-
-/*
-#define lmod(s,size) \
-	(check_exp((size&(size-1))==0, (cast(int, (s) & ((size)-1)))))
-  */
-
-
-#define hashstr(t,str)  hashpow2(t, (str)->getHash())
-#define hashboolean(t,p)        hashpow2(t, p)
-
-
-/*
-** for some types, it is better to avoid modulus by power of 2, as
-** they tend to have many 2 factors.
-*/
-#define hashmod(t,n)	(gnode(t, ((n) % ((sizenode(t)-1)|1))))
-
-
-#define hashpointer(t,p)	hashmod(t, reinterpret_cast<uint32_t>(p))
-
-
 #define dummynode		(&dummynode_)
-
 #define isdummy(n)		((n) == dummynode)
 
 static const Node dummynode_ = {
@@ -81,25 +54,47 @@ static const Node dummynode_ = {
   NULL /* next */
 };
 
-#define luai_hashnum(i,n) { int e;  \
-  n = frexp(n, &e) * (lua_Number)(INT_MAX - DBL_MAX_EXP);  \
-  lua_number2int(i, n); i += e; }
-
-/*
-** hash for lua_Numbers
-*/
-static Node *hashnum (const Table *t, lua_Number n) {
-  int i;
-  luai_hashnum(i, n);
-  if (i < 0) {
-    if (cast(unsigned int, i) == 0u - i)  /* use unsigned to avoid overflows */
-      i = 0;  /* handle INT_MIN */
-    i = -i;  /* must be a positive value */
-  }
-  return hashmod(t, i);
+Node* hashpow2(const Table* t, uint32_t n) {
+  uint32_t mask = t->sizenode - 1;
+  return &t->node[n & mask];
 }
 
+#define hashstr(t,str)   hashpow2(t, (str)->getHash())
+#define hashboolean(t,p) hashpow2(t, p)
 
+uint32_t hash64 (uint32_t a, uint32_t b) {
+  a ^= a >> 16;
+  a *= 0x85ebca6b;
+  a ^= a >> 13;
+  a *= 0xc2b2ae35;
+  a ^= a >> 16;
+
+  a ^= b;
+
+  a ^= a >> 16;
+  a *= 0x85ebca6b;
+  a ^= a >> 13;
+  a *= 0xc2b2ae35;
+  a ^= a >> 16;
+
+  return a;
+}
+
+static Node* hashpointer ( const Table* t, void* p ) {
+  uint32_t* block = reinterpret_cast<uint32_t*>(&p);
+  uint32_t hash = hash64(block[0],block[1]);
+  uint32_t mask = t->sizenode - 1;
+  return &t->node[hash & mask];
+}
+
+// Well damn, test suite goes from 21.5 to 18.9 seconds just by changing to
+// this hash...
+static Node* hashnum ( const Table* t, lua_Number n) {
+  uint32_t* block = reinterpret_cast<uint32_t*>(&n);
+  uint32_t hash = hash64(block[0],block[1]);
+  uint32_t mask = t->sizenode - 1;
+  return &t->node[hash & mask];
+}
 
 /*
 ** returns the `main' position of an element in a table (that is, the index
@@ -263,25 +258,19 @@ static void setarrayvector (Table *t, int size) {
 static void setnodevector (Table *t, int size) {
   //assert((size & (size-1)) == 0);
 
-  int lsize;
-  if (size == 0) {  /* no elements to hash part? */
-    t->node = cast(Node *, dummynode);  /* use common `dummynode' */
-    lsize = 0;
+  if (size == 0) {
+    t->node = cast(Node *, dummynode);  // use common `dummynode'
+    t->sizenode = 1;
+    t->lastfree = &t->node[size]; // all positions are free
   }
   else {
-    int i;
-    lsize = luaO_ceillog2(size);
-    size = twoto(lsize);
+    int lsize = luaO_ceillog2(size);
+    size = 1 << lsize;
     t->node = (Node*)luaM_allocv(size, sizeof(Node));
-    for (i=0; i<size; i++) {
-      Node *n = gnode(t, i);
-      n->next = NULL;
-      setnilvalue(&n->i_key);
-      setnilvalue(&n->i_val);
-    }
+    memset(t->node, 0, size * sizeof(Node));
+    t->sizenode = size;
+    t->lastfree = &t->node[size]; // all positions are free
   }
-  t->sizenode = (1 << lsize);
-  t->lastfree = gnode(t, size);  /* all positions are free */
 }
 
 
@@ -325,7 +314,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
 
 
 void luaH_resizearray (Table *t, int nasize) {
-  int nsize = isdummy(t->node) ? 0 : sizenode(t);
+  int nsize = isdummy(t->node) ? 0 : t->sizenode;
   luaH_resize(t, nasize, nsize);
 }
 
@@ -372,7 +361,7 @@ Table *luaH_new () {
 
 void luaH_free (Table *t) {
   if (!isdummy(t->node)) {
-    luaM_free(t->node, sizenode(t) * sizeof(Node), 0);
+    luaM_free(t->node, t->sizenode * sizeof(Node), 0);
   }
   t->array.clear();
   luaM_delobject(t, sizeof(Table), LUA_TTABLE);

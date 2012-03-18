@@ -566,6 +566,14 @@
 				RelativePath="..\src\lzio.h"
 				>
 			</File>
+			<File
+				RelativePath="..\src\MurmurHash3.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\MurmurHash3.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath="..\src\lua.h"
