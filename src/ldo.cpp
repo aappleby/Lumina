@@ -85,11 +85,11 @@ static void seterrorobj (lua_State *L, int errcode, StkId oldtop) {
   THREAD_CHECK(L);
   switch (errcode) {
     case LUA_ERRMEM: {  /* memory error? */
-      setsvalue(L, oldtop, G(L)->memerrmsg); /* reuse preregistered msg. */
+      oldtop[0] = G(L)->memerrmsg; /* reuse preregistered msg. */
       break;
     }
     case LUA_ERRERR: {
-      setsvalue(L, oldtop, luaS_newliteral(L, "error in error handling"));
+      oldtop[0] = luaS_newliteral("error in error handling");
       break;
     }
     default: {
@@ -497,7 +497,7 @@ static int recover (lua_State *L, int status) {
 static l_noret resume_error (lua_State *L, const char *msg, StkId firstArg) {
   THREAD_CHECK(L);
   L->top = firstArg;  /* remove args from the stack */
-  setsvalue(L, L->top, luaS_new(L, msg));  /* push error message */
+  L->top[0] = luaS_new(msg);  /* push error message */
   incr_top(L);
   luaD_throw(-1);  /* jump back to 'lua_resume' */
 }

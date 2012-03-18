@@ -352,7 +352,7 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
 int luaK_stringK (FuncState *fs, TString *s) {
   THREAD_CHECK(fs->ls->L);
   TValue o;
-  setsvalue(fs->ls->L, &o, s);
+  o = s;
   return addk(fs, &o, &o);
 }
 
@@ -365,10 +365,10 @@ int luaK_numberK (FuncState *fs, lua_Number r) {
   setnvalue(&o, r);
   if (r == 0 || luai_numisnan(NULL, r)) {  /* handle -0 and NaN */
     /* use raw representation as key to avoid numeric problems */
-    setsvalue(L, L->top, luaS_newlstr(L, (char *)&r, sizeof(r)));
-     incr_top(L);
-     n = addk(fs, L->top - 1, &o);
-     L->top--;
+    L->top[0] = luaS_newlstr((char *)&r, sizeof(r));
+    incr_top(L);
+    n = addk(fs, L->top - 1, &o);
+    L->top--;
   }
   else
     n = addk(fs, &o, &o);  /* regular case */

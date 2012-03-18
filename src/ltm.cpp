@@ -69,7 +69,7 @@ const char* objtypename(const TValue* v) {
 void luaT_init() {
   int i;
   for (i=0; i<TM_N; i++) {
-    thread_G->tmname[i] = luaS_new(thread_L, luaT_eventname[i]);
+    thread_G->tmname[i] = luaS_new(luaT_eventname[i]);
     luaS_fix(thread_G->tmname[i]);  /* never collect these names */
   }
 }

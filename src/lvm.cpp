@@ -52,7 +52,7 @@ int luaV_tostring (lua_State *L, StkId obj) {
     char s[LUAI_MAXNUMBER2STR];
     lua_Number n = nvalue(obj);
     int l = lua_number2str(s, n);
-    setsvalue(L, obj, luaS_newlstr(L, s, l));
+    obj[0] = luaS_newlstr(s, l);
     return 1;
   }
 }
@@ -324,7 +324,7 @@ void luaV_concat (lua_State *L, int total) {
     else if (tsvalue(top-1)->getLen() == 0)  /* second operand is empty? */
       (void)tostring(L, top - 2);  /* result is first operand */
     else if (ttisstring(top-2) && tsvalue(top-2)->getLen() == 0) {
-      setsvalue(L, top-2, tsvalue(top-1));  /* result is second op. */
+      top[-2] = tsvalue(top-1);
     }
     else {
       /* at least two non-empty string values; get as many as possible */
@@ -346,7 +346,7 @@ void luaV_concat (lua_State *L, int total) {
         memcpy(buffer+tl, tsvalue(top-i)->c_str(), l * sizeof(char));
         tl += l;
       } while (--i > 0);
-      setsvalue(L, top-n, luaS_newlstr(L, buffer, tl));
+      top[-n] = luaS_newlstr(buffer, tl);
     }
     total -= n-1;  /* got 'n' strings to create 1 new */
     L->top -= n-1;  /* popped 'n' strings and pushed one */

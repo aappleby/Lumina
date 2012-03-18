@@ -11,6 +11,12 @@ struct TValue {
   void operator = ( int v ) { tt_ = LUA_TNUMBER; n = (double)v; }
   void operator = ( bool v ) { tt_ = LUA_TBOOLEAN; b = (int32_t)v; }
 
+  void operator = (TString* v ) {
+    gc = (LuaObject*)v;
+    tt_ = ctb(LUA_TSTRING);
+    sanitycheck();
+  }
+
   bool isCollectable() { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }
 
   bool isNil() const           { return rawtype() == LUA_TNIL; }
@@ -63,9 +69,6 @@ struct TValue {
 
 
 
-
-/* mark a tag as collectable */
-#define ctb(t)			((t) | BIT_ISCOLLECTABLE)
 
 /*
 ** Tagged Values. This is the basic representation of values in Lua,

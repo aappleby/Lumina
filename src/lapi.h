@@ -11,8 +11,7 @@
 #include "llimits.h"
 #include "lstate.h"
 
-#define api_incr_top(L)   {L->top++; api_check(L->top <= L->ci->top, \
-				"stack overflow");}
+#define api_incr_top(L)   {L->top++; api_check(L->top <= L->ci->top, "stack overflow");}
 
 #define adjustresults(L,nres) \
     { if ((nres) == LUA_MULTRET && L->ci->top < L->top) L->ci->top = L->top; }

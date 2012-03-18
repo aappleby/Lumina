@@ -67,7 +67,7 @@ void luaX_init (lua_State *L) {
   THREAD_CHECK(L);
   int i;
   for (i=0; i<NUM_RESERVED; i++) {
-    TString *ts = luaS_new(L, luaX_tokens[i]);
+    TString *ts = luaS_new(luaX_tokens[i]);
     luaS_fix(ts);  /* reserved words are never collected */
     ts->setReserved(cast_byte(i+1));  /* reserved word */
   }
@@ -131,8 +131,9 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
   THREAD_CHECK(ls->L);
   lua_State *L = ls->L;
   TValue *o;  /* entry for `str' */
-  TString *ts = luaS_newlstr(L, str, l);  /* create new string */
-  setsvalue(L, L->top++, ts);  /* temporarily anchor it in stack */
+  TString *ts = luaS_newlstr(str, l);  /* create new string */
+  L->top[0] = ts;  /* temporarily anchor it in stack */
+  L->top++;
   o = luaH_set(ls->fs->h, L->top - 1);
   if (ttisnil(o)) {  /* not in use yet? (see 'addK') */
     /* boolean value does not need GC barrier;
@@ -174,7 +175,7 @@ void luaX_setinput (lua_State *L, LexState *ls, ZIO *z, TString *source,
   ls->linenumber = 1;
   ls->lastline = 1;
   ls->source = source;
-  ls->envn = luaS_new(L, LUA_ENV);  /* create env name */
+  ls->envn = luaS_new(LUA_ENV);  /* create env name */
   luaS_fix(ls->envn);  /* never collect this name */
   ls->buff->buffer.resize(LUA_MINBUFFER);
 }

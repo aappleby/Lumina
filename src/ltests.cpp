@@ -596,7 +596,7 @@ static int string_query (lua_State *L) {
     LuaObject *ts;
     int n = 0;
     for (ts = tb->hash[s]; ts; ts = gch(ts)->next) {
-      setsvalue(L, L->top, gco2ts(ts));
+      L->top[0] = gco2ts(ts);
       incr_top(L);
       n++;
     }

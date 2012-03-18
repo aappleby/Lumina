@@ -74,8 +74,7 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
 }
 
 
-TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
-  THREAD_CHECK(L);
+TString *luaS_newlstr (const char *str, size_t l) {
   LuaObject *o;
 
   unsigned int h = cast(unsigned int, l);  // seed
@@ -100,14 +99,12 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
 }
 
 
-TString *luaS_new (lua_State *L, const char *str) {
-  THREAD_CHECK(L);
-  return luaS_newlstr(L, str, strlen(str));
+TString *luaS_new (const char *str) {
+  return luaS_newlstr(str, strlen(str));
 }
 
 
-Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
-  THREAD_CHECK(L);
+Udata *luaS_newudata (size_t s, Table *e) {
   Udata *u;
   if (s > MAX_SIZET - sizeof(Udata))
     luaG_runerror("memory allocation error: udata too big");
@@ -121,9 +118,8 @@ Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
 
 #define sizestring(s)	(sizeof(TString)+((s)->getLen()+1)*sizeof(char))
 
-void luaS_freestr (lua_State* L, TString* ts) {
-  THREAD_CHECK(L);
-  G(L)->strt->nuse--;
+void luaS_freestr (TString* ts) {
+  thread_G->strt->nuse--;
   luaM_delobject(ts, sizestring(ts), LUA_TSTRING);
 }
 
@@ -133,7 +129,6 @@ void luaS_initstrt(stringtable * strt) {
   strt->hash.init();
 }
 
-void luaS_freestrt (lua_State* L, stringtable* strt) {
-  THREAD_CHECK(L);
+void luaS_freestrt (stringtable* strt) {
   strt->hash.clear();
 }

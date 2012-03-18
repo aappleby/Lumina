@@ -135,7 +135,7 @@ static void f_luaopen (lua_State *L, void *ud) {
   luaT_init();
   luaX_init(L);
   /* pre-create memory-error message */
-  g->memerrmsg = luaS_newliteral(L, MEMERRMSG);
+  g->memerrmsg = luaS_newliteral(MEMERRMSG);
   luaS_fix(g->memerrmsg);  /* it should never be collected */
   g->gcrunning = 1;  /* allow gc */
 }
@@ -169,9 +169,9 @@ static void close_state (lua_State *L) {
   global_State *g = G(L);
   luaF_close(L, L->stack.begin());  /* close all upvalues for this thread */
   luaC_freeallobjects(L);  /* collect all objects */
-  luaS_freestrt(L, G(L)->strt);
-  delete G(L)->strt;
-  G(L)->strt = NULL;
+  luaS_freestrt(g->strt);
+  delete g->strt;
+  g->strt = NULL;
 
   g->buff.buffer.clear();
 

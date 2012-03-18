@@ -14,8 +14,7 @@
 
 #define sizeudata(u)	(sizeof(Udata)+(u)->len)
 
-#define luaS_newliteral(L, s)	(luaS_newlstr(L, "" s, \
-                                 (sizeof(s)/sizeof(char))-1))
+#define luaS_newliteral(s)	(luaS_newlstr("" s, (sizeof(s)/sizeof(char))-1))
 
 #define luaS_fix(s)	l_setbit((s)->marked, FIXEDBIT)
 
@@ -27,13 +26,13 @@
 #define eqstr(a,b)	((a) == (b))
 
 void luaS_resize (int newsize);
-Udata *luaS_newudata (lua_State *L, size_t s, Table *e);
-TString *luaS_newlstr (lua_State *L, const char *str, size_t l);
-TString *luaS_new (lua_State *L, const char *str);
-void luaS_freestr (lua_State *L, TString* ts);
+Udata *luaS_newudata (size_t s, Table *e);
+TString *luaS_newlstr (const char *str, size_t l);
+TString *luaS_new (const char *str);
+void luaS_freestr (TString* ts);
 
 void luaS_initstrt(stringtable * strt);
-void luaS_freestrt (lua_State* L, stringtable* strt);
+void luaS_freestrt(stringtable* strt);
 
 
 #endif

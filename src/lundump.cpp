@@ -79,7 +79,7 @@ static TString* LoadString(LoadState* S)
  {
   char* s=luaZ_openspace(S->L,S->b,size);
   LoadBlock(S,s,size*sizeof(char));
-  return luaS_newlstr(S->L,s,size-1);		/* remove trailing '\0' */
+  return luaS_newlstr(s,size-1);		/* remove trailing '\0' */
  }
 }
 
@@ -114,7 +114,7 @@ static void LoadConstants(LoadState* S, Proto* f)
       setnvalue(o,LoadNumber(S));
       break;
     case LUA_TSTRING:
-      setsvalue(S->L,o,LoadString(S));
+      o[0] = LoadString(S);
       break;
     }
   }

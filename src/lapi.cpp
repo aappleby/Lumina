@@ -538,8 +538,8 @@ const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
   TString *ts;
   lua_lock(L);
   luaC_checkGC(L);
-  ts = luaS_newlstr(L, s, len);
-  setsvalue(L, L->top, ts);
+  ts = luaS_newlstr(s, len);
+  L->top[0] = ts;
   api_incr_top(L);
   lua_unlock(L);
   return ts->c_str();
@@ -556,8 +556,8 @@ const char *lua_pushstring (lua_State *L, const char *s) {
     TString *ts;
     lua_lock(L);
     luaC_checkGC(L);
-    ts = luaS_new(L, s);
-    setsvalue(L, L->top, ts);
+    ts = luaS_new(s);
+    L->top[0] = ts;
     api_incr_top(L);
     lua_unlock(L);
     return ts->c_str();
@@ -654,7 +654,8 @@ void lua_getglobal (lua_State *L, const char *var) {
   const TValue *gt;  /* global table */
   lua_lock(L);
   gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
-  setsvalue(L, L->top++, luaS_new(L, var));
+  L->top[0] = luaS_new(var);
+  L->top++;
   luaV_gettable(L, gt, L->top - 1, L->top - 1);
   lua_unlock(L);
 }
@@ -677,7 +678,7 @@ void lua_getfield (lua_State *L, int idx, const char *k) {
   lua_lock(L);
   t = index2addr(L, idx);
   api_checkvalidindex(t);
-  setsvalue(L, L->top, luaS_new(L, k));
+  L->top[0] = luaS_new(k);
   api_incr_top(L);
   luaV_gettable(L, t, L->top - 1, L->top - 1);
   lua_unlock(L);
@@ -793,7 +794,8 @@ void lua_setglobal (lua_State *L, const char *var) {
   lua_lock(L);
   api_checknelems(L, 1);
   gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
-  setsvalue(L, L->top++, luaS_new(L, var));
+  L->top[0] = luaS_new(var);
+  L->top++;
   luaV_settable(L, gt, L->top - 1, L->top - 2);
   L->top -= 2;  /* pop value and key */
   lua_unlock(L);
@@ -820,7 +822,8 @@ void lua_setfield (lua_State *L, int idx, const char *k) {
   api_checknelems(L, 1);
   t = index2addr(L, idx);
   api_checkvalidindex(t);
-  setsvalue(L, L->top++, luaS_new(L, k));
+  L->top[0] = luaS_new(k);
+  L->top++;
   luaV_settable(L, t, L->top - 1, L->top - 2);
   L->top -= 2;  /* pop value and key */
   lua_unlock(L);
@@ -1212,7 +1215,7 @@ void lua_concat (lua_State *L, int n) {
     luaV_concat(L, n);
   }
   else if (n == 0) {  /* push empty string */
-    setsvalue(L, L->top, luaS_newlstr(L, "", 0));
+    L->top[0] = luaS_newlstr("", 0);
     api_incr_top(L);
   }
   /* else n == 1; nothing to do */
@@ -1236,7 +1239,7 @@ void *lua_newuserdata (lua_State *L, size_t size) {
   Udata *u;
   lua_lock(L);
   luaC_checkGC(L);
-  u = luaS_newudata(L, size, NULL);
+  u = luaS_newudata(size, NULL);
   setuvalue(L, L->top, u);
   api_incr_top(L);
   lua_unlock(L);
