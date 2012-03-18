@@ -100,7 +100,7 @@ int lua_getstack (lua_State *L, int level, lua_Debug *ar) {
 
 
 static const char *upvalname (Proto *p, int uv) {
-  TString *s = check_exp(uv < p->sizeupvalues, p->upvalues[uv].name);
+  TString *s = check_exp(uv < p->upvalues.size(), p->upvalues[uv].name);
   if (s == NULL) return "?";
   else return s->c_str();
 }

@@ -677,7 +677,7 @@ static void f_parser (lua_State *L, void *ud) {
   incr_top(L);
   cl = luaF_newLclosure(L, tf);
   setclLvalue(L, L->top - 1, cl);
-  for (i = 0; i < tf->sizeupvalues; i++)  /* initialize upvalues */
+  for (i = 0; i < tf->upvalues.size(); i++)  /* initialize upvalues */
     cl->upvals[i] = luaF_newupval(L);
 }
 

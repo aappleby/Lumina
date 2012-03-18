@@ -459,13 +459,17 @@ static int traverseproto (global_State *g, Proto *f) {
   stringmark(f->source);
   for (i = 0; i < f->constants.size(); i++)  /* mark literals */
     markvalue(g, &f->constants[i]);
-  for (i = 0; i < f->sizeupvalues; i++)  /* mark upvalue names */
+  for (i = 0; i < f->upvalues.size(); i++)  /* mark upvalue names */
     stringmark(f->upvalues[i].name);
   for (i = 0; i < f->p.size(); i++)  /* mark nested protos */
     markobject(g, f->p[i]);
-  for (i = 0; i < f->sizelocvars; i++)  /* mark local-variable names */
+  for (i = 0; i < f->locvars.size(); i++)  /* mark local-variable names */
     stringmark(f->locvars[i].varname);
-  return TRAVCOST + (int)f->constants.size() + f->sizeupvalues + (int)f->p.size() + f->sizelocvars;
+  return TRAVCOST +
+         (int)f->constants.size() +
+         (int)f->upvalues.size() +
+         (int)f->p.size() +
+         (int)f->locvars.size();
 }
 
 
@@ -477,7 +481,7 @@ static int traverseclosure (global_State *g, Closure *cl) {
   }
   else {
     int i;
-    assert(cl->nupvalues == cl->p->sizeupvalues);
+    assert(cl->nupvalues == cl->p->upvalues.size());
     markobject(g, cl->p);  /* mark its prototype */
     for (i=0; i<cl->nupvalues; i++)  /* mark its upvalues */
       markobject(g, cl->upvals[i]);

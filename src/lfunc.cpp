@@ -32,7 +32,7 @@ Closure *luaF_newCclosure (lua_State *L, int n) {
 
 Closure *luaF_newLclosure (lua_State *L, Proto *p) {
   THREAD_CHECK(L);
-  int n = p->sizeupvalues;
+  int n = (int)p->upvalues.size();
   LuaBase* o = luaC_newobj(LUA_TFUNCTION, sizeLclosure(n), NULL);
   Closure *c = gco2cl(o);
   c->isC = 0;
@@ -129,13 +129,11 @@ Proto *luaF_newproto (lua_State *L) {
   f->code.init();
   f->cache = NULL;
   f->lineinfo.init();
-  f->upvalues = NULL;
-  f->sizeupvalues = 0;
+  f->upvalues.init();
   f->numparams = 0;
   f->is_vararg = 0;
   f->maxstacksize = 0;
-  f->locvars = NULL;
-  f->sizelocvars = 0;
+  f->locvars.init();
   f->linedefined = 0;
   f->lastlinedefined = 0;
   f->source = NULL;
@@ -149,8 +147,8 @@ void luaF_freeproto (lua_State *L, Proto *f) {
   f->p.clear();
   f->constants.clear();
   f->lineinfo.clear();
-  luaM_free(f->locvars, f->sizelocvars * sizeof(LocVar), 0);
-  luaM_free(f->upvalues, f->sizeupvalues * sizeof(Upvaldesc), 0);
+  f->locvars.clear();
+  f->upvalues.clear();
   luaM_delobject(f, sizeof(Proto), LUA_TPROTO);
 }
 
@@ -174,7 +172,7 @@ void luaF_freeclosure (lua_State *L, Closure *c) {
 */
 const char *luaF_getlocalname (const Proto *f, int local_number, int pc) {
   int i;
-  for (i = 0; i<f->sizelocvars && f->locvars[i].startpc <= pc; i++) {
+  for (i = 0; i<(int)f->locvars.size() && f->locvars[i].startpc <= pc; i++) {
     if (pc < f->locvars[i].endpc) {  /* is variable active? */
       local_number--;
       if (local_number == 0)

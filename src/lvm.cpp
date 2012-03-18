@@ -402,8 +402,8 @@ void luaV_arith (lua_State *L, StkId ra, const TValue *rb,
 static Closure *getcached (Proto *p, UpVal **encup, StkId base) {
   Closure *c = p->cache;
   if (c != NULL) {  /* is there a cached closure? */
-    int nup = p->sizeupvalues;
-    Upvaldesc *uv = p->upvalues;
+    int nup = (int)p->upvalues.size();
+    Upvaldesc *uv = p->upvalues.begin();
     int i;
     for (i = 0; i < nup; i++) {  /* check whether it has right upvalues */
       TValue *v = uv[i].instack ? base + uv[i].idx : encup[uv[i].idx]->v;
@@ -424,8 +424,8 @@ static Closure *getcached (Proto *p, UpVal **encup, StkId base) {
 static void pushclosure (lua_State *L, Proto *p, UpVal **encup, StkId base,
                          StkId ra) {
   THREAD_CHECK(L);
-  int nup = p->sizeupvalues;
-  Upvaldesc *uv = p->upvalues;
+  int nup = (int)p->upvalues.size();
+  Upvaldesc *uv = p->upvalues.begin();
   int i;
   Closure *ncl = luaF_newLclosure(L, p);
   setclLvalue(L, ra, ncl);  /* anchor new closure in stack */

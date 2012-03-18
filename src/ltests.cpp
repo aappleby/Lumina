@@ -134,7 +134,7 @@ static void checkproto (global_State *g, Proto *f) {
     if (ttisstring(&f->constants[i]))
       checkobjref(g, fgc, tsvalue(&f->constants[i]));
   }
-  for (i=0; i<f->sizeupvalues; i++) {
+  for (i=0; i<f->upvalues.size(); i++) {
     if (f->upvalues[i].name)
       checkobjref(g, fgc, f->upvalues[i].name);
   }
@@ -142,7 +142,7 @@ static void checkproto (global_State *g, Proto *f) {
     if (f->p[i])
       checkobjref(g, fgc, f->p[i]);
   }
-  for (i=0; i<f->sizelocvars; i++) {
+  for (i=0; i<f->locvars.size(); i++) {
     if (f->locvars[i].varname)
       checkobjref(g, fgc, f->locvars[i].varname);
   }
@@ -159,7 +159,7 @@ static void checkclosure (global_State *g, Closure *cl) {
   }
   else {
     int i;
-    assert(cl->nupvalues == cl->p->sizeupvalues);
+    assert(cl->nupvalues == cl->p->upvalues.size());
     checkobjref(g, clgc, cl->p);
     for (i=0; i<cl->nupvalues; i++) {
       if (cl->upvals[i]) {

@@ -107,7 +107,7 @@ static void DumpConstants(const Proto* f, DumpState* D)
 
 static void DumpUpvalues(const Proto* f, DumpState* D)
 {
- int i,n=f->sizeupvalues;
+ int i,n=(int)f->upvalues.size();
  DumpInt(n,D);
  for (i=0; i<n; i++)
  {
@@ -122,7 +122,7 @@ static void DumpDebug(const Proto* f, DumpState* D)
  DumpString((D->strip) ? NULL : f->source,D);
  n= (D->strip) ? 0 : (int)f->lineinfo.size();
  DumpVector(f->lineinfo.begin(),n,sizeof(int),D);
- n= (D->strip) ? 0 : f->sizelocvars;
+ n= (D->strip) ? 0 : (int)f->locvars.size();
  DumpInt(n,D);
  for (i=0; i<n; i++)
  {
@@ -130,7 +130,7 @@ static void DumpDebug(const Proto* f, DumpState* D)
   DumpInt(f->locvars[i].startpc,D);
   DumpInt(f->locvars[i].endpc,D);
  }
- n= (D->strip) ? 0 : f->sizeupvalues;
+ n= (D->strip) ? 0 : f->upvalues.size();
  DumpInt(n,D);
  for (i=0; i<n; i++) DumpString(f->upvalues[i].name,D);
 }

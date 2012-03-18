@@ -129,8 +129,7 @@ static void LoadUpvalues(LoadState* S, Proto* f)
 {
  int i,n;
  n=LoadInt(S);
- f->upvalues = (Upvaldesc*)luaM_allocv(n,sizeof(Upvaldesc));
- f->sizeupvalues=n;
+ f->upvalues.resize(n);
  for (i=0; i<n; i++) f->upvalues[i].name=NULL;
  for (i=0; i<n; i++)
  {
@@ -147,8 +146,7 @@ static void LoadDebug(LoadState* S, Proto* f)
  f->lineinfo.resize(n);
  LoadVector(S,f->lineinfo.begin(),n,sizeof(int));
  n=LoadInt(S);
- f->locvars = (LocVar*)luaM_allocv(n,sizeof(LocVar));
- f->sizelocvars=n;
+ f->locvars.resize(n);
  for (i=0; i<n; i++) f->locvars[i].varname=NULL;
  for (i=0; i<n; i++)
  {

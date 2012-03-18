@@ -166,12 +166,12 @@ static void checkname (LexState *ls, expdesc *e) {
 static int registerlocalvar (LexState *ls, TString *varname) {
   FuncState *fs = ls->fs;
   Proto *f = fs->f;
-  int oldsize = f->sizelocvars;
-  if(fs->nlocvars >= f->sizelocvars) {
-    f->locvars = (LocVar*)luaM_growaux_(f->locvars, f->sizelocvars, sizeof(LocVar), SHRT_MAX, "local variables");
+  int oldsize = (int)f->locvars.size();
+  if(fs->nlocvars >= f->locvars.size()) {
+    f->locvars.grow();
   }
   
-  while (oldsize < f->sizelocvars) f->locvars[oldsize++].varname = NULL;
+  while (oldsize < f->locvars.size()) f->locvars[oldsize++].varname = NULL;
   f->locvars[fs->nlocvars].varname = varname;
   luaC_objbarrier(ls->L, f, varname);
   return fs->nlocvars++;
@@ -224,7 +224,7 @@ static void removevars (FuncState *fs, int tolevel) {
 
 static int searchupvalue (FuncState *fs, TString *name) {
   int i;
-  Upvaldesc *up = fs->f->upvalues;
+  Upvaldesc *up = fs->f->upvalues.begin();
   for (i = 0; i < fs->nups; i++) {
     if (eqstr(up[i].name, name)) return i;
   }
@@ -234,12 +234,12 @@ static int searchupvalue (FuncState *fs, TString *name) {
 
 static int newupvalue (FuncState *fs, TString *name, expdesc *v) {
   Proto *f = fs->f;
-  int oldsize = f->sizeupvalues;
+  int oldsize = (int)f->upvalues.size();
   checklimit(fs, fs->nups + 1, MAXUPVAL, "upvalues");
-  if(fs->nups >= f->sizeupvalues) {
-    f->upvalues = (Upvaldesc*)luaM_growaux_(f->upvalues, f->sizeupvalues, sizeof(Upvaldesc), MAXUPVAL, "upvalues");
+  if(fs->nups >= f->upvalues.size()) {
+    f->upvalues.grow();
   }
-  while (oldsize < f->sizeupvalues) f->upvalues[oldsize++].name = NULL;
+  while (oldsize < f->upvalues.size()) f->upvalues[oldsize++].name = NULL;
   f->upvalues[fs->nups].instack = (v->k == VLOCAL);
   f->upvalues[fs->nups].idx = cast_byte(v->info);
   f->upvalues[fs->nups].name = name;
@@ -561,18 +561,8 @@ static void close_func (LexState *ls) {
   f->lineinfo.resize(fs->pc);
   f->constants.resize(fs->nk);
   f->p.resize(fs->np);
-  if(f->locvars) {
-    f->locvars = (LocVar*)luaM_reallocv(f->locvars, f->sizelocvars, fs->nlocvars, sizeof(LocVar));
-  } else {
-    f->locvars = (LocVar*)luaM_alloc(fs->nlocvars * sizeof(LocVar));
-  }
-  f->sizelocvars = fs->nlocvars;
-  if(f->upvalues) {
-    f->upvalues = (Upvaldesc*)luaM_reallocv(f->upvalues, f->sizeupvalues, fs->nups, sizeof(Upvaldesc));
-  } else {
-    f->upvalues = (Upvaldesc*)luaM_alloc(fs->nups * sizeof(Upvaldesc));
-  }
-  f->sizeupvalues = fs->nups;
+  f->locvars.resize(fs->nlocvars);
+  f->upvalues.resize(fs->nups);
   assert(fs->bl == NULL);
   ls->fs = fs->prev;
   /* last token read was anchored in defunct function; must re-anchor it */

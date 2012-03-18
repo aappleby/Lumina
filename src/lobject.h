@@ -69,13 +69,10 @@ struct Proto : public LuaBase {
   LuaVector<Instruction> code;
   LuaVector<int> lineinfo;
   LuaVector<Proto*> p; // functions defined inside the function
-
-  LocVar *locvars;  /* information about local variables (debug information) */
-  Upvaldesc *upvalues;  /* upvalue information */
+  LuaVector<LocVar> locvars; // information about local variables (debug information)
+  LuaVector<Upvaldesc> upvalues; // upvalue information
   Closure *cache;  /* last created closure with this prototype */
   TString  *source;  /* used for debug information */
-  int sizeupvalues;  /* size of 'upvalues' */
-  int sizelocvars;
   int linedefined;
   int lastlinedefined;
   LuaBase *gclist;

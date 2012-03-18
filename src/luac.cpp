@@ -146,7 +146,7 @@ static const Proto* combine(lua_State* L, int n)
   for (i=0; i<n; i++)
   {
    f->p[i]=toproto(L,i-n-1);
-   if (f->p[i]->sizeupvalues>0) f->p[i]->upvalues[0].instack=0;
+   if (f->p[i]->upvalues.size()>0) f->p[i]->upvalues[0].instack=0;
   }
   f->lineinfo.clear();
   return f;
@@ -390,9 +390,9 @@ static void PrintHeader(const Proto* f)
 	S(f->code.size()),VOID(f));
  printf("%d%s param%s, %d slot%s, %d upvalue%s, ",
 	(int)(f->numparams),f->is_vararg?"+":"",SS(f->numparams),
-	S(f->maxstacksize),S(f->sizeupvalues));
+	S(f->maxstacksize),S(f->upvalues.size()));
  printf("%d local%s, %d constant%s, %d function%s\n",
-	S(f->sizelocvars),S(f->constants.size()),S(f->p.size()));
+	S(f->locvars.size()),S(f->constants.size()),S(f->p.size()));
 }
 
 static void PrintDebug(const Proto* f)
@@ -406,14 +406,14 @@ static void PrintDebug(const Proto* f)
   PrintConstant(f,i);
   printf("\n");
  }
- n=f->sizelocvars;
+ n=(int)f->locvars.size();
  printf("locals (%d) for %p:\n",n,VOID(f));
  for (i=0; i<n; i++)
  {
   printf("\t%d\t%s\t%d\t%d\n",
   i,f->locvars[i].varname->c_str(),f->locvars[i].startpc+1,f->locvars[i].endpc+1);
  }
- n=f->sizeupvalues;
+ n=(int)f->upvalues.size();
  printf("upvalues (%d) for %p:\n",n,VOID(f));
  for (i=0; i<n; i++)
  {
