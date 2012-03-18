@@ -120,8 +120,7 @@ static void LoadConstants(LoadState* S, Proto* f)
   }
  }
  n=LoadInt(S);
- f->p = (Proto**)luaM_allocv(n,sizeof(Proto*));
- f->sizep=n;
+ f->p.resize(n);
  for (i=0; i<n; i++) f->p[i]=NULL;
  for (i=0; i<n; i++) f->p[i]=LoadFunction(S);
 }

@@ -125,9 +125,7 @@ Proto *luaF_newproto (lua_State *L) {
   LuaBase* o = luaC_newobj(LUA_TPROTO, sizeof(Proto), NULL);
   Proto* f = gco2p(o);
   f->constants.init();
-  f->p = NULL;
-  f->sizep = 0;
-  //f->code = NULL;
+  f->p.init();
   f->code.init();
   f->cache = NULL;
   f->lineinfo.init();
@@ -148,7 +146,7 @@ Proto *luaF_newproto (lua_State *L) {
 void luaF_freeproto (lua_State *L, Proto *f) {
   THREAD_CHECK(L);
   f->code.clear();
-  luaM_free(f->p, f->sizep * sizeof(Proto*), 0);
+  f->p.clear();
   f->constants.clear();
   f->lineinfo.clear();
   luaM_free(f->locvars, f->sizelocvars * sizeof(LocVar), 0);

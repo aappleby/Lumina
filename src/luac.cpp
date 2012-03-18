@@ -392,7 +392,7 @@ static void PrintHeader(const Proto* f)
 	(int)(f->numparams),f->is_vararg?"+":"",SS(f->numparams),
 	S(f->maxstacksize),S(f->sizeupvalues));
  printf("%d local%s, %d constant%s, %d function%s\n",
-	S(f->sizelocvars),S(f->constants.size()),S(f->sizep));
+	S(f->sizelocvars),S(f->constants.size()),S(f->p.size()));
 }
 
 static void PrintDebug(const Proto* f)
@@ -424,7 +424,7 @@ static void PrintDebug(const Proto* f)
 
 static void PrintFunction(const Proto* f, int full)
 {
- int i,n=f->sizep;
+ int i,n=(int)f->p.size();
  PrintHeader(f);
  PrintCode(f);
  if (full) PrintDebug(f);

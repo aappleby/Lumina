@@ -79,7 +79,7 @@ static void DumpFunction(const Proto* f, DumpState* D);
 
 static void DumpConstants(const Proto* f, DumpState* D)
 {
- int i,n=f->constants.size();
+ int i,n=(int)f->constants.size();
  DumpInt(n,D);
  for (i=0; i<n; i++)
  {
@@ -100,7 +100,7 @@ static void DumpConstants(const Proto* f, DumpState* D)
 	break;
   }
  }
- n=f->sizep;
+ n=(int)f->p.size();
  DumpInt(n,D);
  for (i=0; i<n; i++) DumpFunction(f->p[i],D);
 }

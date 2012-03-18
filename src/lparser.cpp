@@ -505,12 +505,12 @@ static void leaveblock (FuncState *fs) {
 static void codeclosure (LexState *ls, Proto *clp, expdesc *v) {
   FuncState *fs = ls->fs->prev;
   Proto *f = fs->f;  /* prototype of function creating new closure */
-  if (fs->np >= f->sizep) {
-    int oldsize = f->sizep;
-    if(fs->np >= f->sizep) {
-      f->p = (Proto**)luaM_growaux_(f->p, f->sizep, sizeof(Proto*), MAXARG_Bx, "functions");
+  if (fs->np >= (int)f->p.size()) {
+    int oldsize = (int)f->p.size();
+    if(fs->np >= f->p.size()) {
+      f->p.grow();
     }
-    while (oldsize < f->sizep) f->p[oldsize++] = NULL;
+    while (oldsize < f->p.size()) f->p[oldsize++] = NULL;
   }
   f->p[fs->np++] = clp;
   luaC_objbarrier(ls->L, f, clp);
@@ -560,16 +560,7 @@ static void close_func (LexState *ls) {
   f->code.resize(fs->pc);
   f->lineinfo.resize(fs->pc);
   f->constants.resize(fs->nk);
-  if(f->p) {
-    f->p = (Proto**)luaM_reallocv(f->p, f->sizep, fs->np, sizeof(Proto*));
-  } else {
-    if(fs->np) {
-      f->p = (Proto**)luaM_alloc(fs->np * sizeof(Proto*));
-    } else {
-      f->p = NULL;
-    }
-  }
-  f->sizep = fs->np;
+  f->p.resize(fs->np);
   if(f->locvars) {
     f->locvars = (LocVar*)luaM_reallocv(f->locvars, f->sizelocvars, fs->nlocvars, sizeof(LocVar));
   } else {
