@@ -149,7 +149,8 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
          (oldval = luaH_newkey(h, key), 1)))) {
         /* no metamethod and (now) there is an entry with given key */
         setobj(oldval, val);  /* assign new value to that entry */
-        invalidateTMcache(h);
+        // invalidate TM cache
+        h->flags = 0;
         luaC_barrierback(obj2gco(h), val);
         return;
       }

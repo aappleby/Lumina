@@ -835,7 +835,8 @@ void lua_rawset (lua_State *L, int idx) {
   t = index2addr(L, idx);
   api_check(ttistable(t), "table expected");
   setobj(luaH_set(hvalue(t), L->top-2), L->top-1);
-  invalidateTMcache(hvalue(t));
+  // invalidate TM cache
+  hvalue(t)->flags = 0;
   luaC_barrierback(gcvalue(t), L->top-1);
   L->top -= 2;
   lua_unlock(L);

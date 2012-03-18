@@ -11,11 +11,6 @@
 
 
 #define gnode(t,i)	(&(t)->node[i])
-#define gval(n)		(&(n)->i_val)
-#define gnext(n)	((n)->next)
-
-#define invalidateTMcache(t)	((t)->flags = 0)
-
 
 const TValue *luaH_getint (Table *t, int key);
 void luaH_setint (Table *t, int key, TValue *value);

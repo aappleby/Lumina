@@ -566,16 +566,16 @@ static int table_query (lua_State *L) {
     lua_pushnil(L);
   }
   else if ((i -= t->sizearray) < sizenode(t)) {
-    if (!ttisnil(gval(gnode(t, i))) ||
+    if (!ttisnil(&gnode(t, i)->i_val) ||
         ttisnil(&gnode(t, i)->i_key) ||
         ttisnumber(&gnode(t, i)->i_key)) {
       pushobject(L, &gnode(t, i)->i_key);
     }
     else
       lua_pushliteral(L, "<undef>");
-    pushobject(L, gval(gnode(t, i)));
-    if (gnext(&t->node[i]))
-      lua_pushinteger(L, gnext(&t->node[i]) - t->node);
+    pushobject(L, &gnode(t, i)->i_val);
+    if (t->node[i].next)
+      lua_pushinteger(L, t->node[i].next - t->node);
     else
       lua_pushnil(L);
   }
