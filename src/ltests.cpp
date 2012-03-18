@@ -557,7 +557,7 @@ static int table_query (lua_State *L) {
   t = hvalue(obj_at(L, 1));
   if (i == -1) {
     lua_pushinteger(L, t->sizearray);
-    lua_pushinteger(L, luaH_isdummy(t->node) ? 0 : t->sizenode);
+    lua_pushinteger(L, t->sizenode);
     lua_pushinteger(L, t->lastfree - t->node);
   }
   else if (i < t->sizearray) {

@@ -25,7 +25,5 @@ void luaH_free (Table *t);
 int luaH_next (Table *t, StkId key);
 int luaH_getn (Table *t);
 Node *luaH_mainposition (const Table *t, const TValue *key);
-int luaH_isdummy (Node *n);
-
 
 #endif
