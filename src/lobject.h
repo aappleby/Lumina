@@ -78,7 +78,6 @@ struct Proto : public LuaBase {
   Closure *cache;  /* last created closure with this prototype */
   TString  *source;  /* used for debug information */
   int sizeupvalues;  /* size of 'upvalues' */
-  int sizecode;
   int sizelineinfo;
   int sizep;  /* size of `p' */
   int sizelocvars;

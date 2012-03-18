@@ -39,7 +39,12 @@ public:
 
   void resize ( int newsize )
   {
-    newsize = std::max(newsize, 4);
+    if(newsize == 0)
+    {
+      clear();
+      return;
+    }
+    //newsize = std::max(newsize, 4);
     T* newbuf = reinterpret_cast<T*>(default_alloc(sizeof(T) * newsize, 0));
     if(newbuf == NULL) luaD_throw(LUA_ERRMEM);;
     memcpy(newbuf, buf, sizeof(T) * std::min(size,newsize));
@@ -57,7 +62,7 @@ public:
 
   void grow() 
   {
-    resize(size * 2);
+    resize(size ? size * 2 : 1);
   }
 
 

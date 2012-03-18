@@ -88,7 +88,6 @@ static void LoadCode(LoadState* S, Proto* f)
  int n=LoadInt(S);
  //f->code = (Instruction*)luaM_allocv(n,sizeof(Instruction));
  f->code.resize(n);
- f->sizecode=n;
  LoadVector(S,&f->code[0],n,sizeof(Instruction));
 }
 

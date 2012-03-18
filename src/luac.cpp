@@ -277,7 +277,7 @@ static void PrintConstant(const Proto* f, int i)
 static void PrintCode(const Proto* f)
 {
  const Instruction* code=&f->code[0];
- int pc,n=f->sizecode;
+ int pc,n=f->code.size;
  for (pc=0; pc<n; pc++)
  {
   Instruction i=code[pc];
@@ -387,7 +387,7 @@ static void PrintHeader(const Proto* f)
  printf("\n%s <%s:%d,%d> (%d instruction%s at %p)\n",
  	(f->linedefined==0)?"main":"function",s,
 	f->linedefined,f->lastlinedefined,
-	S(f->sizecode),VOID(f));
+	S(f->code.size),VOID(f));
  printf("%d%s param%s, %d slot%s, %d upvalue%s, ",
 	(int)(f->numparams),f->is_vararg?"+":"",SS(f->numparams),
 	S(f->maxstacksize),S(f->sizeupvalues));

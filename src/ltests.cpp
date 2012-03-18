@@ -178,7 +178,7 @@ static int lua_checkpc (pCallInfo ci) {
   else {
     Proto *p = ci_func(ci)->p;
     return &p->code[0] <= ci->savedpc &&
-           ci->savedpc <= &p->code[0] + p->sizecode;
+           ci->savedpc <= &p->code[0] + p->code.size;
   }
 }
 
@@ -391,7 +391,7 @@ static int listcode (lua_State *L) {
   lua_newtable(L);
   setnameval(L, "maxstack", p->maxstacksize);
   setnameval(L, "numparams", p->numparams);
-  for (pc=0; pc<p->sizecode; pc++) {
+  for (pc=0; pc<p->code.size; pc++) {
     char buff[100];
     lua_pushinteger(L, pc+1);
     lua_pushstring(L, buildop(p, pc, buff));

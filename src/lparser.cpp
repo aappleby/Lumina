@@ -557,9 +557,7 @@ static void close_func (LexState *ls) {
   Proto *f = fs->f;
   luaK_ret(fs, 0, 0);  /* final return */
   leaveblock(fs);
-  //f->code = (Instruction*)luaM_reallocv(f->code, f->sizecode, fs->pc, sizeof(Instruction));
   f->code.resize(fs->pc);
-  f->sizecode = fs->pc;
   f->lineinfo = (int*)luaM_reallocv(f->lineinfo, f->sizelineinfo, fs->pc, sizeof(int));
   f->sizelineinfo = fs->pc;
   if(f->constants) {
