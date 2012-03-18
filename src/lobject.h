@@ -16,6 +16,7 @@
 #include "lua.h"
 
 #include "LuaBase.h"
+#include "LuaVector.h"
 class Table;
 
 
@@ -67,7 +68,9 @@ struct Proto : public LuaBase {
   TValue *constants;  /* constants used by the function */
   int nconstants;  /* size of `constants' */
 
-  Instruction *code;
+  //Instruction *code;
+  LuaVector<Instruction> code;
+
   Proto **p;  /* functions defined inside the function */
   int *lineinfo;  /* map from opcodes to source lines (debug information) */
   LocVar *locvars;  /* information about local variables (debug information) */

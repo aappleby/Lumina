@@ -177,8 +177,8 @@ static int lua_checkpc (pCallInfo ci) {
   if (!isLua(ci)) return 1;
   else {
     Proto *p = ci_func(ci)->p;
-    return p->code <= ci->savedpc &&
-           ci->savedpc <= p->code + p->sizecode;
+    return &p->code[0] <= ci->savedpc &&
+           ci->savedpc <= &p->code[0] + p->sizecode;
   }
 }
 

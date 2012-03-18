@@ -133,6 +133,7 @@ void* default_alloc(size_t size, int type) {
 }
 
 void default_free(void * blob, size_t size, int type) {
+  if(blob == NULL) return;
   Header* oldblock = reinterpret_cast<Header*>(blob) - 1;
   assert(oldblock->size == size);
   assert(oldblock->type == type);
@@ -253,24 +254,30 @@ void* luaM_allocv(size_t n, size_t size) {
 //-----------------------------------------------------------------------------
 
 void *luaM_growaux_ (void *block, int& size, size_t size_elems, int limit, const char *what) {
-  void *newblock;
+  /*
   int newsize;
-  if (size >= limit/2) {  /* cannot double it? */
-    if (size >= limit)  /* cannot grow even a little? */
+  if (size >= limit/2) {  // cannot double it?
+    if (size >= limit)  // cannot grow even a little?
       luaG_runerror("too many %s (limit is %d)", what, limit);
-    newsize = limit;  /* still have at least one free place */
+    newsize = limit;  // still have at least one free place
   }
   else {
     newsize = size*2;
-    if (newsize < MINSIZEARRAY)
-      newsize = MINSIZEARRAY;  /* minimum size */
+    if (newsize < MINSIZEARRAY) {
+      newsize = MINSIZEARRAY;  // minimum sizes
+    }
   }
+  */
+  int newsize = std::max(size * 2, MINSIZEARRAY);
+
   if(block) {
-    newblock = luaM_reallocv(block, size, newsize, size_elems);
+    void *newblock = luaM_reallocv(block, size, newsize, size_elems);
+    size = newsize;
+    return newblock;
   } else {
-    newblock = luaM_alloc(newsize * size_elems);
+    void *newblock = luaM_alloc(newsize * size_elems);
+    size = newsize;
+    return newblock;
   }
-  size = newsize;  /* update only when everything else is OK */
-  return newblock;
 }
 

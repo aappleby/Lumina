@@ -181,9 +181,9 @@ static void close_state (lua_State *L) {
 
   freestack(L);
   assert(gettotalbytes(g) == (sizeof(lua_State) + sizeof(global_State)));
-  default_realloc(g, sizeof(global_State), 0, 0);
+  default_free(g, sizeof(global_State), 0);
   L->l_G = NULL;
-  default_realloc(L, sizeof(lua_State), 0, 0);  /* free main block */
+  default_free(L, sizeof(lua_State), 0);  /* free main block */
 }
 
 

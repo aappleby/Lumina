@@ -50,7 +50,10 @@ void  luaM_delobject(void * blob, size_t size, int type);
 /* not to be called directly */
 void *luaM_growaux_ (void *block, int& size, size_t size_elem, int limit, const char *what);
 
-void* default_realloc(void *ptr, size_t osize, size_t nsize, int type);
+
+void* default_alloc   (size_t size, int type);
+void  default_free    (void * blob, size_t size, int type);
+void* default_realloc (void *ptr, size_t osize, size_t nsize, int type);
 
 #endif
 

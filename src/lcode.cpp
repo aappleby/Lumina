@@ -232,7 +232,10 @@ static int luaK_code (FuncState *fs, Instruction i) {
   dischargejpc(fs);  /* `pc' will change */
   /* put new instruction in code array */
   if(fs->pc >= f->sizecode) {
-    f->code = (Instruction*)luaM_growaux_(f->code, f->sizecode, sizeof(Instruction), MAX_INT, "opcodes");
+    //f->code = (Instruction*)luaM_growaux_(f->code, f->sizecode, sizeof(Instruction), MAX_INT, "opcodes");
+    f->code.grow();
+    f->sizecode = f->code.size;
+    //f->code.resize(fs->pc+1);
   }
   f->code[fs->pc] = i;
   /* save corresponding line information */

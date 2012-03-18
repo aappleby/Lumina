@@ -351,7 +351,8 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
       ci->base = base;
       ci->top = base + p->maxstacksize;
       assert(ci->top <= L->stack_last);
-      ci->savedpc = p->code;  /* starting point */
+      //ci->savedpc = p->code;  /* starting point */
+      ci->savedpc = &p->code[0];
       ci->callstatus = CIST_LUA;
       L->top = ci->top;
       if (L->hookmask & LUA_MASKCALL)
