@@ -507,11 +507,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\LuaBase.cpp"
+				RelativePath="..\src\LuaObject.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\LuaBase.h"
+				RelativePath="..\src\LuaObject.h"
 				>
 			</File>
 			<File

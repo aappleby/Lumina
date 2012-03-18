@@ -31,10 +31,10 @@ void luaS_resize (lua_State *L, int newsize) {
   }
   /* rehash */
   for (i=0; i<tb->size; i++) {
-    LuaBase *p = tb->hash[i];
+    LuaObject *p = tb->hash[i];
     tb->hash[i] = NULL;
     while (p) {  /* for each node in the list */
-      LuaBase *next = gch(p)->next;  /* save next */
+      LuaObject *next = gch(p)->next;  /* save next */
       unsigned int h = lmod(gco2ts(p)->getHash(), newsize);  /* new position */
       gch(p)->next = tb->hash[h];  /* chain it */
       tb->hash[h] = p;
@@ -55,7 +55,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
                                        unsigned int h) {
   THREAD_CHECK(L);
   size_t totalsize;  /* total size of TString object */
-  LuaBase **list;  /* (pointer to) list where it will be inserted */
+  LuaObject **list;  /* (pointer to) list where it will be inserted */
   TString *ts;
   stringtable *tb = G(L)->strt;
   if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
@@ -64,7 +64,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
     luaS_resize(L, tb->size*2);  /* too crowded */
   totalsize = sizeof(TString) + ((l + 1) * sizeof(char));
   list = &tb->hash[lmod(h, tb->size)];
-  LuaBase* o = luaC_newobj(LUA_TSTRING, totalsize, list);
+  LuaObject* o = luaC_newobj(LUA_TSTRING, totalsize, list);
   ts = gco2ts(o);
   ts->setLen(l);
   ts->setHash(h);
@@ -78,7 +78,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
 
 TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   THREAD_CHECK(L);
-  LuaBase *o;
+  LuaObject *o;
   unsigned int h = cast(unsigned int, l);  /* seed */
   size_t step = (l>>5)+1;  /* if string is too long, don't hash all its chars */
   size_t l1;
@@ -111,7 +111,7 @@ Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
   Udata *u;
   if (s > MAX_SIZET - sizeof(Udata))
     luaG_runerror("memory allocation error: udata too big");
-  LuaBase* o = luaC_newobj(LUA_TUSERDATA, sizeof(Udata) + s, NULL);
+  LuaObject* o = luaC_newobj(LUA_TUSERDATA, sizeof(Udata) + s, NULL);
   u = gco2u(o);
   u->len = s;
   u->metatable = NULL;

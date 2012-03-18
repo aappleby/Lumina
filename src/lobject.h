@@ -15,7 +15,7 @@
 #include "llimits.h"
 #include "lua.h"
 
-#include "LuaBase.h"
+#include "LuaObject.h"
 #include "LuaVector.h"
 class Table;
 
@@ -32,7 +32,7 @@ typedef TValue* StkId;  /* index to stack elements */
 /*
 ** Header for userdata; memory area follows the end of this structure
 */
-__declspec(align(8)) struct Udata : public LuaBase {
+__declspec(align(8)) struct Udata : public LuaObject {
   Table *metatable;
   Table *env;
   size_t len;  /* number of bytes */
@@ -64,7 +64,7 @@ typedef struct LocVar {
 /*
 ** Function Prototypes
 */
-struct Proto : public LuaBase {
+struct Proto : public LuaObject {
   LuaVector<TValue> constants;
   LuaVector<Instruction> code;
   LuaVector<int> lineinfo;
@@ -75,7 +75,7 @@ struct Proto : public LuaBase {
   TString  *source;  /* used for debug information */
   int linedefined;
   int lastlinedefined;
-  LuaBase *gclist;
+  LuaObject *gclist;
   uint8_t numparams;  /* number of fixed parameters */
   uint8_t is_vararg;
   uint8_t maxstacksize;  /* maximum stack used by this function */
@@ -86,7 +86,7 @@ struct Proto : public LuaBase {
 /*
 ** Lua Upvalues
 */
-class UpVal : public LuaBase {
+class UpVal : public LuaObject {
 public:
   TValue *v;  /* points to stack or to its own value */
 
@@ -101,11 +101,11 @@ public:
 */
 
 
-class Closure : public LuaBase {
+class Closure : public LuaObject {
 public:
   uint8_t isC;
   uint8_t nupvalues;
-  LuaBase *gclist;
+  LuaObject *gclist;
 
   lua_CFunction f;
   TValue upvalue[1];  /* list of upvalues */

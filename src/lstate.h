@@ -112,15 +112,15 @@ public:
   uint8_t gckind;  /* kind of GC running */
   uint8_t gcrunning;  /* true if GC is running */
   int sweepstrgc;  /* position of sweep in `strt' */
-  LuaBase *allgc;  /* list of all collectable objects */
-  LuaBase *finobj;  /* list of collectable objects with finalizers */
-  LuaBase **sweepgc;  /* current position of sweep */
-  LuaBase *gray;  /* list of gray objects */
-  LuaBase *grayagain;  /* list of objects to be traversed atomically */
-  LuaBase *weak;  /* list of tables with weak values */
-  LuaBase *ephemeron;  /* list of ephemeron tables (weak keys) */
-  LuaBase *allweak;  /* list of all-weak tables */
-  LuaBase *tobefnz;  /* list of userdata to be GC */
+  LuaObject *allgc;  /* list of all collectable objects */
+  LuaObject *finobj;  /* list of collectable objects with finalizers */
+  LuaObject **sweepgc;  /* current position of sweep */
+  LuaObject *gray;  /* list of gray objects */
+  LuaObject *grayagain;  /* list of objects to be traversed atomically */
+  LuaObject *weak;  /* list of tables with weak values */
+  LuaObject *ephemeron;  /* list of ephemeron tables (weak keys) */
+  LuaObject *allweak;  /* list of all-weak tables */
+  LuaObject *tobefnz;  /* list of userdata to be GC */
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
   Mbuffer buff;  /* temporary buffer for string concatenation */
   int gcpause;  /* size of pause between successive GCs */
@@ -140,7 +140,7 @@ class CallInfo;
 /*
 ** `per thread' state
 */
-class lua_State : public LuaBase {
+class lua_State : public LuaObject {
 public:
   uint8_t status;
   StkId top;  /* first free slot in the stack */
@@ -160,8 +160,8 @@ public:
   int basehookcount;
   int hookcount;
   lua_Hook hook;
-  LuaBase *openupval;  /* list of open upvalues in this stack */
-  LuaBase *gclist;
+  LuaObject *openupval;  /* list of open upvalues in this stack */
+  LuaObject *gclist;
   lua_longjmp *errorJmp;  /* current error recover point */
   ptrdiff_t errfunc;  /* current error handling function (stack index) */
   CallInfo base_ci;  /* CallInfo for first level (C calling Lua) */
@@ -169,11 +169,11 @@ public:
 
 #define G(L)	(L->l_G)
 
-#include "LuaBase.h"
+#include "LuaObject.h"
 
 #define gch(o)		(o)
 
-/* macros to convert a LuaBase into a specific value */
+/* macros to convert a LuaObject into a specific value */
 #define gco2ts(o)	check_exp((o)->tt == LUA_TSTRING, reinterpret_cast<TString*>(o))
 #define rawgco2u(o)	check_exp((o)->tt == LUA_TUSERDATA, reinterpret_cast<Udata*>(o))
 
@@ -185,8 +185,8 @@ public:
 #define gco2uv(o)	check_exp((o)->tt == LUA_TUPVAL, reinterpret_cast<UpVal*>(o))
 #define gco2th(o)	check_exp((o)->tt == LUA_TTHREAD, reinterpret_cast<lua_State*>(o))
 
-/* macro to convert any Lua object into a LuaBase */
-#define obj2gco(v)	(cast(LuaBase *, (v)))
+/* macro to convert any Lua object into a LuaObject */
+#define obj2gco(v)	(cast(LuaObject *, (v)))
 
 
 /* actual number of total bytes allocated */

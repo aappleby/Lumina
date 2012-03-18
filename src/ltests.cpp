@@ -63,7 +63,7 @@ static int tpanic (lua_State *L) {
 */
 
 
-static int testobjref1 (global_State *g, LuaBase *f, LuaBase *t) {
+static int testobjref1 (global_State *g, LuaObject *f, LuaObject *t) {
   if (isdead(t)) return 0;
   if (isgenerational(g) || !issweepphase(g))
     return !isblack(f) || !iswhite(t);
@@ -71,9 +71,9 @@ static int testobjref1 (global_State *g, LuaBase *f, LuaBase *t) {
 }
 
 
-static void printobj (global_State *g, LuaBase *o) {
+static void printobj (global_State *g, LuaObject *o) {
   int i = 0;
-  LuaBase *p;
+  LuaObject *p;
   for (p = g->allgc; p != o && p != NULL; p = gch(p)->next) i++;
   if (p == NULL) i = -1;
   printf("%d:%s(%p)-%c(%02X)", i, ttypename(gch(o)->tt), (void *)o,
@@ -81,7 +81,7 @@ static void printobj (global_State *g, LuaBase *o) {
 }
 
 
-static int testobjref (global_State *g, LuaBase *f, LuaBase *t) {
+static int testobjref (global_State *g, LuaObject *f, LuaObject *t) {
   int r = testobjref1(g,f,t);
   if (!r) {
     printf("%d(%02X) - ", g->gcstate, g->currentwhite);
@@ -96,7 +96,7 @@ static int testobjref (global_State *g, LuaBase *f, LuaBase *t) {
 #define checkobjref(g,f,t) assert(testobjref(g,f,obj2gco(t)))
 
 
-static void checkvalref (global_State *g, LuaBase *f, const TValue *t) {
+static void checkvalref (global_State *g, LuaObject *f, const TValue *t) {
   if (iscollectable(t)) {
     assert(righttt(t));
     assert(testobjref(g, f, gcvalue(t)));
@@ -107,7 +107,7 @@ static void checkvalref (global_State *g, LuaBase *f, const TValue *t) {
 static void checktable (global_State *g, Table *h) {
   int i;
   Node *n, *limit = gnode(h, sizenode(h));
-  LuaBase *hgc = obj2gco(h);
+  LuaObject *hgc = obj2gco(h);
   if (h->metatable)
     checkobjref(g, hgc, h->metatable);
   for (i = 0; i < h->sizearray; i++)
@@ -128,7 +128,7 @@ static void checktable (global_State *g, Table *h) {
 */
 static void checkproto (global_State *g, Proto *f) {
   int i;
-  LuaBase *fgc = obj2gco(f);
+  LuaObject *fgc = obj2gco(f);
   if (f->source) checkobjref(g, fgc, f->source);
   for (i=0; i<f->constants.size(); i++) {
     if (ttisstring(&f->constants[i]))
@@ -151,7 +151,7 @@ static void checkproto (global_State *g, Proto *f) {
 
 
 static void checkclosure (global_State *g, Closure *cl) {
-  LuaBase *clgc = obj2gco(cl);
+  LuaObject *clgc = obj2gco(cl);
   if (cl->isC) {
     int i;
     for (i=0; i<cl->nupvalues; i++)
@@ -186,7 +186,7 @@ static int lua_checkpc (pCallInfo ci) {
 static void checkstack (global_State *g, lua_State *L1) {
   StkId o;
   CallInfo *ci;
-  LuaBase *uvo;
+  LuaObject *uvo;
   assert(!isdead(obj2gco(L1)));
   for (uvo = L1->openupval; uvo != NULL; uvo = gch(uvo)->next) {
     UpVal *uv = gco2uv(uvo);
@@ -205,7 +205,7 @@ static void checkstack (global_State *g, lua_State *L1) {
 }
 
 
-static void checkobject (global_State *g, LuaBase *o) {
+static void checkobject (global_State *g, LuaObject *o) {
   if (isdead(o))
     assert(issweepphase(g));
   else {
@@ -249,7 +249,7 @@ static void checkobject (global_State *g, LuaBase *o) {
 
 #define TESTGRAYBIT		7
 
-static void checkgraylist (LuaBase *l) {
+static void checkgraylist (LuaObject *l) {
   while (l) {
     assert(isgray(l));
     assert(!testbit(l->marked, TESTGRAYBIT));
@@ -279,7 +279,7 @@ static void markgrays (global_State *g) {
 }
 
 
-static void checkold (global_State *g, LuaBase *o) {
+static void checkold (global_State *g, LuaObject *o) {
   int isold = 0;
   for (; o != NULL; o = gch(o)->next) {
     if (isold(o)) {  /* old generation? */
@@ -300,7 +300,7 @@ static void checkold (global_State *g, LuaBase *o) {
 int lua_checkmemory (lua_State *L) {
   THREAD_CHECK(L);
   global_State *g = G(L);
-  LuaBase *o;
+  LuaObject *o;
   UpVal *uv;
   if (keepinvariant(g)) {
     assert(!iswhite(obj2gco(g->mainthread)));
@@ -593,7 +593,7 @@ static int string_query (lua_State *L) {
     return 2;
   }
   else if (s < tb->size) {
-    LuaBase *ts;
+    LuaObject *ts;
     int n = 0;
     for (ts = tb->hash[s]; ts; ts = gch(ts)->next) {
       setsvalue(L, L->top, gco2ts(ts));

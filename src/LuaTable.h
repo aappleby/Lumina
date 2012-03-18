@@ -1,5 +1,5 @@
 #pragma once
-#include "LuaBase.h"
+#include "LuaObject.h"
 #include "LuaValue.h"
 #include "LuaVector.h"
 
@@ -13,7 +13,7 @@ public:
 };
 
 
-class Table : public LuaBase {
+class Table : public LuaObject {
 public:
   Table() {}
 
@@ -24,6 +24,6 @@ public:
   LuaVector<TValue> array;
   Node *node;
   Node *lastfree;  /* any free position is before this position */
-  LuaBase *gclist;
+  LuaObject *gclist;
   int sizearray;  /* size of `array' array */
 };

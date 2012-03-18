@@ -1,7 +1,7 @@
 #pragma once
 #include "stdint.h"
 
-class LuaBase;
+class LuaObject;
 class TString;
 class lua_State;
 class global_State;

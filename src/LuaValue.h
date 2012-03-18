@@ -56,7 +56,7 @@ enum LuaTag {
 
 struct TValue {
   union {
-    LuaBase *gc;    /* collectable objects */
+    LuaObject *gc;    /* collectable objects */
     void *p;         /* light userdata */
     int32_t b;           /* booleans */
     lua_CFunction f; /* light C functions */
@@ -68,8 +68,8 @@ struct TValue {
   bool isCollectable() { return (tt_ & BIT_ISCOLLECTABLE) != 0; }
   bool isDeadKey() { return tt_ == LUA_TDEADKEY; }
 
-  LuaBase* getBase()    { assert(isCollectable()); return gc; }
-  LuaBase* getDeadKey() { assert(isDeadKey()); return gc; }
+  LuaObject* getBase()    { assert(isCollectable()); return gc; }
+  LuaObject* getDeadKey() { assert(isDeadKey()); return gc; }
 
   int32_t tt_;
   int32_t rawtype() const { return tt_; }
@@ -173,42 +173,42 @@ struct TValue {
   { TValue *io=(obj); io->b=(x); settt_(io, LUA_TBOOLEAN); }
 
 #define setgcovalue(L,obj,x) \
-  { THREAD_CHECK(L); TValue *io=(obj); LuaBase *i_g=(x); \
+  { THREAD_CHECK(L); TValue *io=(obj); LuaObject *i_g=(x); \
     io->gc=i_g; settt_(io, ctb(gch(i_g)->tt)); }
 
 #define setsvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
-    io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TSTRING)); \
+    io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TSTRING)); \
     checkliveness(io); }
 
 #define setuvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
-    io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TUSERDATA)); \
+    io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TUSERDATA)); \
     checkliveness(io); }
 
 #define setthvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
-    io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TTHREAD)); \
+    io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TTHREAD)); \
     checkliveness(io); }
 
 #define setclLvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
-    io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TLCL)); \
+    io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TLCL)); \
     checkliveness(io); }
 
 #define setclCvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
-    io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TCCL)); \
+    io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TCCL)); \
     checkliveness(io); }
 
 #define sethvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
-    io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TTABLE)); \
+    io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TTABLE)); \
     checkliveness(io); }
 
 #define setptvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
-    io->gc=cast(LuaBase *, (x)); settt_(io, ctb(LUA_TPROTO)); \
+    io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TPROTO)); \
     checkliveness(io); }
 
 #define setdeadvalue(obj)	settt_(obj, LUA_TDEADKEY)

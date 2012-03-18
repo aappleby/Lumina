@@ -1246,7 +1246,7 @@ void *lua_newuserdata (lua_State *L, size_t size) {
 
 
 static const char *aux_upvalue (StkId fi, int n, TValue **val,
-                                LuaBase **owner) {
+                                LuaObject **owner) {
   switch (ttype(fi)) {
     case LUA_TCCL: {  /* C closure */
       Closure *f = clCvalue(fi);
@@ -1289,7 +1289,7 @@ const char *lua_setupvalue (lua_State *L, int funcindex, int n) {
   THREAD_CHECK(L);
   const char *name;
   TValue *val = NULL;  /* to avoid warnings */
-  LuaBase *owner = NULL;  /* to avoid warnings */
+  LuaObject *owner = NULL;  /* to avoid warnings */
   StkId fi;
   lua_lock(L);
   fi = index2addr(L, funcindex);

@@ -1,11 +1,11 @@
 #pragma once
-#include "LuaBase.h"
+#include "LuaObject.h"
 #include "LuaVector.h"
 
 /*
 ** Header for string value; string bytes follow the end of this structure
 */
-__declspec(align(8)) class TString : public LuaBase {
+__declspec(align(8)) class TString : public LuaObject {
 public:
 
   TString() {}
@@ -37,8 +37,8 @@ protected:
 
 class stringtable {
 public:
-  //LuaBase **hash;
-  LuaVector<LuaBase*> hash;
+  //LuaObject **hash;
+  LuaVector<LuaObject*> hash;
   uint32_t nuse;  /* number of elements */
   int size;
 };

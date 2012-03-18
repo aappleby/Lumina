@@ -130,7 +130,7 @@ static void DumpDebug(const Proto* f, DumpState* D)
   DumpInt(f->locvars[i].startpc,D);
   DumpInt(f->locvars[i].endpc,D);
  }
- n= (D->strip) ? 0 : f->upvalues.size();
+ n= (D->strip) ? 0 : (int)f->upvalues.size();
  DumpInt(n,D);
  for (i=0; i<n; i++) DumpString(f->upvalues[i].name,D);
 }
