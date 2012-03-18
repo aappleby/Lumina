@@ -80,19 +80,19 @@ void Memcontrol::disableLimit() {
 struct Header {
   size_t size;
   int type;
-  int alloctype;
+  int pool;
 };
 
 //-----------------------------------------------------------------------------
 
-Header* allocblock (size_t size, int type, int alloctype) {
+Header* allocblock (size_t size, int type, int pool) {
   uint8_t* buf = (uint8_t*)malloc(sizeof(Header) + size + MARKSIZE);
   if (buf == NULL) return NULL;
 
   Header *block = reinterpret_cast<Header*>(buf);
   block->size = size;
   block->type = type;
-  block->alloctype = alloctype;
+  block->pool = pool;
   memset(buf + sizeof(Header), -MARK, size);
   memset(buf + sizeof(Header) + size, MARK, MARKSIZE);
 
@@ -114,39 +114,39 @@ void freeblock (Header *block) {
 
 //-----------------------------------------------------------------------------
 
-void* default_alloc(size_t size, int type, int alloctype) {
+void* default_alloc(size_t size, int type, int pool) {
   if(size == 0) return NULL;
   if (!l_memcontrol.canAlloc(size)) return NULL;
   assert(type >= 0);
   assert(type < 256);
 
-  Header* newblock = allocblock(size, type, alloctype);
+  Header* newblock = allocblock(size, type, pool);
 
   if(newblock) l_memcontrol.alloc(size,type);
 
   return newblock ? newblock + 1 : NULL;
 }
 
-void default_free(void * blob, size_t size, int type, int alloctype) {
+void default_free(void * blob, size_t size, int type, int pool) {
   if(blob == NULL) return;
   l_memcontrol.free(size, type);
   Header* block = reinterpret_cast<Header*>(blob) - 1;
   assert(block->size == size);
   assert(block->type == type);
-  assert(block->alloctype == alloctype);
+  assert(block->pool == pool);
   freeblock(block);
 }
 
 //-----------------------------------------------------------------------------
 
-void *luaM_alloc_ (size_t size, int type, int alloctype) {
+void *luaM_alloc_ (size_t size, int type, int pool) {
   if(size == 0) return NULL;
 
-  void* newblock = default_alloc(size, type, alloctype);
+  void* newblock = default_alloc(size, type, pool);
   if (newblock == NULL) {
     if (thread_G && thread_G->gcrunning) {
       luaC_fullgc(1);  /* try to free some memory... */
-      newblock = default_alloc(size, type, alloctype);  /* try again */
+      newblock = default_alloc(size, type, pool);  /* try again */
     }
     if (newblock == NULL)
       luaD_throw(LUA_ERRMEM);
@@ -157,9 +157,9 @@ void *luaM_alloc_ (size_t size, int type, int alloctype) {
   return newblock;
 }
 
-void luaM_free_ (void *block, size_t size, int type, int alloctype) {
+void luaM_free_ (void *block, size_t size, int type, int pool) {
   if(block == NULL) return;
-  default_free(block, size, type, alloctype);
+  default_free(block, size, type, pool);
   if(thread_G) thread_G->GCdebt -= size;
 }
 
@@ -169,26 +169,25 @@ void* luaM_newobject(int tag, size_t size) {
   assert(tag > 0);
   assert(tag < LUA_ALLTAGS);
   assert(size > 0);
-
-  return luaM_alloc_(size, tag, LAT_OBJECT);
+  return luaM_alloc_(size, tag, LAP_OBJECT);
 }
 
 void luaM_delobject(void * blob, size_t size, int type) {
-//  assert(blob);
-//  assert(size);
+  assert(blob);
+  assert(size);
   assert(type);
-  luaM_free_(blob, size, type, LAT_OBJECT);
+  luaM_free_(blob, size, type, LAP_OBJECT);
 }
 
 void* luaM_alloc(size_t size) {
-  //assert(size);
-  return luaM_alloc_(size, 0, LAT_RUNTIME);
+  assert(size);
+  return luaM_alloc_(size, 0, LAP_RUNTIME);
 }
 
 void luaM_free(void * blob, size_t size) {
-//  assert(blob);
-//  assert(size);
-  luaM_free_(blob, size, 0, LAT_RUNTIME);
+  assert(blob);
+  assert(size);
+  luaM_free_(blob, size, 0, LAP_RUNTIME);
 }
 
 //-----------------------------------------------------------------------------

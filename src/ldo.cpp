@@ -219,7 +219,7 @@ void luaD_shrinkstack (lua_State *L) {
   if (goodsize > LUAI_MAXSTACK) goodsize = LUAI_MAXSTACK;
   if (inuse > LUAI_MAXSTACK || goodsize >= L->stack.size()) {
   } else {
-    luaD_reallocstack(L, goodsize);  /* shrink it */
+    luaD_reallocstack(L, (int)goodsize);  /* shrink it */
   }
 }
 

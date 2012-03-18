@@ -35,11 +35,11 @@ struct Memcontrol {
 
 extern Memcontrol l_memcontrol;
 
-enum LuaAllocType {
-  LAT_STARTUP,
-  LAT_RUNTIME,
-  LAT_OBJECT,
-  LAT_VECTOR,
+enum LuaAllocPool {
+  LAP_STARTUP,
+  LAP_RUNTIME,
+  LAP_OBJECT,
+  LAP_VECTOR,
 };
 
 void* luaM_alloc(size_t size);
@@ -48,8 +48,8 @@ void  luaM_free(void * blob, size_t size);
 void* luaM_newobject(int tag, size_t size);
 void  luaM_delobject(void * blob, size_t size, int type);
 
-void* default_alloc   (size_t size, int type, int alloctype);
-void  default_free    (void * blob, size_t size, int type, int alloctype);
+void* default_alloc   (size_t size, int type, int pool);
+void  default_free    (void * blob, size_t size, int type, int pool);
 
 #endif
 

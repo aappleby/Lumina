@@ -175,9 +175,9 @@ static void close_state (lua_State *L) {
 
   freestack(L);
   assert(gettotalbytes(g) == (sizeof(lua_State) + sizeof(global_State)));
-  default_free(g, sizeof(global_State), 0, LAT_STARTUP);
+  default_free(g, sizeof(global_State), 0, LAP_STARTUP);
   L->l_G = NULL;
-  default_free(L, sizeof(lua_State), 0, LAT_STARTUP);  /* free main block */
+  default_free(L, sizeof(lua_State), 0, LAP_STARTUP);  /* free main block */
 }
 
 
@@ -217,11 +217,11 @@ lua_State *lua_newstate () {
   int i;
   lua_State *L;
   global_State *g;
-  L = (lua_State*)default_alloc(sizeof(lua_State), 0, LAT_STARTUP);
+  L = (lua_State*)default_alloc(sizeof(lua_State), 0, LAP_STARTUP);
   if(L == NULL) { return NULL; }
-  g = (global_State*)default_alloc(sizeof(global_State), 0, LAT_STARTUP);
+  g = (global_State*)default_alloc(sizeof(global_State), 0, LAP_STARTUP);
   if(g == NULL) {
-    default_free(L, sizeof(lua_State), 0, LAT_STARTUP);
+    default_free(L, sizeof(lua_State), 0, LAP_STARTUP);
     return NULL;
   }
   L->l_G = g;
