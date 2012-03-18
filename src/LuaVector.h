@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include "lmem.h"
 
 l_noret luaD_throw (int errcode);
 
@@ -46,7 +47,6 @@ public:
       clear();
       return;
     }
-    //newsize = std::max(newsize, 4);
     T* newbuf = reinterpret_cast<T*>(default_alloc(sizeof(T) * newsize, 0));
     if(newbuf == NULL) luaD_throw(LUA_ERRMEM);;
     memcpy(newbuf, buf, sizeof(T) * std::min(size,newsize));

@@ -263,11 +263,7 @@ static int numusehash (const Table *t, int *nums, int *pnasize) {
 
 static void setarrayvector (Table *t, int size) {
   int i;
-  if(t->array) {
-    t->array = (TValue*)luaM_reallocv(t->array, t->sizearray, size, sizeof(TValue));
-  } else {
-    t->array = (TValue*)luaM_alloc(size * sizeof(TValue));
-  }
+  t->array.resize(size);
   for (i=t->sizearray; i<size; i++)
      setnilvalue(&t->array[i]);
   t->sizearray = size;
@@ -316,12 +312,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
         luaH_setint(t, i + 1, &t->array[i]);
     }
     /* shrink array */
-    if(nasize) {
-      t->array = (TValue*)luaM_reallocv(t->array, oldasize, nasize, sizeof(TValue));
-    } else {
-      luaM_free(t->array, oldasize * sizeof(TValue), 0);
-      t->array = NULL;
-    }
+    t->array.resize(nasize);
   }
   /* re-insert elements from hash part */
   for (i = twoto(oldhsize) - 1; i >= 0; i--) {
@@ -379,7 +370,7 @@ Table *luaH_new () {
   
   t->metatable = NULL;
   t->flags = cast_byte(~0);
-  t->array = NULL;
+  t->array.init();
   t->sizearray = 0;
   setnodevector(t, 0);
   return t;
@@ -390,7 +381,7 @@ void luaH_free (Table *t) {
   if (!isdummy(t->node)) {
     luaM_free(t->node, sizenode(t) * sizeof(Node), 0);
   }
-  luaM_free(t->array, t->sizearray * sizeof(TValue), 0);
+  t->array.clear();
   luaM_delobject(t, sizeof(Table), LUA_TTABLE);
 }
 

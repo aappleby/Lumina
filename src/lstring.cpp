@@ -45,7 +45,6 @@ void luaS_resize (lua_State *L, int newsize) {
   if (newsize < tb->size) {
     /* shrinking slice must be empty */
     assert(tb->hash[newsize] == NULL && tb->hash[tb->size - 1] == NULL);
-    //tb->hash = (LuaBase**)luaM_reallocv(tb->hash, tb->size, newsize, sizeof(LuaBase*));
     tb->hash.resize(newsize);
   }
   tb->size = newsize;
