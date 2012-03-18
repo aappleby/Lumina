@@ -12,3 +12,8 @@ void LuaObject::Init(int type) {
   next = g->allgc;
   g->allgc = this;
 }
+
+bool LuaObject::isDead() {
+  uint8_t live = (marked ^ WHITEBITS) & (thread_G->currentwhite ^ WHITEBITS);
+  return !live;
+}

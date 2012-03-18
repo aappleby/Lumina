@@ -22,12 +22,11 @@
 
 #define lmod(s,size) cast(int, (s) & ((size)-1))
 
-void luaS_resize (lua_State *L, int newsize) {
-  THREAD_CHECK(L);
+void luaS_resize (int newsize) {
   int i;
-  stringtable *tb = G(L)->strt;
+  stringtable *tb = thread_G->strt;
   /* cannot resize while GC is traversing strings */
-  luaC_runtilstate(L, ~bitmask(GCSsweepstring));
+  luaC_runtilstate(~bitmask(GCSsweepstring));
   if (newsize > tb->size) {
     tb->hash.resize(newsize);
     for (i = tb->size; i < newsize; i++) tb->hash[i] = NULL;
@@ -54,17 +53,13 @@ void luaS_resize (lua_State *L, int newsize) {
 }
 
 
-static TString *newlstr (lua_State *L, const char *str, size_t l,
-                                       unsigned int h) {
-  THREAD_CHECK(L);
+static TString *newlstr (const char *str, size_t l, unsigned int h) {
   size_t totalsize;  /* total size of TString object */
   LuaObject **list;  /* (pointer to) list where it will be inserted */
   TString *ts;
-  stringtable *tb = G(L)->strt;
-  if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
-    luaG_runerror("memory allocation error: string too big");
+  stringtable *tb = thread_G->strt;
   if (tb->nuse >= cast(uint32_t, tb->size) && tb->size <= MAX_INT/2)
-    luaS_resize(L, tb->size*2);  /* too crowded */
+    luaS_resize(tb->size*2);  /* too crowded */
   totalsize = sizeof(TString) + ((l + 1) * sizeof(char));
   list = &tb->hash[lmod(h, tb->size)];
   LuaObject* o = luaC_newobj(LUA_TSTRING, totalsize, list);
@@ -89,9 +84,9 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   for (l1=l; l1>=step; l1-=step)  // compute hash
     h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
 
-  for (o = G(L)->strt->hash[lmod(h, G(L)->strt->size)];
-       o != NULL;
-       o = gch(o)->next) {
+  stringtable* strings = thread_G->strt;
+
+  for (o = strings->hash[lmod(h, strings->size)]; o != NULL; o = gch(o)->next) {
     TString *ts = gco2ts(o);
     if (h == ts->getHash() &&
         ts->getLen() == l &&
@@ -101,7 +96,7 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
       return ts;
     }
   }
-  return newlstr(L, str, l, h);  /* not found; create a new string */
+  return newlstr(str, l, h);  /* not found; create a new string */
 }
 
 

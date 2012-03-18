@@ -1,12 +1,12 @@
 #pragma once
 #include "LuaTypes.h"
-#include "LuaValue.h"
 
 class LuaObject {
 public:
 
   void Init(int type);
 
+  bool isDead();
   bool isDeadKey() { return tt == LUA_TDEADKEY; }
 
   LuaObject *next;

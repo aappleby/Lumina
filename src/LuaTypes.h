@@ -103,3 +103,57 @@ typedef LUAI_MEM l_mem;
 ** must be an unsigned with (at least) 4 bytes (see details in lopcodes.h)
 */
 typedef uint32_t Instruction;
+
+
+/*
+** basic types
+*/
+enum LuaTag {
+  LUA_TNONE          = -1,
+  LUA_TNIL           = 0,
+  LUA_TBOOLEAN       = 1,
+  LUA_TLIGHTUSERDATA = 2,
+  LUA_TNUMBER        = 3,
+  LUA_TSTRING        = 4,
+  LUA_TTABLE         = 5,
+  LUA_TFUNCTION      = 6,
+  LUA_TUSERDATA      = 7,
+  LUA_TTHREAD        = 8,
+  LUA_NUMTAGS        = 9,
+
+  // non-values
+  LUA_TPROTO = 9,
+  LUA_TUPVAL = 10,
+  LUA_TDEADKEY = 11,
+};
+
+
+/*
+** tags for Tagged Values have the following use of bits:
+** bits 0-3: actual tag (a LUA_T* value)
+** bits 4-5: variant bits
+** bit 6: whether value is collectable
+*/
+
+/*
+** LUA_TFUNCTION variants:
+** 0 - Lua function
+** 1 - light C function
+** 2 - regular C function (closure)
+*/
+
+/* Variant tags for functions */
+#define LUA_TLCL	(LUA_TFUNCTION | (0 << 4))  /* Lua closure */
+#define LUA_TLCF	(LUA_TFUNCTION | (1 << 4))  /* light C function */
+#define LUA_TCCL	(LUA_TFUNCTION | (2 << 4))  /* C closure */
+
+
+/* Bit mark for collectable types */
+#define BIT_ISCOLLECTABLE	(1 << 6)
+
+
+/*
+** number of all possible tags (including LUA_TNONE but excluding DEADKEY)
+*/
+#define LUA_TOTALTAGS	(LUA_TUPVAL+2)
+

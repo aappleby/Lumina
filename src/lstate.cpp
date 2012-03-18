@@ -131,7 +131,7 @@ static void f_luaopen (lua_State *L, void *ud) {
   UNUSED(ud);
   stack_init(L, L);  /* init stack */
   init_registry(L, g);
-  luaS_resize(L, MINSTRTABSIZE);  /* initial size of string table */
+  luaS_resize(MINSTRTABSIZE);  /* initial size of string table */
   luaT_init();
   luaX_init(L);
   /* pre-create memory-error message */

@@ -639,7 +639,8 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
 }
 
 
-static void freeobj (lua_State *L, LuaObject *o) {
+static void freeobj (LuaObject *o) {
+  lua_State *L = thread_L;
   switch (gch(o)->tt) {
     case LUA_TPROTO: luaF_freeproto(L, gco2p(o)); break;
     case LUA_TFUNCTION: luaF_freeclosure(L, gco2cl(o)); break;
@@ -653,18 +654,18 @@ static void freeobj (lua_State *L, LuaObject *o) {
 }
 
 
-#define sweepwholelist(L,p)	sweeplist(L,p,MAX_LUMEM)
-static LuaObject **sweeplist (lua_State *L, LuaObject **p, size_t count);
+#define sweepwholelist(p)	sweeplist(p,MAX_LUMEM)
+static LuaObject **sweeplist (LuaObject **p, size_t count);
 
 
 /*
 ** sweep the (open) upvalues of a thread and resize its stack and
 ** list of call-info structures.
 */
-static void sweepthread (lua_State *L, lua_State *L1) {
-  THREAD_CHECK(L);
+static void sweepthread (lua_State *L1) {
+  lua_State *L = thread_L;
   if (L1->stack.empty()) return;  /* stack not completely built yet */
-  sweepwholelist(L, &L1->openupval);  /* sweep open upvalues */
+  sweepwholelist(&L1->openupval);  /* sweep open upvalues */
   {
     THREAD_CHANGE(L1);
     luaE_freeCI(L1);  /* free extra CallInfo slots */
@@ -688,9 +689,8 @@ static void sweepthread (lua_State *L, lua_State *L1) {
 ** one will be old too.
 ** When object is a thread, sweep its list of open upvalues too.
 */
-static LuaObject **sweeplist (lua_State *L, LuaObject **p, size_t count) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+static LuaObject **sweeplist (LuaObject **p, size_t count) {
+  global_State *g = thread_G;
   int ow = otherwhite();
   int toclear, toset;  /* bits to clear and to set in all live objects */
   int tostop;  /* stop sweep when this is true */
@@ -710,11 +710,11 @@ static LuaObject **sweeplist (lua_State *L, LuaObject **p, size_t count) {
     int marked = gch(curr)->marked;
     if (isdeadm(ow, marked)) {  /* is 'curr' dead? */
       *p = gch(curr)->next;  /* remove 'curr' from list */
-      freeobj(L, curr);  /* erase 'curr' */
+      freeobj(curr);  /* erase 'curr' */
     }
     else {
       if (gch(curr)->tt == LUA_TTHREAD)
-        sweepthread(L, gco2th(curr));  /* sweep thread's upvalues */
+        sweepthread(gco2th(curr));  /* sweep thread's upvalues */
       if (testbits(marked, tostop)) {
         static LuaObject *nullp = NULL;
         p = &nullp;  /* stop sweeping this list */
@@ -738,13 +738,12 @@ static LuaObject **sweeplist (lua_State *L, LuaObject **p, size_t count) {
 ** =======================================================
 */
 
-static void checkSizes (lua_State *L) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+static void checkSizes () {
+  global_State *g = thread_G;
   if (g->gckind != KGC_EMERGENCY) {  /* do not change sizes in emergency */
     int hs = g->strt->size / 2;  /* half the size of the string table */
     if (g->strt->nuse < cast(uint32_t, hs))  /* using less than that half? */
-      luaS_resize(L, hs);  /* halve its size */
+      luaS_resize(hs);  /* halve its size */
     g->buff.buffer.clear();
   }
 }
@@ -873,7 +872,7 @@ void luaC_changemode (lua_State *L, int mode) {
   if (mode == g->gckind) return;  /* nothing to change */
   if (mode == KGC_GEN) {  /* change to generational mode */
     /* make sure gray lists are consistent */
-    luaC_runtilstate(L, bitmask(GCSpropagate));
+    luaC_runtilstate(bitmask(GCSpropagate));
     g->lastmajormem = gettotalbytes(g);
     g->gckind = KGC_GEN;
   }
@@ -883,7 +882,7 @@ void luaC_changemode (lua_State *L, int mode) {
     g->sweepstrgc = 0;
     g->gcstate = GCSsweepstring;
     g->gckind = KGC_NORMAL;
-    luaC_runtilstate(L, ~sweepphases);
+    luaC_runtilstate(~sweepphases);
   }
 }
 
@@ -910,10 +909,10 @@ void luaC_freeallobjects (lua_State *L) {
   callallpendingfinalizers(L, 0);
   g->currentwhite = WHITEBITS; /* this "white" makes all objects look dead */
   g->gckind = KGC_NORMAL;
-  sweepwholelist(L, &g->finobj);  /* finalizers can create objs. in 'finobj' */
-  sweepwholelist(L, &g->allgc);
+  sweepwholelist(&g->finobj);  /* finalizers can create objs. in 'finobj' */
+  sweepwholelist(&g->allgc);
   for (i = 0; i < g->strt->size; i++)  /* free all string lists */
-    sweepwholelist(L, &g->strt->hash[i]);
+    sweepwholelist(&g->strt->hash[i]);
   assert(g->strt->nuse == 0);
 }
 
@@ -953,9 +952,8 @@ static void atomic () {
 }
 
 
-static l_mem singlestep (lua_State *L) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+static l_mem singlestep () {
+  global_State *g = thread_G;
   switch (g->gcstate) {
     case GCSpause: {
       if (!isgenerational(g))
@@ -977,7 +975,7 @@ static l_mem singlestep (lua_State *L) {
     }
     case GCSsweepstring: {
       if (g->sweepstrgc < g->strt->size) {
-        sweepwholelist(L, &g->strt->hash[g->sweepstrgc++]);
+        sweepwholelist(&g->strt->hash[g->sweepstrgc++]);
         return GCSWEEPCOST;
       }
       else {  /* no more strings to sweep */
@@ -988,7 +986,7 @@ static l_mem singlestep (lua_State *L) {
     }
     case GCSsweepudata: {
       if (*g->sweepgc) {
-        g->sweepgc = sweeplist(L, g->sweepgc, GCSWEEPMAX);
+        g->sweepgc = sweeplist(g->sweepgc, GCSWEEPMAX);
         return GCSWEEPMAX*GCSWEEPCOST;
       }
       else {
@@ -999,14 +997,14 @@ static l_mem singlestep (lua_State *L) {
     }
     case GCSsweep: {
       if (*g->sweepgc) {
-        g->sweepgc = sweeplist(L, g->sweepgc, GCSWEEPMAX);
+        g->sweepgc = sweeplist(g->sweepgc, GCSWEEPMAX);
         return GCSWEEPMAX*GCSWEEPCOST;
       }
       else {
         /* sweep main thread */
         LuaObject *mt = obj2gco(g->mainthread);
-        sweeplist(L, &mt, 1);
-        checkSizes(L);
+        sweeplist(&mt, 1);
+        checkSizes();
         g->gcstate = GCSpause;  /* finish collection */
         return GCSWEEPCOST;
       }
@@ -1020,11 +1018,10 @@ static l_mem singlestep (lua_State *L) {
 ** advances the garbage collector until it reaches a state allowed
 ** by 'statemask'
 */
-void luaC_runtilstate (lua_State *L, int statesmask) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+void luaC_runtilstate (int statesmask) {
+  global_State *g = thread_G;
   while (!testbit(statesmask, g->gcstate))
-    singlestep(L);
+    singlestep();
 }
 
 
@@ -1036,8 +1033,8 @@ static void generationalcollection (lua_State *L) {
     g->lastmajormem = gettotalbytes(g);  /* update control */
   }
   else {
-    luaC_runtilstate(L, ~bitmask(GCSpause));  /* run complete cycle */
-    luaC_runtilstate(L, bitmask(GCSpause));
+    luaC_runtilstate(~bitmask(GCSpause));  /* run complete cycle */
+    luaC_runtilstate(bitmask(GCSpause));
     if (gettotalbytes(g) > g->lastmajormem/100 * g->gcmajorinc)
       g->lastmajormem = 0;  /* signal for a major collection */
   }
@@ -1050,7 +1047,7 @@ static void step (lua_State *L) {
   global_State *g = G(L);
   l_mem lim = g->gcstepmul;  /* how much to work */
   do {  /* always perform at least one single step */
-    lim -= singlestep(L);
+    lim -= singlestep();
   } while (lim > 0 && g->gcstate != GCSpause);
   if (g->gcstate != GCSpause)
     luaE_setdebt(g, g->GCdebt - GCSTEPSIZE);
@@ -1101,13 +1098,13 @@ void luaC_fullgc (int isemergency) {
   }
   g->gckind = isemergency ? KGC_EMERGENCY : KGC_NORMAL;
   /* finish any pending sweep phase to start a new cycle */
-  luaC_runtilstate(L, bitmask(GCSpause));
+  luaC_runtilstate(bitmask(GCSpause));
   /* run entire collector */
-  luaC_runtilstate(L, ~bitmask(GCSpause));
-  luaC_runtilstate(L, bitmask(GCSpause));
+  luaC_runtilstate(~bitmask(GCSpause));
+  luaC_runtilstate(bitmask(GCSpause));
   if (origkind == KGC_GEN) {  /* generational mode? */
     /* generational mode must always start in propagate phase */
-    luaC_runtilstate(L, bitmask(GCSpropagate));
+    luaC_runtilstate(bitmask(GCSpropagate));
   }
   g->gckind = origkind;
   luaE_setdebt(g, stddebt(g));
