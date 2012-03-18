@@ -130,7 +130,7 @@ static void checkproto (global_State *g, Proto *f) {
   int i;
   LuaBase *fgc = obj2gco(f);
   if (f->source) checkobjref(g, fgc, f->source);
-  for (i=0; i<f->nconstants; i++) {
+  for (i=0; i<f->constants.size(); i++) {
     if (ttisstring(&f->constants[i]))
       checkobjref(g, fgc, tsvalue(&f->constants[i]));
   }
@@ -408,8 +408,8 @@ static int listk (lua_State *L) {
   luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1),
                  1, "Lua function expected");
   p = getproto(obj_at(L, 1));
-  lua_createtable(L, p->nconstants, 0);
-  for (i=0; i<p->nconstants; i++) {
+  lua_createtable(L, p->constants.size(), 0);
+  for (i=0; i<p->constants.size(); i++) {
     pushobject(L, &p->constants[i]);
     lua_rawseti(L, -2, i+1);
   }

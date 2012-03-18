@@ -559,12 +559,7 @@ static void close_func (LexState *ls) {
   leaveblock(fs);
   f->code.resize(fs->pc);
   f->lineinfo.resize(fs->pc);
-  if(f->constants) {
-    f->constants = (TValue*)luaM_reallocv(f->constants, f->nconstants, fs->nk, sizeof(TValue));
-  } else {
-    f->constants = (TValue*)luaM_alloc(fs->nk * sizeof(TValue));
-  }
-  f->nconstants = fs->nk;
+  f->constants.resize(fs->nk);
   if(f->p) {
     f->p = (Proto**)luaM_reallocv(f->p, f->sizep, fs->np, sizeof(Proto*));
   } else {

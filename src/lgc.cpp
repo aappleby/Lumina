@@ -457,7 +457,7 @@ static int traverseproto (global_State *g, Proto *f) {
   if (f->cache && iswhite(obj2gco(f->cache)))
     f->cache = NULL;  /* allow cache to be collected */
   stringmark(f->source);
-  for (i = 0; i < f->nconstants; i++)  /* mark literals */
+  for (i = 0; i < f->constants.size(); i++)  /* mark literals */
     markvalue(g, &f->constants[i]);
   for (i = 0; i < f->sizeupvalues; i++)  /* mark upvalue names */
     stringmark(f->upvalues[i].name);
@@ -465,7 +465,7 @@ static int traverseproto (global_State *g, Proto *f) {
     markobject(g, f->p[i]);
   for (i = 0; i < f->sizelocvars; i++)  /* mark local-variable names */
     stringmark(f->locvars[i].varname);
-  return TRAVCOST + f->nconstants + f->sizeupvalues + f->sizep + f->sizelocvars;
+  return TRAVCOST + (int)f->constants.size() + f->sizeupvalues + f->sizep + f->sizelocvars;
 }
 
 

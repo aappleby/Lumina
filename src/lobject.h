@@ -65,9 +65,7 @@ typedef struct LocVar {
 ** Function Prototypes
 */
 struct Proto : public LuaBase {
-  TValue *constants;  /* constants used by the function */
-  int nconstants;  /* size of `constants' */
-
+  LuaVector<TValue> constants;
   LuaVector<Instruction> code;
   LuaVector<int> lineinfo;
 

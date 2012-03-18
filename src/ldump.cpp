@@ -79,7 +79,7 @@ static void DumpFunction(const Proto* f, DumpState* D);
 
 static void DumpConstants(const Proto* f, DumpState* D)
 {
- int i,n=f->nconstants;
+ int i,n=f->constants.size();
  DumpInt(n,D);
  for (i=0; i<n; i++)
  {

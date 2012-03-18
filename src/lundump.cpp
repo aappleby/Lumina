@@ -97,8 +97,7 @@ static void LoadConstants(LoadState* S, Proto* f)
 {
  int i,n;
  n=LoadInt(S);
- f->constants = (TValue*)luaM_allocv(n,sizeof(TValue));
- f->nconstants=n;
+ f->constants.resize(n);
  for (i=0; i<n; i++) setnilvalue(&f->constants[i]);
  for (i=0; i<n; i++)
  {

@@ -331,17 +331,17 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
        go through and create a new entry for this value */
   }
   /* constant not found; create a new entry */
-  oldsize = f->nconstants;
+  oldsize = (int)f->constants.size();
   k = fs->nk;
   /* numerical value does not need GC barrier;
      table has no metatable, so it does not need to invalidate cache */
   setnvalue(idx, cast_num(k));
   
-  if (k >= f->nconstants) {
-    f->constants = (TValue*)luaM_growaux_(f->constants,f->nconstants,sizeof(TValue),MAXARG_Ax,"constants");
+  if (k >= f->constants.size()) {
+    f->constants.grow();
   }
   
-  while (oldsize < f->nconstants) setnilvalue(&f->constants[oldsize++]);
+  while (oldsize < f->constants.size()) setnilvalue(&f->constants[oldsize++]);
   setobj(&f->constants[k], v);
   fs->nk++;
   luaC_barrier(f, v);
