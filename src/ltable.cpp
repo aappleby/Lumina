@@ -149,11 +149,11 @@ static int findindex (Table *t, StkId key) {
 
 
 int luaH_next (Table *t, StkId key) {
-  int i = findindex(t, key);  /* find original element */
-  for (i++; i < t->sizearray; i++) {
-    if (!ttisnil(&t->array[i])) {
-      setnvalue(key, cast_num(i+1));
-      setobj(key+1, &t->array[i]);
+  int i = findindex(t, key) + 1;
+  for (;i < t->sizearray; i++) {
+    if (!t->array[i].isNil()) {
+      key[0] = i+1;
+      key[1] = t->array[i];
       return 1;
     }
   }
