@@ -94,34 +94,34 @@ static Proto* LoadFunction(LoadState* S);
 
 static void LoadConstants(LoadState* S, Proto* f)
 {
- int i,n;
- n=LoadInt(S);
- f->constants.resize(n);
- for (i=0; i<n; i++) setnilvalue(&f->constants[i]);
- for (i=0; i<n; i++)
- {
-  TValue* o=&f->constants[i];
-  int t=LoadChar(S);
-  switch (t)
+  int i,n;
+  n=LoadInt(S);
+  f->constants.resize(n);
+  for (i=0; i<n; i++) setnilvalue(&f->constants[i]);
+  for (i=0; i<n; i++)
   {
-   case LUA_TNIL:
-	setnilvalue(o);
-	break;
-   case LUA_TBOOLEAN:
-	setbvalue(o,LoadChar(S));
-	break;
-   case LUA_TNUMBER:
-	setnvalue(o,LoadNumber(S));
-	break;
-   case LUA_TSTRING:
-	setsvalue(S->L,o,LoadString(S));
-	break;
+    TValue* o=&f->constants[i];
+    int t=LoadChar(S);
+    switch (t)
+    {
+    case LUA_TNIL:
+      setnilvalue(o);
+      break;
+    case LUA_TBOOLEAN:
+      o[0] = LoadChar(S) ? true : false;
+      break;
+    case LUA_TNUMBER:
+      setnvalue(o,LoadNumber(S));
+      break;
+    case LUA_TSTRING:
+      setsvalue(S->L,o,LoadString(S));
+      break;
+    }
   }
- }
- n=LoadInt(S);
- f->p.resize(n);
- for (i=0; i<n; i++) f->p[i]=NULL;
- for (i=0; i<n; i++) f->p[i]=LoadFunction(S);
+  n=LoadInt(S);
+  f->p.resize(n);
+  for (i=0; i<n; i++) f->p[i]=NULL;
+  for (i=0; i<n; i++) f->p[i]=LoadFunction(S);
 }
 
 static void LoadUpvalues(LoadState* S, Proto* f)

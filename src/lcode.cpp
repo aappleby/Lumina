@@ -379,7 +379,7 @@ int luaK_numberK (FuncState *fs, lua_Number r) {
 static int boolK (FuncState *fs, int b) {
   THREAD_CHECK(fs->ls->L);
   TValue o;
-  setbvalue(&o, b);
+  o = b ? true : false;
   return addk(fs, &o, &o);
 }
 

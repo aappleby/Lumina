@@ -617,7 +617,7 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
 void lua_pushboolean (lua_State *L, int b) {
   THREAD_CHECK(L);
   lua_lock(L);
-  setbvalue(L->top, (b != 0));  /* ensure that true is 1 */
+  L->top[0] = (b ? true : false);
   api_incr_top(L);
   lua_unlock(L);
 }

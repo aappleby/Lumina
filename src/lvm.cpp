@@ -590,7 +590,7 @@ void luaV_execute (lua_State *L) {
         setobj(ra, rb);
       )
       vmcase(OP_LOADBOOL,
-        setbvalue(ra, GETARG_B(i));
+        ra[0] = GETARG_B(i) ? true : false;
         if (GETARG_C(i)) ci->savedpc++;  /* skip next instruction (if C) */
       )
       vmcase(OP_LOADNIL,
@@ -671,7 +671,7 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_NOT,
         TValue *rb = RB(i);
         int res = l_isfalse(rb);  /* next assignment may change this value */
-        setbvalue(ra, res);
+        ra[0] = res ? true : false;
       )
       vmcase(OP_LEN,
         Protect(luaV_objlen(L, ra, RB(i)));

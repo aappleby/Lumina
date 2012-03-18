@@ -9,6 +9,7 @@ struct TValue {
   void operator = ( TValue * pV );
 
   void operator = ( int v ) { tt_ = LUA_TNUMBER; n = (double)v; }
+  void operator = ( bool v ) { tt_ = LUA_TBOOLEAN; b = (int32_t)v; }
 
   bool isCollectable() { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }
 
@@ -146,9 +147,6 @@ struct TValue {
 
 #define setpvalue(obj,x) \
   { TValue *io=(obj); io->p=(x); settt_(io, LUA_TLIGHTUSERDATA); }
-
-#define setbvalue(obj,x) \
-  { TValue *io=(obj); io->b=(x); settt_(io, LUA_TBOOLEAN); }
 
 #define setgcovalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); LuaObject *i_g=(x); \

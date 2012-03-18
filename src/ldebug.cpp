@@ -210,7 +210,7 @@ static void collectvalidlines (lua_State *L, Closure *f) {
     Table *t = luaH_new();  /* new table to store active lines */
     sethvalue(L, L->top, t);  /* push it on stack */
     incr_top(L);
-    setbvalue(&v, 1);  /* boolean 'true' to be the value of all indices */
+    v = true;
     for (i = 0; i < f->p->lineinfo.size(); i++)  /* for all lines with code */
       luaH_setint(t, f->p->lineinfo[i], &v);  /* table[line] = true */
   }
