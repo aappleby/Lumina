@@ -122,63 +122,47 @@ static Node *mainposition (const Table *t, const TValue *key) {
   }
 }
 
-
-/*
-** returns the index for `key' if `key' is an appropriate key to live in
-** the array part of the table, -1 otherwise.
-*/
-static int arrayindex (const TValue *key) {
-  if (ttisnumber(key)) {
-    lua_Number n = nvalue(key);
-    int k;
-    lua_number2int(k, n);
-    if (luai_numeq(cast_num(k), n))
-      return k;
-  }
-  return -1;  /* `key' did not match some condition */
-}
-
-
 /*
 ** returns the index of a `key' for table traversals. First goes all
 ** elements in the array part, then elements in the hash part. The
 ** beginning of a traversal is signaled by -1.
 */
 static int findindex (Table *t, StkId key) {
-  int i;
   if (ttisnil(key)) return -1;  /* first iteration */
-  i = arrayindex(key);
+  int i = key->isInteger() ? key->getInteger() : -1;
+  
   if (0 < i && i <= t->sizearray)  /* is `key' inside array part? */
     return i-1;  /* yes; that's the index (corrected to C) */
-  else {
-    Node *n = mainposition(t, key);
-    for (;;) {  /* check whether `key' is somewhere in the chain */
-      /* key may be dead already, but it is ok to use it in `next' */
-      bool equal = luaV_rawequalobj(&n->i_key, key);
-      if (equal || (ttisdeadkey(&n->i_key) && iscollectable(key) && deadvalue(&n->i_key) == gcvalue(key))) {
-        return cast_int(n - gnode(t, 0)) + t->sizearray;
-      }
-      else n = n->next;
-      if (n == NULL)
-        luaG_runerror("invalid key to " LUA_QL("next"));  /* key not found */
+
+  Node *n = mainposition(t, key);
+
+  for (;;) {
+    bool equal = luaV_rawequalobj(&n->i_key, key);
+    if (equal || (ttisdeadkey(&n->i_key) && iscollectable(key) && deadvalue(&n->i_key) == gcvalue(key))) {
+      return cast_int(n - gnode(t, 0)) + t->sizearray;
     }
+    else n = n->next;
+    if (n == NULL)
+      luaG_runerror("invalid key to 'next'");
   }
 }
 
 
 int luaH_next (Table *t, StkId key) {
   int i = findindex(t, key);  /* find original element */
-  for (i++; i < t->sizearray; i++) {  /* try first array part */
-    if (!ttisnil(&t->array[i])) {  /* a non-nil value? */
+  for (i++; i < t->sizearray; i++) {
+    if (!ttisnil(&t->array[i])) {
       setnvalue(key, cast_num(i+1));
       setobj(key+1, &t->array[i]);
       return 1;
     }
   }
-  for (i -= t->sizearray; i < sizenode(t); i++) {  /* then hash part */
-    if (!ttisnil(&gnode(t, i)->i_val)) {  /* a non-nil value? */
-      setobj(key, &gnode(t, i)->i_key);
-      setobj(key+1, &gnode(t, i)->i_val);
+  i -= t->sizearray;
+  for (; i < t->sizenode; i++) {
+    Node& n = t->node[i];
+    if (!n.i_val.isNil()) {
+      key[0] = n.i_key;
+      key[1] = n.i_val;
       return 1;
     }
   }
@@ -216,7 +200,7 @@ static int computesizes (int nums[], int *narray) {
 
 
 static int countint (const TValue *key, int *nums) {
-  int k = arrayindex(key);
+  int k = key->isInteger() ? key->getInteger() : -1;
   if (0 < k && k <= MAXASIZE) {  /* is `key' an appropriate array index? */
     nums[luaO_ceillog2(k)]++;  /* count as such */
     return 1;

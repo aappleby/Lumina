@@ -59,8 +59,11 @@ struct TValue {
   void operator = ( TValue const & V );
   void operator = ( TValue * pV );
 
+  void operator = ( int v ) { tt_ = LUA_TNUMBER; n = (double)v; }
+
   bool isCollectable() { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }
 
+  bool isNil() const           { return rawtype() == LUA_TNIL; }
   bool isBoolean() const       { return tagtype() == LUA_TBOOLEAN; }
   bool isLightUserdata() const { return tagtype() == LUA_TLIGHTUSERDATA; }
   bool isNumber() const        { return tagtype() == LUA_TNUMBER; }
@@ -73,6 +76,10 @@ struct TValue {
   bool isUpval() const         { return tagtype() == LUA_TUPVAL; }
   bool isDeadKey() const       { return tagtype() == LUA_TDEADKEY; }
 
+  bool isInteger() const { return isNumber() && (n == (int)n); }
+
+  int getInteger() const { assert(isInteger()); return (int)n; }
+
   LuaObject* getObject()  { assert(isCollectable()); return gc; }
   LuaObject* getDeadKey() { assert(isDeadKey());     return gc; }
 
@@ -84,7 +91,7 @@ struct TValue {
   void setBool  (int x)     { b = x; tt_ = LUA_TBOOLEAN; }
   void setValue (TValue* x) { bytes = x->bytes; tt_ = x->tt_; }
 
-  TString* asString() { return reinterpret_cast<TString*>(gc); }
+  TString* asString() { assert(isString()); return reinterpret_cast<TString*>(gc); }
 
   union {
     LuaObject *gc;    /* collectable objects */
