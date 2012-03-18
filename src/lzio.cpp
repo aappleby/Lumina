@@ -68,17 +68,11 @@ size_t luaZ_read (ZIO *z, void *b, size_t n) {
 /* ------------------------------------------------------------------------ */
 char *luaZ_openspace (lua_State *L, Mbuffer *buff, size_t n) {
   THREAD_CHECK(L);
-  if (n > buff->buffsize) {
+  if (n > buff->buffer.size()) {
     if (n < LUA_MINBUFFER) n = LUA_MINBUFFER;
-
-    if(buff->buffer) {
-      buff->buffer = (char*)luaM_reallocv(buff->buffer, buff->buffsize, n, sizeof(char));
-    } else {
-      buff->buffer = (char*)luaM_alloc(n * sizeof(char));
-    }
-    buff->buffsize = n;
+    buff->buffer.resize(n);
   }
-  return buff->buffer;
+  return &buff->buffer[0];
 }
 
 

@@ -231,7 +231,7 @@ static int luaK_code (FuncState *fs, Instruction i) {
   Proto *f = fs->f;
   dischargejpc(fs);  /* `pc' will change */
   /* put new instruction in code array */
-  if(fs->pc >= f->code.size) {
+  if(fs->pc >= f->code.size()) {
     f->code.grow();
   }
   f->code[fs->pc] = i;

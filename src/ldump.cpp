@@ -73,7 +73,7 @@ static void DumpString(const TString* s, DumpState* D)
  }
 }
 
-#define DumpCode(f,D)	 DumpVector(&f->code[0],f->code.size,sizeof(Instruction),D)
+#define DumpCode(f,D)	 DumpVector(&f->code[0],(int)f->code.size(),sizeof(Instruction),D)
 
 static void DumpFunction(const Proto* f, DumpState* D);
 

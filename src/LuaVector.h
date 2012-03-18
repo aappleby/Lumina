@@ -10,15 +10,15 @@ class LuaVector {
 public:
 
   LuaVector()
-  : buf(NULL),
-    size(0)
+  : buf_(NULL),
+    size_(0)
   {
   }
 
   void init()
   {
-    buf = NULL;
-    size = 0;
+    buf_ = NULL;
+    size_ = 0;
   }
 
   ~LuaVector()
@@ -26,21 +26,21 @@ public:
     clear();
   }
   
-  T& operator [] ( int index ) 
+  T& operator [] ( size_t index ) 
   {
     assert(index >= 0);
-    assert(index < size);
-    return buf[index];
+    assert(index < size_);
+    return buf_[index];
   }
 
-  const T& operator [] ( int index ) const
+  const T& operator [] ( size_t index ) const
   {
     assert(index >= 0);
-    assert(index < size);
-    return buf[index];
+    assert(index < size_);
+    return buf_[index];
   }
 
-  void resize ( int newsize )
+  void resize ( size_t newsize )
   {
     if(newsize == 0)
     {
@@ -49,30 +49,31 @@ public:
     }
     T* newbuf = reinterpret_cast<T*>(default_alloc(sizeof(T) * newsize, 0));
     if(newbuf == NULL) luaD_throw(LUA_ERRMEM);;
-    memcpy(newbuf, buf, sizeof(T) * std::min(size,newsize));
-    default_free(buf, sizeof(T) * size, 0);
-    buf = newbuf;
-    size = newsize;
+    memcpy(newbuf, buf_, sizeof(T) * std::min(size_,newsize));
+    default_free(buf_, sizeof(T) * size_, 0);
+    buf_ = newbuf;
+    size_ = newsize;
   }
 
   void clear ( void )
   {
-    default_free(buf, sizeof(T) * size, 0);
-    buf = NULL;
-    size = 0;
+    default_free(buf_, sizeof(T) * size_, 0);
+    buf_ = NULL;
+    size_ = 0;
   }
 
   void grow() 
   {
-    resize(size ? size * 2 : 16);
+    resize(size_ ? size_ * 2 : 16);
   }
 
   bool empty() 
   {
-    return (size == 0);
+    return (size_ == 0);
   }
+  
+  size_t size() const { return size_; }
 
-
-  T* buf;
-  int size;
+  T* buf_;
+  size_t size_;
 };

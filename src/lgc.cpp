@@ -743,9 +743,7 @@ static void checkSizes (lua_State *L) {
     if (g->strt->nuse < cast(uint32_t, hs))  /* using less than that half? */
       luaS_resize(L, hs);  /* halve its size */
     //luaM_reallocv(g->buff.buffer, g->buff.buffsize, 0, sizeof(char));
-    luaM_free(g->buff.buffer, g->buff.buffsize, 0);
-    g->buff.buffer = NULL;
-    g->buff.buffsize = 0;
+    g->buff.buffer.clear();
   }
 }
 

@@ -175,9 +175,7 @@ static void close_state (lua_State *L) {
   delete G(L)->strt;
   G(L)->strt = NULL;
 
-  luaM_free(g->buff.buffer, g->buff.buffsize, 0);
-	g->buff.buffer = NULL;
-	g->buff.buffsize = 0;
+  g->buff.buffer.clear();
 
   freestack(L);
   assert(gettotalbytes(g) == (sizeof(lua_State) + sizeof(global_State)));
@@ -244,7 +242,7 @@ lua_State *lua_newstate () {
   g->strt = new stringtable();
   luaS_initstrt(g->strt);
   setnilvalue(&g->l_registry);
-  luaZ_initbuffer(L, &g->buff);
+  g->buff.buffer.init();
   g->panic = NULL;
   g->version = lua_version(NULL);
   g->gcstate = GCSpause;
