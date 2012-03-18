@@ -62,7 +62,7 @@ public:
 
   void grow() 
   {
-    resize(size ? size * 2 : 1);
+    resize(size ? size * 2 : 16);
   }
 
 
