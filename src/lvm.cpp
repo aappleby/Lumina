@@ -573,7 +573,7 @@ void luaV_execute (lua_State *L) {
     /* WARNING: several calls may realloc the stack and invalidate `ra' */
     ra = RA(i);
     assert(base == ci->base);
-    assert(base <= L->top && L->top < L->stack + L->stacksize);
+    assert(base <= L->top && L->top < L->stack.end());
     vmdispatch (GET_OPCODE(i)) {
       vmcase(OP_MOVE,
         setobj(ra, RB(i));

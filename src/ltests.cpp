@@ -197,11 +197,11 @@ static void checkstack (global_State *g, lua_State *L1) {
     assert(ci->top <= L1->stack_last);
     assert(lua_checkpc(ci));
   }
-  if (L1->stack) {
-    for (o = L1->stack; o < L1->top; o++)
+  if (L1->stack.size()) {
+    for (o = L1->stack.begin(); o < L1->top; o++)
       checkliveness(o);
   }
-  else assert(L1->stacksize == 0);
+  else assert(L1->stack.empty());
 }
 
 
@@ -542,8 +542,8 @@ static int hash_query (lua_State *L) {
 static int stacklevel (lua_State *L) {
   THREAD_CHECK(L);
   unsigned long a = 0;
-  lua_pushinteger(L, (L->top - L->stack));
-  lua_pushinteger(L, (L->stack_last - L->stack));
+  lua_pushinteger(L, (L->top - L->stack.begin()));
+  lua_pushinteger(L, (L->stack_last - L->stack.begin()));
   lua_pushinteger(L, (unsigned long)&a);
   return 5;
 }

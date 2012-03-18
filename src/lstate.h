@@ -148,8 +148,11 @@ public:
   CallInfo *ci;  /* call info for current function */
   const Instruction *oldpc;  /* last pc traced */
   TValue* stack_last;  /* last free slot in the stack */
-  TValue* stack;  /* stack base */
+  /*
+  TValue* stack;  // stack base
   int stacksize;
+  */
+  LuaVector<TValue> stack;
   unsigned short nny;  /* number of non-yieldable calls in stack */
   unsigned short nCcalls;  /* number of nested C calls */
   uint8_t hookmask;

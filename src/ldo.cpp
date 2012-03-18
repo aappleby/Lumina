@@ -149,14 +149,14 @@ static void correctstack (lua_State *L, TValue *oldstack) {
   THREAD_CHECK(L);
   CallInfo *ci;
   LuaBase *up;
-  L->top = (L->top - oldstack) + L->stack;
+  L->top = L->stack.begin() + (L->top - oldstack);
   for (up = L->openupval; up != NULL; up = up->next)
-    gco2uv(up)->v = (gco2uv(up)->v - oldstack) + L->stack;
+    gco2uv(up)->v = (gco2uv(up)->v - oldstack) + L->stack.begin();
   for (ci = L->ci; ci != NULL; ci = ci->previous) {
-    ci->top = (ci->top - oldstack) + L->stack;
-    ci->func = (ci->func - oldstack) + L->stack;
+    ci->top = (ci->top - oldstack) + L->stack.begin();
+    ci->func = (ci->func - oldstack) + L->stack.begin();
     if (isLua(ci))
-      ci->base = (ci->base - oldstack) + L->stack;
+      ci->base = (ci->base - oldstack) + L->stack.begin();
   }
 }
 
@@ -167,27 +167,26 @@ static void correctstack (lua_State *L, TValue *oldstack) {
 
 void luaD_reallocstack (lua_State *L, int newsize) {
   THREAD_CHECK(L);
-  TValue *oldstack = L->stack;
-  int lim = L->stacksize;
+  TValue *oldstack = L->stack.begin();
+  int lim = (int)L->stack.size();
   assert(newsize <= LUAI_MAXSTACK || newsize == ERRORSTACKSIZE);
-  assert(L->stack_last - L->stack == L->stacksize - EXTRA_STACK);
-  L->stack = (TValue*)luaM_reallocv(L->stack, L->stacksize, newsize, sizeof(TValue));
+  assert(L->stack_last - L->stack.begin() == L->stack.size() - EXTRA_STACK);
+  L->stack.resize(newsize);
 
   for (; lim < newsize; lim++)
-    setnilvalue(L->stack + lim); /* erase new segment */
-  L->stacksize = newsize;
-  L->stack_last = L->stack + newsize - EXTRA_STACK;
+    setnilvalue(&L->stack[lim]); /* erase new segment */
+  L->stack_last = L->stack.begin() + newsize - EXTRA_STACK;
   correctstack(L, oldstack);
 }
 
 
 void luaD_growstack (lua_State *L, int n) {
   THREAD_CHECK(L);
-  int size = L->stacksize;
+  int size = (int)L->stack.size();
   if (size > LUAI_MAXSTACK)  /* error after extra size? */
     luaD_throw(LUA_ERRERR);
   else {
-    int needed = cast_int(L->top - L->stack) + n + EXTRA_STACK;
+    int needed = cast_int(L->top - L->stack.begin()) + n + EXTRA_STACK;
     int newsize = 2 * size;
     if (newsize > LUAI_MAXSTACK) newsize = LUAI_MAXSTACK;
     if (newsize < needed) newsize = needed;
@@ -209,7 +208,7 @@ static int stackinuse (lua_State *L) {
     assert(ci->top <= L->stack_last);
     if (lim < ci->top) lim = ci->top;
   }
-  return cast_int(lim - L->stack) + 1;  /* part of stack in use */
+  return cast_int(lim - L->stack.begin()) + 1;  /* part of stack in use */
 }
 
 
@@ -218,7 +217,7 @@ void luaD_shrinkstack (lua_State *L) {
   int inuse = stackinuse(L);
   int goodsize = inuse + (inuse / 8) + 2*EXTRA_STACK;
   if (goodsize > LUAI_MAXSTACK) goodsize = LUAI_MAXSTACK;
-  if (inuse > LUAI_MAXSTACK || goodsize >= L->stacksize) {
+  if (inuse > LUAI_MAXSTACK || goodsize >= L->stack.size()) {
   } else {
     luaD_reallocstack(L, goodsize);  /* shrink it */
   }

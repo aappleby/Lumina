@@ -77,12 +77,11 @@ static void stack_init (lua_State *L1, lua_State *L) {
   THREAD_CHECK(L);
   int i; CallInfo *ci;
   /* initialize stack array */
-  L1->stack = (TValue*)luaM_allocv(BASIC_STACK_SIZE, sizeof(TValue));
-  L1->stacksize = BASIC_STACK_SIZE;
+  L1->stack.resize(BASIC_STACK_SIZE);
   for (i = 0; i < BASIC_STACK_SIZE; i++)
-    setnilvalue(L1->stack + i);  /* erase new stack */
-  L1->top = L1->stack;
-  L1->stack_last = L1->stack + L1->stacksize - EXTRA_STACK;
+    setnilvalue(L1->stack.begin() + i);  /* erase new stack */
+  L1->top = L1->stack.begin();
+  L1->stack_last = L1->stack.end() - EXTRA_STACK;
   /* initialize first ci */
   ci = &L1->base_ci;
   ci->next = ci->previous = NULL;
@@ -96,11 +95,11 @@ static void stack_init (lua_State *L1, lua_State *L) {
 
 static void freestack (lua_State *L) {
   THREAD_CHECK(L);
-  if (L->stack == NULL)
+  if (L->stack.empty())
     return;  /* stack not completely built yet */
   L->ci = &L->base_ci;  /* free the entire 'ci' list */
   luaE_freeCI(L);
-  luaM_free(L->stack, L->stacksize * sizeof(TValue), 0);
+  L->stack.clear();
 }
 
 
@@ -149,9 +148,8 @@ static void f_luaopen (lua_State *L, void *ud) {
 static void preinit_state (lua_State *L, global_State *g) {
   //THREAD_CHECK(L);
   G(L) = g;
-  L->stack = NULL;
+  L->stack.init();
   L->ci = NULL;
-  L->stacksize = 0;
   L->errorJmp = NULL;
   L->nCcalls = 0;
   L->hook = NULL;
@@ -169,7 +167,7 @@ static void preinit_state (lua_State *L, global_State *g) {
 static void close_state (lua_State *L) {
   THREAD_CHECK(L);
   global_State *g = G(L);
-  luaF_close(L, L->stack);  /* close all upvalues for this thread */
+  luaF_close(L, L->stack.begin());  /* close all upvalues for this thread */
   luaC_freeallobjects(L);  /* collect all objects */
   luaS_freestrt(L, G(L)->strt);
   delete G(L)->strt;
@@ -209,7 +207,7 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
   THREAD_CHECK(L);
   {
     THREAD_CHANGE(L1);
-    luaF_close(L1, L1->stack);  /* close all upvalues for this thread */
+    luaF_close(L1, L1->stack.begin());  /* close all upvalues for this thread */
     assert(L1->openupval == NULL);
     freestack(L1);
   }

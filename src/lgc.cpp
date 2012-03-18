@@ -491,17 +491,17 @@ static int traverseclosure (global_State *g, Closure *cl) {
 
 
 static int traversestack (global_State *g, lua_State *L) {
-  StkId o = L->stack;
+  StkId o = L->stack.begin();
   if (o == NULL)
     return 1;  /* stack not completely built yet */
   for (; o < L->top; o++)
     markvalue(g, o);
   if (g->gcstate == GCSatomic) {  /* final traversal? */
-    StkId lim = L->stack + L->stacksize;  /* real end of stack */
+    StkId lim = L->stack.end();  /* real end of stack */
     for (; o < lim; o++)  /* clear not-marked stack slice */
       setnilvalue(o);
   }
-  return TRAVCOST + cast_int(o - L->stack);
+  return TRAVCOST + cast_int(o - L->stack.begin());
 }
 
 
@@ -664,7 +664,7 @@ static LuaBase **sweeplist (lua_State *L, LuaBase **p, size_t count);
 */
 static void sweepthread (lua_State *L, lua_State *L1) {
   THREAD_CHECK(L);
-  if (L1->stack == NULL) return;  /* stack not completely built yet */
+  if (L1->stack.empty()) return;  /* stack not completely built yet */
   sweepwholelist(L, &L1->openupval);  /* sweep open upvalues */
   {
     THREAD_CHANGE(L1);

@@ -94,7 +94,7 @@ int lua_checkstack (lua_State *L, int size) {
   if (L->stack_last - L->top > size)  /* stack large enough? */
     res = 1;  /* yes; check is OK */
   else {  /* no; need to grow stack */
-    int inuse = cast_int(L->top - L->stack) + EXTRA_STACK;
+    int inuse = cast_int(L->top - L->stack.begin()) + EXTRA_STACK;
     if (inuse > LUAI_MAXSTACK - size)  /* can grow without overflow? */
       res = 0;  /* no */
     else  /* try to grow stack */
