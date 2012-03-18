@@ -558,8 +558,7 @@ static void close_func (LexState *ls) {
   luaK_ret(fs, 0, 0);  /* final return */
   leaveblock(fs);
   f->code.resize(fs->pc);
-  f->lineinfo = (int*)luaM_reallocv(f->lineinfo, f->sizelineinfo, fs->pc, sizeof(int));
-  f->sizelineinfo = fs->pc;
+  f->lineinfo.resize(fs->pc);
   if(f->constants) {
     f->constants = (TValue*)luaM_reallocv(f->constants, f->nconstants, fs->nk, sizeof(TValue));
   } else {

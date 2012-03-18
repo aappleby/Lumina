@@ -131,8 +131,7 @@ Proto *luaF_newproto (lua_State *L) {
   //f->code = NULL;
   f->code.init();
   f->cache = NULL;
-  f->lineinfo = NULL;
-  f->sizelineinfo = 0;
+  f->lineinfo.init();
   f->upvalues = NULL;
   f->sizeupvalues = 0;
   f->numparams = 0;
@@ -152,7 +151,7 @@ void luaF_freeproto (lua_State *L, Proto *f) {
   f->code.clear();
   luaM_free(f->p, f->sizep * sizeof(Proto*), 0);
   luaM_free(f->constants, f->nconstants * sizeof(TValue), 0);
-  luaM_free(f->lineinfo, f->sizelineinfo * sizeof(int), 0);
+  f->lineinfo.clear();
   luaM_free(f->locvars, f->sizelocvars * sizeof(LocVar), 0);
   luaM_free(f->upvalues, f->sizeupvalues * sizeof(Upvaldesc), 0);
   luaM_delobject(f, sizeof(Proto), LUA_TPROTO);

@@ -148,7 +148,7 @@ static const Proto* combine(lua_State* L, int n)
    f->p[i]=toproto(L,i-n-1);
    if (f->p[i]->sizeupvalues>0) f->p[i]->upvalues[0].instack=0;
   }
-  f->sizelineinfo=0;
+  f->lineinfo.clear();
   return f;
  }
 }

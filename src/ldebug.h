@@ -13,7 +13,7 @@
 
 #define pcRel(pc, p)	(cast(int, (pc) - &(p)->code[0]) - 1)
 
-#define getfuncline(f,pc)	(((f)->lineinfo) ? (f)->lineinfo[pc] : 0)
+#define getfuncline(f,pc)	(((f)->lineinfo.size()) ? (f)->lineinfo[pc] : 0)
 
 /* Active Lua function (given call info) */
 #define ci_func(ci)		(clLvalue((ci)->func))

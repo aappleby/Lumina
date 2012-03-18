@@ -236,8 +236,8 @@ static int luaK_code (FuncState *fs, Instruction i) {
   }
   f->code[fs->pc] = i;
   /* save corresponding line information */
-  if(fs->pc >= f->sizelineinfo) {
-    f->lineinfo = (int*)luaM_growaux_(f->lineinfo, f->sizelineinfo, sizeof(int), MAX_INT, "opcodes");
+  if(fs->pc >= f->lineinfo.size()) {
+    f->lineinfo.grow();
   }
   f->lineinfo[fs->pc] = fs->ls->lastline;
   return fs->pc++;

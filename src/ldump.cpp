@@ -120,8 +120,8 @@ static void DumpDebug(const Proto* f, DumpState* D)
 {
  int i,n;
  DumpString((D->strip) ? NULL : f->source,D);
- n= (D->strip) ? 0 : f->sizelineinfo;
- DumpVector(f->lineinfo,n,sizeof(int),D);
+ n= (D->strip) ? 0 : (int)f->lineinfo.size();
+ DumpVector(f->lineinfo.begin(),n,sizeof(int),D);
  n= (D->strip) ? 0 : f->sizelocvars;
  DumpInt(n,D);
  for (i=0; i<n; i++)

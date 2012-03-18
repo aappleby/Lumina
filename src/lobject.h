@@ -68,17 +68,15 @@ struct Proto : public LuaBase {
   TValue *constants;  /* constants used by the function */
   int nconstants;  /* size of `constants' */
 
-  //Instruction *code;
   LuaVector<Instruction> code;
+  LuaVector<int> lineinfo;
 
   Proto **p;  /* functions defined inside the function */
-  int *lineinfo;  /* map from opcodes to source lines (debug information) */
   LocVar *locvars;  /* information about local variables (debug information) */
   Upvaldesc *upvalues;  /* upvalue information */
   Closure *cache;  /* last created closure with this prototype */
   TString  *source;  /* used for debug information */
   int sizeupvalues;  /* size of 'upvalues' */
-  int sizelineinfo;
   int sizep;  /* size of `p' */
   int sizelocvars;
   int linedefined;

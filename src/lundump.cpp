@@ -146,9 +146,8 @@ static void LoadDebug(LoadState* S, Proto* f)
  int i,n;
  f->source=LoadString(S);
  n=LoadInt(S);
- f->lineinfo = (int*)luaM_allocv(n,sizeof(int));
- f->sizelineinfo=n;
- LoadVector(S,f->lineinfo,n,sizeof(int));
+ f->lineinfo.resize(n);
+ LoadVector(S,f->lineinfo.begin(),n,sizeof(int));
  n=LoadInt(S);
  f->locvars = (LocVar*)luaM_allocv(n,sizeof(LocVar));
  f->sizelocvars=n;
