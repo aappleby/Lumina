@@ -102,10 +102,9 @@ static void reallymarkobject (global_State *g, LuaObject *o);
 #define linktable(h,p)	((h)->gclist = *(p), *(p) = obj2gco(h))
 
 
-/*
-** if key is not marked, mark its entry as dead (therefore removing it
-** from the table)
-*/
+
+// The key for this node is about to be garbage collected. Mark the
+// keyvalue as dead so we don't try and dereference it later.
 static void removeentry (Node *n) {
   assert(ttisnil(&n->i_val));
   if (valiswhite(&n->i_key))

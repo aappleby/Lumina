@@ -55,6 +55,37 @@ enum LuaTag {
 #define LUA_TOTALTAGS	(LUA_TUPVAL+2)
 
 struct TValue {
+
+  void operator = ( TValue const & V );
+  void operator = ( TValue * pV );
+
+  bool isCollectable() { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }
+
+  bool isBoolean() const       { return tagtype() == LUA_TBOOLEAN; }
+  bool isLightUserdata() const { return tagtype() == LUA_TLIGHTUSERDATA; }
+  bool isNumber() const        { return tagtype() == LUA_TNUMBER; }
+  bool isString() const        { return tagtype() == LUA_TSTRING; }
+  bool isTable() const         { return tagtype() == LUA_TTABLE; }
+  bool isFunction() const      { return tagtype() == LUA_TFUNCTION; }
+  bool isUserdata() const      { return tagtype() == LUA_TUSERDATA; }
+  bool isThread() const        { return tagtype() == LUA_TTHREAD; }
+  bool isProto() const         { return tagtype() == LUA_TPROTO; }
+  bool isUpval() const         { return tagtype() == LUA_TUPVAL; }
+  bool isDeadKey() const       { return tagtype() == LUA_TDEADKEY; }
+
+  LuaObject* getObject()  { assert(isCollectable()); return gc; }
+  LuaObject* getDeadKey() { assert(isDeadKey());     return gc; }
+
+  int32_t rawtype() const  { return tt_; }
+  int32_t tagtype() const  { return tt_ & 0x3f; }
+  int32_t basetype() const { return tt_ & 0x0f; }
+
+
+  void setBool  (int x)     { b = x; tt_ = LUA_TBOOLEAN; }
+  void setValue (TValue* x) { bytes = x->bytes; tt_ = x->tt_; }
+
+  TString* asString() { return reinterpret_cast<TString*>(gc); }
+
   union {
     LuaObject *gc;    /* collectable objects */
     void *p;         /* light userdata */
@@ -63,24 +94,7 @@ struct TValue {
     lua_Number n;    /* numbers */
     uint64_t bytes;
   };
-
-
-  bool isCollectable() { return (tt_ & BIT_ISCOLLECTABLE) != 0; }
-  bool isDeadKey() { return tt_ == LUA_TDEADKEY; }
-
-  LuaObject* getBase()    { assert(isCollectable()); return gc; }
-  LuaObject* getDeadKey() { assert(isDeadKey()); return gc; }
-
   int32_t tt_;
-  int32_t rawtype() const { return tt_; }
-  int32_t tagtype() const { return tt_ & 0x3f; }
-  int32_t basetype() const { return tt_ & 0x0f; }
-
-
-  void setBool  (int x)     { b = x; tt_ = LUA_TBOOLEAN; }
-  void setValue (TValue* x) { bytes = x->bytes; tt_ = x->tt_; }
-
-  TString* asString() { return reinterpret_cast<TString*>(gc); }
 };
 
 

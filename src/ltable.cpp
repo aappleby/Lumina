@@ -154,10 +154,9 @@ static int findindex (Table *t, StkId key) {
     Node *n = mainposition(t, key);
     for (;;) {  /* check whether `key' is somewhere in the chain */
       /* key may be dead already, but it is ok to use it in `next' */
-      if (luaV_rawequalobj(&n->i_key, key) || (ttisdeadkey(&n->i_key) && iscollectable(key) && deadvalue(&n->i_key) == gcvalue(key))) {
-        i = cast_int(n - gnode(t, 0));  /* key index in hash table */
-        /* hash elements are numbered after array ones */
-        return i + t->sizearray;
+      bool equal = luaV_rawequalobj(&n->i_key, key);
+      if (equal || (ttisdeadkey(&n->i_key) && iscollectable(key) && deadvalue(&n->i_key) == gcvalue(key))) {
+        return cast_int(n - gnode(t, 0)) + t->sizearray;
       }
       else n = n->next;
       if (n == NULL)
