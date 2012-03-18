@@ -74,33 +74,27 @@ void Memcontrol::disableLimit() {
   limitEnabled = false;
 }
 
-/*
-** {======================================================================
-** Controlled version for realloc.
-** =======================================================================
-*/
-
 #define MARK		0x55  /* 01010101 (a nice pattern) */
 #define MARKSIZE	16  /* size of marks after each block */
 
 struct Header {
   size_t size;
   int type;
+  int alloctype;
 };
 
 //-----------------------------------------------------------------------------
 
-Header* allocblock (size_t size, int type) {
+Header* allocblock (size_t size, int type, int alloctype) {
   uint8_t* buf = (uint8_t*)malloc(sizeof(Header) + size + MARKSIZE);
   if (buf == NULL) return NULL;
 
   Header *block = reinterpret_cast<Header*>(buf);
   block->size = size;
   block->type = type;
+  block->alloctype = alloctype;
   memset(buf + sizeof(Header), -MARK, size);
   memset(buf + sizeof(Header) + size, MARK, MARKSIZE);
-
-  l_memcontrol.alloc(size,type);
 
   return block;
 }
@@ -109,8 +103,6 @@ Header* allocblock (size_t size, int type) {
 
 void freeblock (Header *block) {
   if (block == NULL) return;
-
-  l_memcontrol.free(block->size, block->type);
 
   uint8_t* buf = reinterpret_cast<uint8_t*>(block);
   uint8_t* mark = buf + sizeof(Header) + block->size;
@@ -122,132 +114,81 @@ void freeblock (Header *block) {
 
 //-----------------------------------------------------------------------------
 
-void* default_alloc(size_t size, int type) {
+void* default_alloc(size_t size, int type, int alloctype) {
   if(size == 0) return NULL;
   if (!l_memcontrol.canAlloc(size)) return NULL;
   assert(type >= 0);
   assert(type < 256);
 
-  Header* newblock = allocblock(size, type);
+  Header* newblock = allocblock(size, type, alloctype);
+
+  if(newblock) l_memcontrol.alloc(size,type);
+
   return newblock ? newblock + 1 : NULL;
 }
 
-void default_free(void * blob, size_t size, int type) {
+void default_free(void * blob, size_t size, int type, int alloctype) {
   if(blob == NULL) return;
-  Header* oldblock = reinterpret_cast<Header*>(blob) - 1;
-  assert(oldblock->size == size);
-  assert(oldblock->type == type);
-  freeblock(oldblock);
-}
-
-void* default_realloc (void* blob, size_t oldsize, size_t newsize, int type) {
-  if (blob == NULL) {
-    return default_alloc(newsize,type);
-  }
-
-  Header* oldblock = reinterpret_cast<Header*>(blob) - 1;
-  assert(oldsize == oldblock->size);
-
-  if (newsize == 0) {
-    freeblock(oldblock);
-    return NULL;
-  }
-
-  if (!l_memcontrol.canAlloc(newsize)) {
-    return NULL;
-  }
-
-  Header* newblock = allocblock(newsize, oldblock->type);
-  if(newblock == NULL) return NULL;
-
-  memcpy(newblock + 1, oldblock + 1, std::min(oldsize,newsize));
-  freeblock(oldblock);
-
-  return newblock + 1;
+  l_memcontrol.free(size, type);
+  Header* block = reinterpret_cast<Header*>(blob) - 1;
+  assert(block->size == size);
+  assert(block->type == type);
+  assert(block->alloctype == alloctype);
+  freeblock(block);
 }
 
 //-----------------------------------------------------------------------------
 
-void *luaM_alloc_ (size_t size, int type) {
+void *luaM_alloc_ (size_t size, int type, int alloctype) {
   if(size == 0) return NULL;
 
-  void* newblock = default_realloc(NULL, 0, size, type);
+  void* newblock = default_alloc(size, type, alloctype);
   if (newblock == NULL) {
-    if (thread_G->gcrunning) {
+    if (thread_G && thread_G->gcrunning) {
       luaC_fullgc(1);  /* try to free some memory... */
-      newblock = default_realloc(NULL, 0, size, type);  /* try again */
+      newblock = default_alloc(size, type, alloctype);  /* try again */
     }
     if (newblock == NULL)
       luaD_throw(LUA_ERRMEM);
   }
 
-  thread_G->GCdebt += size;
+  if(thread_G) thread_G->GCdebt += size;
 
   return newblock;
 }
 
-void luaM_free_ (void *block, size_t size, int type) {
+void luaM_free_ (void *block, size_t size, int type, int alloctype) {
   if(block == NULL) return;
-  default_free(block, size, type);
-  thread_G->GCdebt -= size;
-}
-
-void *luaM_realloc_ (void *block, size_t osize, size_t nsize, int type) {
-  void *newblock;
-  global_State *g = thread_G;
-  size_t realosize = (block) ? osize : 0;
-  assert((realosize == 0) == (block == NULL));
-  newblock = default_realloc(block, osize, nsize, type);
-  if (newblock == NULL && nsize > 0) {
-    if (g->gcrunning) {
-      luaC_fullgc(1);  /* try to free some memory... */
-      newblock = default_realloc(block, osize, nsize, type);  /* try again */
-    }
-    if (newblock == NULL)
-      luaD_throw(LUA_ERRMEM);
-  }
-  assert((nsize == 0) == (newblock == NULL));
-  g->GCdebt = (g->GCdebt + nsize) - realosize;
-
-  return newblock;
+  default_free(block, size, type, alloctype);
+  if(thread_G) thread_G->GCdebt -= size;
 }
 
 //-----------------------------------------------------------------------------
 
-void* luaM_reallocv(void* block, size_t osize, size_t nsize, size_t esize) {
-  assert(block);
-  assert(osize);
-  assert(nsize);
-  return luaM_realloc_(block, osize*esize, nsize*esize, 0);
-}
+void* luaM_newobject(int tag, size_t size) { 
+  assert(tag > 0);
+  assert(tag < LUA_ALLTAGS);
+  assert(size > 0);
 
-void * luaM_newobject(int tag, size_t size) { 
-  return luaM_alloc_(size, tag);
+  return luaM_alloc_(size, tag, LAT_OBJECT);
 }
 
 void luaM_delobject(void * blob, size_t size, int type) {
 //  assert(blob);
 //  assert(size);
   assert(type);
-  luaM_free_(blob, size, type);
-}
-
-void luaM_free(void * blob, size_t size, int type) {
-//  assert(blob);
-//  assert(size);
-  assert(type == 0);
-  luaM_free_(blob, size, type);
+  luaM_free_(blob, size, type, LAT_OBJECT);
 }
 
 void* luaM_alloc(size_t size) {
   //assert(size);
-  return luaM_alloc_(size, 0);
+  return luaM_alloc_(size, 0, LAT_RUNTIME);
 }
 
-void* luaM_allocv(size_t n, size_t size) {
-  //assert(n);
-  //assert(size);
-  return luaM_alloc_(n*size, 0);
+void luaM_free(void * blob, size_t size) {
+//  assert(blob);
+//  assert(size);
+  luaM_free_(blob, size, 0, LAT_RUNTIME);
 }
 
 //-----------------------------------------------------------------------------

@@ -25,14 +25,14 @@
 */
 #define eqstr(a,b)	((a) == (b))
 
-void luaS_resize (int newsize);
-Udata *luaS_newudata (size_t s, Table *e);
-TString *luaS_newlstr (const char *str, size_t l);
-TString *luaS_new (const char *str);
-void luaS_freestr (TString* ts);
+void     luaS_resize   (int newsize);
+Udata*   luaS_newudata (size_t s, Table *e);
+TString* luaS_newlstr  (const char *str, size_t l);
+TString* luaS_new      (const char *str);
+void     luaS_freestr  (TString* ts);
 
-void luaS_initstrt(stringtable * strt);
-void luaS_freestrt(stringtable* strt);
+void luaS_initstrt();
+void luaS_freestrt();
 
 
 #endif

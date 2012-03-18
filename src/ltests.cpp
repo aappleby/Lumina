@@ -130,19 +130,19 @@ static void checkproto (global_State *g, Proto *f) {
   int i;
   LuaObject *fgc = obj2gco(f);
   if (f->source) checkobjref(g, fgc, f->source);
-  for (i=0; i<f->constants.size(); i++) {
+  for (i=0; i < (int)f->constants.size(); i++) {
     if (ttisstring(&f->constants[i]))
       checkobjref(g, fgc, tsvalue(&f->constants[i]));
   }
-  for (i=0; i<f->upvalues.size(); i++) {
+  for (i=0; i < (int)f->upvalues.size(); i++) {
     if (f->upvalues[i].name)
       checkobjref(g, fgc, f->upvalues[i].name);
   }
-  for (i=0; i<f->p.size(); i++) {
+  for (i=0; i < (int)f->p.size(); i++) {
     if (f->p[i])
       checkobjref(g, fgc, f->p[i]);
   }
-  for (i=0; i<f->locvars.size(); i++) {
+  for (i=0; i < (int)f->locvars.size(); i++) {
     if (f->locvars[i].varname)
       checkobjref(g, fgc, f->locvars[i].varname);
   }
@@ -391,7 +391,7 @@ static int listcode (lua_State *L) {
   lua_newtable(L);
   setnameval(L, "maxstack", p->maxstacksize);
   setnameval(L, "numparams", p->numparams);
-  for (pc=0; pc<p->code.size(); pc++) {
+  for (pc=0; pc < (int)p->code.size(); pc++) {
     char buff[100];
     lua_pushinteger(L, pc+1);
     lua_pushstring(L, buildop(p, pc, buff));
@@ -409,7 +409,7 @@ static int listk (lua_State *L) {
                  1, "Lua function expected");
   p = getproto(obj_at(L, 1));
   lua_createtable(L, (int)p->constants.size(), 0);
-  for (i=0; i<p->constants.size(); i++) {
+  for (i=0; i < (int)p->constants.size(); i++) {
     pushobject(L, &p->constants[i]);
     lua_rawseti(L, -2, i+1);
   }

@@ -68,7 +68,7 @@ void luaE_freeCI (lua_State *L) {
   ci->next = NULL;
   while ((ci = next) != NULL) {
     next = ci->next;
-    luaM_free(ci, sizeof(CallInfo), 0);
+    luaM_free(ci, sizeof(CallInfo));
   }
 }
 
@@ -167,19 +167,17 @@ static void preinit_state (lua_State *L, global_State *g) {
 static void close_state (lua_State *L) {
   THREAD_CHECK(L);
   global_State *g = G(L);
-  luaF_close(L, L->stack.begin());  /* close all upvalues for this thread */
+  luaF_close(L->stack.begin());  /* close all upvalues for this thread */
   luaC_freeallobjects(L);  /* collect all objects */
-  luaS_freestrt(g->strt);
-  delete g->strt;
-  g->strt = NULL;
+  luaS_freestrt();
 
   g->buff.buffer.clear();
 
   freestack(L);
   assert(gettotalbytes(g) == (sizeof(lua_State) + sizeof(global_State)));
-  default_free(g, sizeof(global_State), 0);
+  default_free(g, sizeof(global_State), 0, LAT_STARTUP);
   L->l_G = NULL;
-  default_free(L, sizeof(lua_State), 0);  /* free main block */
+  default_free(L, sizeof(lua_State), 0, LAT_STARTUP);  /* free main block */
 }
 
 
@@ -207,7 +205,7 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
   THREAD_CHECK(L);
   {
     THREAD_CHANGE(L1);
-    luaF_close(L1, L1->stack.begin());  /* close all upvalues for this thread */
+    luaF_close(L1->stack.begin());  /* close all upvalues for this thread */
     assert(L1->openupval == NULL);
     freestack(L1);
   }
@@ -219,43 +217,43 @@ lua_State *lua_newstate () {
   int i;
   lua_State *L;
   global_State *g;
-  L = (lua_State*)default_realloc(NULL, LUA_TTHREAD, sizeof(lua_State), 0);
+  L = (lua_State*)default_alloc(sizeof(lua_State), 0, LAT_STARTUP);
   if(L == NULL) { return NULL; }
-  g = (global_State*)default_realloc(NULL, 0, sizeof(global_State), 0);
+  g = (global_State*)default_alloc(sizeof(global_State), 0, LAT_STARTUP);
   if(g == NULL) {
-    default_realloc(L, sizeof(lua_State), 0, 0);
+    default_free(L, sizeof(lua_State), 0, LAT_STARTUP);
     return NULL;
   }
-  L->next = NULL;
-  L->tt = LUA_TTHREAD;
-  g->currentwhite = bit2mask(WHITE0BIT, FIXEDBIT);
-  L->marked = luaC_white(g);
-  g->gckind = KGC_NORMAL;
-  preinit_state(L, g);
-  g->mainthread = L;
-  g->uvhead.uprev = &g->uvhead;
-  g->uvhead.unext = &g->uvhead;
-  g->gcrunning = 0;  /* no GC while building state */
-  g->lastmajormem = 0;
-  g->strt = new stringtable();
-  luaS_initstrt(g->strt);
-  setnilvalue(&g->l_registry);
-  g->buff.buffer.init();
-  g->panic = NULL;
-  g->version = lua_version(NULL);
-  g->gcstate = GCSpause;
-  g->allgc = NULL;
-  g->finobj = NULL;
-  g->tobefnz = NULL;
-  g->gray = g->grayagain = NULL;
-  g->weak = g->ephemeron = g->allweak = NULL;
-  g->totalbytes = sizeof(lua_State) + sizeof(global_State);
-  g->GCdebt = 0;
-  g->gcpause = LUAI_GCPAUSE;
-  g->gcmajorinc = LUAI_GCMAJOR;
-  g->gcstepmul = LUAI_GCMUL;
+  L->l_G = g;
   {
     GLOBAL_CHANGE(L);
+    L->next = NULL;
+    L->tt = LUA_TTHREAD;
+    g->currentwhite = bit2mask(WHITE0BIT, FIXEDBIT);
+    L->marked = luaC_white(g);
+    g->gckind = KGC_NORMAL;
+    preinit_state(L, g);
+    g->mainthread = L;
+    g->uvhead.uprev = &g->uvhead;
+    g->uvhead.unext = &g->uvhead;
+    g->gcrunning = 0;  /* no GC while building state */
+    g->lastmajormem = 0;
+    luaS_initstrt();
+    setnilvalue(&g->l_registry);
+    g->buff.buffer.init();
+    g->panic = NULL;
+    g->version = lua_version(NULL);
+    g->gcstate = GCSpause;
+    g->allgc = NULL;
+    g->finobj = NULL;
+    g->tobefnz = NULL;
+    g->gray = g->grayagain = NULL;
+    g->weak = g->ephemeron = g->allweak = NULL;
+    g->totalbytes = sizeof(lua_State) + sizeof(global_State);
+    g->GCdebt = 0;
+    g->gcpause = LUAI_GCPAUSE;
+    g->gcmajorinc = LUAI_GCMAJOR;
+    g->gcstepmul = LUAI_GCMUL;
     for (i=0; i < LUA_NUMTAGS; i++) g->mt[i] = NULL;
     {
       if (luaD_rawrunprotected(L, f_luaopen, NULL) != LUA_OK) {

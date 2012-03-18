@@ -452,17 +452,16 @@ static int traversetable (global_State *g, Table *h) {
 
 
 static int traverseproto (global_State *g, Proto *f) {
-  int i;
   if (f->cache && iswhite(obj2gco(f->cache)))
     f->cache = NULL;  /* allow cache to be collected */
   stringmark(f->source);
-  for (i = 0; i < f->constants.size(); i++)  /* mark literals */
+  for (size_t i = 0; i < f->constants.size(); i++)  /* mark literals */
     markvalue(g, &f->constants[i]);
-  for (i = 0; i < f->upvalues.size(); i++)  /* mark upvalue names */
+  for (size_t i = 0; i < f->upvalues.size(); i++)  /* mark upvalue names */
     stringmark(f->upvalues[i].name);
-  for (i = 0; i < f->p.size(); i++)  /* mark nested protos */
+  for (size_t i = 0; i < f->p.size(); i++)  /* mark nested protos */
     markobject(g, f->p[i]);
-  for (i = 0; i < f->locvars.size(); i++)  /* mark local-variable names */
+  for (size_t i = 0; i < f->locvars.size(); i++)  /* mark local-variable names */
     stringmark(f->locvars[i].varname);
   return TRAVCOST +
          (int)f->constants.size() +
@@ -642,9 +641,9 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
 static void freeobj (LuaObject *o) {
   lua_State *L = thread_L;
   switch (gch(o)->tt) {
-    case LUA_TPROTO: luaF_freeproto(L, gco2p(o)); break;
-    case LUA_TFUNCTION: luaF_freeclosure(L, gco2cl(o)); break;
-    case LUA_TUPVAL: luaF_freeupval(L, gco2uv(o)); break;
+    case LUA_TPROTO: luaF_freeproto(gco2p(o)); break;
+    case LUA_TFUNCTION: luaF_freeclosure(gco2cl(o)); break;
+    case LUA_TUPVAL: luaF_freeupval(gco2uv(o)); break;
     case LUA_TTABLE: luaH_free(gco2t(o)); break;
     case LUA_TTHREAD: luaE_freethread(L, gco2th(o)); break;
     case LUA_TUSERDATA: luaM_delobject(o, sizeudata(gco2u(o)), LUA_TUSERDATA); break;

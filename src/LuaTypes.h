@@ -6,9 +6,12 @@ class TString;
 class lua_State;
 class global_State;
 class Closure;
+class stringtable;
 
 extern __declspec(thread) lua_State* thread_L;
 extern __declspec(thread) global_State* thread_G;
+
+stringtable* getGlobalStringtable();
 
 class LuaScope {
 public:
@@ -125,6 +128,8 @@ enum LuaTag {
   LUA_TPROTO = 9,
   LUA_TUPVAL = 10,
   LUA_TDEADKEY = 11,
+
+  LUA_ALLTAGS = LUA_TDEADKEY+1,
 };
 
 

@@ -231,12 +231,12 @@ static int luaK_code (FuncState *fs, Instruction i) {
   Proto *f = fs->f;
   dischargejpc(fs);  /* `pc' will change */
   /* put new instruction in code array */
-  if(fs->pc >= f->code.size()) {
+  if(fs->pc >= (int)f->code.size()) {
     f->code.grow();
   }
   f->code[fs->pc] = i;
   /* save corresponding line information */
-  if(fs->pc >= f->lineinfo.size()) {
+  if(fs->pc >= (int)f->lineinfo.size()) {
     f->lineinfo.grow();
   }
   f->lineinfo[fs->pc] = fs->ls->lastline;
@@ -337,11 +337,11 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
      table has no metatable, so it does not need to invalidate cache */
   setnvalue(idx, cast_num(k));
   
-  if (k >= f->constants.size()) {
+  if (k >= (int)f->constants.size()) {
     f->constants.grow();
   }
   
-  while (oldsize < f->constants.size()) setnilvalue(&f->constants[oldsize++]);
+  while (oldsize < (int)f->constants.size()) setnilvalue(&f->constants[oldsize++]);
   setobj(&f->constants[k], v);
   fs->nk++;
   luaC_barrier(f, v);

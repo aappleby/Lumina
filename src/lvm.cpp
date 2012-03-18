@@ -428,11 +428,11 @@ static void pushclosure (lua_State *L, Proto *p, UpVal **encup, StkId base,
   int nup = (int)p->upvalues.size();
   Upvaldesc *uv = p->upvalues.begin();
   int i;
-  Closure *ncl = luaF_newLclosure(L, p);
+  Closure *ncl = luaF_newLclosure(p);
   setclLvalue(L, ra, ncl);  /* anchor new closure in stack */
   for (i = 0; i < nup; i++) {  /* fill in its upvalues */
     if (uv[i].instack)  /* upvalue refers to local variable? */
-      ncl->upvals[i] = luaF_findupval(L, base + uv[i].idx);
+      ncl->upvals[i] = luaF_findupval(base + uv[i].idx);
     else  /* get upvalue from enclosing function */
       ncl->upvals[i] = encup[uv[i].idx];
   }
@@ -526,7 +526,7 @@ void luaV_finishOp (lua_State *L) {
 /* execute a jump instruction */
 #define dojump(ci,i,e) \
   { int a = GETARG_A(i); \
-    if (a > 0) luaF_close(L, ci->base + a - 1); \
+    if (a > 0) luaF_close(ci->base + a - 1); \
     ci->savedpc += GETARG_sBx(i) + e; }
 
 /* for test instructions, execute the jump instruction that follows it */
@@ -765,7 +765,7 @@ void luaV_execute (lua_State *L) {
           StkId lim = nci->base + getproto(nfunc)->numparams;
           int aux;
           /* close all upvalues from previous call */
-          if (cl->p->p.size() > 0) luaF_close(L, oci->base);
+          if (cl->p->p.size() > 0) luaF_close(oci->base);
           /* move new frame into old one */
           for (aux = 0; nfunc + aux < lim; aux++)
             setobj(ofunc + aux, nfunc + aux);
@@ -781,7 +781,7 @@ void luaV_execute (lua_State *L) {
       vmcasenb(OP_RETURN,
         int b = GETARG_B(i);
         if (b != 0) L->top = ra+b-1;
-        if (cl->p->p.size() > 0) luaF_close(L, base);
+        if (cl->p->p.size() > 0) luaF_close(base);
         b = luaD_poscall(L, ra);
         if (!(ci->callstatus & CIST_REENTRY))  /* 'ci' still the called one */
           return;  /* external invocation: return */

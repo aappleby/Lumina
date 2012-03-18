@@ -483,14 +483,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\lstring.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\lstring.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\ltable.cpp"
 				>
 			</File>
@@ -572,6 +564,18 @@
 			</File>
 			<File
 				RelativePath="..\src\MurmurHash3.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="_Done"
+			>
+			<File
+				RelativePath="..\src\lstring.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lstring.h"
 				>
 			</File>
 		</Filter>

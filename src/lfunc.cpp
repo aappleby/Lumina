@@ -20,8 +20,7 @@
 
 
 
-Closure *luaF_newCclosure (lua_State *L, int n) {
-  THREAD_CHECK(L);
+Closure *luaF_newCclosure (int n) {
   LuaObject* o = luaC_newobj(LUA_TFUNCTION, sizeCclosure(n), NULL);
   Closure *c = gco2cl(o);
   c->isC = 1;
@@ -30,8 +29,7 @@ Closure *luaF_newCclosure (lua_State *L, int n) {
 }
 
 
-Closure *luaF_newLclosure (lua_State *L, Proto *p) {
-  THREAD_CHECK(L);
+Closure *luaF_newLclosure (Proto *p) {
   int n = (int)p->upvalues.size();
   LuaObject* o = luaC_newobj(LUA_TFUNCTION, sizeLclosure(n), NULL);
   Closure *c = gco2cl(o);
@@ -43,8 +41,7 @@ Closure *luaF_newLclosure (lua_State *L, Proto *p) {
 }
 
 
-UpVal *luaF_newupval (lua_State *L) {
-  THREAD_CHECK(L);
+UpVal *luaF_newupval () {
   LuaObject *o = luaC_newobj(LUA_TUPVAL, sizeof(UpVal), NULL);
   UpVal *uv = gco2uv(o);
   uv->v = &uv->value;
@@ -53,10 +50,9 @@ UpVal *luaF_newupval (lua_State *L) {
 }
 
 
-UpVal *luaF_findupval (lua_State *L, StkId level) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
-  LuaObject **pp = &L->openupval;
+UpVal *luaF_findupval (StkId level) {
+  global_State *g = thread_G;
+  LuaObject **pp = &thread_L->openupval;
   UpVal *p;
   UpVal *uv;
   while (*pp != NULL && (p = gco2uv(*pp))->v >= level) {
@@ -90,24 +86,23 @@ static void unlinkupval (UpVal *uv) {
 }
 
 
-void luaF_freeupval (lua_State *L, UpVal *uv) {
-  THREAD_CHECK(L);
+void luaF_freeupval (UpVal *uv) {
   if (uv->v != &uv->value)  /* is it open? */
     unlinkupval(uv);  /* remove from open list */
   luaM_delobject(uv, sizeof(UpVal), LUA_TUPVAL);  /* free upvalue */
 }
 
 
-void luaF_close (lua_State *L, StkId level) {
-  THREAD_CHECK(L);
+void luaF_close (StkId level) {
   UpVal *uv;
-  global_State *g = G(L);
+  lua_State* L = thread_L;
+  global_State *g = thread_G;
   while (L->openupval != NULL && (uv = gco2uv(L->openupval))->v >= level) {
     LuaObject *o = obj2gco(uv);
     assert(!isblack(o) && uv->v != &uv->value);
     L->openupval = uv->next;  /* remove from `open' list */
     if (isdead(o))
-      luaF_freeupval(L, uv);  /* free upvalue */
+      luaF_freeupval(uv);  /* free upvalue */
     else {
       unlinkupval(uv);  /* remove upvalue from 'uvhead' list */
       setobj(&uv->value, uv->v);  /* move value to upvalue slot */
@@ -120,8 +115,7 @@ void luaF_close (lua_State *L, StkId level) {
 }
 
 
-Proto *luaF_newproto (lua_State *L) {
-  THREAD_CHECK(L);
+Proto *luaF_newproto () {
   LuaObject* o = luaC_newobj(LUA_TPROTO, sizeof(Proto), NULL);
   Proto* f = gco2p(o);
   f->constants.init();
@@ -141,8 +135,7 @@ Proto *luaF_newproto (lua_State *L) {
 }
 
 
-void luaF_freeproto (lua_State *L, Proto *f) {
-  THREAD_CHECK(L);
+void luaF_freeproto (Proto *f) {
   f->code.clear();
   f->p.clear();
   f->constants.clear();
@@ -153,9 +146,7 @@ void luaF_freeproto (lua_State *L, Proto *f) {
 }
 
 
-void luaF_freeclosure (lua_State *L, Closure *c) {
-  THREAD_CHECK(L);
-
+void luaF_freeclosure (Closure *c) {
   if(c->isC) {
     int size = sizeCclosure(c->nupvalues);
     luaM_delobject(c, size, LUA_TFUNCTION);

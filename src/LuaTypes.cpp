@@ -7,6 +7,10 @@
 __declspec(thread) lua_State* thread_L = NULL;
 __declspec(thread) global_State* thread_G = NULL;
 
+stringtable* getGlobalStringtable() {
+  return thread_G->strt;
+}
+
 LuaScope::LuaScope(lua_State* L) {
   assert((thread_G == NULL) || (thread_G == L->l_G));
   oldState = thread_L;

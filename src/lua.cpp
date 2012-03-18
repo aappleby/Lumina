@@ -482,6 +482,12 @@ static int pmain (lua_State *L) {
 
 
 int main (int argc, char **argv) {
+  {
+    lua_State *L = luaL_newstate();  /* create state */
+    GLOBAL_CHANGE(L);
+    lua_close(L);
+  }
+
   int status, result;
   lua_State *L = luaL_newstate();  /* create state */
   GLOBAL_CHANGE(L);

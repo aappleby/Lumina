@@ -167,11 +167,11 @@ static int registerlocalvar (LexState *ls, TString *varname) {
   FuncState *fs = ls->fs;
   Proto *f = fs->f;
   int oldsize = (int)f->locvars.size();
-  if(fs->nlocvars >= f->locvars.size()) {
+  if(fs->nlocvars >= (int)f->locvars.size()) {
     f->locvars.grow();
   }
   
-  while (oldsize < f->locvars.size()) f->locvars[oldsize++].varname = NULL;
+  while (oldsize < (int)f->locvars.size()) f->locvars[oldsize++].varname = NULL;
   f->locvars[fs->nlocvars].varname = varname;
   luaC_objbarrier(ls->L, f, varname);
   return fs->nlocvars++;
@@ -184,7 +184,7 @@ static void new_localvar (LexState *ls, TString *name) {
   int reg = registerlocalvar(ls, name);
   checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal,
                   MAXVARS, "local variables");
-  if(dyd->actvar.n+1 >= dyd->actvar.arr.size()) {
+  if(dyd->actvar.n+1 >= (int)dyd->actvar.arr.size()) {
     dyd->actvar.arr.grow();
   }
   dyd->actvar.arr[dyd->actvar.n++].idx = cast(short, reg);
@@ -239,7 +239,7 @@ static int newupvalue (FuncState *fs, TString *name, expdesc *v) {
   if(fs->nups >= f->upvalues.size()) {
     f->upvalues.grow();
   }
-  while (oldsize < f->upvalues.size()) f->upvalues[oldsize++].name = NULL;
+  while (oldsize < (int)f->upvalues.size()) f->upvalues[oldsize++].name = NULL;
   f->upvalues[fs->nups].instack = (v->k == VLOCAL);
   f->upvalues[fs->nups].idx = cast_byte(v->info);
   f->upvalues[fs->nups].name = name;
@@ -389,7 +389,7 @@ static int findlabel (LexState *ls, int g) {
 static int newlabelentry (LexState *ls, Labellist *l, TString *name,
                           int line, int pc) {
   int n = l->n;
-  if(n >= l->arr.size()) {
+  if(n >= (int)l->arr.size()) {
     l->arr.grow();
   }
   l->arr[n].name = name;
@@ -507,10 +507,10 @@ static void codeclosure (LexState *ls, Proto *clp, expdesc *v) {
   Proto *f = fs->f;  /* prototype of function creating new closure */
   if (fs->np >= (int)f->p.size()) {
     int oldsize = (int)f->p.size();
-    if(fs->np >= f->p.size()) {
+    if(fs->np >= (int)f->p.size()) {
       f->p.grow();
     }
-    while (oldsize < f->p.size()) f->p[oldsize++] = NULL;
+    while (oldsize < (int)f->p.size()) f->p[oldsize++] = NULL;
   }
   f->p[fs->np++] = clp;
   luaC_objbarrier(ls->L, f, clp);
@@ -536,7 +536,7 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   fs->nactvar = 0;
   fs->firstlocal = ls->dyd->actvar.n;
   fs->bl = NULL;
-  f = luaF_newproto(L);
+  f = luaF_newproto();
   fs->f = f;
   f->source = ls->source;
   f->maxstacksize = 2;  /* registers 0/1 are always valid */

@@ -47,17 +47,17 @@ public:
       clear();
       return;
     }
-    T* newbuf = reinterpret_cast<T*>(default_alloc(sizeof(T) * newsize, 0));
+    T* newbuf = reinterpret_cast<T*>(default_alloc(sizeof(T) * newsize, 0, LAT_VECTOR));
     if(newbuf == NULL) luaD_throw(LUA_ERRMEM);;
     memcpy(newbuf, buf_, sizeof(T) * std::min(size_,newsize));
-    default_free(buf_, sizeof(T) * size_, 0);
+    default_free(buf_, sizeof(T) * size_, 0, LAT_VECTOR);
     buf_ = newbuf;
     size_ = newsize;
   }
 
   void clear ( void )
   {
-    default_free(buf_, sizeof(T) * size_, 0);
+    default_free(buf_, sizeof(T) * size_, 0, LAT_VECTOR);
     buf_ = NULL;
     size_ = 0;
   }

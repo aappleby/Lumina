@@ -15,17 +15,20 @@
 #define sizeLclosure(n)	(cast(int, sizeof(Closure)) + cast(int, sizeof(TValue *)*((n)-1)))
 
 
-Proto *luaF_newproto (lua_State *L);
-Closure *luaF_newCclosure (lua_State *L, int nelems);
-Closure *luaF_newLclosure (lua_State *L, Proto *p);
-UpVal *luaF_newupval (lua_State *L);
-UpVal *luaF_findupval (lua_State *L, StkId level);
-void luaF_close (lua_State *L, StkId level);
-void luaF_freeproto (lua_State *L, Proto *f);
-void luaF_freeclosure (lua_State *L, Closure *c);
-void luaF_freeupval (lua_State *L, UpVal *uv);
-const char *luaF_getlocalname (const Proto *func, int local_number,
-                                         int pc);
+Proto*    luaF_newproto    ();
+Closure*  luaF_newCclosure (int nelems);
+Closure*  luaF_newLclosure (Proto *p);
+UpVal*    luaF_newupval    ();
+
+void luaF_freeproto   (Proto *f);
+void luaF_freeclosure (Closure *c);
+void luaF_freeupval   (UpVal *uv);
+
+UpVal* luaF_findupval (StkId level);
+
+void luaF_close       (StkId level);
+
+const char *luaF_getlocalname (const Proto *func, int local_number, int pc);
 
 
 #endif

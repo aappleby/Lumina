@@ -123,12 +123,17 @@ void luaS_freestr (TString* ts) {
   luaM_delobject(ts, sizestring(ts), LUA_TSTRING);
 }
 
-void luaS_initstrt(stringtable * strt) {
-  strt->size = 0;
-  strt->nuse = 0;
-  strt->hash.init();
+void luaS_initstrt() {
+  global_State* g = thread_G;
+  g->strt = new stringtable();
+  g->strt->size = 0;
+  g->strt->nuse = 0;
+  g->strt->hash.init();
 }
 
-void luaS_freestrt (stringtable* strt) {
-  strt->hash.clear();
+void luaS_freestrt () {
+  global_State* g = thread_G;
+  g->strt->hash.clear();
+  delete g->strt;
+  g->strt = NULL;
 }

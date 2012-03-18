@@ -100,7 +100,7 @@ int lua_getstack (lua_State *L, int level, lua_Debug *ar) {
 
 
 static const char *upvalname (Proto *p, int uv) {
-  TString *s = check_exp(uv < p->upvalues.size(), p->upvalues[uv].name);
+  TString *s = check_exp(uv < (int)p->upvalues.size(), p->upvalues[uv].name);
   if (s == NULL) return "?";
   else return s->c_str();
 }
@@ -211,7 +211,7 @@ static void collectvalidlines (lua_State *L, Closure *f) {
     sethvalue(L, L->top, t);  /* push it on stack */
     incr_top(L);
     v = true;
-    for (i = 0; i < f->p->lineinfo.size(); i++)  /* for all lines with code */
+    for (i = 0; i < (int)f->p->lineinfo.size(); i++)  /* for all lines with code */
       luaH_setint(t, f->p->lineinfo[i], &v);  /* table[line] = true */
   }
 }

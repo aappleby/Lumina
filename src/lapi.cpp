@@ -602,7 +602,7 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
     api_checknelems(L, n);
     api_check(n <= MAXUPVAL, "upvalue index too large");
     luaC_checkGC(L);
-    cl = luaF_newCclosure(L, n);
+    cl = luaF_newCclosure(n);
     cl->f = fn;
     L->top -= n;
     while (n--)
@@ -1262,7 +1262,7 @@ static const char *aux_upvalue (StkId fi, int n, TValue **val,
       Closure *f = clLvalue(fi);
       TString *name;
       Proto *p = f->p;
-      if (!(1 <= n && n <= p->upvalues.size())) return NULL;
+      if (!(1 <= n && n <= (int)p->upvalues.size())) return NULL;
       *val = f->upvals[n-1]->v;
       if (owner) *owner = obj2gco(f->upvals[n - 1]);
       name = p->upvalues[n-1].name;
@@ -1314,7 +1314,7 @@ static UpVal **getupvalref (lua_State *L, int fidx, int n, Closure **pf) {
   StkId fi = index2addr(L, fidx);
   api_check(ttisLclosure(fi), "Lua function expected");
   f = clLvalue(fi);
-  api_check((1 <= n && n <= f->p->upvalues.size()), "invalid upvalue index");
+  api_check((1 <= n && n <= (int)f->p->upvalues.size()), "invalid upvalue index");
   if (pf) *pf = f;
   return &f->upvals[n - 1];  /* get its upvalue pointer */
 }

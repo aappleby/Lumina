@@ -214,8 +214,8 @@ static int stackinuse (lua_State *L) {
 
 void luaD_shrinkstack (lua_State *L) {
   THREAD_CHECK(L);
-  int inuse = stackinuse(L);
-  int goodsize = inuse + (inuse / 8) + 2*EXTRA_STACK;
+  size_t inuse = stackinuse(L);
+  size_t goodsize = inuse + (inuse / 8) + 2*EXTRA_STACK;
   if (goodsize > LUAI_MAXSTACK) goodsize = LUAI_MAXSTACK;
   if (inuse > LUAI_MAXSTACK || goodsize >= L->stack.size()) {
   } else {
@@ -476,7 +476,7 @@ static int recover (lua_State *L, int status) {
   if (ci == NULL) return 0;  /* no recovery point */
   /* "finish" luaD_pcall */
   oldtop = restorestack(L, ci->extra);
-  luaF_close(L, oldtop);
+  luaF_close(oldtop);
   seterrorobj(L, status, oldtop);
   L->ci = ci;
   L->allowhook = ci->old_allowhook;
@@ -620,7 +620,7 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
     l_memcontrol.disableLimit();
 
     StkId oldtop = restorestack(L, old_top);
-    luaF_close(L, oldtop);  /* close possible pending closures */
+    luaF_close(oldtop);  /* close possible pending closures */
     seterrorobj(L, status, oldtop);
     L->ci = old_ci;
     L->allowhook = old_allowhooks;
@@ -674,10 +674,10 @@ static void f_parser (lua_State *L, void *ud) {
   }
   setptvalue(L, L->top, tf);
   incr_top(L);
-  cl = luaF_newLclosure(L, tf);
+  cl = luaF_newLclosure(tf);
   setclLvalue(L, L->top - 1, cl);
-  for (i = 0; i < tf->upvalues.size(); i++)  /* initialize upvalues */
-    cl->upvals[i] = luaF_newupval(L);
+  for (i = 0; i < (int)tf->upvalues.size(); i++)  /* initialize upvalues */
+    cl->upvals[i] = luaF_newupval();
 }
 
 
