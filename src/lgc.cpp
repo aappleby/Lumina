@@ -70,7 +70,7 @@
 
 #define isfinalized(x)		testbit(gch(x)->marked, FINALIZEDBIT)
 
-#define checkdeadkey(n)	assert(!ttisdeadkey(gkey(n)) || ttisnil(gval(n)))
+#define checkdeadkey(n)	assert(!ttisdeadkey(&n->i_key) || ttisnil(gval(n)))
 
 
 #define checkconsistency(obj) assert(!iscollectable(obj) || righttt(obj))
@@ -108,8 +108,8 @@ static void reallymarkobject (global_State *g, LuaBase *o);
 */
 static void removeentry (Node *n) {
   assert(ttisnil(gval(n)));
-  if (valiswhite(gkey(n)))
-    setdeadvalue(gkey(n));  /* unused and unmarked key; remove it */
+  if (valiswhite(&n->i_key))
+    setdeadvalue(&n->i_key);  /* unused and unmarked key; remove it */
 }
 
 
@@ -356,8 +356,8 @@ static void traverseweakvalue (global_State *g, Table *h) {
     if (ttisnil(gval(n)))  /* entry is empty? */
       removeentry(n);  /* remove it */
     else {
-      assert(!ttisnil(gkey(n)));
-      markvalue(g, gkey(n));  /* mark key */
+      assert(!ttisnil(&n->i_key));
+      markvalue(g, &n->i_key);  /* mark key */
       if (!hasclears && iscleared(gval(n)))  /* is there a white value? */
         hasclears = 1;  /* table will have to be cleared */
     }
@@ -387,7 +387,7 @@ static int traverseephemeron (global_State *g, Table *h) {
     checkdeadkey(n);
     if (ttisnil(gval(n)))  /* entry is empty? */
       removeentry(n);  /* remove it */
-    else if (iscleared(gkey(n))) {  /* key is not marked (yet)? */
+    else if (iscleared(&n->i_key)) {  /* key is not marked (yet)? */
       hasclears = 1;  /* table must be cleared */
       if (valiswhite(gval(n)))  /* value not marked yet? */
         prop = 1;  /* must propagate again */
@@ -417,8 +417,8 @@ static void traversestrongtable (global_State *g, Table *h) {
     if (ttisnil(gval(n)))  /* entry is empty? */
       removeentry(n);  /* remove it */
     else {
-      assert(!ttisnil(gkey(n)));
-      markvalue(g, gkey(n));  /* mark key */
+      assert(!ttisnil(&n->i_key));
+      markvalue(g, &n->i_key);  /* mark key */
       markvalue(g, gval(n));  /* mark value */
     }
   }
@@ -607,7 +607,7 @@ static void clearkeys (LuaBase *l, LuaBase *f) {
     Table *h = gco2t(l);
     Node *n, *limit = gnodelast(h);
     for (n = gnode(h, 0); n < limit; n++) {
-      if (!ttisnil(gval(n)) && (iscleared(gkey(n)))) {
+      if (!ttisnil(gval(n)) && (iscleared(&n->i_key))) {
         setnilvalue(gval(n));  /* remove value ... */
         removeentry(n);  /* and remove entry from table */
       }

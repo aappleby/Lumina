@@ -11,7 +11,6 @@
 
 
 #define gnode(t,i)	(&(t)->node[i])
-#define gkey(n)   (reinterpret_cast<TValue*>(&(n)->i_key))
 #define gval(n)		(&(n)->i_val)
 #define gnext(n)	((n)->next)
 

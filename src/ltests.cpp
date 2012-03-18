@@ -114,8 +114,8 @@ static void checktable (global_State *g, Table *h) {
     checkvalref(g, hgc, &h->array[i]);
   for (n = gnode(h, 0); n < limit; n++) {
     if (!ttisnil(gval(n))) {
-      assert(!ttisnil(gkey(n)));
-      checkvalref(g, hgc, gkey(n));
+      assert(!ttisnil(&n->i_key));
+      checkvalref(g, hgc, &n->i_key);
       checkvalref(g, hgc, gval(n));
     }
   }
@@ -567,9 +567,9 @@ static int table_query (lua_State *L) {
   }
   else if ((i -= t->sizearray) < sizenode(t)) {
     if (!ttisnil(gval(gnode(t, i))) ||
-        ttisnil(gkey(gnode(t, i))) ||
-        ttisnumber(gkey(gnode(t, i)))) {
-      pushobject(L, gkey(gnode(t, i)));
+        ttisnil(&gnode(t, i)->i_key) ||
+        ttisnumber(&gnode(t, i)->i_key)) {
+      pushobject(L, &gnode(t, i)->i_key);
     }
     else
       lua_pushliteral(L, "<undef>");
