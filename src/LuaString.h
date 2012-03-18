@@ -1,5 +1,6 @@
 #pragma once
 #include "LuaBase.h"
+#include "LuaVector.h"
 
 /*
 ** Header for string value; string bytes follow the end of this structure
@@ -36,7 +37,8 @@ protected:
 
 class stringtable {
 public:
-  LuaBase **hash;
+  //LuaBase **hash;
+  LuaVector<LuaBase*> hash;
   uint32_t nuse;  /* number of elements */
   int size;
 };

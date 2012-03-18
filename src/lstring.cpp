@@ -26,11 +26,7 @@ void luaS_resize (lua_State *L, int newsize) {
   /* cannot resize while GC is traversing strings */
   luaC_runtilstate(L, ~bitmask(GCSsweepstring));
   if (newsize > tb->size) {
-    if(tb->hash) {
-      tb->hash = (LuaBase**)luaM_reallocv(tb->hash, tb->size, newsize, sizeof(LuaBase*));
-    } else {
-      tb->hash = (LuaBase**)luaM_alloc(newsize * sizeof(LuaBase*));
-    }
+    tb->hash.resize(newsize);
     for (i = tb->size; i < newsize; i++) tb->hash[i] = NULL;
   }
   /* rehash */
@@ -49,7 +45,8 @@ void luaS_resize (lua_State *L, int newsize) {
   if (newsize < tb->size) {
     /* shrinking slice must be empty */
     assert(tb->hash[newsize] == NULL && tb->hash[tb->size - 1] == NULL);
-    tb->hash = (LuaBase**)luaM_reallocv(tb->hash, tb->size, newsize, sizeof(LuaBase*));
+    //tb->hash = (LuaBase**)luaM_reallocv(tb->hash, tb->size, newsize, sizeof(LuaBase*));
+    tb->hash.resize(newsize);
   }
   tb->size = newsize;
 }
@@ -134,10 +131,10 @@ void luaS_freestr (lua_State* L, TString* ts) {
 void luaS_initstrt(stringtable * strt) {
   strt->size = 0;
   strt->nuse = 0;
-  strt->hash = NULL;
+  strt->hash.init();
 }
 
 void luaS_freestrt (lua_State* L, stringtable* strt) {
   THREAD_CHECK(L);
-  luaM_free(strt->hash, strt->size * sizeof(LuaBase*), 0);
+  strt->hash.clear();
 }

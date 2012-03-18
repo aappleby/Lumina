@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+l_noret luaD_throw (int errcode);
+
 template<class T>
 class LuaVector {
 public:
@@ -63,6 +65,11 @@ public:
   void grow() 
   {
     resize(size ? size * 2 : 16);
+  }
+
+  bool empty() 
+  {
+    return (size == 0);
   }
 
 
