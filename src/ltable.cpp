@@ -127,19 +127,19 @@ static Node *mainposition (const Table *t, const TValue *key) {
 ** elements in the array part, then elements in the hash part. The
 ** beginning of a traversal is signaled by -1.
 */
-static int findindex (Table *t, StkId key) {
-  if (ttisnil(key)) return -1;  /* first iteration */
-  int i = key->isInteger() ? key->getInteger() : -1;
+static int findindex (Table *t, TValue key) {
+  if (key.isNil()) return -1;  /* first iteration */
+  int i = key.isInteger() ? key.getInteger() : -1;
   
   if (0 < i && i <= t->sizearray)  /* is `key' inside array part? */
     return i-1;  /* yes; that's the index (corrected to C) */
 
-  Node *n = mainposition(t, key);
+  Node *n = mainposition(t, &key);
 
   for (;;) {
-    bool equal = luaV_rawequalobj(&n->i_key, key);
-    if (equal || (ttisdeadkey(&n->i_key) && iscollectable(key) && deadvalue(&n->i_key) == gcvalue(key))) {
-      return cast_int(n - gnode(t, 0)) + t->sizearray;
+    bool equal = luaV_rawequalobj(&n->i_key, &key);
+    if (equal || (ttisdeadkey(&n->i_key) && iscollectable(&key) && deadvalue(&n->i_key) == gcvalue(&key))) {
+      return (int)(n - t->node) + t->sizearray;
     }
     else n = n->next;
     if (n == NULL)
@@ -148,12 +148,12 @@ static int findindex (Table *t, StkId key) {
 }
 
 
-int luaH_next (Table *t, StkId key) {
-  int i = findindex(t, key) + 1;
+int luaH_next (Table *t, StkId stack) {
+  int i = findindex(t, stack[0]) + 1;
   for (;i < t->sizearray; i++) {
     if (!t->array[i].isNil()) {
-      key[0] = i+1;
-      key[1] = t->array[i];
+      stack[0] = i+1;
+      stack[1] = t->array[i];
       return 1;
     }
   }
@@ -161,8 +161,8 @@ int luaH_next (Table *t, StkId key) {
   for (; i < t->sizenode; i++) {
     Node& n = t->node[i];
     if (!n.i_val.isNil()) {
-      key[0] = n.i_key;
-      key[1] = n.i_val;
+      stack[0] = n.i_key;
+      stack[1] = n.i_val;
       return 1;
     }
   }
