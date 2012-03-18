@@ -154,9 +154,7 @@ static int findindex (Table *t, StkId key) {
     Node *n = mainposition(t, key);
     for (;;) {  /* check whether `key' is somewhere in the chain */
       /* key may be dead already, but it is ok to use it in `next' */
-      if (luaV_rawequalobj(&n->i_key, key) ||
-            (ttisdeadkey(&n->i_key) && iscollectable(key) &&
-             deadvalue(&n->i_key) == gcvalue(key))) {
+      if (luaV_rawequalobj(&n->i_key, key) || (ttisdeadkey(&n->i_key) && iscollectable(key) && deadvalue(&n->i_key) == gcvalue(key))) {
         i = cast_int(n - gnode(t, 0));  /* key index in hash table */
         /* hash elements are numbered after array ones */
         return i + t->sizearray;
@@ -257,7 +255,7 @@ static int numusearray (const Table *t, int *nums) {
 static int numusehash (const Table *t, int *nums, int *pnasize) {
   int totaluse = 0;  /* total number of elements */
   int ause = 0;  /* summation of `nums' */
-  int i = sizenode(t);
+  int i = t->sizenode;
   while (i--) {
     Node *n = &t->node[i];
     if (!ttisnil(&n->i_val)) {
@@ -280,6 +278,8 @@ static void setarrayvector (Table *t, int size) {
 
 
 static void setnodevector (Table *t, int size) {
+  //assert((size & (size-1)) == 0);
+
   int lsize;
   if (size == 0) {  /* no elements to hash part? */
     t->node = cast(Node *, dummynode);  /* use common `dummynode' */
@@ -288,8 +288,6 @@ static void setnodevector (Table *t, int size) {
   else {
     int i;
     lsize = luaO_ceillog2(size);
-    if (lsize > MAXBITS)
-      luaG_runerror("table overflow");
     size = twoto(lsize);
     t->node = (Node*)luaM_allocv(size, sizeof(Node));
     for (i=0; i<size; i++) {

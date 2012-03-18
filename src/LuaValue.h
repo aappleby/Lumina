@@ -1,5 +1,6 @@
 #pragma once
 #include "LuaTypes.h"
+#include <assert.h>
 
 /*
 ** basic types
@@ -22,36 +23,6 @@ enum LuaTag {
   LUA_TUPVAL = 10,
   LUA_TDEADKEY = 11,
 };
-
-/*
-** number of all possible tags (including LUA_TNONE but excluding DEADKEY)
-*/
-#define LUA_TOTALTAGS	(LUA_TUPVAL+2)
-
-struct TValue {
-  union {
-    LuaBase *gc;    /* collectable objects */
-    void *p;         /* light userdata */
-    int32_t b;           /* booleans */
-    lua_CFunction f; /* light C functions */
-    lua_Number n;    /* numbers */
-    uint64_t bytes;
-  };
-  int32_t tt_;
-
-  int32_t rawtype() const { return tt_; }
-  int32_t tagtype() const { return tt_ & 0x3f; }
-  int32_t basetype() const { return tt_ & 0x0f; }
-
-
-  void setBool  (int x)     { b = x; tt_ = LUA_TBOOLEAN; }
-  void setValue (TValue* x) { bytes = x->bytes; tt_ = x->tt_; }
-
-  TString* asString() { return reinterpret_cast<TString*>(gc); }
-};
-
-
-
 
 
 /*
@@ -76,6 +47,44 @@ struct TValue {
 
 /* Bit mark for collectable types */
 #define BIT_ISCOLLECTABLE	(1 << 6)
+
+
+/*
+** number of all possible tags (including LUA_TNONE but excluding DEADKEY)
+*/
+#define LUA_TOTALTAGS	(LUA_TUPVAL+2)
+
+struct TValue {
+  union {
+    LuaBase *gc;    /* collectable objects */
+    void *p;         /* light userdata */
+    int32_t b;           /* booleans */
+    lua_CFunction f; /* light C functions */
+    lua_Number n;    /* numbers */
+    uint64_t bytes;
+  };
+
+
+  bool isCollectable() { return (tt_ & BIT_ISCOLLECTABLE) != 0; }
+  bool isDeadKey() { return tt_ == LUA_TDEADKEY; }
+
+  LuaBase* getBase()    { assert(isCollectable()); return gc; }
+  LuaBase* getDeadKey() { assert(isDeadKey()); return gc; }
+
+  int32_t tt_;
+  int32_t rawtype() const { return tt_; }
+  int32_t tagtype() const { return tt_ & 0x3f; }
+  int32_t basetype() const { return tt_ & 0x0f; }
+
+
+  void setBool  (int x)     { b = x; tt_ = LUA_TBOOLEAN; }
+  void setValue (TValue* x) { bytes = x->bytes; tt_ = x->tt_; }
+
+  TString* asString() { return reinterpret_cast<TString*>(gc); }
+};
+
+
+
 
 /* mark a tag as collectable */
 #define ctb(t)			((t) | BIT_ISCOLLECTABLE)
