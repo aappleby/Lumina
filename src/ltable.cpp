@@ -80,9 +80,24 @@ uint32_t hash64 (uint32_t a, uint32_t b) {
   return a;
 }
 
+uint32_t hash32 (uint32_t a) {
+  a ^= a >> 16;
+  a *= 0x85ebca6b;
+  a ^= a >> 13;
+  a *= 0xc2b2ae35;
+  a ^= a >> 16;
+
+  return a;
+}
+
 static Node* hashpointer ( const Table* t, void* p ) {
   uint32_t* block = reinterpret_cast<uint32_t*>(&p);
-  uint32_t hash = hash64(block[0],block[1]);
+  uint32_t hash;
+  if(sizeof(p) == 8) {
+    hash = hash64(block[0],block[1]);
+  } else {
+    hash = hash32(block[0]);
+  }
   uint32_t mask = t->sizenode - 1;
   return &t->node[hash & mask];
 }
@@ -402,6 +417,10 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
     }
     assert(!isdummy(n));
     othern = mainposition(t, &mp->i_key);
+    Node* bak = othern;
+    if(othern == NULL) {
+      printf("xxx");
+    }
     if (othern != mp) {  /* is colliding node out of its main position? */
       /* yes; move colliding node into free position */
       while (othern->next != mp) othern = othern->next;  /* find previous */

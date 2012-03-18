@@ -155,11 +155,6 @@ struct TValue {
   { THREAD_CHECK(L); TValue *io=(obj); LuaObject *i_g=(x); \
     io->gc=i_g; settt_(io, ctb(gch(i_g)->tt)); }
 
-#define setsvalue(L,obj,x) \
-  { THREAD_CHECK(L); TValue *io=(obj); \
-    io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TSTRING)); \
-    checkliveness(io); }
-
 #define setuvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); \
     io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TUSERDATA)); \
