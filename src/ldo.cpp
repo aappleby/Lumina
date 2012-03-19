@@ -217,17 +217,15 @@ static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
   THREAD_CHECK(L);
   assert(actual >= p->numparams);
   
-  /* move fixed parameters to final position */
-  StkId fixed = L->top - actual;  /* first fixed argument */
-  StkId base = L->top;  /* final position of first argument */
-  
   for (int i=0; i < p->numparams; i++) {
-    L->top[i] = fixed[i];
-    fixed[i].clear();
+    L->top[i] = L->top[i - actual];
+    L->top[i - actual].clear();
   }
+  
+  StkId oldtop = L->top;
   L->top += p->numparams;
   
-  return base;
+  return oldtop;
 }
 
 
