@@ -343,7 +343,7 @@ static void traverseweakvalue (global_State *g, Table *h) {
   /* if there is array part, assume it may have white values (do not
      traverse it just to check) */
   int hasclears = !h->array.empty();
-  for(int i = 0; i < h->sizenode; i++) {
+  for(int i = 0; i < (int)h->hashtable.size(); i++) {
     Node* n = h->getNode(i);
     checkdeadkey(n);
     if (ttisnil(&n->i_val))  /* entry is empty? */
@@ -374,7 +374,7 @@ static int traverseephemeron (global_State *g, Table *h) {
     }
   }
   /* traverse hash part */
-  for (int i = 0; i < h->sizenode; i++) {
+  for (int i = 0; i < (int)h->hashtable.size(); i++) {
     Node* n = h->getNode(i);
     checkdeadkey(n);
     if (ttisnil(&n->i_val))  /* entry is empty? */
@@ -402,7 +402,7 @@ static int traverseephemeron (global_State *g, Table *h) {
 static void traversestrongtable (global_State *g, Table *h) {
   for (int i = 0; i < (int)h->array.size(); i++)  /* traverse array part */
     markvalue(g, &h->array[i]);
-  for(int i = 0; i < h->sizenode; i++) {
+  for(int i = 0; i < (int)h->hashtable.size(); i++) {
     Node* n = h->getNode(i);
     checkdeadkey(n);
     if (ttisnil(&n->i_val))  /* entry is empty? */
@@ -426,11 +426,11 @@ static int traversetable (global_State *g, Table *h) {
       black2gray(obj2gco(h));  /* keep table gray */
       if (!weakkey) {  /* strong keys? */
         traverseweakvalue(g, h);
-        return TRAVCOST + h->sizenode;
+        return TRAVCOST + (int)h->hashtable.size();
       }
       else if (!weakvalue) {  /* strong values? */
         traverseephemeron(g, h);
-        return TRAVCOST + (int)h->array.size() + h->sizenode;
+        return TRAVCOST + (int)h->array.size() + (int)h->hashtable.size();
       }
       else {
         linktable(h, &g->allweak);  /* nothing to traverse now */
@@ -439,7 +439,7 @@ static int traversetable (global_State *g, Table *h) {
     }  /* else go through */
   }
   traversestrongtable(g, h);
-  return TRAVCOST + (int)h->array.size() + (2 * h->sizenode);
+  return TRAVCOST + (int)h->array.size() + (2 * (int)h->hashtable.size());
 }
 
 
@@ -595,7 +595,7 @@ static void convergeephemerons (global_State *g) {
 static void clearkeys (LuaObject *l, LuaObject *f) {
   for (; l != f; l = gco2t(l)->gclist) {
     Table *h = gco2t(l);
-    for(int i = 0; i < h->sizenode; i++) {
+    for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
       if (!ttisnil(&n->i_val) && (iscleared(&n->i_key))) {
         setnilvalue(&n->i_val);  /* remove value ... */
@@ -618,7 +618,7 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
       if (iscleared(o))  /* value was collected? */
         setnilvalue(o);  /* remove value */
     }
-    for(int i = 0; i < h->sizenode; i++) {
+    for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
       if (!ttisnil(&n->i_val) && iscleared(&n->i_val)) {
         setnilvalue(&n->i_val);  /* remove value ... */

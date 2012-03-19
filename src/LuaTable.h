@@ -18,25 +18,22 @@ public:
   Table() {}
 
   uint8_t flags;  /* 1<<p means tagmethod(p) is not present */
-  int sizenode;
   Table *metatable;
   LuaVector<TValue> array;
-  LuaVector<Node> node2_;
+  LuaVector<Node> hashtable;
 
   Node* getNode(int i) {
-    assert(node2_.size());
-    assert(sizenode == node2_.size());
+    assert(hashtable.size());
     assert(i >= 0);
-    assert(i < sizenode);
-    return &node2_[i];
+    assert(i < hashtable.size());
+    return &hashtable[i];
   }
 
   const Node* getNode(int i) const {
-    assert(node2_.size());
-    assert(sizenode == node2_.size());
+    assert(hashtable.size());
     assert(i >= 0);
-    assert(i < sizenode);
-    return &node2_[i];
+    assert(i < hashtable.size());
+    return &hashtable[i];
   }
 
   //LuaVector<Node> node;

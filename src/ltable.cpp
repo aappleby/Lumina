@@ -49,8 +49,8 @@ void luaH_setint_hash (Table *t, int key, TValue *value);
 #define MAXASIZE	(1 << MAXBITS)
 
 Node* hashpow2(Table* t, uint32_t n) {
-  if(t->sizenode == 0) return NULL;
-  uint32_t mask = t->sizenode - 1;
+  if(t->hashtable.empty()) return NULL;
+  uint32_t mask = (uint32_t)t->hashtable.size() - 1;
   return t->getNode(n & mask);
 }
 
@@ -86,7 +86,7 @@ uint32_t hash32 (uint32_t a) {
 }
 
 static Node* hashpointer (Table* t, void* p ) {
-  if(t->sizenode == 0) return NULL;
+  if(t->hashtable.empty()) return NULL;
   uint32_t* block = reinterpret_cast<uint32_t*>(&p);
   uint32_t hash;
   if(sizeof(p) == 8) {
@@ -94,17 +94,17 @@ static Node* hashpointer (Table* t, void* p ) {
   } else {
     hash = hash32(block[0]);
   }
-  uint32_t mask = t->sizenode - 1;
+  uint32_t mask = (uint32_t)t->hashtable.size() - 1;
   return t->getNode(hash & mask);
 }
 
 // Well damn, test suite goes from 21.5 to 18.9 seconds just by changing to
 // this hash...
 static Node* hashnum (Table* t, lua_Number n) {
-  if(t->sizenode == 0) return NULL;
+  if(t->hashtable.empty()) return NULL;
   uint32_t* block = reinterpret_cast<uint32_t*>(&n);
   uint32_t hash = hash64(block[0],block[1]);
-  uint32_t mask = t->sizenode - 1;
+  uint32_t mask = (uint32_t)t->hashtable.size() - 1;
   return t->getNode(hash & mask);
 }
 
@@ -113,7 +113,7 @@ static Node* hashnum (Table* t, lua_Number n) {
 ** of its hash value)
 */
 static Node *mainposition (Table *t, const TValue *key) {
-  if(t->sizenode == 0) return NULL;
+  if(t->hashtable.empty()) return NULL;
   switch (ttype(key)) {
     case LUA_TNUMBER:
       return hashnum(t, nvalue(key));
@@ -160,7 +160,7 @@ static int findindex (Table *t, TValue key) {
 
 
 int luaH_next (Table *t, StkId stack) {
-  if(t->array.empty() && (t->sizenode == 0)) return 0;
+  if(t->array.empty() && t->hashtable.empty()) return 0;
 
   int i = findindex(t, stack[0]) + 1;
   for (;i < (int)t->array.size(); i++) {
@@ -171,7 +171,7 @@ int luaH_next (Table *t, StkId stack) {
     }
   }
   i -= (int)t->array.size();
-  for (; i < t->sizenode; i++) {
+  for (; i < (int)t->hashtable.size(); i++) {
     Node& n = *t->getNode(i);
     if (!n.i_val.isNil()) {
       stack[0] = n.i_key;
@@ -251,7 +251,7 @@ static int numusearray (Table *t, int *nums) {
 static int numusehash (Table *t, int *nums, int *pnasize) {
   int totaluse = 0;  /* total number of elements */
   int ause = 0;  /* summation of `nums' */
-  int i = t->sizenode;
+  int i = (int)t->hashtable.size();
   while (i--) {
     Node *n = t->getNode(i);
     if (!ttisnil(&n->i_val)) {
@@ -271,7 +271,7 @@ static int numusehash (Table *t, int *nums, int *pnasize) {
 
 void luaH_resize (Table *t, int nasize, int nhsize) {
   int oldasize = (int)t->array.size();
-  int oldhsize = t->sizenode;
+  int oldhsize = (int)t->hashtable.size();
 
   // Allocate temporary storage for the resize before we modify the table
   LuaVector<Node> temphash;
@@ -296,9 +296,8 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   // Memory allocated, swap and reinsert
 
   temparray.swap(t->array);
-  temphash.swap(t->node2_);
-  t->sizenode = (int)t->node2_.size();
-  t->lastfree = (int)t->node2_.size(); // all positions are free
+  temphash.swap(t->hashtable);
+  t->lastfree = (int)t->hashtable.size(); // all positions are free
 
   // Temparray now contains the old contents of array. If temparray is
   // larger than array, move the overflow to the hash table.
@@ -322,7 +321,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
 
 
 void luaH_resizearray (Table *t, int nasize) {
-  int nsize = t->sizenode;
+  int nsize = (int)t->hashtable.size();
   luaH_resize(t, nasize, nsize);
 }
 
@@ -361,15 +360,14 @@ Table *luaH_new () {
   t->metatable = NULL;
   t->flags = cast_byte(~0);
   t->array.init();
-  t->node2_.init();
-  t->sizenode = 0;
+  t->hashtable.init();
 
   return t;
 }
 
 
 void luaH_free (Table *t) {
-  t->node2_.clear();
+  t->hashtable.clear();
   t->array.clear();
   luaM_delobject(t, sizeof(Table), LUA_TTABLE);
 }
@@ -597,7 +595,7 @@ int luaH_getn (Table *t) {
     return i;
   }
   /* else must find a boundary in hash part */
-  else if (t->sizenode == 0)  /* hash part is empty? */
+  else if (t->hashtable.empty())  /* hash part is empty? */
     return j;  /* that is easy... */
   else return unbound_search(t, j);
 }
