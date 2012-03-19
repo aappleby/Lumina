@@ -372,17 +372,16 @@ static int traverseephemeron (global_State *g, Table *h) {
   int marked = 0;  /* true if an object is marked in this traversal */
   int hasclears = 0;  /* true if table has white keys */
   int prop = 0;  /* true if table has entry "white-key -> white-value" */
-  Node *n, *limit = gnodelast(h);
-  int i;
   /* traverse array part (numeric keys are 'strong') */
-  for (i = 0; i < (int)h->array.size(); i++) {
+  for (int i = 0; i < (int)h->array.size(); i++) {
     if (valiswhite(&h->array[i])) {
       marked = 1;
       reallymarkobject(g, gcvalue(&h->array[i]));
     }
   }
   /* traverse hash part */
-  for (n = gnode(h, 0); n < limit; n++) {
+  for (int i = 0; i < h->sizenode; i++) {
+    Node* n = &h->node[i];
     checkdeadkey(n);
     if (ttisnil(&n->i_val))  /* entry is empty? */
       removeentry(n);  /* remove it */
