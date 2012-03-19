@@ -607,7 +607,7 @@ int luaH_getn (Table *t) {
     return i;
   }
   /* else must find a boundary in hash part */
-  else if (t->node == NULL)  /* hash part is empty? */
+  else if (t->sizenode == 0)  /* hash part is empty? */
     return j;  /* that is easy... */
   else return unbound_search(t, j);
 }
