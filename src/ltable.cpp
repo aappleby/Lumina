@@ -274,17 +274,26 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   int oldasize = (int)t->array.size();
   int oldhsize = t->sizenode;
 
+  LuaVector<Node> tempnode;
+  tempnode.init();
+
+  LuaVector<TValue> temparray;
+  temparray.init();
+
   /* array part must grow? */
+  /*
   if (nasize > oldasize) {
     t->array.resize(nasize);
     for (int i=oldasize; i < nasize; i++)
        setnilvalue(&t->array[i]); 
   }
-
-  /* create new hash part with appropriate size */
-
-  LuaVector<Node> tempnode;
-  tempnode.init();
+  */
+  if(nasize) {
+    temparray.resize(nasize);
+    memcpy(temparray.begin(), t->array.begin(), std::min(oldasize, nasize) * sizeof(TValue));
+    for (int i=oldasize; i < nasize; i++)
+       setnilvalue(&temparray[i]); 
+  }
 
   if (nhsize) {
     int lsize = luaO_ceillog2(nhsize);
@@ -293,20 +302,21 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
     memset(tempnode.begin(), 0, tempnode.size() * sizeof(Node));
   }
 
+  temparray.swap(t->array);
   tempnode.swap(t->node2_);
   t->sizenode = (int)t->node2_.size();
   t->lastfree = (int)t->node2_.size(); // all positions are free
 
-  if (nasize < oldasize) {  /* array part must shrink? */
-    // Move elements in the disappearing array section to the hash table.
-    for(int i = nasize; i < oldasize; i++) {
-      if (!ttisnil(&t->array[i]))
-        luaH_setint_hash(t, i + 1, &t->array[i]);
+  // Temparray now contains the old contents of array. If temparray is
+  // larger than array, move the overflow to the hash table.
+  if (temparray.size() > t->array.size()) {
+    for(int i = (int)t->array.size(); i < (int)temparray.size(); i++) {
+      if (!ttisnil(&temparray[i]))
+        luaH_setint_hash(t, i + 1, &temparray[i]);
     }
-    t->array.resize(nasize);
   }
   /* re-insert elements from hash part */
-  for (i = tempnode.size() - 1; i >= 0; i--) {
+  for (i = (int)tempnode.size() - 1; i >= 0; i--) {
     //Node *old = nold+i;
     Node* old = &tempnode[i];
     if (!ttisnil(&old->i_val)) {
