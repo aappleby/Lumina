@@ -262,11 +262,16 @@ static int numusehash (const Table *t, int *nums, int *pnasize) {
 
 
 static void setarrayvector (Table *t, int size) {
-  int i;
+  assert(t->sizearray == (int)t->array.size());
+  
+  int oldsize = t->array.size();
+  
   t->array.resize(size);
-  for (i=t->sizearray; i<size; i++)
+  
+  for (int i=oldsize; i < t->array.size(); i++)
      setnilvalue(&t->array[i]);
-  t->sizearray = size;
+  
+  t->sizearray = t->array.size();
 }
 
 
