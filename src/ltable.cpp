@@ -150,7 +150,7 @@ static int findindex (Table *t, TValue key) {
   for (;;) {
     bool equal = luaV_rawequalobj(&n->i_key, &key);
     if (equal || (ttisdeadkey(&n->i_key) && iscollectable(&key) && deadvalue(&n->i_key) == gcvalue(&key))) {
-      return (int)(n - t->node) + (int)t->array.size();
+      return (int)(n - &t->node[0]) + (int)t->array.size();
     }
     else n = n->next;
     if (n == NULL)
@@ -282,13 +282,13 @@ static void setnodevector (Table *t, int size) {
     //t->sizenode = 1;
     t->node = NULL;
     t->sizenode = 0;
-    t->lastfree = &t->node[size]; // all positions are free
+    t->lastfree = NULL;
   }
   else {
     int lsize = luaO_ceillog2(size);
     size = 1 << lsize;
     t->node = (Node*)luaM_alloc(size * sizeof(Node));
-    memset(t->node, 0, size * sizeof(Node));
+    memset(&t->node[0], 0, size * sizeof(Node));
     t->sizenode = size;
     t->lastfree = &t->node[size]; // all positions are free
   }
@@ -378,8 +378,8 @@ Table *luaH_new () {
 
 
 void luaH_free (Table *t) {
-  if (t->node) {
-    luaM_free(t->node, t->sizenode * sizeof(Node));
+  if (t->sizenode) {
+    luaM_free(&t->node[0], t->sizenode * sizeof(Node));
   }
   t->array.clear();
   luaM_delobject(t, sizeof(Table), LUA_TTABLE);
@@ -387,7 +387,7 @@ void luaH_free (Table *t) {
 
 
 static Node *getfreepos (Table *t) {
-  while (t->lastfree > t->node) {
+  while (t->lastfree > &t->node[0]) {
     t->lastfree--;
     if (ttisnil(&t->lastfree->i_key))
       return t->lastfree;
