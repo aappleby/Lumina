@@ -270,24 +270,15 @@ static int numusehash (Table *t, int *nums, int *pnasize) {
 // #TODO - Table resize should be effectively atomic...
 
 void luaH_resize (Table *t, int nasize, int nhsize) {
-  int i;
   int oldasize = (int)t->array.size();
   int oldhsize = t->sizenode;
 
-  LuaVector<Node> tempnode;
-  tempnode.init();
-
+  // Allocate temporary storage for the resize before we modify the table
+  LuaVector<Node> temphash;
   LuaVector<TValue> temparray;
+  temphash.init();
   temparray.init();
 
-  /* array part must grow? */
-  /*
-  if (nasize > oldasize) {
-    t->array.resize(nasize);
-    for (int i=oldasize; i < nasize; i++)
-       setnilvalue(&t->array[i]); 
-  }
-  */
   if(nasize) {
     temparray.resize(nasize);
     memcpy(temparray.begin(), t->array.begin(), std::min(oldasize, nasize) * sizeof(TValue));
@@ -298,12 +289,14 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   if (nhsize) {
     int lsize = luaO_ceillog2(nhsize);
     nhsize = 1 << lsize;
-    tempnode.resize(nhsize);
-    memset(tempnode.begin(), 0, tempnode.size() * sizeof(Node));
+    temphash.resize(nhsize);
+    memset(temphash.begin(), 0, temphash.size() * sizeof(Node));
   }
 
+  // Memory allocated, swap and reinsert
+
   temparray.swap(t->array);
-  tempnode.swap(t->node2_);
+  temphash.swap(t->node2_);
   t->sizenode = (int)t->node2_.size();
   t->lastfree = (int)t->node2_.size(); // all positions are free
 
@@ -315,13 +308,10 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
         luaH_setint_hash(t, i + 1, &temparray[i]);
     }
   }
-  /* re-insert elements from hash part */
-  for (i = (int)tempnode.size() - 1; i >= 0; i--) {
-    //Node *old = nold+i;
-    Node* old = &tempnode[i];
+  // And finally re-insert the saved nodes.
+  for (int i = (int)temphash.size() - 1; i >= 0; i--) {
+    Node* old = &temphash[i];
     if (!ttisnil(&old->i_val)) {
-      /* doesn't need barrier/invalidate cache, as entry was
-         already present in the table */
       TValue* key = &old->i_key;
       TValue* val = &old->i_val;
       TValue* n = luaH_set(t, key);
