@@ -264,14 +264,13 @@ static int numusehash (const Table *t, int *nums, int *pnasize) {
 static void setarrayvector (Table *t, int size) {
   assert(t->sizearray == (int)t->array.size());
   
-  int oldsize = t->array.size();
+  int oldsize = (int)t->array.size();
   
   t->array.resize(size);
+  t->sizearray = (int)t->array.size();
   
   for (int i=oldsize; i < t->array.size(); i++)
-     setnilvalue(&t->array[i]);
-  
-  t->sizearray = t->array.size();
+     setnilvalue(&t->array[i]); 
 }
 
 
@@ -306,14 +305,21 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   /* create new hash part with appropriate size */
   setnodevector(t, nhsize);
   if (nasize < oldasize) {  /* array part must shrink? */
+    // save a copy of the items moving out of the array
+    LuaVector<TValue> temp;
+    temp.init();
+    temp.resize(oldasize - nasize);
+    memcpy(temp.begin(), &t->array[nasize], sizeof(TValue) * temp.size());
+
+    t->array.resize(nasize);
     t->sizearray = nasize;
+
     /* re-insert elements from vanishing slice */
-    for (i=nasize; i<oldasize; i++) {
-      if (!ttisnil(&t->array[i]))
-        luaH_setint(t, i + 1, &t->array[i]);
+    for(int i = 0; i < temp.size(); i++) {
+      if (!ttisnil(&temp[i]))
+        luaH_setint(t, i + 1, &temp[i]);
     }
     /* shrink array */
-    t->array.resize(nasize);
   }
   /* re-insert elements from hash part */
   for (i = oldhsize - 1; i >= 0; i--) {
