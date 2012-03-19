@@ -4,14 +4,45 @@
 class LuaObject;
 class TString;
 class lua_State;
+class lua_Debug;
 class global_State;
 class Closure;
 class stringtable;
+class CallInfo;
+class TValue;
+class UpVal;
+class Table;
+
+typedef TValue* StkId;  /* index to stack elements */
+
+typedef void (*lua_Hook) (lua_State *L, lua_Debug *ar);
+typedef int (*lua_CFunction) (lua_State *L);
+
+typedef double lua_Number;
+typedef ptrdiff_t lua_Integer;
+typedef uint32_t lua_Unsigned;
+typedef ptrdiff_t l_mem;
+typedef uint32_t Instruction;
+
+//-----------------------------------------------------------------------------
+
+enum LuaAllocPool {
+  LAP_STARTUP,
+  LAP_RUNTIME,
+  LAP_OBJECT,
+  LAP_VECTOR,
+};
+
+void* luaM_alloc(size_t size, int pool);
+void  luaM_free(void * blob, size_t size, int pool);
+
+void* luaM_newobject(int tag, size_t size);
+void  luaM_delobject(void * blob, size_t size, int type);
+
+//-----------------------------------------------------------------------------
 
 extern __declspec(thread) lua_State* thread_L;
 extern __declspec(thread) global_State* thread_G;
-
-stringtable* getGlobalStringtable();
 
 class LuaScope {
 public:
@@ -29,83 +60,11 @@ public:
   lua_State* oldState;
 };
 
-//#define THREAD_CHECK(A)  assert(thread_L == A);
 #define THREAD_CHECK(A)  assert((thread_L == A) && (thread_G == A->l_G));
 #define THREAD_CHANGE(A) LuaScope luascope(A);
 #define GLOBAL_CHANGE(A) LuaGlobalScope luascope(A);
-//#define THREAD_CHECK(A)
-//#define THREAD_CHANGE(A)
 
-
-#define LUA_NUMBER_DOUBLE
-#define LUA_NUMBER	double
-
-/*
-@@ LUA_INTEGER is the integral type used by lua_pushinteger/lua_tointeger.
-** CHANGE that if ptrdiff_t is not adequate on your machine. (On most
-** machines, ptrdiff_t gives a good choice between int or long.)
-*/
-#define LUA_INTEGER	ptrdiff_t
-
-/*
-@@ LUA_UNSIGNED is the integral type used by lua_pushunsigned/lua_tounsigned.
-** It must have at least 32 bits.
-*/
-#define LUA_UNSIGNED	uint32_t
-
-
-typedef int (*lua_CFunction) (lua_State *L);
-
-
-
-/* type of numbers in Lua */
-typedef LUA_NUMBER lua_Number;
-
-
-/* type for integer functions */
-typedef LUA_INTEGER lua_Integer;
-
-/* unsigned integer type */
-typedef LUA_UNSIGNED lua_Unsigned;
-
-
-
-
-/*
-@@ LUA_INT32 is an signed integer with exactly 32 bits.
-@@ LUAI_UMEM is an unsigned integer big enough to count the total
-@* memory used by Lua.
-@@ LUAI_MEM is a signed integer big enough to count the total memory
-@* used by Lua.
-** CHANGE here if for some weird reason the default definitions are not
-** good enough for your machine. Probably you do not need to change
-** this.
-*/
-#define LUAI_MEM	ptrdiff_t
-
-
-
-/*
-** non-return type
-*/
-#if defined(__GNUC__)
-#define l_noret		void __attribute__((noreturn))
-#elif defined(_MSC_VER)
-#define l_noret		void __declspec(noreturn)
-#else
-#define l_noret		void
-#endif
-
-
-typedef LUAI_MEM l_mem;
-
-
-
-/*
-** type for virtual-machine instructions
-** must be an unsigned with (at least) 4 bytes (see details in lopcodes.h)
-*/
-typedef uint32_t Instruction;
+//-----------------------------------------------------------------------------
 
 
 /*
@@ -163,4 +122,31 @@ enum LuaTag {
 ** number of all possible tags (including LUA_TNONE but excluding DEADKEY)
 */
 #define LUA_TOTALTAGS	(LUA_TUPVAL+2)
+
+/*
+* WARNING: if you change the order of this enumeration,
+* grep "ORDER TM"
+*/
+typedef enum {
+  TM_INDEX,
+  TM_NEWINDEX,
+  TM_GC,
+  TM_MODE,
+  TM_LEN,
+  TM_EQ,  /* last tag method with `fast' access */
+  TM_ADD,
+  TM_SUB,
+  TM_MUL,
+  TM_DIV,
+  TM_MOD,
+  TM_POW,
+  TM_UNM,
+  TM_LT,
+  TM_LE,
+  TM_CONCAT,
+  TM_CALL,
+  TM_N		/* number of elements in the enum */
+} TMS;
+
+
 

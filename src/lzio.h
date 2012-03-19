@@ -11,6 +11,7 @@
 #include "lua.h"
 
 #include "lmem.h"
+#include "LuaBuffer.h"
 #include "LuaVector.h"
 
 #define EOZ	(-1)			/* end of stream */
@@ -18,12 +19,6 @@
 typedef struct Zio ZIO;
 
 #define zgetc(z)  (((z)->n--)>0 ?  cast_uchar(*(z)->p++) : luaZ_fill(z))
-
-
-struct Mbuffer {
-  LuaVector<char> buffer;
-  size_t n;
-};
 
 #define luaZ_buffer(buff)	(&(buff)->buffer[0])
 #define luaZ_sizebuffer(buff)	((buff)->buffer.size())

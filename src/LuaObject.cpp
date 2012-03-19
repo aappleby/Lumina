@@ -3,6 +3,8 @@
 #include "lgc.h"
 #include "lstate.h"
 
+#include "LuaGlobals.h"
+
 void LuaObject::Init(int type) {
   global_State *g = thread_G;
 

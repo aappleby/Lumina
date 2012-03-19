@@ -4,10 +4,11 @@
 ** See Copyright Notice in lua.h
 */
 
-#include <string.h>
+#include "LuaClosure.h"
+#include "LuaGlobals.h"
+#include "LuaState.h"
 
-#define lgc_c
-#define LUA_CORE
+#include <string.h>
 
 #include "lua.h"
 
@@ -93,7 +94,7 @@ static void reallymarkobject (global_State *g, LuaObject *o);
 /*
 ** link table 'h' into list pointed by 'p'
 */
-#define linktable(h,p)	((h)->gclist = *(p), *(p) = obj2gco(h))
+#define linktable(h,p)	((h)->graylist = *(p), *(p) = obj2gco(h))
 
 
 
@@ -151,7 +152,7 @@ void luaC_barrierback_ (LuaObject *o) {
   global_State *g = thread_G;
   assert(isblack(o) && !isdead(o) && gch(o)->tt == LUA_TTABLE);
   black2gray(o);  /* make object gray (again) */
-  gco2t(o)->gclist = g->grayagain;
+  gco2t(o)->graylist = g->grayagain;
   g->grayagain = o;
 }
 
@@ -343,6 +344,7 @@ static void traverseweakvalue (global_State *g, Table *h) {
   /* if there is array part, assume it may have white values (do not
      traverse it just to check) */
   int hasclears = !h->array.empty();
+
   for(int i = 0; i < (int)h->hashtable.size(); i++) {
     Node* n = h->getNode(i);
     checkdeadkey(n);
@@ -507,7 +509,7 @@ static int propagatemark (global_State *g) {
   switch (gch(o)->tt) {
     case LUA_TTABLE: {
       Table *h = gco2t(o);
-      g->gray = h->gclist;
+      g->gray = h->graylist;
       return traversetable(g, h);
     }
     case LUA_TFUNCTION: {
@@ -569,7 +571,7 @@ static void convergeephemerons (global_State *g) {
     g->ephemeron = NULL;  /* tables will return to this list when traversed */
     changed = 0;
     while ((w = next) != NULL) {
-      next = gco2t(w)->gclist;
+      next = gco2t(w)->graylist;
       if (traverseephemeron(g, gco2t(w))) {  /* traverse marked some value? */
         propagateall(g);  /* propagate changes */
         changed = 1;  /* will have to revisit all ephemeron tables */
@@ -593,7 +595,7 @@ static void convergeephemerons (global_State *g) {
 ** to element 'f'
 */
 static void clearkeys (LuaObject *l, LuaObject *f) {
-  for (; l != f; l = gco2t(l)->gclist) {
+  for (; l != f; l = gco2t(l)->graylist) {
     Table *h = gco2t(l);
     for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
@@ -611,7 +613,7 @@ static void clearkeys (LuaObject *l, LuaObject *f) {
 ** to element 'f'
 */
 static void clearvalues (LuaObject *l, LuaObject *f) {
-  for (; l != f; l = gco2t(l)->gclist) {
+  for (; l != f; l = gco2t(l)->graylist) {
     Table *h = gco2t(l);
     for (int i = 0; i < (int)h->array.size(); i++) {
       TValue *o = &h->array[i];

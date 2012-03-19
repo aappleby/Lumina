@@ -4,12 +4,11 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaGlobals.h"
+#include "LuaState.h"
 
 #include <locale.h>
 #include <string.h>
-
-#define llex_c
-#define LUA_CORE
 
 #include "lua.h"
 
@@ -235,7 +234,7 @@ static void trydecpoint (LexState *ls, SemInfo *seminfo) {
 }
 
 
-/* LUA_NUMBER */
+/* lua_Number */
 static void read_numeral (LexState *ls, SemInfo *seminfo) {
   THREAD_CHECK(ls->L);
   assert(lisdigit(ls->current));

@@ -38,6 +38,5 @@ public:
 
   //LuaVector<Node> node;
   int lastfree;
-  LuaObject *gclist;
-
+  LuaObject *graylist;
 };

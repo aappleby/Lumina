@@ -5,7 +5,6 @@
 */
 
 #define lctype_c
-#define LUA_CORE
 
 #include "lctype.h"
 

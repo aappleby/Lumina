@@ -4,13 +4,14 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaState.h"
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define lobject_c
-#define LUA_CORE
 
 #include "lua.h"
 

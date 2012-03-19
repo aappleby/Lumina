@@ -16,3 +16,10 @@ void TValue::operator = ( TValue * v )
     tt_ = LUA_TNIL;
   }
 }
+
+void TValue::sanitycheck() {
+  if(isCollectable()) {
+    assert(basetype() == gc->tt);
+    assert(!gc->isDead());
+  }
+}

@@ -4,11 +4,9 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaGlobals.h"
 
 #include <string.h>
-
-#define ltm_c
-#define LUA_CORE
 
 #include "lua.h"
 

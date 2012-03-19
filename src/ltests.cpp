@@ -4,14 +4,14 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaClosure.h"
+#include "LuaGlobals.h"
+#include "LuaState.h"
 
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define ltests_c
-#define LUA_CORE
 
 #include "lua.h"
 
@@ -254,7 +254,7 @@ static void checkgraylist (LuaObject *l) {
     assert(!testbit(l->marked, TESTGRAYBIT));
     l_setbit(l->marked, TESTGRAYBIT);
     switch (gch(l)->tt) {
-      case LUA_TTABLE: l = gco2t(l)->gclist; break;
+      case LUA_TTABLE: l = gco2t(l)->graylist; break;
       case LUA_TFUNCTION: l = gco2cl(l)->gclist; break;
       case LUA_TTHREAD: l = gco2th(l)->gclist; break;
       case LUA_TPROTO: l = gco2p(l)->gclist; break;

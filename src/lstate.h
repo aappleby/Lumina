@@ -56,30 +56,6 @@ struct lua_longjmp;  /* defined in ldo.c */
 #define KGC_GEN		2	/* generational collection */
 
 
-/*
-** information about a call
-*/
-class CallInfo {
-public:
-  StkId func;  /* function index in the stack */
-  StkId	top;  /* top for this function */
-  CallInfo *previous, *next;  /* dynamic call link */
-  short nresults;  /* expected number of results from this function */
-  uint8_t callstatus;
-
-  // only for Lua functions
-  StkId base;  /* base for this function */
-  const Instruction *savedpc;
-
-  // only for C functions
-  int ctx;  /* context info. in case of yields */
-  lua_CFunction k;  /* continuation in case of yields */
-  ptrdiff_t old_errfunc;
-  ptrdiff_t extra;
-  uint8_t old_allowhook;
-  uint8_t status;
-};
-
 
 /*
 ** Bits in CallInfo status
@@ -96,76 +72,6 @@ public:
 
 #define isLua(ci)	((ci)->callstatus & CIST_LUA)
 
-
-/*
-** `global state', shared by all threads of this state
-*/
-class global_State {
-public:
-  size_t totalbytes;  /* number of bytes currently allocated - GCdebt */
-  l_mem GCdebt;  /* bytes allocated not yet compensated by the collector */
-  size_t lastmajormem;  /* memory in use after last major collection */
-  stringtable* strt;  /* hash table for strings */
-  TValue l_registry;
-  uint8_t currentwhite;
-  uint8_t gcstate;  /* state of garbage collector */
-  uint8_t gckind;  /* kind of GC running */
-  uint8_t gcrunning;  /* true if GC is running */
-  int sweepstrgc;  /* position of sweep in `strt' */
-  LuaObject *allgc;  /* list of all collectable objects */
-  LuaObject *finobj;  /* list of collectable objects with finalizers */
-  LuaObject **sweepgc;  /* current position of sweep */
-  LuaObject *gray;  /* list of gray objects */
-  LuaObject *grayagain;  /* list of objects to be traversed atomically */
-  LuaObject *weak;  /* list of tables with weak values */
-  LuaObject *ephemeron;  /* list of ephemeron tables (weak keys) */
-  LuaObject *allweak;  /* list of all-weak tables */
-  LuaObject *tobefnz;  /* list of userdata to be GC */
-  UpVal uvhead;  /* head of double-linked list of all open upvalues */
-  Mbuffer buff;  /* temporary buffer for string concatenation */
-  int gcpause;  /* size of pause between successive GCs */
-  int gcmajorinc;  /* how much to wait for a major GC (only in gen. mode) */
-  int gcstepmul;  /* GC `granularity' */
-  lua_CFunction panic;  /* to be called in unprotected errors */
-  lua_State *mainthread;
-  const lua_Number *version;  /* pointer to version number */
-  TString *memerrmsg;  /* memory-error message */
-  TString *tmname[TM_N];  /* array with tag-method names */
-  Table *mt[LUA_NUMTAGS];  /* metatables for basic types */
-};
-
-class global_State;
-class CallInfo;
-
-/*
-** `per thread' state
-*/
-class lua_State : public LuaObject {
-public:
-  uint8_t status;
-  StkId top;  /* first free slot in the stack */
-  global_State *l_G;
-  CallInfo *ci;  /* call info for current function */
-  const Instruction *oldpc;  /* last pc traced */
-  TValue* stack_last;  /* last free slot in the stack */
-  /*
-  TValue* stack;  // stack base
-  int stacksize;
-  */
-  LuaVector<TValue> stack;
-  unsigned short nny;  /* number of non-yieldable calls in stack */
-  unsigned short nCcalls;  /* number of nested C calls */
-  uint8_t hookmask;
-  uint8_t allowhook;
-  int basehookcount;
-  int hookcount;
-  lua_Hook hook;
-  LuaObject *openupval;  /* list of open upvalues in this stack */
-  LuaObject *gclist;
-  lua_longjmp *errorJmp;  /* current error recover point */
-  ptrdiff_t errfunc;  /* current error handling function (stack index) */
-  CallInfo base_ci;  /* CallInfo for first level (C calling Lua) */
-};
 
 #define G(L)	(L->l_G)
 

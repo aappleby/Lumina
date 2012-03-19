@@ -451,14 +451,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\lfunc.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\lfunc.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\lmem.cpp"
 				>
 			</File>
@@ -496,6 +488,46 @@
 			</File>
 			<File
 				RelativePath="..\src\ltm.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaBuffer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaBuffer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaCallinfo.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaCallinfo.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaClosure.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaClosure.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaDefines.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaDefines.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaGlobals.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaGlobals.h"
 				>
 			</File>
 			<File
@@ -539,6 +571,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\LuaUpval.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaUpval.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\LuaValue.cpp"
 				>
 			</File>
@@ -570,6 +610,14 @@
 		<Filter
 			Name="_Done"
 			>
+			<File
+				RelativePath="..\src\lfunc.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lfunc.h"
+				>
+			</File>
 			<File
 				RelativePath="..\src\lstring.cpp"
 				>

@@ -7,11 +7,7 @@
 #ifndef lmem_h
 #define lmem_h
 
-
-#include <stddef.h>
-
-#include "llimits.h"
-#include "lua.h"
+//#include <stddef.h>
 
 /* memory allocator control variables */
 struct Memcontrol {
@@ -35,21 +31,11 @@ struct Memcontrol {
 
 extern Memcontrol l_memcontrol;
 
-enum LuaAllocPool {
-  LAP_STARTUP,
-  LAP_RUNTIME,
-  LAP_OBJECT,
-  LAP_VECTOR,
-};
-
 void* luaM_alloc(size_t size, int pool);
 void  luaM_free(void * blob, size_t size, int pool);
 
 void* luaM_newobject(int tag, size_t size);
 void  luaM_delobject(void * blob, size_t size, int type);
-
-void* default_alloc   (size_t size, int type, int pool);
-void  default_free    (void * blob, size_t size, int type, int pool);
 
 #endif
 

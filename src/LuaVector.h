@@ -1,7 +1,8 @@
 #pragma once
-
+#include "LuaTypes.h"
+#include "LuaDefines.h"
 #include <algorithm>
-#include "lmem.h"
+#include <assert.h>
 
 l_noret luaD_throw (int errcode);
 

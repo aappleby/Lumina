@@ -15,45 +15,17 @@
 #include <assert.h>
 #include "stdint.h"
 
-#define LUA_DEBUG
+#include "LuaDefines.h"
 
 #include "luaconf.h"
 
 #include "LuaTypes.h"
-
-#define LUA_VERSION_MAJOR	"5"
-#define LUA_VERSION_MINOR	"2"
-#define LUA_VERSION_NUM		502
-#define LUA_VERSION_RELEASE	"0"
-
-#define LUA_VERSION	"Lua " LUA_VERSION_MAJOR "." LUA_VERSION_MINOR
-#define LUA_RELEASE	LUA_VERSION "." LUA_VERSION_RELEASE
-#define LUA_COPYRIGHT	LUA_RELEASE "  Copyright (C) 1994-2011 Lua.org, PUC-Rio"
-#define LUA_AUTHORS	"R. Ierusalimschy, L. H. de Figueiredo, W. Celes"
-
-
-/* mark for precompiled code ('<esc>Lua') */
-#define LUA_SIGNATURE	"\033Lua"
-
-/* option for multiple returns in 'lua_pcall' and 'lua_call' */
-#define LUA_MULTRET	(-1)
-
 
 /*
 ** pseudo-indices
 */
 #define LUA_REGISTRYINDEX	LUAI_FIRSTPSEUDOIDX
 #define lua_upvalueindex(i)	(LUA_REGISTRYINDEX - (i))
-
-
-/* thread status */
-#define LUA_OK		0
-#define LUA_YIELD	1
-#define LUA_ERRRUN	2
-#define LUA_ERRSYNTAX	3
-#define LUA_ERRMEM	4
-#define LUA_ERRGCMM	5
-#define LUA_ERRERR	6
 
 
 /*
@@ -335,7 +307,6 @@ class lua_Debug;  /* activation record */
 
 
 /* Functions to be called by the debugger in specific events */
-typedef void (*lua_Hook) (lua_State *L, lua_Debug *ar);
 
 
 int (lua_getstack) (lua_State *L, int level, lua_Debug *ar);

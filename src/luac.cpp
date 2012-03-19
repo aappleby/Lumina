@@ -4,13 +4,15 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaClosure.h"
+#include "LuaState.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define luac_c
-#define LUA_CORE
 
 #include "lua.h"
 #include "lauxlib.h"
@@ -212,7 +214,6 @@ int main(int argc, char* argv[])
 #include <stdio.h>
 
 #define luac_c
-#define LUA_CORE
 
 #include "ldebug.h"
 #include "lobject.h"

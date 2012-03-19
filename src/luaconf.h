@@ -224,14 +224,11 @@
 */
 
 /* the following operations need the math library */
-#if defined(lobject_c) || defined(lvm_c)
 #include <math.h>
 #define luai_nummod(L,a,b)	((a) - floor((a)/(b))*(b))
 #define luai_numpow(L,a,b)	(pow(a,b))
-#endif
 
 /* these are quite standard operations */
-#if defined(LUA_CORE)
 #define luai_numadd(L,a,b)	((a)+(b))
 #define luai_numsub(L,a,b)	((a)-(b))
 #define luai_nummul(L,a,b)	((a)*(b))
@@ -241,7 +238,6 @@
 #define luai_numlt(L,a,b)	((a)<(b))
 #define luai_numle(L,a,b)	((a)<=(b))
 #define luai_numisnan(L,a)	(!luai_numeq((a), (a)))
-#endif
 
 #endif
 

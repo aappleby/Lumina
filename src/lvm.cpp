@@ -4,13 +4,15 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaClosure.h"
+#include "LuaGlobals.h"
+#include "LuaState.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define lvm_c
-#define LUA_CORE
 
 #include "lua.h"
 

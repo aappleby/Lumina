@@ -1,6 +1,7 @@
 #include "LuaTypes.h"
 
-#include "lstate.h"
+#include "LuaGlobals.h"
+#include "LuaState.h"
 
 #include <assert.h>
 
@@ -25,7 +26,7 @@ LuaGlobalScope::LuaGlobalScope(lua_State* L) {
   //assert(thread_G != L->l_G);
   oldState = thread_L;
   thread_L = L;
-  thread_G = thread_L->l_G;
+  thread_G = (thread_L) ? thread_L->l_G : NULL;
 }
 
 LuaGlobalScope::~LuaGlobalScope() {

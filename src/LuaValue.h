@@ -1,9 +1,9 @@
 #pragma once
 #include "LuaTypes.h"
-#include "LuaObject.h"
 #include <assert.h>
 
-struct TValue {
+class TValue {
+public:
 
   void operator = ( TValue const & V );
   void operator = ( TValue * pV );
@@ -49,12 +49,7 @@ struct TValue {
 
   TString* asString() { assert(isString()); return reinterpret_cast<TString*>(gc); }
 
-  void sanitycheck() {
-    if(isCollectable()) {
-      assert(basetype() == gc->tt);
-      assert(!gc->isDead());
-    }
-  }
+  void sanitycheck();
 
   union {
     LuaObject *gc;    /* collectable objects */

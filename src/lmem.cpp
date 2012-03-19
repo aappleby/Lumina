@@ -9,7 +9,7 @@
 #include <memory.h>
 #include <algorithm>
 
-#define LUA_CORE
+#include "LuaGlobals.h"
 
 #include "lua.h"
 
@@ -19,14 +19,6 @@
 #include "lmem.h"
 #include "lobject.h"
 #include "lstate.h"
-
-#define MINSIZEARRAY	4
-
-
-/*
-Memcontrol l_memcontrol =
-  {0L, 0L, 0L, 0L, {0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L}};
-  */
 
 Memcontrol l_memcontrol;
 
@@ -101,8 +93,12 @@ Header* allocblock (size_t size, int type, int pool) {
 
 //----------
 
-void freeblock (Header *block) {
+void freeblock (Header *block, size_t size, int type, int pool) {
   if (block == NULL) return;
+
+  assert(block->size == size);
+  assert(block->type == type);
+  assert(block->pool == pool);
 
   uint8_t* buf = reinterpret_cast<uint8_t*>(block);
   uint8_t* mark = buf + sizeof(Header) + block->size;
@@ -131,10 +127,7 @@ void default_free(void * blob, size_t size, int type, int pool) {
   if(blob == NULL) return;
   l_memcontrol.free(size, type);
   Header* block = reinterpret_cast<Header*>(blob) - 1;
-  assert(block->size == size);
-  assert(block->type == type);
-  assert(block->pool == pool);
-  freeblock(block);
+  freeblock(block, size, type, pool);
 }
 
 //-----------------------------------------------------------------------------
@@ -148,8 +141,9 @@ void *luaM_alloc_ (size_t size, int type, int pool) {
       luaC_fullgc(1);  /* try to free some memory... */
       newblock = default_alloc(size, type, pool);  /* try again */
     }
-    if (newblock == NULL)
-      luaD_throw(LUA_ERRMEM);
+    if (newblock == NULL) {
+      if(thread_L) luaD_throw(LUA_ERRMEM);
+    }
   }
 
   if(thread_G) thread_G->GCdebt += size;
@@ -165,11 +159,11 @@ void luaM_free_ (void *block, size_t size, int type, int pool) {
 
 //-----------------------------------------------------------------------------
 
-void* luaM_newobject(int tag, size_t size) { 
-  assert(tag > 0);
-  assert(tag < LUA_ALLTAGS);
+void* luaM_newobject(int type, size_t size) { 
+  assert(type > 0);
+  assert(type < LUA_ALLTAGS);
   assert(size > 0);
-  return luaM_alloc_(size, tag, LAP_OBJECT);
+  return luaM_alloc_(size, type, LAP_OBJECT);
 }
 
 void luaM_delobject(void * blob, size_t size, int type) {

@@ -8,7 +8,8 @@
 #include <stdlib.h>
 
 #define lcode_c
-#define LUA_CORE
+
+#include "LuaState.h"
 
 #include "lua.h"
 

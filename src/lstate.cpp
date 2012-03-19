@@ -4,11 +4,11 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaCallinfo.h"
+#include "LuaGlobals.h"
+#include "LuaState.h"
 
 #include <stddef.h>
-
-#define lstate_c
-#define LUA_CORE
 
 #include "lua.h"
 
@@ -175,9 +175,9 @@ static void close_state (lua_State *L) {
 
   freestack(L);
   assert(gettotalbytes(g) == (sizeof(lua_State) + sizeof(global_State)));
-  default_free(g, sizeof(global_State), 0, LAP_STARTUP);
+  luaM_free(g, sizeof(global_State), LAP_STARTUP);
   L->l_G = NULL;
-  default_free(L, sizeof(lua_State), 0, LAP_STARTUP);  /* free main block */
+  luaM_free(L, sizeof(lua_State), LAP_STARTUP);  /* free main block */
 }
 
 
@@ -214,14 +214,15 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
 
 
 lua_State *lua_newstate () {
+  GLOBAL_CHANGE(NULL);
   int i;
   lua_State *L;
   global_State *g;
-  L = (lua_State*)default_alloc(sizeof(lua_State), 0, LAP_STARTUP);
+  L = (lua_State*)luaM_alloc(sizeof(lua_State), LAP_STARTUP);
   if(L == NULL) { return NULL; }
-  g = (global_State*)default_alloc(sizeof(global_State), 0, LAP_STARTUP);
+  g = (global_State*)luaM_alloc(sizeof(global_State), LAP_STARTUP);
   if(g == NULL) {
-    default_free(L, sizeof(lua_State), 0, LAP_STARTUP);
+    luaM_free(L, sizeof(lua_State), LAP_STARTUP);
     return NULL;
   }
   L->l_G = g;

@@ -4,12 +4,12 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaClosure.h"
+#include "LuaGlobals.h"
+#include "LuaState.h"
 
 #include <stdarg.h>
 #include <string.h>
-
-#define lapi_c
-#define LUA_CORE
 
 #include "lua.h"
 

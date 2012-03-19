@@ -4,11 +4,10 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaGlobals.h"
+#include "LuaState.h"
 
 #include <string.h>
-
-#define lparser_c
-#define LUA_CORE
 
 #include "lua.h"
 

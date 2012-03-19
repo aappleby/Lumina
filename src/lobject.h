@@ -24,8 +24,6 @@ class Table;
 #include "LuaValue.h"
 
 
-typedef TValue* StkId;  /* index to stack elements */
-
 #include "LuaString.h"
 
 
@@ -82,37 +80,6 @@ struct Proto : public LuaObject {
 };
 
 
-
-/*
-** Lua Upvalues
-*/
-class UpVal : public LuaObject {
-public:
-  TValue *v;  /* points to stack or to its own value */
-
-  TValue value;  // the value (when closed)
-  UpVal *uprev;
-  UpVal *unext;
-};
-
-
-/*
-** Closures
-*/
-
-
-class Closure : public LuaObject {
-public:
-  uint8_t isC;
-  uint8_t nupvalues;
-  LuaObject *gclist;
-
-  lua_CFunction f;
-  TValue upvalue[1];  /* list of upvalues */
-
-  struct Proto *p;
-  UpVal *upvals[1];  /* list of upvalues */
-};
 
 
 #define isLfunction(o)	ttisLclosure(o)

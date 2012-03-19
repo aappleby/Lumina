@@ -4,6 +4,9 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaClosure.h"
+#include "LuaGlobals.h"
+#include "LuaState.h"
 
 #include <stdarg.h>
 #include <stddef.h>
@@ -11,7 +14,6 @@
 
 
 #define ldebug_c
-#define LUA_CORE
 
 #include "lua.h"
 
