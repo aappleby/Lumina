@@ -37,5 +37,6 @@ public:
 
   int stackinuse();
   void shrinkstack();
+  void reallocstack(int size);
 };
 

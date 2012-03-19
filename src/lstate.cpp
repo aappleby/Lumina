@@ -147,7 +147,7 @@ static void f_luaopen (lua_State *L, void *ud) {
 */
 static void preinit_state (lua_State *L, global_State *g) {
   //THREAD_CHECK(L);
-  G(L) = g;
+  L->l_G = g;
   L->stack.init();
   L->ci_ = NULL;
   L->errorJmp = NULL;
@@ -189,7 +189,7 @@ lua_State *lua_newthread (lua_State *L) {
   L1 = gco2th(o);
   setthvalue(L, L->top, L1);
   api_incr_top(L);
-  preinit_state(L1, G(L));
+  preinit_state(L1, thread_G);
   L1->hookmask = L->hookmask;
   L1->basehookcount = L->basehookcount;
   L1->hook = L->hook;

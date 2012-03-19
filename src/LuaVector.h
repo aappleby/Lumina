@@ -52,6 +52,9 @@ public:
     if(newbuf == NULL) luaD_throw(LUA_ERRMEM);
     if(size_) {
       memcpy(newbuf, buf_, sizeof(T) * std::min(size_,newsize));
+      if(newsize > size_) {
+        memset(&newbuf[size_], 0 , sizeof(T) * (newsize - size_));
+      }
       luaM_free(buf_, sizeof(T) * size_, LAP_VECTOR);
     }
     buf_ = newbuf;

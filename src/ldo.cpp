@@ -117,42 +117,6 @@ int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
 
 /* }====================================================== */
 
-
-static void correctstack (lua_State *L, TValue *oldstack) {
-  THREAD_CHECK(L);
-  CallInfo *ci;
-  LuaObject *up;
-  L->top = L->stack.begin() + (L->top - oldstack);
-  for (up = L->openupval; up != NULL; up = up->next)
-    gco2uv(up)->v = (gco2uv(up)->v - oldstack) + L->stack.begin();
-  for (ci = L->ci_; ci != NULL; ci = ci->previous) {
-    ci->top = (ci->top - oldstack) + L->stack.begin();
-    ci->func = (ci->func - oldstack) + L->stack.begin();
-    if (isLua(ci))
-      ci->base = (ci->base - oldstack) + L->stack.begin();
-  }
-}
-
-
-/* some space for error handling */
-#define ERRORSTACKSIZE	(LUAI_MAXSTACK + 200)
-
-
-void luaD_reallocstack (lua_State *L, int newsize) {
-  THREAD_CHECK(L);
-  TValue *oldstack = L->stack.begin();
-  int lim = (int)L->stack.size();
-  assert(newsize <= LUAI_MAXSTACK || newsize == ERRORSTACKSIZE);
-  assert(L->stack_last - L->stack.begin() == L->stack.size() - EXTRA_STACK);
-  L->stack.resize(newsize);
-
-  for (; lim < newsize; lim++)
-    setnilvalue(&L->stack[lim]); /* erase new segment */
-  L->stack_last = L->stack.begin() + newsize - EXTRA_STACK;
-  correctstack(L, oldstack);
-}
-
-
 void luaD_growstack (lua_State *L, int n) {
   THREAD_CHECK(L);
   int size = (int)L->stack.size();
@@ -164,11 +128,11 @@ void luaD_growstack (lua_State *L, int n) {
     if (newsize > LUAI_MAXSTACK) newsize = LUAI_MAXSTACK;
     if (newsize < needed) newsize = needed;
     if (newsize > LUAI_MAXSTACK) {  /* stack overflow? */
-      luaD_reallocstack(L, ERRORSTACKSIZE);
+      L->reallocstack(ERRORSTACKSIZE);
       luaG_runerror("stack overflow");
     }
     else
-      luaD_reallocstack(L, newsize);
+      L->reallocstack(newsize);
   }
 }
 

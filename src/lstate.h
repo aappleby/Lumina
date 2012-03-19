@@ -42,24 +42,6 @@
 struct lua_longjmp;  /* defined in ldo.c */
 
 
-/* kinds of Garbage Collection */
-#define KGC_NORMAL	0
-#define KGC_EMERGENCY	1	/* gc was forced by an allocation failure */
-#define KGC_GEN		2	/* generational collection */
-
-
-
-/*
-** Bits in CallInfo status
-*/
-#define CIST_LUA	(1<<0)	/* call is running a Lua function */
-#define CIST_HOOKED	(1<<1)	/* call is running a debug hook */
-#define CIST_REENTRY	(1<<2)	/* call is running on same invocation of
-                                   luaV_execute of previous call */
-#define CIST_YIELDED	(1<<3)	/* call reentered after suspension */
-#define CIST_YPCALL	(1<<4)	/* call is a yieldable protected call */
-#define CIST_STAT	(1<<5)	/* call has an error status (pcall) */
-#define CIST_TAIL	(1<<6)	/* call was tail called */
 
 
 #define isLua(ci)	((ci)->callstatus & CIST_LUA)
@@ -80,7 +62,6 @@ struct lua_longjmp;  /* defined in ldo.c */
 #define gco2cl(o)	check_exp((o)->tt == LUA_TFUNCTION, reinterpret_cast<Closure*>(o))
 #define gco2t(o)	check_exp((o)->tt == LUA_TTABLE, reinterpret_cast<Table*>(o))
 #define gco2p(o)	check_exp((o)->tt == LUA_TPROTO, reinterpret_cast<Proto*>(o))
-#define gco2uv(o)	check_exp((o)->tt == LUA_TUPVAL, reinterpret_cast<UpVal*>(o))
 #define gco2th(o)	check_exp((o)->tt == LUA_TTHREAD, reinterpret_cast<lua_State*>(o))
 
 /* macro to convert any Lua object into a LuaObject */
