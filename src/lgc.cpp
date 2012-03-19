@@ -601,8 +601,8 @@ static void convergeephemerons (global_State *g) {
 static void clearkeys (LuaObject *l, LuaObject *f) {
   for (; l != f; l = gco2t(l)->gclist) {
     Table *h = gco2t(l);
-    Node *n, *limit = gnodelast(h);
-    for (n = gnode(h, 0); n < limit; n++) {
+    for(int i = 0; i < h->sizenode; i++) {
+      Node* n = &h->node[i];
       if (!ttisnil(&n->i_val) && (iscleared(&n->i_key))) {
         setnilvalue(&n->i_val);  /* remove value ... */
         removeentry(n);  /* and remove entry from table */
