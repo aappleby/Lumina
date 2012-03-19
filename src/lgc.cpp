@@ -346,11 +346,11 @@ static void markroot (global_State *g) {
 */
 
 static void traverseweakvalue (global_State *g, Table *h) {
-  Node *n, *limit = gnodelast(h);
   /* if there is array part, assume it may have white values (do not
      traverse it just to check) */
   int hasclears = !h->array.empty();
-  for (n = gnode(h, 0); n < limit; n++) {
+  for(int i = 0; i < h->sizenode; i++) {
+    Node* n = &h->node[i];
     checkdeadkey(n);
     if (ttisnil(&n->i_val))  /* entry is empty? */
       removeentry(n);  /* remove it */
