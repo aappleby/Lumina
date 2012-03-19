@@ -282,7 +282,7 @@ static void setnodevector (Table *t, int size) {
     //t->sizenode = 1;
     t->node = NULL;
     t->sizenode = 0;
-    t->lastfree = NULL;
+    t->lastfree = 0;
   }
   else {
     int lsize = luaO_ceillog2(size);
@@ -290,7 +290,7 @@ static void setnodevector (Table *t, int size) {
     t->node = (Node*)luaM_alloc(size * sizeof(Node));
     memset(&t->node[0], 0, size * sizeof(Node));
     t->sizenode = size;
-    t->lastfree = &t->node[size]; // all positions are free
+    t->lastfree = size; // all positions are free
   }
 }
 
@@ -387,10 +387,10 @@ void luaH_free (Table *t) {
 
 
 static Node *getfreepos (Table *t) {
-  while (t->lastfree > &t->node[0]) {
+  while (t->lastfree > 0) {
     t->lastfree--;
-    if (ttisnil(&t->lastfree->i_key))
-      return t->lastfree;
+    if (ttisnil(&t->node[t->lastfree].i_key))
+      return &t->node[t->lastfree];
   }
   return NULL;  /* could not find a free place */
 }

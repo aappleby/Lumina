@@ -558,7 +558,7 @@ static int table_query (lua_State *L) {
   if (i == -1) {
     lua_pushinteger(L, (int)t->array.size());
     lua_pushinteger(L, t->sizenode);
-    lua_pushinteger(L, t->lastfree - t->node);
+    lua_pushinteger(L, t->lastfree);
   }
   else if (i < (int)t->array.size()) {
     lua_pushinteger(L, i);

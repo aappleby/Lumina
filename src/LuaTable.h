@@ -23,7 +23,7 @@ public:
   LuaVector<TValue> array;
   Node *node;
   //LuaVector<Node> node;
-  Node *lastfree;  /* any free position is before this position */
+  int lastfree;
   LuaObject *gclist;
 
 };
