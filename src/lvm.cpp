@@ -537,7 +537,7 @@ void luaV_finishOp (lua_State *L) {
 
 #define Protect(x)	{ {x;}; base = ci->base; }
 
-#define checkGC(L,c)	Protect(luaC_condGC(L, c); luai_threadyield(L);)
+#define checkGC(L,c)	Protect(luaC_condGC(L, c);)
 
 
 #define arith_op(op,tm) { \

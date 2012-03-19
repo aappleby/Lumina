@@ -92,7 +92,6 @@ l_noret luaD_throw (int errcode) {
     }
     else {  /* no handler at all; abort */
       if (G(L)->panic) {  /* panic function? */
-        lua_unlock(L);
         G(L)->panic(L);  /* call it (last chance to jump out) */
       }
       abort();
@@ -214,9 +213,7 @@ void luaD_hook (lua_State *L, int event, int line) {
     assert(ci->top <= L->stack_last);
     L->allowhook = 0;  /* cannot call hooks inside a hook */
     ci->callstatus |= CIST_HOOKED;
-    lua_unlock(L);
     (*hook)(L, &ar);
-    lua_lock(L);
     assert(!L->allowhook);
     L->allowhook = 1;
     ci->top = restorestack(L, ci_top);
@@ -302,9 +299,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
       ci->callstatus = 0;
       if (L->hookmask & LUA_MASKCALL)
         luaD_hook(L, LUA_HOOKCALL, -1);
-      lua_unlock(L);
       n = (*f)(L);  /* do the actual call */
-      lua_lock(L);
       api_checknelems(L, n);
       luaD_poscall(L, L->top - n);
       return 1;
@@ -404,9 +399,7 @@ static void finishCcall (lua_State *L) {
     ci->status = LUA_YIELD;  /* 'default' status */
   assert(ci->status != LUA_OK);
   ci->callstatus = (ci->callstatus & ~(CIST_YPCALL | CIST_STAT)) | CIST_YIELDED;
-  lua_unlock(L);
   n = (*ci->k)(L);
-  lua_lock(L);
   api_checknelems(L, n);
   /* finish 'luaD_precall' */
   luaD_poscall(L, L->top - n);
@@ -505,9 +498,7 @@ static void resume (lua_State *L, void *ud) {
         int n;
         ci->status = LUA_YIELD;  /* 'default' status */
         ci->callstatus |= CIST_YIELDED;
-        lua_unlock(L);
         n = (*ci->k)(L);  /* call continuation */
-        lua_lock(L);
         api_checknelems(L, n);
         firstArg = L->top - n;  /* yield results come from continuation */
       }
@@ -522,7 +513,6 @@ static void resume (lua_State *L, void *ud) {
 int lua_resume (lua_State *L, lua_State *from, int nargs) {
   THREAD_CHECK(L);
   int status;
-  lua_lock(L);
   L->nCcalls = (from) ? from->nCcalls + 1 : 1;
   L->nny = 0;  /* allow yields */
   api_checknelems(L, (L->status == LUA_OK) ? nargs + 1 : nargs);
@@ -545,7 +535,6 @@ int lua_resume (lua_State *L, lua_State *from, int nargs) {
   L->nny = 1;  /* do not allow yields */
   L->nCcalls--;
   assert(L->nCcalls == ((from) ? from->nCcalls : 0));
-  lua_unlock(L);
   return status;
 }
 
@@ -553,7 +542,6 @@ int lua_resume (lua_State *L, lua_State *from, int nargs) {
 int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   THREAD_CHECK(L);
   CallInfo *ci = L->ci;
-  lua_lock(L);
   api_checknelems(L, nresults);
   if (L->nny > 0) {
     if (L != G(L)->mainthread)
@@ -573,7 +561,6 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
     luaD_throw(LUA_YIELD);
   }
   assert(ci->callstatus & CIST_HOOKED);  /* must be inside a hook */
-  lua_unlock(L);
   return 0;  /* return to 'luaD_hook' */
 }
 

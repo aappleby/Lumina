@@ -88,7 +88,6 @@ int lua_getstack (lua_State *L, int level, lua_Debug *ar) {
   int status;
   CallInfo *ci;
   if (level < 0) return 0;  /* invalid (negative) level */
-  lua_lock(L);
   for (ci = L->ci; level > 0 && ci != &L->base_ci; ci = ci->previous)
     level--;
   if (level == 0 && ci != &L->base_ci) {  /* level found? */
@@ -96,7 +95,6 @@ int lua_getstack (lua_State *L, int level, lua_Debug *ar) {
     ar->i_ci = ci;
   }
   else status = 0;  /* no such level */
-  lua_unlock(L);
   return status;
 }
 
@@ -149,7 +147,6 @@ static const char *findlocal (lua_State *L, CallInfo *ci, int n,
 const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n) {
   THREAD_CHECK(L);
   const char *name;
-  lua_lock(L);
   if (ar == NULL) {  /* information about non-active function? */
     if (!isLfunction(L->top - 1))  /* not a Lua function? */
       name = NULL;
@@ -164,7 +161,6 @@ const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n) {
       api_incr_top(L);
     }
   }
-  lua_unlock(L);
   return name;
 }
 
@@ -173,11 +169,9 @@ const char *lua_setlocal (lua_State *L, const lua_Debug *ar, int n) {
   THREAD_CHECK(L);
   StkId pos = 0;  /* to avoid warnings */
   const char *name = findlocal(L, ar->i_ci, n, &pos);
-  lua_lock(L);
   if (name)
     setobj(pos, L->top - 1);
   L->top--;  /* pop value */
-  lua_unlock(L);
   return name;
 }
 
@@ -277,7 +271,6 @@ int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
   Closure *cl;
   CallInfo *ci;
   StkId func;
-  lua_lock(L);
   if (*what == '>') {
     ci = NULL;
     func = L->top - 1;
@@ -298,7 +291,6 @@ int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
   }
   if (strchr(what, 'L'))
     collectvalidlines(L, cl);
-  lua_unlock(L);
   return status;
 }
 

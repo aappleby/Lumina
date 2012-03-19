@@ -184,7 +184,6 @@ static void close_state (lua_State *L) {
 lua_State *lua_newthread (lua_State *L) {
   THREAD_CHECK(L);
   lua_State *L1;
-  lua_lock(L);
   luaC_checkGC(L);
   LuaObject* o = luaC_newobj(LUA_TTHREAD, sizeof(lua_State), NULL);
   L1 = gco2th(o);
@@ -196,7 +195,6 @@ lua_State *lua_newthread (lua_State *L) {
   L1->hook = L->hook;
   L1->hookcount = L1->basehookcount;
   stack_init(L1, L);  /* init stack */
-  lua_unlock(L);
   return L1;
 }
 
@@ -271,7 +269,6 @@ lua_State *lua_newstate () {
 void lua_close (lua_State *L) {
   THREAD_CHECK(L);
   L = G(L)->mainthread;  /* only the main thread can be closed */
-  lua_lock(L);
   close_state(L);
 }
 

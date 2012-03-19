@@ -512,10 +512,8 @@ static int gc_state (lua_State *L) {
     return 1;
   }
   else {
-    lua_lock(L);
     luaC_runtilstate(bitmask(option));
     assert(G(L)->gcstate == option);
-    lua_unlock(L);
     return 0;
   }
 }
