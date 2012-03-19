@@ -35,6 +35,10 @@ public:
   ptrdiff_t errfunc;  /* current error handling function (stack index) */
   CallInfo base_ci;  /* CallInfo for first level (C calling Lua) */
 
+  void freeCI();
+
+  void initstack();
+  void freestack();
   int stackinuse();
   void growstack(int size);
   void shrinkstack();

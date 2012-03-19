@@ -6,6 +6,43 @@
 
 l_noret luaG_runerror (const char *fmt, ...);
 
+void lua_State::freeCI() {
+  CallInfo *ci = ci_;
+  CallInfo *next = ci->next;
+  ci->next = NULL;
+  while ((ci = next) != NULL) {
+    next = ci->next;
+    luaM_free(ci, sizeof(CallInfo), LAP_RUNTIME);
+  }
+}
+
+
+void lua_State::initstack() {
+  stack.resize(BASIC_STACK_SIZE);
+  top = stack.begin();
+  stack_last = stack.end() - EXTRA_STACK;
+
+  /* initialize first ci */
+  CallInfo* ci = &base_ci;
+  ci->next = ci->previous = NULL;
+  ci->callstatus = 0;
+  ci->func = top;
+  top++;
+  ci->top = top + LUA_MINSTACK;
+  ci_ = ci;
+}
+
+
+void lua_State::freestack() {
+  if (stack.empty()) {
+    // Stack not completely built yet - we probably ran out of memory while trying to create a thread.
+    return;  
+  }
+  ci_ = &base_ci;  /* free the entire 'ci' list */
+  freeCI();
+  stack.clear();
+}
+
 // The amount of stack "in use" includes everything up to the current
 // top of the stack _plus_ anything referenced by an active callinfo.
 int lua_State::stackinuse() {

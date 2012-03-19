@@ -62,6 +62,9 @@
 
 
 
+/* minimum Lua stack available to a C function */
+#define LUA_MINSTACK	20
+
 /* extra stack space to handle TM calls and some other extras */
 #define EXTRA_STACK   5
 #define BASIC_STACK_SIZE        (2*LUA_MINSTACK)

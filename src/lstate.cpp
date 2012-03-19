@@ -72,21 +72,18 @@ void luaE_freeCI (lua_State *L) {
   }
 }
 
-
+/*
 static void stack_init (lua_State *L1) {
-  //THREAD_CHECK(L);
-  int i; CallInfo *ci;
-  /* initialize stack array */
+  // initialize stack array
   L1->stack.resize(BASIC_STACK_SIZE);
   L1->top = L1->stack.begin();
   L1->stack_last = L1->stack.end() - EXTRA_STACK;
 
-  /* initialize first ci */
-  ci = &L1->base_ci;
+  // initialize first ci
+  CallInfo* ci = &L1->base_ci;
   ci->next = ci->previous = NULL;
   ci->callstatus = 0;
   ci->func = L1->top;
-  setnilvalue(L1->top);  /* 'function' entry for this 'ci' */
   L1->top++;
   ci->top = L1->top + LUA_MINSTACK;
   L1->ci_ = ci;
@@ -96,12 +93,12 @@ static void stack_init (lua_State *L1) {
 static void freestack (lua_State *L) {
   THREAD_CHECK(L);
   if (L->stack.empty())
-    return;  /* stack not completely built yet */
-  L->ci_ = &L->base_ci;  /* free the entire 'ci' list */
+    return;  // stack not completely built yet
+  L->ci_ = &L->base_ci;  // free the entire 'ci' list
   luaE_freeCI(L);
   L->stack.clear();
 }
-
+*/
 
 /*
 ** Create registry table and its predefined values
@@ -129,7 +126,7 @@ static void f_luaopen (lua_State *L, void *ud) {
   THREAD_CHECK(L);
   global_State *g = G(L);
   UNUSED(ud);
-  stack_init(L);  /* init stack */
+  L->initstack();  /* init stack */
   init_registry(L, g);
   luaS_resize(MINSTRTABSIZE);  /* initial size of string table */
   luaT_init();
@@ -173,7 +170,7 @@ static void close_state (lua_State *L) {
 
   g->buff.buffer.clear();
 
-  freestack(L);
+  L->freestack();
   assert(gettotalbytes(g) == (sizeof(lua_State) + sizeof(global_State)));
   luaM_free(g, sizeof(global_State), LAP_STARTUP);
   L->l_G = NULL;
@@ -194,7 +191,7 @@ lua_State *lua_newthread (lua_State *L) {
   L1->basehookcount = L->basehookcount;
   L1->hook = L->hook;
   L1->hookcount = L1->basehookcount;
-  stack_init(L1);  /* init stack */
+  L1->initstack();  /* init stack */
   return L1;
 }
 
@@ -205,7 +202,7 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
     THREAD_CHANGE(L1);
     luaF_close(L1->stack.begin());  /* close all upvalues for this thread */
     assert(L1->openupval == NULL);
-    freestack(L1);
+    L1->freestack();
   }
   luaM_delobject(L1, sizeof(lua_State), LUA_TTHREAD);
 }

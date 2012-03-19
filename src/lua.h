@@ -44,8 +44,6 @@ typedef void * (*lua_Alloc) (void *ptr, size_t osize, size_t nsize);
 
 
 
-/* minimum Lua stack available to a C function */
-#define LUA_MINSTACK	20
 
 
 /* predefined values in the registry */
