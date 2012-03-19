@@ -619,14 +619,13 @@ static void clearkeys (LuaObject *l, LuaObject *f) {
 static void clearvalues (LuaObject *l, LuaObject *f) {
   for (; l != f; l = gco2t(l)->gclist) {
     Table *h = gco2t(l);
-    Node *n, *limit = gnodelast(h);
-    int i;
-    for (i = 0; i < (int)h->array.size(); i++) {
+    for (int i = 0; i < (int)h->array.size(); i++) {
       TValue *o = &h->array[i];
       if (iscleared(o))  /* value was collected? */
         setnilvalue(o);  /* remove value */
     }
-    for (n = gnode(h, 0); n < limit; n++) {
+    for(int i = 0; i < h->sizenode; i++) {
+      Node* n = &h->node[i];
       if (!ttisnil(&n->i_val) && iscleared(&n->i_val)) {
         setnilvalue(&n->i_val);  /* remove value ... */
         removeentry(n);  /* and remove entry from table */
