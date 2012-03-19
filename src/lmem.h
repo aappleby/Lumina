@@ -42,8 +42,8 @@ enum LuaAllocPool {
   LAP_VECTOR,
 };
 
-void* luaM_alloc(size_t size);
-void  luaM_free(void * blob, size_t size);
+void* luaM_alloc(size_t size, int pool);
+void  luaM_free(void * blob, size_t size, int pool);
 
 void* luaM_newobject(int tag, size_t size);
 void  luaM_delobject(void * blob, size_t size, int type);

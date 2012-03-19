@@ -52,7 +52,7 @@ void luaE_setdebt (global_State *g, l_mem debt) {
 
 CallInfo *luaE_extendCI (lua_State *L) {
   THREAD_CHECK(L);
-  CallInfo *ci = (CallInfo*)luaM_alloc(sizeof(CallInfo));
+  CallInfo *ci = (CallInfo*)luaM_alloc(sizeof(CallInfo), LAP_RUNTIME);
   assert(L->ci->next == NULL);
   L->ci->next = ci;
   ci->previous = L->ci;
@@ -68,7 +68,7 @@ void luaE_freeCI (lua_State *L) {
   ci->next = NULL;
   while ((ci = next) != NULL) {
     next = ci->next;
-    luaM_free(ci, sizeof(CallInfo));
+    luaM_free(ci, sizeof(CallInfo), LAP_RUNTIME);
   }
 }
 

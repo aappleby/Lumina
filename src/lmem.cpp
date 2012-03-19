@@ -179,15 +179,15 @@ void luaM_delobject(void * blob, size_t size, int type) {
   luaM_free_(blob, size, type, LAP_OBJECT);
 }
 
-void* luaM_alloc(size_t size) {
+void* luaM_alloc(size_t size, int pool) {
   assert(size);
-  return luaM_alloc_(size, 0, LAP_RUNTIME);
+  return luaM_alloc_(size, 0, pool);
 }
 
-void luaM_free(void * blob, size_t size) {
+void luaM_free(void * blob, size_t size, int pool) {
   assert(blob);
   assert(size);
-  luaM_free_(blob, size, 0, LAP_RUNTIME);
+  luaM_free_(blob, size, 0, pool);
 }
 
 //-----------------------------------------------------------------------------
