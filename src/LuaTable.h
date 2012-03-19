@@ -20,10 +20,9 @@ public:
   uint8_t flags;  /* 1<<p means tagmethod(p) is not present */
   int sizenode;
   Table *metatable;
-  //TValue *array;  /* array part */
   LuaVector<TValue> array;
   Node *node;
   Node *lastfree;  /* any free position is before this position */
   LuaObject *gclist;
-  int sizearray;  /* size of `array' array */
+
 };

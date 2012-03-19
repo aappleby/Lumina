@@ -349,7 +349,7 @@ static void traverseweakvalue (global_State *g, Table *h) {
   Node *n, *limit = gnodelast(h);
   /* if there is array part, assume it may have white values (do not
      traverse it just to check) */
-  int hasclears = (h->sizearray > 0);
+  int hasclears = !h->array.empty();
   for (n = gnode(h, 0); n < limit; n++) {
     checkdeadkey(n);
     if (ttisnil(&n->i_val))  /* entry is empty? */
@@ -375,7 +375,7 @@ static int traverseephemeron (global_State *g, Table *h) {
   Node *n, *limit = gnodelast(h);
   int i;
   /* traverse array part (numeric keys are 'strong') */
-  for (i = 0; i < h->sizearray; i++) {
+  for (i = 0; i < (int)h->array.size(); i++) {
     if (valiswhite(&h->array[i])) {
       marked = 1;
       reallymarkobject(g, gcvalue(&h->array[i]));
@@ -409,7 +409,7 @@ static int traverseephemeron (global_State *g, Table *h) {
 static void traversestrongtable (global_State *g, Table *h) {
   Node *n, *limit = gnodelast(h);
   int i;
-  for (i = 0; i < h->sizearray; i++)  /* traverse array part */
+  for (i = 0; i < (int)h->array.size(); i++)  /* traverse array part */
     markvalue(g, &h->array[i]);
   for (n = gnode(h, 0); n < limit; n++) {  /* traverse hash part */
     checkdeadkey(n);
@@ -438,7 +438,7 @@ static int traversetable (global_State *g, Table *h) {
       }
       else if (!weakvalue) {  /* strong values? */
         traverseephemeron(g, h);
-        return TRAVCOST + h->sizearray + h->sizenode;
+        return TRAVCOST + (int)h->array.size() + h->sizenode;
       }
       else {
         linktable(h, &g->allweak);  /* nothing to traverse now */
@@ -447,7 +447,7 @@ static int traversetable (global_State *g, Table *h) {
     }  /* else go through */
   }
   traversestrongtable(g, h);
-  return TRAVCOST + h->sizearray + (2 * h->sizenode);
+  return TRAVCOST + (int)h->array.size() + (2 * h->sizenode);
 }
 
 
@@ -623,7 +623,7 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
     Table *h = gco2t(l);
     Node *n, *limit = gnodelast(h);
     int i;
-    for (i = 0; i < h->sizearray; i++) {
+    for (i = 0; i < (int)h->array.size(); i++) {
       TValue *o = &h->array[i];
       if (iscleared(o))  /* value was collected? */
         setnilvalue(o);  /* remove value */

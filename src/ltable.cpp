@@ -136,7 +136,7 @@ static int findindex (Table *t, TValue key) {
   if (key.isNil()) return -1;  /* first iteration */
   int i = key.isInteger() ? key.getInteger() : -1;
   
-  if (0 < i && i <= t->sizearray)  /* is `key' inside array part? */
+  if (0 < i && i <= (int)t->array.size())  /* is `key' inside array part? */
     return i-1;  /* yes; that's the index (corrected to C) */
 
   Node *n = mainposition(t, &key);
@@ -147,7 +147,7 @@ static int findindex (Table *t, TValue key) {
   for (;;) {
     bool equal = luaV_rawequalobj(&n->i_key, &key);
     if (equal || (ttisdeadkey(&n->i_key) && iscollectable(&key) && deadvalue(&n->i_key) == gcvalue(&key))) {
-      return (int)(n - t->node) + t->sizearray;
+      return (int)(n - t->node) + (int)t->array.size();
     }
     else n = n->next;
     if (n == NULL)
@@ -157,17 +157,17 @@ static int findindex (Table *t, TValue key) {
 
 
 int luaH_next (Table *t, StkId stack) {
-  if((t->sizearray == 0) && (t->sizenode == 0)) return 0;
+  if(t->array.empty() && (t->sizenode == 0)) return 0;
 
   int i = findindex(t, stack[0]) + 1;
-  for (;i < t->sizearray; i++) {
+  for (;i < (int)t->array.size(); i++) {
     if (!t->array[i].isNil()) {
       stack[0] = i+1;
       stack[1] = t->array[i];
       return 1;
     }
   }
-  i -= t->sizearray;
+  i -= (int)t->array.size();
   for (; i < t->sizenode; i++) {
     Node& n = t->node[i];
     if (!n.i_val.isNil()) {
@@ -228,8 +228,8 @@ static int numusearray (const Table *t, int *nums) {
   for (lg=0, ttlg=1; lg<=MAXBITS; lg++, ttlg*=2) {  /* for each slice */
     int lc = 0;  /* counter */
     int lim = ttlg;
-    if (lim > t->sizearray) {
-      lim = t->sizearray;  /* adjust upper limit */
+    if (lim > (int)t->array.size()) {
+      lim = (int)t->array.size();  /* adjust upper limit */
       if (i > lim)
         break;  /* no more elements to count */
     }
@@ -262,12 +262,9 @@ static int numusehash (const Table *t, int *nums, int *pnasize) {
 
 
 static void setarrayvector (Table *t, int size) {
-  assert(t->sizearray == (int)t->array.size());
-  
   int oldsize = (int)t->array.size();
   
   t->array.resize(size);
-  t->sizearray = (int)t->array.size();
   
   for (int i=oldsize; i < t->array.size(); i++)
      setnilvalue(&t->array[i]); 
@@ -297,7 +294,7 @@ static void setnodevector (Table *t, int size) {
 
 void luaH_resize (Table *t, int nasize, int nhsize) {
   int i;
-  int oldasize = t->sizearray;
+  int oldasize = (int)t->array.size();
   int oldhsize = t->sizenode;
   Node *nold = t->node;  /* save old hash ... */
   if (nasize > oldasize)  /* array part must grow? */
@@ -312,7 +309,6 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
     memcpy(temp.begin(), &t->array[nasize], sizeof(TValue) * temp.size());
 
     t->array.resize(nasize);
-    t->sizearray = nasize;
 
     /* re-insert elements from vanishing slice */
     for(int i = 0; i < temp.size(); i++) {
@@ -381,7 +377,6 @@ Table *luaH_new () {
   t->metatable = NULL;
   t->flags = cast_byte(~0);
   t->array.init();
-  t->sizearray = 0;
   setnodevector(t, 0);
   return t;
 }
@@ -461,7 +456,7 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
 */
 const TValue *luaH_getint (Table *t, int key) {
   /* (1 <= key && key <= t->sizearray) */
-  if (cast(unsigned int, key-1) < cast(unsigned int, t->sizearray))
+  if (cast(unsigned int, key-1) < cast(unsigned int, t->array.size()))
     return &t->array[key-1];
   else {
     lua_Number nk = cast_num(key);
@@ -579,7 +574,7 @@ static int unbound_search (Table *t, unsigned int j) {
 ** such that t[i] is non-nil and t[i+1] is nil (and 0 if t[1] is nil).
 */
 int luaH_getn (Table *t) {
-  unsigned int j = t->sizearray;
+  unsigned int j = (unsigned int)t->array.size();
   if (j > 0 && ttisnil(&t->array[j - 1])) {
     /* there is a boundary in the array part: (binary) search for it */
     unsigned int i = 0;

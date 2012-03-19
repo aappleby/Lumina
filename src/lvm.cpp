@@ -850,7 +850,7 @@ void luaV_execute (lua_State *L) {
         luai_runtimecheck(L, ttistable(ra));
         h = hvalue(ra);
         last = ((c-1)*LFIELDS_PER_FLUSH) + n;
-        if (last > h->sizearray)  /* needs more space? */
+        if (last > (int)h->array.size())  /* needs more space? */
           luaH_resizearray(h, last);  /* pre-allocate it at once */
         for (; n > 0; n--) {
           TValue *val = ra+n;

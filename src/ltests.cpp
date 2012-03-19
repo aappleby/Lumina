@@ -110,7 +110,7 @@ static void checktable (global_State *g, Table *h) {
   LuaObject *hgc = obj2gco(h);
   if (h->metatable)
     checkobjref(g, hgc, h->metatable);
-  for (i = 0; i < h->sizearray; i++)
+  for (i = 0; i < (int)h->array.size(); i++)
     checkvalref(g, hgc, &h->array[i]);
   for (n = gnode(h, 0); n < limit; n++) {
     if (!ttisnil(&n->i_val)) {
@@ -556,16 +556,16 @@ static int table_query (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   t = hvalue(obj_at(L, 1));
   if (i == -1) {
-    lua_pushinteger(L, t->sizearray);
+    lua_pushinteger(L, (int)t->array.size());
     lua_pushinteger(L, t->sizenode);
     lua_pushinteger(L, t->lastfree - t->node);
   }
-  else if (i < t->sizearray) {
+  else if (i < (int)t->array.size()) {
     lua_pushinteger(L, i);
     pushobject(L, &t->array[i]);
     lua_pushnil(L);
   }
-  else if ((i -= t->sizearray) < t->sizenode) {
+  else if ((i -= (int)t->array.size()) < t->sizenode) {
     if (!ttisnil(&gnode(t, i)->i_val) ||
         ttisnil(&gnode(t, i)->i_key) ||
         ttisnumber(&gnode(t, i)->i_key)) {
