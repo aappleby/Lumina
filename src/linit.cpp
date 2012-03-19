@@ -12,8 +12,8 @@
 ** it to suit your needs.
 */
 
+#include "LuaState.h"
 
-#define linit_c
 #define LUA_LIB
 
 #include "lua.h"

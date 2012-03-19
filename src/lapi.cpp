@@ -90,7 +90,6 @@ int lua_checkstack (lua_State *L, int size) {
   THREAD_CHECK(L);
   int res;
   CallInfo *ci = L->ci;
-  lua_lock(L);
   if (L->stack_last - L->top > size)  /* stack large enough? */
     res = 1;  /* yes; check is OK */
   else {  /* no; need to grow stack */
@@ -111,7 +110,6 @@ void lua_xmove (lua_State *from, lua_State *to, int n) {
   THREAD_CHECK(from);
   int i;
   if (from == to) return;
-  lua_lock(to);
   api_checknelems(from, n);
   api_check(G(from) == G(to), "moving among independent states");
   api_check(to->ci->top - to->top >= n, "not enough elements to move");
@@ -129,10 +127,8 @@ void lua_xmove (lua_State *from, lua_State *to, int n) {
 lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf) {
   THREAD_CHECK(L);
   lua_CFunction old;
-  lua_lock(L);
   old = G(L)->panic;
   G(L)->panic = panicf;
-  lua_unlock(L);
   return old;
 }
 
@@ -170,7 +166,6 @@ int lua_gettop (lua_State *L) {
 void lua_settop (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId func = L->ci->func;
-  lua_lock(L);
   if (idx >= 0) {
     api_check(idx <= L->stack_last - (func + 1), "new top too large");
     while (L->top < (func + 1) + idx)
@@ -181,19 +176,16 @@ void lua_settop (lua_State *L, int idx) {
     api_check(-(idx+1) <= (L->top - (func + 1)), "invalid new top");
     L->top += idx+1;  /* `subtract' index (index is negative) */
   }
-  lua_unlock(L);
 }
 
 
 void lua_remove (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId p;
-  lua_lock(L);
   p = index2addr(L, idx);
   api_checkvalidindex(p);
   while (++p < L->top) setobj(p-1, p);
   L->top--;
-  lua_unlock(L);
 }
 
 

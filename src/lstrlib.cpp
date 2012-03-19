@@ -4,6 +4,7 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaState.h"
 
 #include <ctype.h>
 #include <stddef.h>

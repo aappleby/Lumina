@@ -155,11 +155,9 @@
 ** They are only used in libraries and the stand-alone program. (The #if
 ** avoids including 'stdio.h' everywhere.)
 */
-#if defined(LUA_LIB) || defined(lua_c)
 #include <stdio.h>
 #define luai_writestring(s,l)	fwrite((s), sizeof(char), (l), stdout)
 #define luai_writeline()	(luai_writestring("\n", 1), fflush(stdout))
-#endif
 
 /*
 @@ luai_writestringerror defines how to print error messages.

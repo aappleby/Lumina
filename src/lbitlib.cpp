@@ -4,6 +4,8 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaState.h"
+
 #define lbitlib_c
 #define LUA_LIB
 

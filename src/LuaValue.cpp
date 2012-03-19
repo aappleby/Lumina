@@ -1,5 +1,7 @@
 #include "LuaValue.h"
 
+#include "LuaObject.h"
+
 void TValue::operator = ( TValue const & v )
 {
   bytes = v.bytes;

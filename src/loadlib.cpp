@@ -8,6 +8,7 @@
 ** systems.
 */
 
+#include "LuaState.h"
 
 /*
 ** if needed, includes windows header before everything else
