@@ -263,30 +263,23 @@ static int numusehash (Table *t, int *nums, int *pnasize) {
   return totaluse;
 }
 
+// Note - new memory for array & hash _must_ be allocated before we start moving things around,
+// otherwise the allocation could trigger a GC pass which would try and traverse this table while
+// it's in an invalid state.
 
-static void setarrayvector (Table *t, int size) {
-  int oldsize = (int)t->array.size();
-  
-  t->array.resize(size);
-  
-  for (int i=oldsize; i < t->array.size(); i++)
-     setnilvalue(&t->array[i]); 
-}
-
-
-static void setnodevector (Table *t, int size) {
-  //assert((size & (size-1)) == 0);
-
-}
-
+// #TODO - Table resize should be effectively atomic...
 
 void luaH_resize (Table *t, int nasize, int nhsize) {
   int i;
   int oldasize = (int)t->array.size();
   int oldhsize = t->sizenode;
-  if (nasize > oldasize)  /* array part must grow? */
-    setarrayvector(t, nasize);
 
+  /* array part must grow? */
+  if (nasize > oldasize) {
+    t->array.resize(nasize);
+    for (int i=oldasize; i < nasize; i++)
+       setnilvalue(&t->array[i]); 
+  }
 
   /* create new hash part with appropriate size */
 
@@ -301,8 +294,8 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   }
 
   tempnode.swap(t->node2_);
-  t->sizenode = t->node2_.size();
-  t->lastfree = t->node2_.size(); // all positions are free
+  t->sizenode = (int)t->node2_.size();
+  t->lastfree = (int)t->node2_.size(); // all positions are free
 
   if (nasize < oldasize) {  /* array part must shrink? */
     // Move elements in the disappearing array section to the hash table.
