@@ -222,12 +222,10 @@ static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
   StkId base = L->top;  /* final position of first argument */
   
   for (int i=0; i < p->numparams; i++) {
-    //setobj(L->top, fixed + i);
-    L->top[0] = fixed[i];
-    L->top++;
-    //setnilvalue(fixed + i);
+    L->top[i] = fixed[i];
     fixed[i].clear();
   }
+  L->top += p->numparams;
   
   return base;
 }
