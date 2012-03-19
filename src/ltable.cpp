@@ -39,6 +39,9 @@
 #include <float.h>
 #include <math.h>
 
+const TValue *luaH_getint_hash (Table *t, int key);
+void luaH_setint_hash (Table *t, int key, TValue *value);
+
 /*
 ** max size of array part is 2^MAXBITS
 */
@@ -302,20 +305,12 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   /* create new hash part with appropriate size */
   setnodevector(t, nhsize);
   if (nasize < oldasize) {  /* array part must shrink? */
-    // save a copy of the items moving out of the array
-    LuaVector<TValue> temp;
-    temp.init();
-    temp.resize(oldasize - nasize);
-    memcpy(temp.begin(), &t->array[nasize], sizeof(TValue) * temp.size());
-
-    t->array.resize(nasize);
-
-    /* re-insert elements from vanishing slice */
-    for(int i = 0; i < temp.size(); i++) {
-      if (!ttisnil(&temp[i]))
-        luaH_setint(t, i + 1, &temp[i]);
+    // Move elements in the disappearing array section to the hash table.
+    for(int i = nasize; i < oldasize; i++) {
+      if (!ttisnil(&t->array[i]))
+        luaH_setint_hash(t, i + 1, &t->array[i]);
     }
-    /* shrink array */
+    t->array.resize(nasize);
   }
   /* re-insert elements from hash part */
   for (i = oldhsize - 1; i >= 0; i--) {
@@ -472,6 +467,20 @@ const TValue *luaH_getint (Table *t, int key) {
   }
 }
 
+const TValue *luaH_getint_hash (Table *t, int key) {
+  /* (1 <= key && key <= t->sizearray) */
+  lua_Number nk = cast_num(key);
+  Node *n = hashnum(t, nk);
+  if(n == NULL) return luaO_nilobject;
+
+  do {  /* check whether `key' is somewhere in the chain */
+    if (ttisnumber(&n->i_key) && luai_numeq(nvalue(&n->i_key), nk))
+      return &n->i_val;  /* that's it */
+    else n = n->next;
+  } while (n);
+  return luaO_nilobject;
+}
+
 
 /*
 ** search function for strings
@@ -544,6 +553,18 @@ void luaH_setint (Table *t, int key, TValue *value) {
   setobj(cell, value);
 }
 
+void luaH_setint_hash (Table *t, int key, TValue *value) {
+  const TValue *p = luaH_getint_hash(t, key);
+  TValue *cell;
+  if (p != luaO_nilobject)
+    cell = cast(TValue *, p);
+  else {
+    TValue k;
+    setnvalue(&k, cast_num(key));
+    cell = luaH_newkey(t, &k);
+  }
+  setobj(cell, value);
+}
 
 static int unbound_search (Table *t, unsigned int j) {
   unsigned int i = j;  /* i is zero or a present index */
