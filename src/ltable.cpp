@@ -277,24 +277,6 @@ static void setarrayvector (Table *t, int size) {
 static void setnodevector (Table *t, int size) {
   //assert((size & (size-1)) == 0);
 
-  if (size == 0) {
-    //t->node = cast(Node *, dummynode);  // use common `dummynode'
-    //t->sizenode = 1;
-    t->node2_.clear();
-    t->node_ = NULL;
-    t->sizenode = 0;
-    t->lastfree = 0;
-  }
-  else {
-    int lsize = luaO_ceillog2(size);
-    size = 1 << lsize;
-    t->node_ = (Node*)luaM_alloc(size * sizeof(Node), LAP_RUNTIME);
-    //t->node2_.resize(size);
-    memset(t->node_, 0, size * sizeof(Node));
-    if(t->node2_.size()) memset(t->node2_.begin(), 0, t->node2_.size() * sizeof(Node));
-    t->sizenode = size;
-    t->lastfree = size; // all positions are free
-  }
 }
 
 
@@ -302,11 +284,26 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   int i;
   int oldasize = (int)t->array.size();
   int oldhsize = t->sizenode;
-  Node *nold = t->node_;  /* save old hash ... */
   if (nasize > oldasize)  /* array part must grow? */
     setarrayvector(t, nasize);
+
+
   /* create new hash part with appropriate size */
-  setnodevector(t, nhsize);
+
+  LuaVector<Node> tempnode;
+  tempnode.init();
+
+  if (nhsize) {
+    int lsize = luaO_ceillog2(nhsize);
+    nhsize = 1 << lsize;
+    tempnode.resize(nhsize);
+    memset(tempnode.begin(), 0, tempnode.size() * sizeof(Node));
+  }
+
+  tempnode.swap(t->node2_);
+  t->sizenode = t->node2_.size();
+  t->lastfree = t->node2_.size(); // all positions are free
+
   if (nasize < oldasize) {  /* array part must shrink? */
     // Move elements in the disappearing array section to the hash table.
     for(int i = nasize; i < oldasize; i++) {
@@ -316,8 +313,9 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
     t->array.resize(nasize);
   }
   /* re-insert elements from hash part */
-  for (i = oldhsize - 1; i >= 0; i--) {
-    Node *old = nold+i;
+  for (i = tempnode.size() - 1; i >= 0; i--) {
+    //Node *old = nold+i;
+    Node* old = &tempnode[i];
     if (!ttisnil(&old->i_val)) {
       /* doesn't need barrier/invalidate cache, as entry was
          already present in the table */
@@ -326,11 +324,6 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
       TValue* n = luaH_set(t, key);
       setobj(n, val);
     }
-  }
-  if (nold) {
-     /* free old array */
-    size_t s = oldhsize;
-    luaM_free(nold, s * sizeof(Node), LAP_RUNTIME);
   }
 }
 
@@ -375,15 +368,14 @@ Table *luaH_new () {
   t->metatable = NULL;
   t->flags = cast_byte(~0);
   t->array.init();
-  setnodevector(t, 0);
+  t->node2_.init();
+  t->sizenode = 0;
+
   return t;
 }
 
 
 void luaH_free (Table *t) {
-  if (t->sizenode) {
-    luaM_free(t->node_, t->sizenode * sizeof(Node), LAP_RUNTIME);
-  }
   t->node2_.clear();
   t->array.clear();
   luaM_delobject(t, sizeof(Table), LUA_TTABLE);

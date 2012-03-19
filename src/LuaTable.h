@@ -21,21 +21,22 @@ public:
   int sizenode;
   Table *metatable;
   LuaVector<TValue> array;
-  Node *node_;
   LuaVector<Node> node2_;
 
   Node* getNode(int i) {
-    assert(node_);
+    assert(node2_.size());
+    assert(sizenode == node2_.size());
     assert(i >= 0);
     assert(i < sizenode);
-    return &node_[i];
+    return &node2_[i];
   }
 
   const Node* getNode(int i) const {
-    assert(node_);
+    assert(node2_.size());
+    assert(sizenode == node2_.size());
     assert(i >= 0);
     assert(i < sizenode);
-    return &node_[i];
+    return &node2_[i];
   }
 
   //LuaVector<Node> node;
