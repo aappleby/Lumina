@@ -550,7 +550,7 @@ static int stacklevel (lua_State *L) {
 
 static int table_query (lua_State *L) {
   THREAD_CHECK(L);
-  const Table *t;
+  Table *t;
   int i = luaL_optint(L, 2, -1);
   luaL_checktype(L, 1, LUA_TTABLE);
   t = hvalue(obj_at(L, 1));
@@ -565,16 +565,17 @@ static int table_query (lua_State *L) {
     lua_pushnil(L);
   }
   else if ((i -= (int)t->array.size()) < (int)t->hashtable.size()) {
-    if (!ttisnil(&gnode(t, i)->i_val) ||
-        ttisnil(&gnode(t, i)->i_key) ||
-        ttisnumber(&gnode(t, i)->i_key)) {
-      pushobject(L, &gnode(t, i)->i_key);
+    Node* n = t->getNode(i);
+    if (!ttisnil(&n->i_val) ||
+        ttisnil(&n->i_key) ||
+        ttisnumber(&n->i_key)) {
+      pushobject(L, &n->i_key);
     }
     else
       lua_pushliteral(L, "<undef>");
-    pushobject(L, &gnode(t, i)->i_val);
-    if (t->getNode(i)->next)
-      lua_pushinteger(L, t->getNode(i)->next - t->getNode(0));
+    pushobject(L, &n->i_val);
+    if (n->next)
+      lua_pushinteger(L, n->next - t->getNode(0));
     else
       lua_pushnil(L);
   }
