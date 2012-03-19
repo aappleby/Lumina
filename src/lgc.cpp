@@ -91,12 +91,6 @@ static void reallymarkobject (global_State *g, LuaObject *o);
 
 
 /*
-** one after last element in a hash array
-*/
-#define gnodelast(h)	gnode(h, cast(size_t, h->sizenode))
-
-
-/*
 ** link table 'h' into list pointed by 'p'
 */
 #define linktable(h,p)	((h)->gclist = *(p), *(p) = obj2gco(h))

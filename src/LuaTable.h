@@ -22,6 +22,7 @@ public:
   Table *metatable;
   LuaVector<TValue> array;
   Node *node;
+  //LuaVector<Node> node;
   Node *lastfree;  /* any free position is before this position */
   LuaObject *gclist;
 

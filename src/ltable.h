@@ -25,6 +25,6 @@ void luaH_resizearray (Table *t, int nasize);
 void luaH_free (Table *t);
 int luaH_next (Table *t, StkId key);
 int luaH_getn (Table *t);
-Node *luaH_mainposition (const Table *t, const TValue *key);
+Node *luaH_mainposition (Table *t, const TValue *key);
 
 #endif

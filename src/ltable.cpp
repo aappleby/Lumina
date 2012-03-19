@@ -48,7 +48,7 @@ void luaH_setint_hash (Table *t, int key, TValue *value);
 #define MAXBITS		30
 #define MAXASIZE	(1 << MAXBITS)
 
-Node* hashpow2(const Table* t, uint32_t n) {
+Node* hashpow2(Table* t, uint32_t n) {
   if(t->sizenode == 0) return NULL;
   uint32_t mask = t->sizenode - 1;
   return &t->node[n & mask];
@@ -85,7 +85,7 @@ uint32_t hash32 (uint32_t a) {
   return a;
 }
 
-static Node* hashpointer ( const Table* t, void* p ) {
+static Node* hashpointer (Table* t, void* p ) {
   if(t->sizenode == 0) return NULL;
   uint32_t* block = reinterpret_cast<uint32_t*>(&p);
   uint32_t hash;
@@ -100,7 +100,7 @@ static Node* hashpointer ( const Table* t, void* p ) {
 
 // Well damn, test suite goes from 21.5 to 18.9 seconds just by changing to
 // this hash...
-static Node* hashnum ( const Table* t, lua_Number n) {
+static Node* hashnum (Table* t, lua_Number n) {
   if(t->sizenode == 0) return NULL;
   uint32_t* block = reinterpret_cast<uint32_t*>(&n);
   uint32_t hash = hash64(block[0],block[1]);
@@ -112,7 +112,7 @@ static Node* hashnum ( const Table* t, lua_Number n) {
 ** returns the `main' position of an element in a table (that is, the index
 ** of its hash value)
 */
-static Node *mainposition (const Table *t, const TValue *key) {
+static Node *mainposition (Table *t, const TValue *key) {
   if(t->sizenode == 0) return NULL;
   switch (ttype(key)) {
     case LUA_TNUMBER:
@@ -223,7 +223,7 @@ static int countint (const TValue *key, int *nums) {
 }
 
 
-static int numusearray (const Table *t, int *nums) {
+static int numusearray (Table *t, int *nums) {
   int lg;
   int ttlg;  /* 2^lg */
   int ause = 0;  /* summation of `nums' */
@@ -248,7 +248,7 @@ static int numusearray (const Table *t, int *nums) {
 }
 
 
-static int numusehash (const Table *t, int *nums, int *pnasize) {
+static int numusehash (Table *t, int *nums, int *pnasize) {
   int totaluse = 0;  /* total number of elements */
   int ause = 0;  /* summation of `nums' */
   int i = t->sizenode;
@@ -612,6 +612,6 @@ int luaH_getn (Table *t) {
   else return unbound_search(t, j);
 }
 
-Node *luaH_mainposition (const Table *t, const TValue *key) {
+Node *luaH_mainposition (Table *t, const TValue *key) {
   return mainposition(t, key);
 }
