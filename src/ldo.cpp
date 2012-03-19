@@ -213,15 +213,20 @@ static void callhook (lua_State *L, CallInfo *ci) {
 }
 
 
+void movestack(int start, int count, int dest) {
+  lua_State *L = thread_L;
+  for (int i=0; i < count; i++) {
+    L->top[dest + i] = L->top[start + i];
+    L->top[start + i].clear();
+  }
+}
+
 static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
   THREAD_CHECK(L);
   assert(actual >= p->numparams);
   
-  for (int i=0; i < p->numparams; i++) {
-    L->top[i] = L->top[i - actual];
-    L->top[i - actual].clear();
-  }
-  
+  movestack(-actual, p->numparams, 0);
+
   StkId oldtop = L->top;
   L->top += p->numparams;
   
