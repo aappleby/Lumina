@@ -73,21 +73,21 @@ void luaE_freeCI (lua_State *L) {
 }
 
 
-static void stack_init (lua_State *L1, lua_State *L) {
-  THREAD_CHECK(L);
+static void stack_init (lua_State *L1) {
+  //THREAD_CHECK(L);
   int i; CallInfo *ci;
   /* initialize stack array */
   L1->stack.resize(BASIC_STACK_SIZE);
-  for (i = 0; i < BASIC_STACK_SIZE; i++)
-    setnilvalue(L1->stack.begin() + i);  /* erase new stack */
   L1->top = L1->stack.begin();
   L1->stack_last = L1->stack.end() - EXTRA_STACK;
+
   /* initialize first ci */
   ci = &L1->base_ci;
   ci->next = ci->previous = NULL;
   ci->callstatus = 0;
   ci->func = L1->top;
-  setnilvalue(L1->top++);  /* 'function' entry for this 'ci' */
+  setnilvalue(L1->top);  /* 'function' entry for this 'ci' */
+  L1->top++;
   ci->top = L1->top + LUA_MINSTACK;
   L1->ci_ = ci;
 }
@@ -129,7 +129,7 @@ static void f_luaopen (lua_State *L, void *ud) {
   THREAD_CHECK(L);
   global_State *g = G(L);
   UNUSED(ud);
-  stack_init(L, L);  /* init stack */
+  stack_init(L);  /* init stack */
   init_registry(L, g);
   luaS_resize(MINSTRTABSIZE);  /* initial size of string table */
   luaT_init();
@@ -194,7 +194,7 @@ lua_State *lua_newthread (lua_State *L) {
   L1->basehookcount = L->basehookcount;
   L1->hook = L->hook;
   L1->hookcount = L1->basehookcount;
-  stack_init(L1, L);  /* init stack */
+  stack_init(L1);  /* init stack */
   return L1;
 }
 

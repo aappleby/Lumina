@@ -36,6 +36,7 @@ public:
   CallInfo base_ci;  /* CallInfo for first level (C calling Lua) */
 
   int stackinuse();
+  void growstack(int size);
   void shrinkstack();
   void reallocstack(int size);
 };

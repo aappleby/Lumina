@@ -117,26 +117,6 @@ int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
 
 /* }====================================================== */
 
-void luaD_growstack (lua_State *L, int n) {
-  THREAD_CHECK(L);
-  int size = (int)L->stack.size();
-  if (size > LUAI_MAXSTACK)  /* error after extra size? */
-    luaD_throw(LUA_ERRERR);
-  else {
-    int needed = cast_int(L->top - L->stack.begin()) + n + EXTRA_STACK;
-    int newsize = 2 * size;
-    if (newsize > LUAI_MAXSTACK) newsize = LUAI_MAXSTACK;
-    if (newsize < needed) newsize = needed;
-    if (newsize > LUAI_MAXSTACK) {  /* stack overflow? */
-      L->reallocstack(ERRORSTACKSIZE);
-      luaG_runerror("stack overflow");
-    }
-    else
-      L->reallocstack(newsize);
-  }
-}
-
-
 void luaD_hook (lua_State *L, int event, int line) {
   THREAD_CHECK(L);
   lua_Hook hook = L->hook;

@@ -27,7 +27,6 @@ void luaS_resize (int newsize) {
   luaC_runtilstate(~bitmask(GCSsweepstring));
   if (newsize > tb->size) {
     tb->hash.resize(newsize);
-    for (i = tb->size; i < newsize; i++) tb->hash[i] = NULL;
   }
   /* rehash */
   for (i=0; i<tb->size; i++) {

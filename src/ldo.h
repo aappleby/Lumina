@@ -13,7 +13,7 @@
 #include "lzio.h"
 
 
-#define luaD_checkstack(L,n)	if (L->stack_last - L->top <= (n)) luaD_growstack(L, n);
+#define luaD_checkstack(L,n)	if (L->stack_last - L->top <= (n)) L->growstack(n);
 
 
 #define incr_top(L) {L->top++; luaD_checkstack(L,0);}
@@ -33,7 +33,6 @@ void luaD_call (lua_State *L, StkId func, int nResults,
 int luaD_pcall (lua_State *L, Pfunc func, void *u,
                                         ptrdiff_t oldtop, ptrdiff_t ef);
 int luaD_poscall (lua_State *L, StkId firstResult);
-void luaD_growstack (lua_State *L, int n);
 
 l_noret luaD_throw (int errcode);
 int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud);

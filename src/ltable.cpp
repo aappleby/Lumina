@@ -281,15 +281,12 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   if(nasize) {
     temparray.resize(nasize);
     memcpy(temparray.begin(), t->array.begin(), std::min(oldasize, nasize) * sizeof(TValue));
-    for (int i=oldasize; i < nasize; i++)
-       setnilvalue(&temparray[i]); 
   }
 
   if (nhsize) {
     int lsize = luaO_ceillog2(nhsize);
     nhsize = 1 << lsize;
     temphash.resize(nhsize);
-    memset(temphash.begin(), 0, temphash.size() * sizeof(Node));
   }
 
   // Memory allocated, swap and reinsert

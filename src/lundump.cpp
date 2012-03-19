@@ -84,9 +84,9 @@ static TString* LoadString(LoadState* S)
 
 static void LoadCode(LoadState* S, Proto* f)
 {
- int n=LoadInt(S);
- f->code.resize(n);
- LoadVector(S,&f->code[0],n,sizeof(Instruction));
+  int n=LoadInt(S);
+  f->code.resize(n);
+  LoadVector(S,&f->code[0],n,sizeof(Instruction));
 }
 
 static Proto* LoadFunction(LoadState* S);

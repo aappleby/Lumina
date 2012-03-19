@@ -82,7 +82,7 @@ static TValue *index2addr (lua_State *L, int idx) {
 static void growstack (lua_State *L, void *ud) {
   THREAD_CHECK(L);
   int size = *(int *)ud;
-  luaD_growstack(L, size);
+  L->growstack(size);
 }
 
 

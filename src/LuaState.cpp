@@ -2,17 +2,47 @@
 
 #include "LuaUpval.h"
 #include "LuaValue.h"
+#include <algorithm>
 
+l_noret luaG_runerror (const char *fmt, ...);
+
+// The amount of stack "in use" includes everything up to the current
+// top of the stack _plus_ anything referenced by an active callinfo.
 int lua_State::stackinuse() {
   CallInfo *temp_ci;
   StkId lim = top;
   for (temp_ci = ci_; temp_ci != NULL; temp_ci = temp_ci->previous) {
     assert(temp_ci->top <= stack_last);
-    if (lim < temp_ci->top) lim = temp_ci->top;
+    if (lim < temp_ci->top) {
+      lim = temp_ci->top;
+    }
   }
   return (int)(lim - stack.begin()) + 1;  /* part of stack in use */
 }
 
+// Resizes the stack so that it can hold at least 'size' more elements.
+void lua_State::growstack(int size) {
+  // Asking for more stack when we're already over the limit is  an error.
+  if ((int)stack.size() > LUAI_MAXSTACK)  /* error after extra size? */
+    luaD_throw(LUA_ERRERR);
+
+  // Asking for more space than could possibly fit on the stack is an error.
+  int inuse = (int)(top - stack.begin());
+  int needed = inuse + size + EXTRA_STACK;
+  if (needed > LUAI_MAXSTACK) {  /* stack overflow? */
+    reallocstack(ERRORSTACKSIZE);
+    luaG_runerror("stack overflow");
+  }
+
+  // Our new stack size should be either twice the current size,
+  // or enough to hold what's already on the stack plus the
+  // additional space - whichever's greater. Not more than
+  // LUAI_MAXSTACK though.
+
+  int newsize = std::max(2 * (int)stack.size(), needed);
+  newsize = std::min(newsize, LUAI_MAXSTACK);
+  reallocstack(newsize);
+}
 
 void lua_State::shrinkstack() {
   size_t inuse = stackinuse();
