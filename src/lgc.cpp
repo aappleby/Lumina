@@ -406,11 +406,10 @@ static int traverseephemeron (global_State *g, Table *h) {
 
 
 static void traversestrongtable (global_State *g, Table *h) {
-  Node *n, *limit = gnodelast(h);
-  int i;
-  for (i = 0; i < (int)h->array.size(); i++)  /* traverse array part */
+  for (int i = 0; i < (int)h->array.size(); i++)  /* traverse array part */
     markvalue(g, &h->array[i]);
-  for (n = gnode(h, 0); n < limit; n++) {  /* traverse hash part */
+  for(int i = 0; i < h->sizenode; i++) {
+    Node* n = &h->node[i];
     checkdeadkey(n);
     if (ttisnil(&n->i_val))  /* entry is empty? */
       removeentry(n);  /* remove it */
