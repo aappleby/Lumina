@@ -105,14 +105,13 @@ static void checkvalref (global_State *g, LuaObject *f, const TValue *t) {
 
 
 static void checktable (global_State *g, Table *h) {
-  int i;
-  Node *n, *limit = gnode(h, h->sizenode);
   LuaObject *hgc = obj2gco(h);
   if (h->metatable)
     checkobjref(g, hgc, h->metatable);
-  for (i = 0; i < (int)h->array.size(); i++)
+  for (int i = 0; i < (int)h->array.size(); i++)
     checkvalref(g, hgc, &h->array[i]);
-  for (n = gnode(h, 0); n < limit; n++) {
+  for(int i = 0; i < h->sizenode; i++) {
+    Node* n = &h->node[i];
     if (!ttisnil(&n->i_val)) {
       assert(!ttisnil(&n->i_key));
       checkvalref(g, hgc, &n->i_key);
