@@ -11,9 +11,6 @@
 #include <limits.h>
 #include <stddef.h>
 
-#include "LuaTypes.h"
-
-
 /*
 ** ==================================================================
 ** Search for "@@" to find all configurable definitions.

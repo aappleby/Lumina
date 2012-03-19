@@ -139,7 +139,7 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
        table has no metatable, so it does not need to invalidate cache */
     /* t[string] = true */
     o[0] = true;
-    luaC_checkGC(L);
+    luaC_checkGC();
   }
   L->top--;  /* remove string from stack */
   return ts;

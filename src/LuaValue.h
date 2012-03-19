@@ -43,6 +43,8 @@ public:
   int32_t tagtype() const  { return tt_ & 0x3f; }
   int32_t basetype() const { return tt_ & 0x0f; }
 
+  void clear() { bytes = 0; tt_ = 0; }
+
 
   void setBool  (int x)     { b = x; tt_ = LUA_TBOOLEAN; }
   void setValue (TValue* x) { bytes = x->bytes; tt_ = x->tt_; }
@@ -146,8 +148,8 @@ public:
 #define setpvalue(obj,x) \
   { TValue *io=(obj); io->p=(x); settt_(io, LUA_TLIGHTUSERDATA); }
 
-#define setgcovalue(L,obj,x) \
-  { THREAD_CHECK(L); TValue *io=(obj); LuaObject *i_g=(x); \
+#define setgcovalue(obj,x) \
+  { TValue *io=(obj); LuaObject *i_g=(x); \
     io->gc=i_g; settt_(io, ctb(gch(i_g)->tt)); }
 
 #define setuvalue(L,obj,x) \

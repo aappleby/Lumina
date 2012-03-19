@@ -43,13 +43,13 @@ const char lua_ident[] =
 #define api_checkvalidindex(i)  api_check(isvalid(i), "invalid index")
 
 void api_checknelems(lua_State* L, int n) {
-  api_check((n) < (L->top - L->ci->func), "not enough elements in the stack");
+  api_check((n) < (L->top - L->ci_->func), "not enough elements in the stack");
 }
 
 
 static TValue *index2addr (lua_State *L, int idx) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->ci;
+  CallInfo *ci = L->ci_;
   if (idx > 0) {
     TValue *o = ci->func + idx;
     api_check(idx <= ci->top - (ci->func + 1), "unacceptable index");
@@ -89,7 +89,7 @@ static void growstack (lua_State *L, void *ud) {
 int lua_checkstack (lua_State *L, int size) {
   THREAD_CHECK(L);
   int res;
-  CallInfo *ci = L->ci;
+  CallInfo *ci = L->ci_;
   if (L->stack_last - L->top > size)  /* stack large enough? */
     res = 1;  /* yes; check is OK */
   else {  /* no; need to grow stack */
@@ -111,7 +111,7 @@ void lua_xmove (lua_State *from, lua_State *to, int n) {
   if (from == to) return;
   api_checknelems(from, n);
   api_check(G(from) == G(to), "moving among independent states");
-  api_check(to->ci->top - to->top >= n, "not enough elements to move");
+  api_check(to->ci_->top - to->top >= n, "not enough elements to move");
   from->top -= n;
   {
     THREAD_CHANGE(to);
@@ -152,18 +152,18 @@ int lua_absindex (lua_State *L, int idx) {
   THREAD_CHECK(L);
   return (idx > 0 || idx <= LUA_REGISTRYINDEX)
          ? idx
-         : cast_int(L->top - L->ci->func + idx);
+         : cast_int(L->top - L->ci_->func + idx);
 }
 
 
 int lua_gettop (lua_State *L) {
-  return cast_int(L->top - (L->ci->func + 1));
+  return cast_int(L->top - (L->ci_->func + 1));
 }
 
 
 void lua_settop (lua_State *L, int idx) {
   THREAD_CHECK(L);
-  StkId func = L->ci->func;
+  StkId func = L->ci_->func;
   if (idx >= 0) {
     api_check(idx <= L->stack_last - (func + 1), "new top too large");
     while (L->top < (func + 1) + idx)
@@ -204,7 +204,7 @@ static void moveto (lua_State *L, TValue *fr, int idx) {
   api_checkvalidindex(to);
   setobj(to, fr);
   if (idx < LUA_REGISTRYINDEX)  /* function upvalue? */
-    luaC_barrier(clCvalue(L->ci->func), fr);
+    luaC_barrier(clCvalue(L->ci_->func), fr);
   /* LUA_REGISTRYINDEX does not need gc barrier
      (collector revisits it before finishing collection) */
 }
@@ -397,7 +397,7 @@ const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
       if (len != NULL) *len = 0;
       return NULL;
     }
-    luaC_checkGC(L);
+    luaC_checkGC();
     o = index2addr(L, idx);  /* previous call may reallocate the stack */
   }
   if (len != NULL) *len = tsvalue(o)->getLen();
@@ -503,7 +503,7 @@ void lua_pushunsigned (lua_State *L, lua_Unsigned u) {
 const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
   THREAD_CHECK(L);
   TString *ts;
-  luaC_checkGC(L);
+  luaC_checkGC();
   ts = luaS_newlstr(s, len);
   L->top[0] = ts;
   api_incr_top(L);
@@ -519,7 +519,7 @@ const char *lua_pushstring (lua_State *L, const char *s) {
   }
   else {
     TString *ts;
-    luaC_checkGC(L);
+    luaC_checkGC();
     ts = luaS_new(s);
     L->top[0] = ts;
     api_incr_top(L);
@@ -532,7 +532,7 @@ const char *lua_pushvfstring (lua_State *L, const char *fmt,
                                       va_list argp) {
   THREAD_CHECK(L);
   const char *ret;
-  luaC_checkGC(L);
+  luaC_checkGC();
   ret = luaO_pushvfstring(fmt, argp);
   return ret;
 }
@@ -542,7 +542,7 @@ const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
   THREAD_CHECK(L);
   const char *ret;
   va_list argp;
-  luaC_checkGC(L);
+  luaC_checkGC();
   va_start(argp, fmt);
   ret = luaO_pushvfstring(fmt, argp);
   va_end(argp);
@@ -559,7 +559,7 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
     Closure *cl;
     api_checknelems(L, n);
     api_check(n <= MAXUPVAL, "upvalue index too large");
-    luaC_checkGC(L);
+    luaC_checkGC();
     cl = luaF_newCclosure(n);
     cl->f = fn;
     L->top -= n;
@@ -664,7 +664,7 @@ void lua_rawgetp (lua_State *L, int idx, const void *p) {
 void lua_createtable (lua_State *L, int narray, int nrec) {
   THREAD_CHECK(L);
   Table *t;
-  luaC_checkGC(L);
+  luaC_checkGC();
   t = luaH_new();
   sethvalue(L, L->top, t);
   api_incr_top(L);
@@ -860,15 +860,15 @@ void lua_setuservalue (lua_State *L, int idx) {
 
 
 #define checkresults(L,na,nr) \
-     api_check((nr) == LUA_MULTRET || (L->ci->top - L->top >= (nr) - (na)), \
+     api_check((nr) == LUA_MULTRET || (L->ci_->top - L->top >= (nr) - (na)), \
 	"results from function overflow current stack size")
 
 
 int lua_getctx (lua_State *L, int *ctx) {
   THREAD_CHECK(L);
-  if (L->ci->callstatus & CIST_YIELDED) {
-    if (ctx) *ctx = L->ci->ctx;
-    return L->ci->status;
+  if (L->ci_->callstatus & CIST_YIELDED) {
+    if (ctx) *ctx = L->ci_->ctx;
+    return L->ci_->status;
   }
   else return LUA_OK;
 }
@@ -878,15 +878,15 @@ void lua_callk (lua_State *L, int nargs, int nresults, int ctx,
                         lua_CFunction k) {
   THREAD_CHECK(L);
   StkId func;
-  api_check(k == NULL || !isLua(L->ci),
+  api_check(k == NULL || !isLua(L->ci_),
     "cannot use continuations inside hooks");
   api_checknelems(L, nargs+1);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
   checkresults(L, nargs, nresults);
   func = L->top - (nargs+1);
   if (k != NULL && L->nny == 0) {  /* need to prepare continuation? */
-    L->ci->k = k;  /* save continuation */
-    L->ci->ctx = ctx;  /* save context */
+    L->ci_->k = k;  /* save continuation */
+    L->ci_->ctx = ctx;  /* save context */
     luaD_call(L, func, nresults, 1);  /* do the call */
   }
   else  /* no continuation or no yieldable */
@@ -917,7 +917,7 @@ int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
   struct CallS c;
   int status;
   ptrdiff_t func;
-  api_check(k == NULL || !isLua(L->ci),
+  api_check(k == NULL || !isLua(L->ci_),
     "cannot use continuations inside hooks");
   api_checknelems(L, nargs+1);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
@@ -935,7 +935,7 @@ int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
     status = luaD_pcall(L, f_call, &c, savestack(L, c.func), func);
   }
   else {  /* prepare continuation (call is already protected by 'resume') */
-    CallInfo *ci = L->ci;
+    CallInfo *ci = L->ci_;
     ci->k = k;  /* save continuation */
     ci->ctx = ctx;  /* save context */
     /* save information for error recovery */
@@ -1033,11 +1033,11 @@ int lua_gc (lua_State *L, int what, int data) {
     case LUA_GCSTEP: {
       if (g->gckind == KGC_GEN) {  /* generational mode? */
         res = (g->lastmajormem == 0);  /* 1 if will do major collection */
-        luaC_forcestep(L);  /* do a single step */
+        luaC_forcestep();  /* do a single step */
       }
       else {
         while (data-- >= 0) {
-          luaC_forcestep(L);
+          luaC_forcestep();
           if (g->gcstate == GCSpause) {  /* end of cycle? */
             res = 1;  /* signal it */
             break;
@@ -1113,7 +1113,7 @@ void lua_concat (lua_State *L, int n) {
   THREAD_CHECK(L);
   api_checknelems(L, n);
   if (n >= 2) {
-    luaC_checkGC(L);
+    luaC_checkGC();
     luaV_concat(L, n);
   }
   else if (n == 0) {  /* push empty string */
@@ -1136,7 +1136,7 @@ void lua_len (lua_State *L, int idx) {
 void *lua_newuserdata (lua_State *L, size_t size) {
   THREAD_CHECK(L);
   Udata *u;
-  luaC_checkGC(L);
+  luaC_checkGC();
   u = luaS_newudata(size, NULL);
   setuvalue(L, L->top, u);
   api_incr_top(L);

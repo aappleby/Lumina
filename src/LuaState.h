@@ -18,7 +18,7 @@ public:
   uint8_t status;
   StkId top;  /* first free slot in the stack */
   global_State *l_G;
-  CallInfo *ci;  /* call info for current function */
+  CallInfo *ci_;  /* call info for current function */
   const Instruction *oldpc;  /* last pc traced */
   TValue* stack_last;  /* last free slot in the stack */
   LuaVector<TValue> stack;
@@ -34,5 +34,8 @@ public:
   lua_longjmp *errorJmp;  /* current error recover point */
   ptrdiff_t errfunc;  /* current error handling function (stack index) */
   CallInfo base_ci;  /* CallInfo for first level (C calling Lua) */
+
+  int stackinuse();
+  void shrinkstack();
 };
 

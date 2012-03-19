@@ -55,8 +55,8 @@ int lua_sethook (lua_State *L, lua_Hook func, int mask, int count) {
     mask = 0;
     func = NULL;
   }
-  if (isLua(L->ci))
-    L->oldpc = L->ci->savedpc;
+  if (isLua(L->ci_))
+    L->oldpc = L->ci_->savedpc;
   L->hook = func;
   L->basehookcount = count;
   L->hookcount = L->basehookcount;
@@ -88,7 +88,7 @@ int lua_getstack (lua_State *L, int level, lua_Debug *ar) {
   int status;
   CallInfo *ci;
   if (level < 0) return 0;  /* invalid (negative) level */
-  for (ci = L->ci; level > 0 && ci != &L->base_ci; ci = ci->previous)
+  for (ci = L->ci_; level > 0 && ci != &L->base_ci; ci = ci->previous)
     level--;
   if (level == 0 && ci != &L->base_ci) {  /* level found? */
     status = 1;
@@ -133,7 +133,7 @@ static const char *findlocal (lua_State *L, CallInfo *ci, int n,
   else
     base = ci->func + 1;
   if (name == NULL) {  /* no 'standard' name? */
-    StkId limit = (ci == L->ci) ? L->top : ci->next->func;
+    StkId limit = (ci == L->ci_) ? L->top : ci->next->func;
     if (limit - base >= n && n > 0)  /* is 'n' inside 'ci' stack? */
       name = "(*temporary)";  /* generic name for any valid slot */
     else
@@ -501,7 +501,7 @@ static const char *getupvalname (CallInfo *ci, const TValue *o,
 
 l_noret luaG_typeerror (const TValue *o, const char *op) {
   lua_State*L = thread_L;
-  CallInfo *ci = L->ci;
+  CallInfo *ci = L->ci_;
   const char *name = NULL;
   const char *t = objtypename(o);
   const char *kind = NULL;
@@ -546,7 +546,7 @@ l_noret luaG_ordererror (const TValue *p1, const TValue *p2) {
 
 static void addinfo (const char *msg) {
   lua_State* L = thread_L;
-  CallInfo *ci = L->ci;
+  CallInfo *ci = L->ci_;
   if (isLua(ci)) {  /* is Lua code? */
     char buff[LUA_IDSIZE];  /* add file:line information */
     int line = currentline(ci);

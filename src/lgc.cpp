@@ -655,7 +655,6 @@ static LuaObject **sweeplist (LuaObject **p, size_t count);
 ** list of call-info structures.
 */
 static void sweepthread (lua_State *L1) {
-  lua_State *L = thread_L;
   if (L1->stack.empty()) return;  /* stack not completely built yet */
   sweepwholelist(&L1->openupval);  /* sweep open upvalues */
   {
@@ -663,9 +662,9 @@ static void sweepthread (lua_State *L1) {
     luaE_freeCI(L1);  /* free extra CallInfo slots */
   }
   /* should not change the stack during an emergency gc cycle */
-  if (G(L)->gckind != KGC_EMERGENCY) {
+  if (thread_G->gckind != KGC_EMERGENCY) {
     THREAD_CHANGE(L1);
-    luaD_shrinkstack(L1);
+    L1->shrinkstack();
   }
 }
 
@@ -762,12 +761,12 @@ static void dothecall (lua_State *L, void *ud) {
 }
 
 
-static void GCTM (lua_State *L, int propagateerrors) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+static void GCTM (int propagateerrors) {
+  lua_State* L = thread_L;
+  global_State *g = thread_G;
   const TValue *tm;
   TValue v;
-  setgcovalue(L, &v, udata2finalize(g));
+  setgcovalue(&v, udata2finalize(g));
   tm = luaT_gettmbyobj(&v, TM_GC);
   if (tm != NULL && ttisfunction(tm)) {  /* is there a finalizer? */
     int status;
@@ -882,23 +881,21 @@ void luaC_changemode (lua_State *L, int mode) {
 /*
 ** call all pending finalizers
 */
-static void callallpendingfinalizers (lua_State *L, int propagateerrors) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+static void callallpendingfinalizers (int propagateerrors) {
+  global_State *g = thread_G;
   while (g->tobefnz) {
     resetoldbit(g->tobefnz);
-    GCTM(L, propagateerrors);
+    GCTM(propagateerrors);
   }
 }
 
 
-void luaC_freeallobjects (lua_State *L) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+void luaC_freeallobjects () {
+  global_State *g = thread_G;
   int i;
   separatetobefnz(1);  /* separate all objects with finalizers */
   assert(g->finobj == NULL);
-  callallpendingfinalizers(L, 0);
+  callallpendingfinalizers(0);
   g->currentwhite = WHITEBITS; /* this "white" makes all objects look dead */
   g->gckind = KGC_NORMAL;
   sweepwholelist(&g->finobj);  /* finalizers can create objs. in 'finobj' */
@@ -1017,9 +1014,8 @@ void luaC_runtilstate (int statesmask) {
 }
 
 
-static void generationalcollection (lua_State *L) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+static void generationalcollection () {
+  global_State *g = thread_G;
   if (g->lastmajormem == 0) {  /* signal for another major collection? */
     luaC_fullgc(0);  /* perform a full regular collection */
     g->lastmajormem = gettotalbytes(g);  /* update control */
@@ -1034,9 +1030,8 @@ static void generationalcollection (lua_State *L) {
 }
 
 
-static void step (lua_State *L) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+static void step () {
+  global_State *g = thread_G;
   l_mem lim = g->gcstepmul;  /* how much to work */
   do {  /* always perform at least one single step */
     lim -= singlestep();
@@ -1051,23 +1046,28 @@ static void step (lua_State *L) {
 /*
 ** performs a basic GC step even if the collector is stopped
 */
-void luaC_forcestep (lua_State *L) {
-  THREAD_CHECK(L);
-  global_State *g = G(L);
+void luaC_forcestep () {
+  global_State *g = thread_G;
   int i;
-  if (isgenerational(g)) generationalcollection(L);
-  else step(L);
-  for (i = 0; i < GCFINALIZENUM && g->tobefnz; i++)
-    GCTM(L, 1);  /* Call a few pending finalizers */
+  if (isgenerational(g)) generationalcollection();
+  else step();
+  for (i = 0; i < GCFINALIZENUM && g->tobefnz; i++) {
+    GCTM(1);  /* Call a few pending finalizers */
+  }
 }
 
+
+void luaC_checkGC() {
+  if(thread_G->GCdebt > 0) {
+    luaC_step();
+  }
+}
 
 /*
 ** performs a basic GC step only if collector is running
 */
-void luaC_step (lua_State *L) {
-  THREAD_CHECK(L);
-  if (G(L)->gcrunning) luaC_forcestep(L);
+void luaC_step () {
+  if (thread_G->gcrunning) luaC_forcestep();
 }
 
 
@@ -1081,7 +1081,7 @@ void luaC_fullgc (int isemergency) {
   int origkind = g->gckind;
   assert(origkind != KGC_EMERGENCY);
   if (!isemergency)   /* do not run finalizers during emergency GC */
-    callallpendingfinalizers(L, 1);
+    callallpendingfinalizers(1);
   if (keepinvariant(g)) {  /* marking phase? */
     /* must sweep all objects to turn them back to white
        (as white has not changed, nothing will be collected) */
@@ -1101,7 +1101,7 @@ void luaC_fullgc (int isemergency) {
   g->gckind = origkind;
   luaE_setdebt(g, stddebt(g));
   if (!isemergency)   /* do not run finalizers during emergency GC */
-    callallpendingfinalizers(L, 1);
+    callallpendingfinalizers(1);
 }
 
 /* }====================================================== */

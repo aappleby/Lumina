@@ -567,7 +567,7 @@ static void close_func (LexState *ls) {
   /* last token read was anchored in defunct function; must re-anchor it */
   anchor_token(ls);
   L->top--;  /* pop table of constants */
-  luaC_checkGC(L);
+  luaC_checkGC();
   L->top--;  /* pop prototype (after possible collection) */
 }
 

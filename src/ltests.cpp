@@ -30,7 +30,7 @@
 #include "lualib.h"
 
 
-#define obj_at(L,k)	(L->ci->func + (k))
+#define obj_at(L,k)	(L->ci_->func + (k))
 
 
 static void setnameval (lua_State *L, const char *name, int val) {
@@ -192,7 +192,7 @@ static void checkstack (global_State *g, lua_State *L1) {
     assert(uv->v != &uv->value);  /* must be open */
     assert(!isblack(uvo));  /* open upvalues cannot be black */
   }
-  for (ci = L1->ci; ci != NULL; ci = ci->previous) {
+  for (ci = L1->ci_; ci != NULL; ci = ci->previous) {
     assert(ci->top <= L1->stack_last);
     assert(lua_checkpc(ci));
   }
@@ -508,12 +508,12 @@ static int gc_state (lua_State *L) {
     "sweepstring", "sweepudata", "sweep", "pause", ""};
   int option = luaL_checkoption(L, 1, "", statenames);
   if (option == GCSpause + 1) {
-    lua_pushstring(L, statenames[G(L)->gcstate]);
+    lua_pushstring(L, statenames[thread_G->gcstate]);
     return 1;
   }
   else {
     luaC_runtilstate(bitmask(option));
-    assert(G(L)->gcstate == option);
+    assert(thread_G->gcstate == option);
     return 0;
   }
 }

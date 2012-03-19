@@ -62,7 +62,7 @@ int luaV_tostring (lua_State *L, StkId obj) {
 
 static void traceexec (lua_State *L) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->ci;
+  CallInfo *ci = L->ci_;
   uint8_t mask = L->hookmask;
   if ((mask & LUA_MASKCOUNT) && L->hookcount == 0) {
     L->hookcount = L->basehookcount;
@@ -96,7 +96,7 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
     setobj(L->top++, p3);  /* 3rd argument */
   luaD_checkstack(L, 0);
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->top - (4 - hasres), hasres, isLua(L->ci));
+  luaD_call(L, L->top - (4 - hasres), hasres, isLua(L->ci_));
   if (hasres) {  /* if has result, move it to its place */
     p3 = restorestack(L, result);
     setobj(p3, --L->top);
@@ -448,7 +448,7 @@ static void pushclosure (lua_State *L, Proto *p, UpVal **encup, StkId base,
 */
 void luaV_finishOp (lua_State *L) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->ci;
+  CallInfo *ci = L->ci_;
   StkId base = ci->base;
   Instruction inst = *(ci->savedpc - 1);  /* interrupted instruction */
   OpCode op = GET_OPCODE(inst);
@@ -556,12 +556,12 @@ void luaV_finishOp (lua_State *L) {
 
 void luaV_execute (lua_State *L) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->ci;
+  CallInfo *ci = L->ci_;
   Closure *cl;
   TValue *k;
   StkId base;
  newframe:  /* reentry point when frame changes (call/return) */
-  assert(ci == L->ci);
+  assert(ci == L->ci_);
   cl = clLvalue(ci->func);
   k = cl->p->constants.begin();
   base = ci->base;
@@ -633,7 +633,7 @@ void luaV_execute (lua_State *L) {
           luaH_resize(t, luaO_fb2int(b), luaO_fb2int(c));
         checkGC(L,
           L->top = ra + 1;  /* limit of live values */
-          luaC_step(L);
+          luaC_step();
           L->top = ci->top;  /* restore top */
         )
       )
@@ -689,7 +689,7 @@ void luaV_execute (lua_State *L) {
         setobj(ra, rb);
         checkGC(L,
           L->top = (ra >= rb ? ra + 1 : rb);  /* limit of live values */
-          luaC_step(L);
+          luaC_step();
         )
         L->top = ci->top;  /* restore top */
       )
@@ -746,7 +746,7 @@ void luaV_execute (lua_State *L) {
           base = ci->base;
         }
         else {  /* Lua function */
-          ci = L->ci;
+          ci = L->ci_;
           ci->callstatus |= CIST_REENTRY;
           goto newframe;  /* restart luaV_execute over new Lua function */
         }
@@ -759,7 +759,7 @@ void luaV_execute (lua_State *L) {
           base = ci->base;
         else {
           /* tail call: put called frame (n) in place of caller one (o) */
-          CallInfo *nci = L->ci;  /* called frame */
+          CallInfo *nci = L->ci_;  /* called frame */
           CallInfo *oci = nci->previous;  /* caller frame */
           StkId nfunc = nci->func;  /* called function */
           StkId ofunc = oci->func;  /* caller function */
@@ -775,7 +775,7 @@ void luaV_execute (lua_State *L) {
           oci->top = L->top = ofunc + (L->top - nfunc);  /* correct top */
           oci->savedpc = nci->savedpc;
           oci->callstatus |= CIST_TAIL;  /* function was tail called */
-          ci = L->ci = oci;  /* remove new frame */
+          ci = L->ci_ = oci;  /* remove new frame */
           assert(L->top == oci->base + getproto(ofunc)->maxstacksize);
           goto newframe;  /* restart luaV_execute over new Lua function */
         }
@@ -788,7 +788,7 @@ void luaV_execute (lua_State *L) {
         if (!(ci->callstatus & CIST_REENTRY))  /* 'ci' still the called one */
           return;  /* external invocation: return */
         else {  /* invocation via reentry: continue execution */
-          ci = L->ci;
+          ci = L->ci_;
           if (b) L->top = ci->top;
           assert(isLua(ci));
           assert(GET_OPCODE(*((ci)->savedpc - 1)) == OP_CALL);
@@ -870,7 +870,7 @@ void luaV_execute (lua_State *L) {
           setclLvalue(L, ra, ncl);  /* push cashed closure */
         checkGC(L,
           L->top = ra + 1;  /* limit of live values */
-          luaC_step(L);
+          luaC_step();
           L->top = ci->top;  /* restore top */
         )
       )

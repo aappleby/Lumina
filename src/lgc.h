@@ -101,9 +101,11 @@
 #define luaC_white(g)	cast(uint8_t, (g)->currentwhite & WHITEBITS)
 
 
-#define luaC_condGC(L,c) \
-	{if (G(L)->GCdebt > 0) {c;};}
-#define luaC_checkGC(L)		luaC_condGC(L, luaC_step(L);)
+#define luaC_condGC(L,c) {if (thread_G->GCdebt > 0) {c;};}
+
+void luaC_step();
+
+void luaC_checkGC();
 
 
 #define luaC_barrier(p,v) { if (valiswhite(v) && isblack(obj2gco(p)))	luaC_barrier_(obj2gco(p),gcvalue(v)); }
@@ -119,9 +121,9 @@
 #define luaC_barrierproto(p,c) \
    { if (isblack(obj2gco(p))) luaC_barrierproto_(p,c); }
 
-void luaC_freeallobjects (lua_State *L);
-void luaC_step (lua_State *L);
-void luaC_forcestep (lua_State *L);
+void luaC_freeallobjects ();
+void luaC_step ();
+void luaC_forcestep ();
 void luaC_runtilstate (int statesmask);
 void luaC_fullgc (int isemergency);
 LuaObject *luaC_newobj (int tt, size_t sz, LuaObject **list);

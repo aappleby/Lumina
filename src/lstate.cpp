@@ -53,9 +53,9 @@ void luaE_setdebt (global_State *g, l_mem debt) {
 CallInfo *luaE_extendCI (lua_State *L) {
   THREAD_CHECK(L);
   CallInfo *ci = (CallInfo*)luaM_alloc(sizeof(CallInfo), LAP_RUNTIME);
-  assert(L->ci->next == NULL);
-  L->ci->next = ci;
-  ci->previous = L->ci;
+  assert(L->ci_->next == NULL);
+  L->ci_->next = ci;
+  ci->previous = L->ci_;
   ci->next = NULL;
   return ci;
 }
@@ -63,7 +63,7 @@ CallInfo *luaE_extendCI (lua_State *L) {
 
 void luaE_freeCI (lua_State *L) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->ci;
+  CallInfo *ci = L->ci_;
   CallInfo *next = ci->next;
   ci->next = NULL;
   while ((ci = next) != NULL) {
@@ -89,7 +89,7 @@ static void stack_init (lua_State *L1, lua_State *L) {
   ci->func = L1->top;
   setnilvalue(L1->top++);  /* 'function' entry for this 'ci' */
   ci->top = L1->top + LUA_MINSTACK;
-  L1->ci = ci;
+  L1->ci_ = ci;
 }
 
 
@@ -97,7 +97,7 @@ static void freestack (lua_State *L) {
   THREAD_CHECK(L);
   if (L->stack.empty())
     return;  /* stack not completely built yet */
-  L->ci = &L->base_ci;  /* free the entire 'ci' list */
+  L->ci_ = &L->base_ci;  /* free the entire 'ci' list */
   luaE_freeCI(L);
   L->stack.clear();
 }
@@ -149,7 +149,7 @@ static void preinit_state (lua_State *L, global_State *g) {
   //THREAD_CHECK(L);
   G(L) = g;
   L->stack.init();
-  L->ci = NULL;
+  L->ci_ = NULL;
   L->errorJmp = NULL;
   L->nCcalls = 0;
   L->hook = NULL;
@@ -168,7 +168,7 @@ static void close_state (lua_State *L) {
   THREAD_CHECK(L);
   global_State *g = G(L);
   luaF_close(L->stack.begin());  /* close all upvalues for this thread */
-  luaC_freeallobjects(L);  /* collect all objects */
+  luaC_freeallobjects();  /* collect all objects */
   luaS_freestrt();
 
   g->buff.buffer.clear();
@@ -184,7 +184,7 @@ static void close_state (lua_State *L) {
 lua_State *lua_newthread (lua_State *L) {
   THREAD_CHECK(L);
   lua_State *L1;
-  luaC_checkGC(L);
+  luaC_checkGC();
   LuaObject* o = luaC_newobj(LUA_TTHREAD, sizeof(lua_State), NULL);
   L1 = gco2th(o);
   setthvalue(L, L->top, L1);

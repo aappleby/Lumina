@@ -42,14 +42,6 @@
 struct lua_longjmp;  /* defined in ldo.c */
 
 
-
-/* extra stack space to handle TM calls and some other extras */
-#define EXTRA_STACK   5
-
-
-#define BASIC_STACK_SIZE        (2*LUA_MINSTACK)
-
-
 /* kinds of Garbage Collection */
 #define KGC_NORMAL	0
 #define KGC_EMERGENCY	1	/* gc was forced by an allocation failure */

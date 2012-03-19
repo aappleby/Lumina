@@ -38,3 +38,11 @@
 #define LUA_ERRERR	6
 
 
+
+
+
+/* extra stack space to handle TM calls and some other extras */
+#define EXTRA_STACK   5
+#define BASIC_STACK_SIZE        (2*LUA_MINSTACK)
+
+#include "luaconf.h"
