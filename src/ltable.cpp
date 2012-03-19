@@ -280,6 +280,7 @@ static void setnodevector (Table *t, int size) {
   if (size == 0) {
     //t->node = cast(Node *, dummynode);  // use common `dummynode'
     //t->sizenode = 1;
+    t->node2_.clear();
     t->node_ = NULL;
     t->sizenode = 0;
     t->lastfree = 0;
@@ -288,7 +289,9 @@ static void setnodevector (Table *t, int size) {
     int lsize = luaO_ceillog2(size);
     size = 1 << lsize;
     t->node_ = (Node*)luaM_alloc(size * sizeof(Node));
+    //t->node2_.resize(size);
     memset(t->node_, 0, size * sizeof(Node));
+    if(t->node2_.size()) memset(t->node2_.begin(), 0, t->node2_.size() * sizeof(Node));
     t->sizenode = size;
     t->lastfree = size; // all positions are free
   }
@@ -381,6 +384,7 @@ void luaH_free (Table *t) {
   if (t->sizenode) {
     luaM_free(t->node_, t->sizenode * sizeof(Node));
   }
+  t->node2_.clear();
   t->array.clear();
   luaM_delobject(t, sizeof(Table), LUA_TTABLE);
 }

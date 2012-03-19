@@ -22,6 +22,7 @@ public:
   Table *metatable;
   LuaVector<TValue> array;
   Node *node_;
+  LuaVector<Node> node2_;
 
   Node* getNode(int i) {
     assert(node_);
