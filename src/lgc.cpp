@@ -344,7 +344,7 @@ static void traverseweakvalue (global_State *g, Table *h) {
      traverse it just to check) */
   int hasclears = !h->array.empty();
   for(int i = 0; i < h->sizenode; i++) {
-    Node* n = &h->node[i];
+    Node* n = h->getNode(i);
     checkdeadkey(n);
     if (ttisnil(&n->i_val))  /* entry is empty? */
       removeentry(n);  /* remove it */
@@ -375,7 +375,7 @@ static int traverseephemeron (global_State *g, Table *h) {
   }
   /* traverse hash part */
   for (int i = 0; i < h->sizenode; i++) {
-    Node* n = &h->node[i];
+    Node* n = h->getNode(i);
     checkdeadkey(n);
     if (ttisnil(&n->i_val))  /* entry is empty? */
       removeentry(n);  /* remove it */
@@ -403,7 +403,7 @@ static void traversestrongtable (global_State *g, Table *h) {
   for (int i = 0; i < (int)h->array.size(); i++)  /* traverse array part */
     markvalue(g, &h->array[i]);
   for(int i = 0; i < h->sizenode; i++) {
-    Node* n = &h->node[i];
+    Node* n = h->getNode(i);
     checkdeadkey(n);
     if (ttisnil(&n->i_val))  /* entry is empty? */
       removeentry(n);  /* remove it */
@@ -596,7 +596,7 @@ static void clearkeys (LuaObject *l, LuaObject *f) {
   for (; l != f; l = gco2t(l)->gclist) {
     Table *h = gco2t(l);
     for(int i = 0; i < h->sizenode; i++) {
-      Node* n = &h->node[i];
+      Node* n = h->getNode(i);
       if (!ttisnil(&n->i_val) && (iscleared(&n->i_key))) {
         setnilvalue(&n->i_val);  /* remove value ... */
         removeentry(n);  /* and remove entry from table */
@@ -619,7 +619,7 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
         setnilvalue(o);  /* remove value */
     }
     for(int i = 0; i < h->sizenode; i++) {
-      Node* n = &h->node[i];
+      Node* n = h->getNode(i);
       if (!ttisnil(&n->i_val) && iscleared(&n->i_val)) {
         setnilvalue(&n->i_val);  /* remove value ... */
         removeentry(n);  /* and remove entry from table */

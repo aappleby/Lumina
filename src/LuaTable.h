@@ -21,7 +21,22 @@ public:
   int sizenode;
   Table *metatable;
   LuaVector<TValue> array;
-  Node *node;
+  Node *node_;
+
+  Node* getNode(int i) {
+    assert(node_);
+    assert(i >= 0);
+    assert(i < sizenode);
+    return &node_[i];
+  }
+
+  const Node* getNode(int i) const {
+    assert(node_);
+    assert(i >= 0);
+    assert(i < sizenode);
+    return &node_[i];
+  }
+
   //LuaVector<Node> node;
   int lastfree;
   LuaObject *gclist;

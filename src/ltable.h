@@ -10,7 +10,7 @@
 #include "lobject.h"
 
 
-#define gnode(t,i)	(&(t)->node[i])
+#define gnode(t,i)	((t)->getNode(i))
 
 const TValue *luaH_getint (Table *t, int key);
 void luaH_setint (Table *t, int key, TValue *value);

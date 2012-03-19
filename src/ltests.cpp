@@ -111,7 +111,7 @@ static void checktable (global_State *g, Table *h) {
   for (int i = 0; i < (int)h->array.size(); i++)
     checkvalref(g, hgc, &h->array[i]);
   for(int i = 0; i < h->sizenode; i++) {
-    Node* n = &h->node[i];
+    Node* n = h->getNode(i);
     if (!ttisnil(&n->i_val)) {
       assert(!ttisnil(&n->i_key));
       checkvalref(g, hgc, &n->i_key);
@@ -532,7 +532,7 @@ static int hash_query (lua_State *L) {
     Table *t;
     luaL_checktype(L, 2, LUA_TTABLE);
     t = hvalue(obj_at(L, 2));
-    lua_pushinteger(L, luaH_mainposition(t, o) - &t->node[0]);
+    lua_pushinteger(L, luaH_mainposition(t, o) - t->getNode(0));
   }
   return 1;
 }
@@ -573,8 +573,8 @@ static int table_query (lua_State *L) {
     else
       lua_pushliteral(L, "<undef>");
     pushobject(L, &gnode(t, i)->i_val);
-    if (t->node[i].next)
-      lua_pushinteger(L, t->node[i].next - &t->node[0]);
+    if (t->getNode(i)->next)
+      lua_pushinteger(L, t->getNode(i)->next - t->getNode(0));
     else
       lua_pushnil(L);
   }

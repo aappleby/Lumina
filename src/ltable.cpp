@@ -51,7 +51,7 @@ void luaH_setint_hash (Table *t, int key, TValue *value);
 Node* hashpow2(Table* t, uint32_t n) {
   if(t->sizenode == 0) return NULL;
   uint32_t mask = t->sizenode - 1;
-  return &t->node[n & mask];
+  return t->getNode(n & mask);
 }
 
 #define hashstr(t,str)   hashpow2(t, (str)->getHash())
@@ -95,7 +95,7 @@ static Node* hashpointer (Table* t, void* p ) {
     hash = hash32(block[0]);
   }
   uint32_t mask = t->sizenode - 1;
-  return &t->node[hash & mask];
+  return t->getNode(hash & mask);
 }
 
 // Well damn, test suite goes from 21.5 to 18.9 seconds just by changing to
@@ -105,7 +105,7 @@ static Node* hashnum (Table* t, lua_Number n) {
   uint32_t* block = reinterpret_cast<uint32_t*>(&n);
   uint32_t hash = hash64(block[0],block[1]);
   uint32_t mask = t->sizenode - 1;
-  return &t->node[hash & mask];
+  return t->getNode(hash & mask);
 }
 
 /*
@@ -150,7 +150,7 @@ static int findindex (Table *t, TValue key) {
   for (;;) {
     bool equal = luaV_rawequalobj(&n->i_key, &key);
     if (equal || (ttisdeadkey(&n->i_key) && iscollectable(&key) && deadvalue(&n->i_key) == gcvalue(&key))) {
-      return (int)(n - &t->node[0]) + (int)t->array.size();
+      return (int)(n - t->getNode(0)) + (int)t->array.size();
     }
     else n = n->next;
     if (n == NULL)
@@ -172,7 +172,7 @@ int luaH_next (Table *t, StkId stack) {
   }
   i -= (int)t->array.size();
   for (; i < t->sizenode; i++) {
-    Node& n = t->node[i];
+    Node& n = *t->getNode(i);
     if (!n.i_val.isNil()) {
       stack[0] = n.i_key;
       stack[1] = n.i_val;
@@ -253,7 +253,7 @@ static int numusehash (Table *t, int *nums, int *pnasize) {
   int ause = 0;  /* summation of `nums' */
   int i = t->sizenode;
   while (i--) {
-    Node *n = &t->node[i];
+    Node *n = t->getNode(i);
     if (!ttisnil(&n->i_val)) {
       ause += countint(&n->i_key, nums);
       totaluse++;
@@ -280,15 +280,15 @@ static void setnodevector (Table *t, int size) {
   if (size == 0) {
     //t->node = cast(Node *, dummynode);  // use common `dummynode'
     //t->sizenode = 1;
-    t->node = NULL;
+    t->node_ = NULL;
     t->sizenode = 0;
     t->lastfree = 0;
   }
   else {
     int lsize = luaO_ceillog2(size);
     size = 1 << lsize;
-    t->node = (Node*)luaM_alloc(size * sizeof(Node));
-    memset(&t->node[0], 0, size * sizeof(Node));
+    t->node_ = (Node*)luaM_alloc(size * sizeof(Node));
+    memset(t->node_, 0, size * sizeof(Node));
     t->sizenode = size;
     t->lastfree = size; // all positions are free
   }
@@ -299,7 +299,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   int i;
   int oldasize = (int)t->array.size();
   int oldhsize = t->sizenode;
-  Node *nold = t->node;  /* save old hash ... */
+  Node *nold = t->node_;  /* save old hash ... */
   if (nasize > oldasize)  /* array part must grow? */
     setarrayvector(t, nasize);
   /* create new hash part with appropriate size */
@@ -379,7 +379,7 @@ Table *luaH_new () {
 
 void luaH_free (Table *t) {
   if (t->sizenode) {
-    luaM_free(&t->node[0], t->sizenode * sizeof(Node));
+    luaM_free(t->node_, t->sizenode * sizeof(Node));
   }
   t->array.clear();
   luaM_delobject(t, sizeof(Table), LUA_TTABLE);
@@ -389,8 +389,9 @@ void luaH_free (Table *t) {
 static Node *getfreepos (Table *t) {
   while (t->lastfree > 0) {
     t->lastfree--;
-    if (ttisnil(&t->node[t->lastfree].i_key))
-      return &t->node[t->lastfree];
+    Node* last = t->getNode(t->lastfree);
+    if (ttisnil(&last->i_key))
+      return last;
   }
   return NULL;  /* could not find a free place */
 }
