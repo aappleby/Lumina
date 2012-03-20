@@ -180,18 +180,23 @@ static void close_state (lua_State *L) {
 
 lua_State *lua_newthread (lua_State *L) {
   THREAD_CHECK(L);
-  lua_State *L1;
+
   luaC_checkGC();
+
   LuaObject* o = luaC_newobj(LUA_TTHREAD, sizeof(lua_State), NULL);
-  L1 = gco2th(o);
+  lua_State* L1 = gco2th(o);
+
   setthvalue(L, L->top, L1);
   api_incr_top(L);
   preinit_state(L1, thread_G);
+  
   L1->hookmask = L->hookmask;
   L1->basehookcount = L->basehookcount;
   L1->hook = L->hook;
   L1->hookcount = L1->basehookcount;
+  
   L1->initstack();  /* init stack */
+  
   return L1;
 }
 

@@ -348,10 +348,10 @@ static void rehash (Table *t, const TValue *ek) {
 
 
 Table *luaH_new () {
-  void* newblock = luaM_newobject(LUA_TTABLE, sizeof(Table));
+  Table* t = (Table*)luaC_newobj(LUA_TTABLE, sizeof(Table), NULL);
 
-  Table* t = new(newblock) Table();
-  t->Init(LUA_TTABLE);
+  //Table* t = new(newblock) Table();
+  //t->Init(LUA_TTABLE);
   
   t->metatable = NULL;
   t->flags = cast_byte(~0);

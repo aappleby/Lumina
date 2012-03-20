@@ -199,27 +199,6 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
   }
 }
 
-
-/*
-** create a new collectable object (with given type and size) and link
-** it to '*list'. 'offset' tells how many bytes to allocate before the
-** object itself (used only by states).
-*/
-LuaObject *luaC_newobj (int tt, size_t sz, LuaObject **list) {
-  global_State *g = thread_G;
-  void* blob = luaM_newobject(tt,sz);
-  LuaObject *o = reinterpret_cast<LuaObject*>(blob);
-  
-  if (list == NULL)
-    list = &g->allgc;  /* standard list for collectable objects */
-  
-  gch(o)->marked = luaC_white(g);
-  gch(o)->tt = tt;
-  gch(o)->next = *list;
-  *list = o;
-  return o;
-}
-
 /* }====================================================== */
 
 

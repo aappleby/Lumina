@@ -37,5 +37,7 @@ void  luaM_free(void * blob, size_t size, int pool);
 void* luaM_newobject(int tag, size_t size);
 void  luaM_delobject(void * blob, size_t size, int type);
 
+LuaObject *luaC_newobj (int tt, size_t sz, LuaObject **list);
+
 #endif
 

@@ -8,6 +8,7 @@
 __declspec(align(8)) class TString : public LuaObject {
 public:
 
+  //TString(int type, LuaObject** list) : LuaObject(type,list) {}
   TString() {}
 
   size_t getLen() const { return len; }

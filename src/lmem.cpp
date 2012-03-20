@@ -159,11 +159,21 @@ void luaM_free_ (void *block, size_t size, int type, int pool) {
 
 //-----------------------------------------------------------------------------
 
-void* luaM_newobject(int type, size_t size) { 
-  assert(type > 0);
-  assert(type < LUA_ALLTAGS);
-  assert(size > 0);
-  return luaM_alloc_(size, type, LAP_OBJECT);
+/*
+** create a new collectable object (with given type and size) and link
+** it to '*list'. 'offset' tells how many bytes to allocate before the
+** object itself (used only by states).
+*/
+LuaObject *luaC_newobj (int type, size_t size, LuaObject **list) {
+  global_State *g = thread_G;
+  
+  //LuaObject* o = new(blob) LuaObject(type, list);
+  //LuaObject* o = new(type) LuaObject(type, list);
+
+  LuaObject* o = (LuaObject*)luaM_alloc_(size,type,LAP_OBJECT);
+  o->Init(type, list);
+  
+  return o;
 }
 
 void luaM_delobject(void * blob, size_t size, int type) {

@@ -15,7 +15,6 @@ public:
 
 class Table : public LuaObject {
 public:
-  Table() {}
 
   uint8_t flags;  /* 1<<p means tagmethod(p) is not present */
   Table *metatable;
