@@ -971,8 +971,8 @@ int lua_load (lua_State *L, lua_Reader reader, void *data,
       Table *reg = hvalue(&G(L)->l_registry);
       const TValue *gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
       /* set global table as 1st upvalue of 'f' (may be LUA_ENV) */
-      setobj(f->upvals[0]->v, gt);
-      luaC_barrier(f->upvals[0], gt);
+      setobj(f->ppupvals_[0]->v, gt);
+      luaC_barrier(f->ppupvals_[0], gt);
     }
   }
   return status;
@@ -1160,8 +1160,8 @@ static const char *aux_upvalue (StkId fi, int n, TValue **val,
       TString *name;
       Proto *p = f->p;
       if (!(1 <= n && n <= (int)p->upvalues.size())) return NULL;
-      *val = f->upvals[n-1]->v;
-      if (owner) *owner = obj2gco(f->upvals[n - 1]);
+      *val = f->ppupvals_[n-1]->v;
+      if (owner) *owner = obj2gco(f->ppupvals_[n - 1]);
       name = p->upvalues[n-1].name;
       return (name == NULL) ? "" : name->c_str();
     }
@@ -1209,7 +1209,7 @@ static UpVal **getupvalref (lua_State *L, int fidx, int n, Closure **pf) {
   f = clLvalue(fi);
   api_check((1 <= n && n <= (int)f->p->upvalues.size()), "invalid upvalue index");
   if (pf) *pf = f;
-  return &f->upvals[n - 1];  /* get its upvalue pointer */
+  return &f->ppupvals_[n - 1];  /* get its upvalue pointer */
 }
 
 

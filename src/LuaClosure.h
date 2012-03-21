@@ -9,12 +9,11 @@ public:
   LuaObject *gclist;
 
   TValue* pupvals_;
-  TValue** ppupvals_;
+  UpVal** ppupvals_;
 
   lua_CFunction f;
 
   struct Proto *p;
-  UpVal *upvals[1];  /* list of upvalues */
 };
 
 

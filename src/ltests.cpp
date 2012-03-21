@@ -161,9 +161,9 @@ static void checkclosure (global_State *g, Closure *cl) {
     assert(cl->nupvalues == cl->p->upvalues.size());
     checkobjref(g, clgc, cl->p);
     for (i=0; i<cl->nupvalues; i++) {
-      if (cl->upvals[i]) {
-        assert(cl->upvals[i]->tt == LUA_TUPVAL);
-        checkobjref(g, clgc, cl->upvals[i]);
+      if (cl->ppupvals_[i]) {
+        assert(cl->ppupvals_[i]->tt == LUA_TUPVAL);
+        checkobjref(g, clgc, cl->ppupvals_[i]);
       }
     }
   }

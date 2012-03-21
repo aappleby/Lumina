@@ -410,7 +410,7 @@ static Closure *getcached (Proto *p, UpVal **encup, StkId base) {
     int i;
     for (i = 0; i < nup; i++) {  /* check whether it has right upvalues */
       TValue *v = uv[i].instack ? base + uv[i].idx : encup[uv[i].idx]->v;
-      if (c->upvals[i]->v != v)
+      if (c->ppupvals_[i]->v != v)
         return NULL;  /* wrong upvalue; cannot reuse closure */
     }
   }
@@ -434,9 +434,9 @@ static void pushclosure (lua_State *L, Proto *p, UpVal **encup, StkId base,
   setclLvalue(L, ra, ncl);  /* anchor new closure in stack */
   for (i = 0; i < nup; i++) {  /* fill in its upvalues */
     if (uv[i].instack)  /* upvalue refers to local variable? */
-      ncl->upvals[i] = luaF_findupval(base + uv[i].idx);
+      ncl->ppupvals_[i] = luaF_findupval(base + uv[i].idx);
     else  /* get upvalue from enclosing function */
-      ncl->upvals[i] = encup[uv[i].idx];
+      ncl->ppupvals_[i] = encup[uv[i].idx];
   }
   luaC_barrierproto(p, ncl);
   p->cache = ncl;  /* save it on cache for reuse */
@@ -603,21 +603,21 @@ void luaV_execute (lua_State *L) {
       )
       vmcase(OP_GETUPVAL,
         int b = GETARG_B(i);
-        setobj(ra, cl->upvals[b]->v);
+        setobj(ra, cl->ppupvals_[b]->v);
       )
       vmcase(OP_GETTABUP,
         int b = GETARG_B(i);
-        Protect(luaV_gettable(L, cl->upvals[b]->v, RKC(i), ra));
+        Protect(luaV_gettable(L, cl->ppupvals_[b]->v, RKC(i), ra));
       )
       vmcase(OP_GETTABLE,
         Protect(luaV_gettable(L, RB(i), RKC(i), ra));
       )
       vmcase(OP_SETTABUP,
         int a = GETARG_A(i);
-        Protect(luaV_settable(L, cl->upvals[a]->v, RKB(i), RKC(i)));
+        Protect(luaV_settable(L, cl->ppupvals_[a]->v, RKB(i), RKC(i)));
       )
       vmcase(OP_SETUPVAL,
-        UpVal *uv = cl->upvals[GETARG_B(i)];
+        UpVal *uv = cl->ppupvals_[GETARG_B(i)];
         setobj(uv->v, ra);
         luaC_barrier(uv, ra);
       )
@@ -863,9 +863,9 @@ void luaV_execute (lua_State *L) {
       )
       vmcase(OP_CLOSURE,
         Proto *p = cl->p->p[GETARG_Bx(i)];
-        Closure *ncl = getcached(p, cl->upvals, base);  /* cached closure */
+        Closure *ncl = getcached(p, cl->ppupvals_, base);  /* cached closure */
         if (ncl == NULL)  /* no match? */
-          pushclosure(L, p, cl->upvals, base, ra);  /* create a new one */
+          pushclosure(L, p, cl->ppupvals_, base, ra);  /* create a new one */
         else
           setclLvalue(L, ra, ncl);  /* push cashed closure */
         checkGC(L,

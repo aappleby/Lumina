@@ -44,12 +44,25 @@ Closure *luaF_newCclosure (int n) {
 
 Closure *luaF_newLclosure (Proto *p) {
   int n = (int)p->upvalues.size();
-  LuaObject* o = luaC_newobj(LUA_TFUNCTION, sizeLclosure(n), NULL);
+
+  LuaObject* o = NULL;
+  UpVal** b = NULL;
+
+  try {
+    b = (UpVal**)luaM_alloc(n * sizeof(TValue*), LAP_VECTOR);
+    o = luaC_newobj(LUA_TFUNCTION, sizeLclosure(n), NULL);
+  } catch(...) {
+    luaM_delobject(o);
+    luaM_free(b);
+    throw;
+  }
+
   Closure *c = gco2cl(o);
   c->isC = 0;
   c->p = p;
   c->nupvalues = cast_byte(n);
-  while (n--) c->upvals[n] = NULL;
+  c->ppupvals_ = b;
+  while (n--) c->ppupvals_[n] = NULL;
   return c;
 }
 
@@ -161,11 +174,10 @@ void luaF_freeproto (Proto *f) {
 
 void luaF_freeclosure (Closure *c) {
   if(c->isC) {
-    int size = sizeCclosure(c->nupvalues);
     luaM_free(c->pupvals_);
     luaM_delobject(c);
   } else {
-    int size = sizeLclosure(c->nupvalues);
+    luaM_free(c->ppupvals_);
     luaM_delobject(c);
   }
 }

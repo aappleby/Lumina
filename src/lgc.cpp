@@ -455,7 +455,7 @@ static int traverseclosure (global_State *g, Closure *cl) {
     assert(cl->nupvalues == cl->p->upvalues.size());
     markobject(g, cl->p);  /* mark its prototype */
     for (i=0; i<cl->nupvalues; i++)  /* mark its upvalues */
-      markobject(g, cl->upvals[i]);
+      markobject(g, cl->ppupvals_[i]);
   }
   return TRAVCOST + cl->nupvalues;
 }
