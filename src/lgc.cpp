@@ -448,7 +448,7 @@ static int traverseclosure (global_State *g, Closure *cl) {
   if (cl->isC) {
     int i;
     for (i=0; i<cl->nupvalues; i++)  /* mark its upvalues */
-      markvalue(g, &cl->upvalue[i]);
+      markvalue(g, &cl->pupvals_[i]);
   }
   else {
     int i;

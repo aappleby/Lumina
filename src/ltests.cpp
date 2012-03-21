@@ -154,7 +154,7 @@ static void checkclosure (global_State *g, Closure *cl) {
   if (cl->isC) {
     int i;
     for (i=0; i<cl->nupvalues; i++)
-      checkvalref(g, clgc, &cl->upvalue[i]);
+      checkvalref(g, clgc, &cl->pupvals_[i]);
   }
   else {
     int i;

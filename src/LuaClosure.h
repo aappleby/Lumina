@@ -8,8 +8,10 @@ public:
   uint8_t nupvalues;
   LuaObject *gclist;
 
+  TValue* pupvals_;
+  TValue** ppupvals_;
+
   lua_CFunction f;
-  TValue upvalue[1];  /* list of upvalues */
 
   struct Proto *p;
   UpVal *upvals[1];  /* list of upvalues */

@@ -69,7 +69,7 @@ static TValue *index2addr (lua_State *L, int idx) {
       return NONVALIDVALUE;  /* it has no upvalues */
     else {
       Closure *func = clCvalue(ci->func);
-      return (idx <= func->nupvalues) ? &func->upvalue[idx-1] : NONVALIDVALUE;
+      return (idx <= func->nupvalues) ? &func->pupvals_[idx-1] : NONVALIDVALUE;
     }
   }
 }
@@ -564,7 +564,7 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
     cl->f = fn;
     L->top -= n;
     while (n--)
-      setobj(&cl->upvalue[n], L->top + n);
+      setobj(&cl->pupvals_[n], L->top + n);
     setclCvalue(L, L->top, cl);
   }
   api_incr_top(L);
@@ -1151,7 +1151,7 @@ static const char *aux_upvalue (StkId fi, int n, TValue **val,
     case LUA_TCCL: {  /* C closure */
       Closure *f = clCvalue(fi);
       if (!(1 <= n && n <= f->nupvalues)) return NULL;
-      *val = &f->upvalue[n-1];
+      *val = &f->pupvals_[n-1];
       if (owner) *owner = obj2gco(f);
       return "";
     }
@@ -1223,7 +1223,7 @@ void *lua_upvalueid (lua_State *L, int fidx, int n) {
     case LUA_TCCL: {  /* C closure */
       Closure *f = clCvalue(fi);
       api_check(1 <= n && n <= f->nupvalues, "invalid upvalue index");
-      return &f->upvalue[n - 1];
+      return &f->pupvals_[n - 1];
     }
     default: {
       api_check(0, "closure expected");
