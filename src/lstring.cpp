@@ -52,20 +52,18 @@ void luaS_resize (int newsize) {
 
 static TString *newlstr (const char *str, size_t l, unsigned int h) {
 
-  size_t totalsize;  /* total size of TString object */
   LuaObject **list;  /* (pointer to) list where it will be inserted */
   TString *ts;
   stringtable *tb = thread_G->strt;
   if (tb->nuse >= cast(uint32_t, tb->size) && tb->size <= MAX_INT/2)
     luaS_resize(tb->size*2);  /* too crowded */
-  totalsize = sizeof(TString) + ((l + 1) * sizeof(char));
   list = &tb->hash[lmod(h, tb->size)];
   LuaObject* o = NULL;
   char* buf = NULL;
 
   try {
-    buf = (char*)luaM_alloc(l, LAP_VECTOR);
-    o = luaC_newobj(LUA_TSTRING, totalsize, list);
+    buf = (char*)luaM_alloc(l+1, LAP_VECTOR);
+    o = luaC_newobj(LUA_TSTRING, sizeof(TString), list);
   } catch(...) {
     if(o) {
       printf("\nxxx\n");
@@ -80,9 +78,10 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
   ts->setHash(h);
   ts->setReserved(0);
   ts->buf_ = buf;
-  memcpy(ts+1, str, l*sizeof(char));
+  //memcpy(ts+1, str, l*sizeof(char));
   memcpy(ts->buf_, str, l*sizeof(char));
-  ((char *)(ts+1))[l] = '\0';  /* ending 0 */
+  ts->buf_[l] = '\0'; // terminating null
+  //((char *)(ts+1))[l] = '\0';  /* ending 0 */
   tb->nuse++;
   return ts;
 }
@@ -129,8 +128,6 @@ Udata *luaS_newudata (size_t s, Table *e) {
   u->env = e;
   return u;
 }
-
-#define sizestring(s)	(sizeof(TString)+((s)->getLen()+1)*sizeof(char))
 
 void luaS_freestr (TString* ts) {
   thread_G->strt->nuse--;

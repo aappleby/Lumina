@@ -15,11 +15,12 @@ public:
   void setLen(size_t l) { len = l; }
 
   const char * c_str() const {
-    return reinterpret_cast<const char *>(this+1);
+    //return reinterpret_cast<const char *>(this+1);
+    return buf_;
   }
 
   void setText(const char * str) {
-    memcpy(this+1, str, len*sizeof(char));
+    memcpy(buf_, str, len*sizeof(char));
   }
 
   uint32_t getHash() const { return hash; }
