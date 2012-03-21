@@ -431,7 +431,7 @@ void *lua_touserdata (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
   switch (ttypenv(o)) {
-    case LUA_TUSERDATA: return (uvalue(o) + 1);
+    case LUA_TUSERDATA: return (uvalue(o)->buf);
     case LUA_TLIGHTUSERDATA: return pvalue(o);
     default: return NULL;
   }
@@ -1140,7 +1140,7 @@ void *lua_newuserdata (lua_State *L, size_t size) {
   u = luaS_newudata(size, NULL);
   setuvalue(L, L->top, u);
   api_incr_top(L);
-  return u + 1;
+  return u->buf;
 }
 
 

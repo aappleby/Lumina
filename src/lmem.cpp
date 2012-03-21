@@ -107,7 +107,6 @@ void freeblock (Header *block) {
 //-----------------------------------------------------------------------------
 
 void* default_alloc(size_t size, int type, int pool) {
-  if(size == 0) return NULL;
   if (!l_memcontrol.canAlloc(size)) return NULL;
   assert(type >= 0);
   assert(type < 256);
@@ -127,8 +126,6 @@ void default_free(void * blob) {
 //-----------------------------------------------------------------------------
 
 void *luaM_alloc_ (size_t size, int type, int pool) {
-  if(size == 0) return NULL;
-
   void* newblock = default_alloc(size, type, pool);
   if (newblock == NULL) {
     if (thread_G && thread_G->gcrunning) {
@@ -163,7 +160,6 @@ void luaM_delobject(void * blob) {
 }
 
 void* luaM_alloc(size_t size, int pool) {
-  if(size == 0) return NULL;
   return luaM_alloc_(size, 0, pool);
 }
 
