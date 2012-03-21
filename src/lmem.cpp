@@ -158,6 +158,7 @@ LuaObject *luaC_newobj (int type, size_t size, LuaObject **list) {
 }
 
 void luaM_delobject(void * blob) {
+  if(blob == NULL) return;
   default_free(blob);
 }
 

@@ -65,12 +65,8 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
     buf = (char*)luaM_alloc(l+1, LAP_VECTOR);
     o = luaC_newobj(LUA_TSTRING, sizeof(TString), list);
   } catch(...) {
-    if(o) {
-      printf("\nxxx\n");
-    }
-    if(buf) {
-      luaM_free(buf);
-    }
+    luaM_free(buf);
+    luaM_delobject(o);
     throw;
   }
   ts = gco2ts(o);
@@ -78,10 +74,8 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
   ts->setHash(h);
   ts->setReserved(0);
   ts->buf_ = buf;
-  //memcpy(ts+1, str, l*sizeof(char));
   memcpy(ts->buf_, str, l*sizeof(char));
   ts->buf_[l] = '\0'; // terminating null
-  //((char *)(ts+1))[l] = '\0';  /* ending 0 */
   tb->nuse++;
   return ts;
 }
