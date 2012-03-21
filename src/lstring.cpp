@@ -117,7 +117,7 @@ Udata *luaS_newudata (size_t s, Table *e) {
   uint8_t* b = NULL;
   try {
     b = (uint8_t*)luaM_alloc(s, LAP_VECTOR);
-    o = luaC_newobj(LUA_TUSERDATA, sizeof(Udata) + s, NULL);
+    o = luaC_newobj(LUA_TUSERDATA, sizeof(Udata), NULL);
   } catch(...) {
     luaM_delobject(o);
     luaM_free(b);
