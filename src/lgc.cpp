@@ -618,7 +618,7 @@ static void freeobj (LuaObject *o) {
     case LUA_TUPVAL: luaF_freeupval(gco2uv(o)); break;
     case LUA_TTABLE: luaH_free(gco2t(o)); break;
     case LUA_TTHREAD: luaE_freethread(L, gco2th(o)); break;
-    case LUA_TUSERDATA: luaM_delobject(o, sizeudata(gco2u(o)), LUA_TUSERDATA); break;
+    case LUA_TUSERDATA: luaM_delobject(o); break;
     case LUA_TSTRING: luaS_freestr(gco2ts(o)); break;
     default: assert(0);
   }

@@ -365,7 +365,7 @@ Table *luaH_new () {
 void luaH_free (Table *t) {
   t->hashtable.clear();
   t->array.clear();
-  luaM_delobject(t, sizeof(Table), LUA_TTABLE);
+  luaM_delobject(t);
 }
 
 

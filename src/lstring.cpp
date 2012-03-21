@@ -51,6 +51,7 @@ void luaS_resize (int newsize) {
 
 
 static TString *newlstr (const char *str, size_t l, unsigned int h) {
+
   size_t totalsize;  /* total size of TString object */
   LuaObject **list;  /* (pointer to) list where it will be inserted */
   TString *ts;
@@ -59,12 +60,28 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
     luaS_resize(tb->size*2);  /* too crowded */
   totalsize = sizeof(TString) + ((l + 1) * sizeof(char));
   list = &tb->hash[lmod(h, tb->size)];
-  LuaObject* o = luaC_newobj(LUA_TSTRING, totalsize, list);
+  LuaObject* o = NULL;
+  char* buf = NULL;
+
+  try {
+    buf = (char*)luaM_alloc(l, LAP_VECTOR);
+    o = luaC_newobj(LUA_TSTRING, totalsize, list);
+  } catch(...) {
+    if(o) {
+      printf("\nxxx\n");
+    }
+    if(buf) {
+      luaM_free(buf);
+    }
+    throw;
+  }
   ts = gco2ts(o);
   ts->setLen(l);
   ts->setHash(h);
   ts->setReserved(0);
+  ts->buf_ = buf;
   memcpy(ts+1, str, l*sizeof(char));
+  memcpy(ts->buf_, str, l*sizeof(char));
   ((char *)(ts+1))[l] = '\0';  /* ending 0 */
   tb->nuse++;
   return ts;
@@ -117,7 +134,8 @@ Udata *luaS_newudata (size_t s, Table *e) {
 
 void luaS_freestr (TString* ts) {
   thread_G->strt->nuse--;
-  luaM_delobject(ts, sizestring(ts), LUA_TSTRING);
+  luaM_free(ts->buf_);
+  luaM_delobject(ts);
 }
 
 void luaS_initstrt() {

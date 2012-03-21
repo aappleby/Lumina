@@ -93,12 +93,8 @@ Header* allocblock (size_t size, int type, int pool) {
 
 //----------
 
-void freeblock (Header *block, size_t size, int type, int pool) {
+void freeblock (Header *block) {
   if (block == NULL) return;
-
-  assert(block->size == size);
-  assert(block->type == type);
-  assert(block->pool == pool);
 
   uint8_t* buf = reinterpret_cast<uint8_t*>(block);
   uint8_t* mark = buf + sizeof(Header) + block->size;
@@ -115,19 +111,17 @@ void* default_alloc(size_t size, int type, int pool) {
   if (!l_memcontrol.canAlloc(size)) return NULL;
   assert(type >= 0);
   assert(type < 256);
-
   Header* newblock = allocblock(size, type, pool);
-
   if(newblock) l_memcontrol.alloc(size,type);
-
   return newblock ? newblock + 1 : NULL;
 }
 
-void default_free(void * blob, size_t size, int type, int pool) {
+void default_free(void * blob) {
   if(blob == NULL) return;
-  l_memcontrol.free(size, type);
   Header* block = reinterpret_cast<Header*>(blob) - 1;
-  freeblock(block, size, type, pool);
+  l_memcontrol.free(block->size, block->type);
+  if(thread_G) thread_G->GCdebt -= block->size;
+  freeblock(block);
 }
 
 //-----------------------------------------------------------------------------
@@ -151,47 +145,30 @@ void *luaM_alloc_ (size_t size, int type, int pool) {
   return newblock;
 }
 
-void luaM_free_ (void *block, size_t size, int type, int pool) {
-  if(block == NULL) return;
-  default_free(block, size, type, pool);
-  if(thread_G) thread_G->GCdebt -= size;
-}
-
 //-----------------------------------------------------------------------------
 
 /*
 ** create a new collectable object (with given type and size) and link
-** it to '*list'. 'offset' tells how many bytes to allocate before the
-** object itself (used only by states).
+** it to '*list'.
 */
 LuaObject *luaC_newobj (int type, size_t size, LuaObject **list) {
-  global_State *g = thread_G;
-  
-  //LuaObject* o = new(blob) LuaObject(type, list);
-  //LuaObject* o = new(type) LuaObject(type, list);
-
   LuaObject* o = (LuaObject*)luaM_alloc_(size,type,LAP_OBJECT);
   o->Init(type, list);
-  
   return o;
 }
 
-void luaM_delobject(void * blob, size_t size, int type) {
-  assert(blob);
-  assert(size);
-  assert(type);
-  luaM_free_(blob, size, type, LAP_OBJECT);
+void luaM_delobject(void * blob) {
+  default_free(blob);
 }
 
 void* luaM_alloc(size_t size, int pool) {
-  assert(size);
+  if(size == 0) return NULL;
   return luaM_alloc_(size, 0, pool);
 }
 
-void luaM_free(void * blob, size_t size, int pool) {
-  assert(blob);
-  assert(size);
-  luaM_free_(blob, size, 0, pool);
+void luaM_free(void * blob) {
+  if(blob == NULL) return;
+  default_free(blob);
 }
 
 //-----------------------------------------------------------------------------

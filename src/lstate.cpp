@@ -68,7 +68,7 @@ void luaE_freeCI (lua_State *L) {
   ci->next = NULL;
   while ((ci = next) != NULL) {
     next = ci->next;
-    luaM_free(ci, sizeof(CallInfo), LAP_RUNTIME);
+    luaM_free(ci);
   }
 }
 
@@ -172,9 +172,9 @@ static void close_state (lua_State *L) {
 
   L->freestack();
   assert(gettotalbytes(g) == (sizeof(lua_State) + sizeof(global_State)));
-  luaM_free(g, sizeof(global_State), LAP_STARTUP);
+  luaM_free(g);
   L->l_G = NULL;
-  luaM_free(L, sizeof(lua_State), LAP_STARTUP);  /* free main block */
+  luaM_free(L);  /* free main block */
 }
 
 
@@ -209,7 +209,7 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
     assert(L1->openupval == NULL);
     L1->freestack();
   }
-  luaM_delobject(L1, sizeof(lua_State), LUA_TTHREAD);
+  luaM_delobject(L1);
 }
 
 
@@ -222,7 +222,7 @@ lua_State *lua_newstate () {
   if(L == NULL) { return NULL; }
   g = (global_State*)luaM_alloc(sizeof(global_State), LAP_STARTUP);
   if(g == NULL) {
-    luaM_free(L, sizeof(lua_State), LAP_STARTUP);
+    luaM_free(L);
     return NULL;
   }
   L->l_G = g;

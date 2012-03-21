@@ -28,6 +28,8 @@ public:
   uint8_t getReserved() const { return reserved; }
   void setReserved(uint8_t r) { reserved = r; }
 
+  char* buf_;
+
 protected:
 
   uint8_t reserved;

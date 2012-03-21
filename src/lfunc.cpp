@@ -90,7 +90,7 @@ static void unlinkupval (UpVal *uv) {
 void luaF_freeupval (UpVal *uv) {
   if (uv->v != &uv->value)  /* is it open? */
     unlinkupval(uv);  /* remove from open list */
-  luaM_delobject(uv, sizeof(UpVal), LUA_TUPVAL);  /* free upvalue */
+  luaM_delobject(uv);  /* free upvalue */
 }
 
 
@@ -143,17 +143,17 @@ void luaF_freeproto (Proto *f) {
   f->lineinfo.clear();
   f->locvars.clear();
   f->upvalues.clear();
-  luaM_delobject(f, sizeof(Proto), LUA_TPROTO);
+  luaM_delobject(f);
 }
 
 
 void luaF_freeclosure (Closure *c) {
   if(c->isC) {
     int size = sizeCclosure(c->nupvalues);
-    luaM_delobject(c, size, LUA_TFUNCTION);
+    luaM_delobject(c);
   } else {
     int size = sizeLclosure(c->nupvalues);
-    luaM_delobject(c, size, LUA_TFUNCTION);
+    luaM_delobject(c);
   }
 }
 

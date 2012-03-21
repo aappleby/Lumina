@@ -12,7 +12,7 @@ void lua_State::freeCI() {
   ci->next = NULL;
   while ((ci = next) != NULL) {
     next = ci->next;
-    luaM_free(ci, sizeof(CallInfo), LAP_RUNTIME);
+    luaM_free(ci);
   }
 }
 
