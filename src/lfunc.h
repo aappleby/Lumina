@@ -11,10 +11,6 @@
 #include "lobject.h"
 
 
-#define sizeCclosure(n)	(cast(int, sizeof(Closure)) + cast(int, sizeof(TValue)*(n)))
-#define sizeLclosure(n)	(cast(int, sizeof(Closure)) + cast(int, sizeof(TValue*)*(n)))
-
-
 Proto*    luaF_newproto    ();
 Closure*  luaF_newCclosure (int nelems);
 Closure*  luaF_newLclosure (Proto *p);

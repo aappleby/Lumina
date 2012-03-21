@@ -609,7 +609,6 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
   }
 }
 
-
 static void freeobj (LuaObject *o) {
   lua_State *L = thread_L;
   switch (gch(o)->tt) {
@@ -618,7 +617,7 @@ static void freeobj (LuaObject *o) {
     case LUA_TUPVAL: luaF_freeupval(gco2uv(o)); break;
     case LUA_TTABLE: luaH_free(gco2t(o)); break;
     case LUA_TTHREAD: luaE_freethread(L, gco2th(o)); break;
-    case LUA_TUSERDATA: luaM_delobject(o); break;
+    case LUA_TUSERDATA: luaS_deludata(gco2u(o)); break;
     case LUA_TSTRING: luaS_freestr(gco2ts(o)); break;
     default: assert(0);
   }

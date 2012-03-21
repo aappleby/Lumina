@@ -27,7 +27,7 @@ Closure *luaF_newCclosure (int n) {
 
   try {
     b = (TValue*)luaM_alloc(n * sizeof(TValue), LAP_VECTOR);
-    o = luaC_newobj(LUA_TFUNCTION, sizeCclosure(n), NULL);
+    o = luaC_newobj(LUA_TFUNCTION, sizeof(Closure), NULL);
   } catch(...) {
     luaM_delobject(o);
     luaM_free(b);
@@ -38,6 +38,7 @@ Closure *luaF_newCclosure (int n) {
   c->isC = 1;
   c->nupvalues = cast_byte(n);
   c->pupvals_ = b;
+  c->ppupvals_ = NULL;
   return c;
 }
 
@@ -50,7 +51,7 @@ Closure *luaF_newLclosure (Proto *p) {
 
   try {
     b = (UpVal**)luaM_alloc(n * sizeof(TValue*), LAP_VECTOR);
-    o = luaC_newobj(LUA_TFUNCTION, sizeLclosure(n), NULL);
+    o = luaC_newobj(LUA_TFUNCTION, sizeof(Closure), NULL);
   } catch(...) {
     luaM_delobject(o);
     luaM_free(b);
@@ -61,6 +62,7 @@ Closure *luaF_newLclosure (Proto *p) {
   c->isC = 0;
   c->p = p;
   c->nupvalues = cast_byte(n);
+  c->pupvals_ = NULL;
   c->ppupvals_ = b;
   while (n--) c->ppupvals_[n] = NULL;
   return c;
@@ -173,13 +175,9 @@ void luaF_freeproto (Proto *f) {
 
 
 void luaF_freeclosure (Closure *c) {
-  if(c->isC) {
-    luaM_free(c->pupvals_);
-    luaM_delobject(c);
-  } else {
-    luaM_free(c->ppupvals_);
-    luaM_delobject(c);
-  }
+  luaM_free(c->pupvals_);
+  luaM_free(c->ppupvals_);
+  luaM_delobject(c);
 }
 
 

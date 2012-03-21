@@ -110,17 +110,30 @@ TString *luaS_new (const char *str) {
   return luaS_newlstr(str, strlen(str));
 }
 
-
 Udata *luaS_newudata (size_t s, Table *e) {
   Udata *u;
-  if (s > MAX_SIZET - sizeof(Udata))
-    luaG_runerror("memory allocation error: udata too big");
-  LuaObject* o = luaC_newobj(LUA_TUSERDATA, sizeof(Udata) + s, NULL);
+  if (s > MAX_SIZET - sizeof(Udata)) luaG_runerror("memory allocation error: udata too big");
+  LuaObject* o = NULL;
+  uint8_t* b = NULL;
+  try {
+    b = (uint8_t*)luaM_alloc(s, LAP_VECTOR);
+    o = luaC_newobj(LUA_TUSERDATA, sizeof(Udata) + s, NULL);
+  } catch(...) {
+    luaM_delobject(o);
+    luaM_free(b);
+    throw;
+  }
   u = gco2u(o);
   u->len = s;
   u->metatable = NULL;
   u->env = e;
+  u->buf = b;
   return u;
+}
+
+void luaS_deludata(Udata* ud) {
+  luaM_free(ud->buf);
+  luaM_delobject(ud);
 }
 
 void luaS_freestr (TString* ts) {

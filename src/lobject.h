@@ -33,6 +33,7 @@ class Table;
 __declspec(align(8)) struct Udata : public LuaObject {
   Table *metatable;
   Table *env;
+  uint8_t* buf;
   size_t len;  /* number of bytes */
 };
 
