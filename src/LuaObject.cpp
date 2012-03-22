@@ -20,6 +20,7 @@ LuaObject::~LuaObject() {
 
 void * LuaObject::operator new(size_t size) {
   void* blob = luaM_alloc(size);
+  //if(blob == NULL) luaD_throw(LUA_ERRMEM);
   return blob;
 }
 

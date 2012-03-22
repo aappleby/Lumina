@@ -63,7 +63,9 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
 
   try {
     buf = (char*)luaM_alloc(l+1);
+    if(buf == NULL) luaD_throw(LUA_ERRMEM);
     o = luaC_newobj(LUA_TSTRING, sizeof(TString), list);
+    if(o == NULL) luaD_throw(LUA_ERRMEM);
   } catch(...) {
     luaM_free(buf);
     luaM_delobject(o);
@@ -118,7 +120,9 @@ Udata *luaS_newudata (size_t s, Table *e) {
   uint8_t* b = NULL;
   try {
     b = (uint8_t*)luaM_alloc(s);
+    if(b == NULL) luaD_throw(LUA_ERRMEM);
     o = luaC_newobj(LUA_TUSERDATA, sizeof(Udata), NULL);
+    if(o == NULL) luaD_throw(LUA_ERRMEM);
   } catch(...) {
     luaM_delobject(o);
     luaM_free(b);

@@ -667,6 +667,7 @@ void lua_createtable (lua_State *L, int narray, int nrec) {
   Table *t;
   luaC_checkGC();
   t = new Table();
+  if(t == NULL) luaD_throw(LUA_ERRMEM);
   sethvalue(L, L->top, t);
   api_incr_top(L);
   if (narray > 0 || nrec > 0)

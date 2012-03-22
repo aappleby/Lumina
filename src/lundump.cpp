@@ -160,6 +160,7 @@ static void LoadDebug(LoadState* S, Proto* f)
 static Proto* LoadFunction(LoadState* S)
 {
  Proto* f= new Proto();
+ if(f == NULL) luaD_throw(LUA_ERRMEM);
  setptvalue(S->L,S->L->top,f); incr_top(S->L);
  f->linedefined=LoadInt(S);
  f->lastlinedefined=LoadInt(S);

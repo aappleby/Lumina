@@ -48,8 +48,9 @@ public:
       clear();
       return;
     }
-    T* newbuf = reinterpret_cast<T*>(luaM_alloc(sizeof(T) * newsize));
-    if(newbuf == NULL) luaD_throw(LUA_ERRMEM);
+    void* blob = luaM_alloc(sizeof(T) * newsize);
+    if(blob == NULL) luaD_throw(LUA_ERRMEM);
+    T* newbuf = reinterpret_cast<T*>(blob);
     if(size_) {
       memcpy(newbuf, buf_, sizeof(T) * std::min(size_,newsize));
       luaM_free(buf_);

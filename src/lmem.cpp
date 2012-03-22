@@ -112,7 +112,7 @@ void *luaM_alloc (size_t size) {
       newblock = default_alloc(size);  /* try again */
     }
     if (newblock == NULL) {
-      if(thread_L) luaD_throw(LUA_ERRMEM);
+      return NULL;
     }
   }
 
@@ -137,6 +137,7 @@ void luaM_free(void * blob) {
 */
 LuaObject *luaC_newobj (int type, size_t size, LuaObject **list) {
   LuaObject* o = (LuaObject*)luaM_alloc(size);
+  if(o == NULL) return NULL;
   o->Init(type, list);
   return o;
 }

@@ -28,7 +28,9 @@ Closure *luaF_newCclosure (int n) {
 
   try {
     b = (TValue*)luaM_alloc(n * sizeof(TValue));
+    if(b == NULL) luaD_throw(LUA_ERRMEM);
     o = luaC_newobj(LUA_TFUNCTION, sizeof(Closure), NULL);
+    if(o == NULL) luaD_throw(LUA_ERRMEM);
   } catch(...) {
     luaM_delobject(o);
     luaM_free(b);
@@ -53,7 +55,9 @@ Closure *luaF_newLclosure (Proto *p) {
 
   try {
     b = (UpVal**)luaM_alloc(n * sizeof(TValue*));
+    if(b == NULL) luaD_throw(LUA_ERRMEM);
     o = luaC_newobj(LUA_TFUNCTION, sizeof(Closure), NULL);
+    if(o == NULL) luaD_throw(LUA_ERRMEM);
   } catch(...) {
     luaM_delobject(o);
     luaM_free(b);
@@ -74,6 +78,7 @@ Closure *luaF_newLclosure (Proto *p) {
 
 UpVal *luaF_newupval () {
   UpVal *uv = new UpVal(NULL);
+  if(uv == NULL) luaD_throw(LUA_ERRMEM);
   uv->v = &uv->value;
   setnilvalue(uv->v);
   return uv;
@@ -98,6 +103,7 @@ UpVal *luaF_findupval (StkId level) {
   }
   /* not found: create a new one */
   uv = new UpVal(pp);
+  if(uv == NULL) luaD_throw(LUA_ERRMEM);
   uv->v = level;  /* current value lives in the stack */
   uv->uprev = &g->uvhead;  /* double link it in `uvhead' list */
   uv->unext = g->uvhead.unext;

@@ -53,6 +53,7 @@ void luaE_setdebt (global_State *g, l_mem debt) {
 CallInfo *luaE_extendCI (lua_State *L) {
   THREAD_CHECK(L);
   CallInfo *ci = (CallInfo*)luaM_alloc(sizeof(CallInfo));
+  if(ci == NULL) luaD_throw(LUA_ERRMEM);
   assert(L->ci_->next == NULL);
   L->ci_->next = ci;
   ci->previous = L->ci_;
@@ -108,13 +109,16 @@ static void init_registry (lua_State *L, global_State *g) {
   TValue mt;
   /* create registry */
   Table *registry = new Table();
+  if(registry == NULL) luaD_throw(LUA_ERRMEM);
   sethvalue(L, &g->l_registry, registry);
   luaH_resize(registry, LUA_RIDX_LAST, 0);
   /* registry[LUA_RIDX_MAINTHREAD] = L */
   setthvalue(L, &mt, L);
   luaH_setint(registry, LUA_RIDX_MAINTHREAD, &mt);
   /* registry[LUA_RIDX_GLOBALS] = table of globals */
-  sethvalue(L, &mt, new Table());
+  Table* t = new Table();
+  if(t == NULL) luaD_throw(LUA_ERRMEM);
+  sethvalue(L, &mt, t);
   luaH_setint(registry, LUA_RIDX_GLOBALS, &mt);
 }
 
@@ -184,6 +188,7 @@ lua_State *lua_newthread (lua_State *L) {
   luaC_checkGC();
 
   LuaObject* o = luaC_newobj(LUA_TTHREAD, sizeof(lua_State), NULL);
+  if(o == NULL) luaD_throw(LUA_ERRMEM);
   LuaObject::instanceCounts[LUA_TTHREAD]++;
 
   lua_State* L1 = gco2th(o);

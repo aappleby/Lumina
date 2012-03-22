@@ -126,7 +126,6 @@ void luaC_step ();
 void luaC_forcestep ();
 void luaC_runtilstate (int statesmask);
 void luaC_fullgc (int isemergency);
-LuaObject *luaC_newobj (int tt, size_t sz, LuaObject **list);
 void luaC_barrier_ (LuaObject *o, LuaObject *v);
 void luaC_barrierback_ (LuaObject *o);
 void luaC_barrierproto_ (Proto *p, Closure *c);

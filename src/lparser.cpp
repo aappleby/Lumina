@@ -537,6 +537,7 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   fs->firstlocal = ls->dyd->actvar.n;
   fs->bl = NULL;
   f = new Proto();
+  if(f == NULL) luaD_throw(LUA_ERRMEM);
   fs->f = f;
   f->source = ls->source;
   f->maxstacksize = 2;  /* registers 0/1 are always valid */
@@ -544,6 +545,7 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   setptvalue(L, L->top, f);
   incr_top(L);
   fs->h = new Table();
+  if(fs->h == NULL) luaD_throw(LUA_ERRMEM);
   /* anchor table of constants (to avoid being collected) */
   sethvalue(L, L->top, fs->h);
   incr_top(L);
