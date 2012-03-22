@@ -104,17 +104,7 @@ void* default_alloc(size_t size) {
   return newblock ? newblock + 1 : NULL;
 }
 
-void default_free(void * blob) {
-  if(blob == NULL) return;
-  Header* block = reinterpret_cast<Header*>(blob) - 1;
-  l_memcontrol.free(block->size);
-  if(thread_G) thread_G->GCdebt -= block->size;
-  freeblock(block);
-}
-
-//-----------------------------------------------------------------------------
-
-void *luaM_alloc_ (size_t size) {
+void *luaM_alloc (size_t size) {
   void* newblock = default_alloc(size);
   if (newblock == NULL) {
     if (thread_G && thread_G->gcrunning) {
@@ -131,6 +121,14 @@ void *luaM_alloc_ (size_t size) {
   return newblock;
 }
 
+void luaM_free(void * blob) {
+  if(blob == NULL) return;
+  Header* block = reinterpret_cast<Header*>(blob) - 1;
+  l_memcontrol.free(block->size);
+  if(thread_G) thread_G->GCdebt -= block->size;
+  freeblock(block);
+}
+
 //-----------------------------------------------------------------------------
 
 /*
@@ -138,26 +136,13 @@ void *luaM_alloc_ (size_t size) {
 ** it to '*list'.
 */
 LuaObject *luaC_newobj (int type, size_t size, LuaObject **list) {
-  LuaObject* o = (LuaObject*)luaM_alloc_(size);
+  LuaObject* o = (LuaObject*)luaM_alloc(size);
   o->Init(type, list);
   return o;
 }
 
 void luaM_delobject(void * blob) {
-  if(blob == NULL) return;
-
-  Header *block = reinterpret_cast<Header*>(blob) - 1;
-
-  default_free(blob);
-}
-
-void* luaM_alloc(size_t size) {
-  return luaM_alloc_(size);
-}
-
-void luaM_free(void * blob) {
-  if(blob == NULL) return;
-  default_free(blob);
+  luaM_free(blob);
 }
 
 //-----------------------------------------------------------------------------

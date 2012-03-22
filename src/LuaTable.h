@@ -16,10 +16,7 @@ public:
 class Table : public LuaObject {
 public:
 
-  uint8_t flags;  /* 1<<p means tagmethod(p) is not present */
-  Table *metatable;
-  LuaVector<TValue> array;
-  LuaVector<Node> hashtable;
+  Table();
 
   Node* getNode(int i) {
     assert(hashtable.size());
@@ -35,7 +32,10 @@ public:
     return &hashtable[i];
   }
 
-  //LuaVector<Node> node;
+  uint8_t flags;  /* 1<<p means tagmethod(p) is not present */
+  Table *metatable;
+  LuaVector<TValue> array;
+  LuaVector<Node> hashtable;
   int lastfree;
   LuaObject *graylist;
 };

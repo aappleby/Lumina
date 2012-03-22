@@ -203,7 +203,7 @@ static void collectvalidlines (lua_State *L, Closure *f) {
   else {
     int i;
     TValue v;
-    Table *t = luaH_new();  /* new table to store active lines */
+    Table *t = new Table();  /* new table to store active lines */
     sethvalue(L, L->top, t);  /* push it on stack */
     incr_top(L);
     v = true;

@@ -346,31 +346,6 @@ static void rehash (Table *t, const TValue *ek) {
 ** }=============================================================
 */
 
-
-Table *luaH_new () {
-  Table* t = (Table*)luaC_newobj(LUA_TTABLE, sizeof(Table), NULL);
-  LuaObject::instanceCounts[LUA_TTABLE]++;
-
-  //Table* t = new(newblock) Table();
-  //t->Init(LUA_TTABLE);
-  
-  t->metatable = NULL;
-  t->flags = cast_byte(~0);
-  t->array.init();
-  t->hashtable.init();
-
-  return t;
-}
-
-
-void luaH_free (Table *t) {
-  t->hashtable.clear();
-  t->array.clear();
-  luaM_delobject(t);
-  LuaObject::instanceCounts[LUA_TTABLE]--;
-}
-
-
 static Node *getfreepos (Table *t) {
   while (t->lastfree > 0) {
     t->lastfree--;

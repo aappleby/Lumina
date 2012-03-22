@@ -665,7 +665,7 @@ void lua_createtable (lua_State *L, int narray, int nrec) {
   THREAD_CHECK(L);
   Table *t;
   luaC_checkGC();
-  t = luaH_new();
+  t = new Table();
   sethvalue(L, L->top, t);
   api_incr_top(L);
   if (narray > 0 || nrec > 0)
