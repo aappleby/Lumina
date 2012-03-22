@@ -13,7 +13,7 @@ public:
 
   lua_CFunction f;
 
-  struct Proto *p;
+  Proto *p;
 };
 
 

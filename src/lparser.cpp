@@ -5,6 +5,7 @@
 */
 
 #include "LuaGlobals.h"
+#include "LuaProto.h"
 #include "LuaState.h"
 
 #include <string.h>
@@ -535,7 +536,7 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   fs->nactvar = 0;
   fs->firstlocal = ls->dyd->actvar.n;
   fs->bl = NULL;
-  f = luaF_newproto();
+  f = new Proto();
   fs->f = f;
   f->source = ls->source;
   f->maxstacksize = 2;  /* registers 0/1 are always valid */

@@ -12,6 +12,7 @@ class CallInfo;
 class TValue;
 class UpVal;
 class Table;
+class Proto;
 
 typedef TValue* StkId;  /* index to stack elements */
 

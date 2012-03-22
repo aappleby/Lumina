@@ -6,6 +6,7 @@
 
 #include "LuaClosure.h"
 #include "LuaGlobals.h"
+#include "LuaProto.h"
 #include "LuaState.h"
 #include "LuaUpval.h"
 
@@ -145,39 +146,6 @@ void luaF_close (StkId level) {
       luaC_checkupvalcolor(g, uv);
     }
   }
-}
-
-
-Proto *luaF_newproto () {
-  LuaObject* o = luaC_newobj(LUA_TPROTO, sizeof(Proto), NULL);
-  LuaObject::instanceCounts[LUA_TPROTO]++;
-  Proto* f = gco2p(o);
-  f->constants.init();
-  f->p.init();
-  f->code.init();
-  f->cache = NULL;
-  f->lineinfo.init();
-  f->upvalues.init();
-  f->numparams = 0;
-  f->is_vararg = 0;
-  f->maxstacksize = 0;
-  f->locvars.init();
-  f->linedefined = 0;
-  f->lastlinedefined = 0;
-  f->source = NULL;
-  return f;
-}
-
-
-void luaF_freeproto (Proto *f) {
-  f->code.clear();
-  f->p.clear();
-  f->constants.clear();
-  f->lineinfo.clear();
-  f->locvars.clear();
-  f->upvalues.clear();
-  luaM_delobject(f);
-  LuaObject::instanceCounts[LUA_TPROTO]--;
 }
 
 

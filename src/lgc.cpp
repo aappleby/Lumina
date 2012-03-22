@@ -6,6 +6,7 @@
 
 #include "LuaClosure.h"
 #include "LuaGlobals.h"
+#include "LuaProto.h"
 #include "LuaState.h"
 
 #include <string.h>
@@ -612,7 +613,7 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
 static void freeobj (LuaObject *o) {
   lua_State *L = thread_L;
   switch (gch(o)->tt) {
-    case LUA_TPROTO: luaF_freeproto(gco2p(o)); break;
+    case LUA_TPROTO: delete gco2p(o); break;
     case LUA_TFUNCTION: luaF_freeclosure(gco2cl(o)); break;
     case LUA_TUPVAL: luaF_freeupval(gco2uv(o)); break;
     case LUA_TTABLE: delete gco2t(o); break;

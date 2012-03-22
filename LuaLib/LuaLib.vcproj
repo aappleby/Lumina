@@ -539,6 +539,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\LuaProto.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaProto.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\LuaState.cpp"
 				>
 			</File>

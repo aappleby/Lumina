@@ -11,12 +11,10 @@
 #include "lobject.h"
 
 
-Proto*    luaF_newproto    ();
 Closure*  luaF_newCclosure (int nelems);
 Closure*  luaF_newLclosure (Proto *p);
 UpVal*    luaF_newupval    ();
 
-void luaF_freeproto   (Proto *f);
 void luaF_freeclosure (Closure *c);
 void luaF_freeupval   (UpVal *uv);
 

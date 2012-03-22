@@ -9,6 +9,7 @@
 
 #define lcode_c
 
+#include "LuaProto.h"
 #include "LuaState.h"
 
 #include "lua.h"

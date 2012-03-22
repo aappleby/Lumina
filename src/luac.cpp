@@ -5,6 +5,7 @@
 */
 
 #include "LuaClosure.h"
+#include "LuaProto.h"
 #include "LuaState.h"
 
 #include <errno.h>

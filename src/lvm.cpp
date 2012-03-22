@@ -6,6 +6,7 @@
 
 #include "LuaClosure.h"
 #include "LuaGlobals.h"
+#include "LuaProto.h"
 #include "LuaState.h"
 
 #include <stdio.h>
