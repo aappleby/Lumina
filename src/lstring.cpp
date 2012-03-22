@@ -70,12 +70,11 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
 
   LuaObject::instanceCounts[LUA_TSTRING]++;
   ts = gco2ts(o);
-  ts->setLen(l);
   ts->setHash(h);
   ts->setReserved(0);
-  ts->buf_ = buf;
-  memcpy(ts->buf_, str, l*sizeof(char));
-  ts->buf_[l] = '\0'; // terminating null
+  ts->setBuf(buf);
+  ts->setText(str, l);
+
   tb->nuse++;
   return ts;
 }
@@ -140,7 +139,7 @@ void luaS_deludata(Udata* ud) {
 
 void luaS_freestr (TString* ts) {
   thread_G->strt->nuse--;
-  luaM_free(ts->buf_);
+  luaM_free((void*)ts->c_str());
   luaM_delobject(ts);
   LuaObject::instanceCounts[LUA_TSTRING]--;
 }
