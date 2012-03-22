@@ -58,19 +58,16 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
   if (tb->nuse >= cast(uint32_t, tb->size) && tb->size <= MAX_INT/2)
     luaS_resize(tb->size*2);  /* too crowded */
   list = &tb->hash[lmod(h, tb->size)];
-  LuaObject* o = NULL;
-  char* buf = NULL;
 
-  try {
-    buf = (char*)luaM_alloc(l+1);
-    if(buf == NULL) luaD_throw(LUA_ERRMEM);
-    o = luaC_newobj(LUA_TSTRING, sizeof(TString), list);
-    if(o == NULL) luaD_throw(LUA_ERRMEM);
-  } catch(...) {
+  char* buf = (char*)luaM_alloc(l+1);
+  if(buf == NULL) luaD_throw(LUA_ERRMEM);
+
+  LuaObject* o = luaC_newobj(LUA_TSTRING, sizeof(TString), list);
+  if(o == NULL) {
     luaM_free(buf);
-    luaM_delobject(o);
-    throw;
+    luaD_throw(LUA_ERRMEM);
   }
+
   LuaObject::instanceCounts[LUA_TSTRING]++;
   ts = gco2ts(o);
   ts->setLen(l);
@@ -116,18 +113,16 @@ TString *luaS_new (const char *str) {
 Udata *luaS_newudata (size_t s, Table *e) {
   Udata *u;
   if (s > MAX_SIZET - sizeof(Udata)) luaG_runerror("memory allocation error: udata too big");
-  LuaObject* o = NULL;
-  uint8_t* b = NULL;
-  try {
-    b = (uint8_t*)luaM_alloc(s);
-    if(b == NULL) luaD_throw(LUA_ERRMEM);
-    o = luaC_newobj(LUA_TUSERDATA, sizeof(Udata), NULL);
-    if(o == NULL) luaD_throw(LUA_ERRMEM);
-  } catch(...) {
-    luaM_delobject(o);
+
+  uint8_t* b = (uint8_t*)luaM_alloc(s);
+  if(b == NULL) luaD_throw(LUA_ERRMEM);
+
+  LuaObject* o = luaC_newobj(LUA_TUSERDATA, sizeof(Udata), NULL);
+  if(o == NULL) {
     luaM_free(b);
-    throw;
+    luaD_throw(LUA_ERRMEM);
   }
+
   LuaObject::instanceCounts[LUA_TUSERDATA]++;
   u = gco2u(o);
   u->len = s;

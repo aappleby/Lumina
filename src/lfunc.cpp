@@ -11,6 +11,7 @@
 #include "LuaUpval.h"
 
 #include <stddef.h>
+#include <memory>
 
 #include "lua.h"
 
@@ -20,22 +21,18 @@
 #include "lobject.h"
 #include "lstate.h"
 
-
+using std::auto_ptr;
 
 Closure *luaF_newCclosure (int n) {
-  LuaObject* o = NULL;
-  TValue* b = NULL;
+  TValue* b = (TValue*)luaM_alloc(n * sizeof(TValue));
+  if(b == NULL) luaD_throw(LUA_ERRMEM);
 
-  try {
-    b = (TValue*)luaM_alloc(n * sizeof(TValue));
-    if(b == NULL) luaD_throw(LUA_ERRMEM);
-    o = luaC_newobj(LUA_TFUNCTION, sizeof(Closure), NULL);
-    if(o == NULL) luaD_throw(LUA_ERRMEM);
-  } catch(...) {
-    luaM_delobject(o);
+  LuaObject* o = luaC_newobj(LUA_TFUNCTION, sizeof(Closure), NULL);
+  if(o == NULL) {
     luaM_free(b);
-    throw;
+    luaD_throw(LUA_ERRMEM);
   }
+
   LuaObject::instanceCounts[LUA_TFUNCTION]++;
 
   Closure *c = gco2cl(o);
@@ -50,19 +47,15 @@ Closure *luaF_newCclosure (int n) {
 Closure *luaF_newLclosure (Proto *p) {
   int n = (int)p->upvalues.size();
 
-  LuaObject* o = NULL;
-  UpVal** b = NULL;
+  UpVal** b = (UpVal**)luaM_alloc(n * sizeof(TValue*));
+  if(b == NULL) luaD_throw(LUA_ERRMEM);
 
-  try {
-    b = (UpVal**)luaM_alloc(n * sizeof(TValue*));
-    if(b == NULL) luaD_throw(LUA_ERRMEM);
-    o = luaC_newobj(LUA_TFUNCTION, sizeof(Closure), NULL);
-    if(o == NULL) luaD_throw(LUA_ERRMEM);
-  } catch(...) {
-    luaM_delobject(o);
+  LuaObject* o = luaC_newobj(LUA_TFUNCTION, sizeof(Closure), NULL);
+  if(o == NULL) {
     luaM_free(b);
-    throw;
+    luaD_throw(LUA_ERRMEM);
   }
+
   LuaObject::instanceCounts[LUA_TFUNCTION]++;
 
   Closure *c = gco2cl(o);

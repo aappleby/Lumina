@@ -41,15 +41,15 @@ public:
     return buf_[index];
   }
 
-  void resize ( size_t newsize )
+  bool resize_nothrow ( size_t newsize )
   {
     if(newsize == 0)
     {
       clear();
-      return;
+      return true;
     }
     void* blob = luaM_alloc(sizeof(T) * newsize);
-    if(blob == NULL) luaD_throw(LUA_ERRMEM);
+    if(blob == NULL) return false;
     T* newbuf = reinterpret_cast<T*>(blob);
     if(size_) {
       memcpy(newbuf, buf_, sizeof(T) * std::min(size_,newsize));
@@ -60,6 +60,14 @@ public:
     }
     buf_ = newbuf;
     size_ = newsize;
+    return true;
+  }
+
+  void resize ( size_t newsize )
+  {
+    if(!resize_nothrow(newsize)) {
+      luaD_throw(LUA_ERRMEM);
+    }
   }
 
   void clear ( void )
