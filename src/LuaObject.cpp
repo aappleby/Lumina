@@ -7,6 +7,8 @@
 
 void *luaM_alloc_ (size_t size, int type, int pool);
 
+int LuaObject::instanceCounts[256];
+
 /*
 LuaObject::LuaObject(int type, LuaObject** list) {
   if (list == NULL)

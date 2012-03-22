@@ -26,7 +26,7 @@ Closure *luaF_newCclosure (int n) {
   TValue* b = NULL;
 
   try {
-    b = (TValue*)luaM_alloc(n * sizeof(TValue), LAP_VECTOR);
+    b = (TValue*)luaM_alloc(n * sizeof(TValue));
     o = luaC_newobj(LUA_TFUNCTION, sizeof(Closure), NULL);
   } catch(...) {
     luaM_delobject(o);
@@ -50,7 +50,7 @@ Closure *luaF_newLclosure (Proto *p) {
   UpVal** b = NULL;
 
   try {
-    b = (UpVal**)luaM_alloc(n * sizeof(TValue*), LAP_VECTOR);
+    b = (UpVal**)luaM_alloc(n * sizeof(TValue*));
     o = luaC_newobj(LUA_TFUNCTION, sizeof(Closure), NULL);
   } catch(...) {
     luaM_delobject(o);

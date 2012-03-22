@@ -463,7 +463,7 @@ static int mem_query (lua_State *L) {
     int i;
     for (i = LUA_NUMTAGS - 1; i >= 0; i--) {
       if (strcmp(t, ttypename(i)) == 0) {
-        lua_pushinteger(L, l_memcontrol.objcount[i]);
+        lua_pushinteger(L, LuaObject::instanceCounts[i]);
         return 1;
       }
     }

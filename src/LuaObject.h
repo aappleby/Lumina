@@ -8,8 +8,8 @@ public:
 
   void Init(int type, LuaObject** list);
 
-  //void* operator new (size_t size, int type);
-  //void* operator delete ( void* );
+  void* operator new (size_t size);
+  void operator delete ( void* );
 
   bool isDead();
   bool isDeadKey() { return tt == LUA_TDEADKEY; }
@@ -17,5 +17,7 @@ public:
   LuaObject *next;
   uint8_t tt;
   uint8_t marked;
+
+  static int instanceCounts[256];
 };
 

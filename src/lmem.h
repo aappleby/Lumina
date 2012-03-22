@@ -17,6 +17,9 @@ struct Memcontrol {
   bool free(size_t size, int type);
   bool canAlloc(size_t size);
 
+  bool newObject(int type);
+  bool delObject(int type);
+
   void enableLimit();
   void disableLimit();
 
@@ -25,13 +28,11 @@ struct Memcontrol {
   size_t total;
   size_t maxmem;
   size_t memlimit;
-  size_t objcount[256];
-  size_t objcount2[256];
 };
 
 extern Memcontrol l_memcontrol;
 
-void* luaM_alloc(size_t size, int pool);
+void* luaM_alloc(size_t size);
 void  luaM_free(void * blob);
 
 LuaObject *luaC_newobj (int tt, size_t sz, LuaObject **list);

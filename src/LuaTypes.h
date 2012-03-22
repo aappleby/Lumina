@@ -26,14 +26,7 @@ typedef uint32_t Instruction;
 
 //-----------------------------------------------------------------------------
 
-enum LuaAllocPool {
-  LAP_STARTUP,
-  LAP_RUNTIME,
-  LAP_OBJECT,
-  LAP_VECTOR,
-};
-
-void* luaM_alloc(size_t size, int pool);
+void* luaM_alloc(size_t size);
 void  luaM_free(void * blob);
 
 void  luaM_delobject(void * blob);

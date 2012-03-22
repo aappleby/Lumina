@@ -29,9 +29,6 @@ Memcontrol::Memcontrol() {
   memlimit = 0;
   limitEnabled = true;
 
-  memset(objcount, 0, sizeof(objcount));
-  memset(objcount2, 0, sizeof(objcount2));
-
   char *limit = getenv("MEMLIMIT");  /* initialize memory limit */
   memlimit = limit ? strtoul(limit, NULL, 10) : ULONG_MAX;
 }
@@ -39,15 +36,12 @@ Memcontrol::Memcontrol() {
 bool Memcontrol::free(size_t size, int type) {
   numblocks--;
   total -= size;
-  objcount[type]--;
   return true;
 }
 
 bool Memcontrol::alloc(size_t size, int type) {
   numblocks++;
   total += (uint32_t)size;
-  objcount[type]++;
-  objcount2[type]++;
   maxmem = std::max(maxmem, total);
   return true;
 }
@@ -72,19 +66,17 @@ void Memcontrol::disableLimit() {
 struct Header {
   size_t size;
   int type;
-  int pool;
 };
 
 //-----------------------------------------------------------------------------
 
-Header* allocblock (size_t size, int type, int pool) {
+Header* allocblock (size_t size, int type) {
   uint8_t* buf = (uint8_t*)malloc(sizeof(Header) + size + MARKSIZE);
   if (buf == NULL) return NULL;
 
   Header *block = reinterpret_cast<Header*>(buf);
   block->size = size;
   block->type = type;
-  block->pool = pool;
   memset(buf + sizeof(Header), -MARK, size);
   memset(buf + sizeof(Header) + size, MARK, MARKSIZE);
 
@@ -106,11 +98,11 @@ void freeblock (Header *block) {
 
 //-----------------------------------------------------------------------------
 
-void* default_alloc(size_t size, int type, int pool) {
+void* default_alloc(size_t size, int type) {
   if (!l_memcontrol.canAlloc(size)) return NULL;
   assert(type >= 0);
   assert(type < 256);
-  Header* newblock = allocblock(size, type, pool);
+  Header* newblock = allocblock(size, type);
   if(newblock) l_memcontrol.alloc(size,type);
   return newblock ? newblock + 1 : NULL;
 }
@@ -125,12 +117,12 @@ void default_free(void * blob) {
 
 //-----------------------------------------------------------------------------
 
-void *luaM_alloc_ (size_t size, int type, int pool) {
-  void* newblock = default_alloc(size, type, pool);
+void *luaM_alloc_ (size_t size, int type) {
+  void* newblock = default_alloc(size, type);
   if (newblock == NULL) {
     if (thread_G && thread_G->gcrunning) {
       luaC_fullgc(1);  /* try to free some memory... */
-      newblock = default_alloc(size, type, pool);  /* try again */
+      newblock = default_alloc(size, type);  /* try again */
     }
     if (newblock == NULL) {
       if(thread_L) luaD_throw(LUA_ERRMEM);
@@ -149,18 +141,25 @@ void *luaM_alloc_ (size_t size, int type, int pool) {
 ** it to '*list'.
 */
 LuaObject *luaC_newobj (int type, size_t size, LuaObject **list) {
-  LuaObject* o = (LuaObject*)luaM_alloc_(size,type,LAP_OBJECT);
+  LuaObject* o = (LuaObject*)luaM_alloc_(size,type);
   o->Init(type, list);
+
+  LuaObject::instanceCounts[type]++;
+
   return o;
 }
 
 void luaM_delobject(void * blob) {
   if(blob == NULL) return;
+
+  Header *block = reinterpret_cast<Header*>(blob) - 1;
+  LuaObject::instanceCounts[block->type]--;
+
   default_free(blob);
 }
 
-void* luaM_alloc(size_t size, int pool) {
-  return luaM_alloc_(size, 0, pool);
+void* luaM_alloc(size_t size) {
+  return luaM_alloc_(size, 0);
 }
 
 void luaM_free(void * blob) {
