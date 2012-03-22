@@ -7,6 +7,9 @@
 */
 class UpVal : public LuaObject {
 public:
+
+  UpVal(LuaObject** gclist);
+
   TValue *v;  /* points to stack or to its own value */
 
   TValue value;  // the value (when closed)

@@ -73,9 +73,7 @@ Closure *luaF_newLclosure (Proto *p) {
 
 
 UpVal *luaF_newupval () {
-  LuaObject *o = luaC_newobj(LUA_TUPVAL, sizeof(UpVal), NULL);
-  LuaObject::instanceCounts[LUA_TUPVAL]++;
-  UpVal *uv = gco2uv(o);
+  UpVal *uv = new UpVal(NULL);
   uv->v = &uv->value;
   setnilvalue(uv->v);
   return uv;
@@ -99,9 +97,7 @@ UpVal *luaF_findupval (StkId level) {
     pp = &(p->next);
   }
   /* not found: create a new one */
-  LuaObject* o = luaC_newobj(LUA_TUPVAL, sizeof(UpVal), pp);
-  LuaObject::instanceCounts[LUA_TUPVAL]++;
-  uv = gco2uv(o);
+  uv = new UpVal(pp);
   uv->v = level;  /* current value lives in the stack */
   uv->uprev = &g->uvhead;  /* double link it in `uvhead' list */
   uv->unext = g->uvhead.unext;
@@ -122,8 +118,7 @@ static void unlinkupval (UpVal *uv) {
 void luaF_freeupval (UpVal *uv) {
   if (uv->v != &uv->value)  /* is it open? */
     unlinkupval(uv);  /* remove from open list */
-  luaM_delobject(uv);  /* free upvalue */
-  LuaObject::instanceCounts[LUA_TUPVAL]--;
+  delete uv;  /* free upvalue */
 }
 
 
