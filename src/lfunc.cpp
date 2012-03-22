@@ -33,6 +33,7 @@ Closure *luaF_newCclosure (int n) {
     luaM_free(b);
     throw;
   }
+  LuaObject::instanceCounts[LUA_TFUNCTION]++;
 
   Closure *c = gco2cl(o);
   c->isC = 1;
@@ -57,6 +58,7 @@ Closure *luaF_newLclosure (Proto *p) {
     luaM_free(b);
     throw;
   }
+  LuaObject::instanceCounts[LUA_TFUNCTION]++;
 
   Closure *c = gco2cl(o);
   c->isC = 0;
@@ -71,6 +73,7 @@ Closure *luaF_newLclosure (Proto *p) {
 
 UpVal *luaF_newupval () {
   LuaObject *o = luaC_newobj(LUA_TUPVAL, sizeof(UpVal), NULL);
+  LuaObject::instanceCounts[LUA_TUPVAL]++;
   UpVal *uv = gco2uv(o);
   uv->v = &uv->value;
   setnilvalue(uv->v);
@@ -96,6 +99,7 @@ UpVal *luaF_findupval (StkId level) {
   }
   /* not found: create a new one */
   LuaObject* o = luaC_newobj(LUA_TUPVAL, sizeof(UpVal), pp);
+  LuaObject::instanceCounts[LUA_TUPVAL]++;
   uv = gco2uv(o);
   uv->v = level;  /* current value lives in the stack */
   uv->uprev = &g->uvhead;  /* double link it in `uvhead' list */
@@ -118,6 +122,7 @@ void luaF_freeupval (UpVal *uv) {
   if (uv->v != &uv->value)  /* is it open? */
     unlinkupval(uv);  /* remove from open list */
   luaM_delobject(uv);  /* free upvalue */
+  LuaObject::instanceCounts[LUA_TUPVAL]--;
 }
 
 
@@ -145,6 +150,7 @@ void luaF_close (StkId level) {
 
 Proto *luaF_newproto () {
   LuaObject* o = luaC_newobj(LUA_TPROTO, sizeof(Proto), NULL);
+  LuaObject::instanceCounts[LUA_TPROTO]++;
   Proto* f = gco2p(o);
   f->constants.init();
   f->p.init();
@@ -171,6 +177,7 @@ void luaF_freeproto (Proto *f) {
   f->locvars.clear();
   f->upvalues.clear();
   luaM_delobject(f);
+  LuaObject::instanceCounts[LUA_TPROTO]--;
 }
 
 
@@ -178,6 +185,7 @@ void luaF_freeclosure (Closure *c) {
   luaM_free(c->pupvals_);
   luaM_free(c->ppupvals_);
   luaM_delobject(c);
+  LuaObject::instanceCounts[LUA_TFUNCTION]--;
 }
 
 

@@ -349,6 +349,7 @@ static void rehash (Table *t, const TValue *ek) {
 
 Table *luaH_new () {
   Table* t = (Table*)luaC_newobj(LUA_TTABLE, sizeof(Table), NULL);
+  LuaObject::instanceCounts[LUA_TTABLE]++;
 
   //Table* t = new(newblock) Table();
   //t->Init(LUA_TTABLE);
@@ -366,6 +367,7 @@ void luaH_free (Table *t) {
   t->hashtable.clear();
   t->array.clear();
   luaM_delobject(t);
+  LuaObject::instanceCounts[LUA_TTABLE]--;
 }
 
 

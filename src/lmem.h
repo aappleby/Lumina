@@ -13,8 +13,8 @@
 struct Memcontrol {
   Memcontrol();
 
-  bool alloc(size_t size, int type);
-  bool free(size_t size, int type);
+  bool alloc(size_t size);
+  bool free(size_t size);
   bool canAlloc(size_t size);
 
   bool newObject(int type);

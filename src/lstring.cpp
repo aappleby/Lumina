@@ -69,6 +69,7 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
     luaM_delobject(o);
     throw;
   }
+  LuaObject::instanceCounts[LUA_TSTRING]++;
   ts = gco2ts(o);
   ts->setLen(l);
   ts->setHash(h);
@@ -123,6 +124,7 @@ Udata *luaS_newudata (size_t s, Table *e) {
     luaM_free(b);
     throw;
   }
+  LuaObject::instanceCounts[LUA_TUSERDATA]++;
   u = gco2u(o);
   u->len = s;
   u->metatable = NULL;
@@ -134,12 +136,14 @@ Udata *luaS_newudata (size_t s, Table *e) {
 void luaS_deludata(Udata* ud) {
   luaM_free(ud->buf);
   luaM_delobject(ud);
+  LuaObject::instanceCounts[LUA_TUSERDATA]--;
 }
 
 void luaS_freestr (TString* ts) {
   thread_G->strt->nuse--;
   luaM_free(ts->buf_);
   luaM_delobject(ts);
+  LuaObject::instanceCounts[LUA_TSTRING]--;
 }
 
 void luaS_initstrt() {

@@ -184,6 +184,8 @@ lua_State *lua_newthread (lua_State *L) {
   luaC_checkGC();
 
   LuaObject* o = luaC_newobj(LUA_TTHREAD, sizeof(lua_State), NULL);
+  LuaObject::instanceCounts[LUA_TTHREAD]++;
+
   lua_State* L1 = gco2th(o);
 
   setthvalue(L, L->top, L1);
@@ -210,6 +212,7 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
     L1->freestack();
   }
   luaM_delobject(L1);
+  LuaObject::instanceCounts[LUA_TTHREAD]--;
 }
 
 
