@@ -491,6 +491,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\LuaBase.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaBase.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\LuaBuffer.cpp"
 				>
 			</File>

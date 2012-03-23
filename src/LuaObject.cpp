@@ -22,15 +22,6 @@ LuaObject::~LuaObject() {
   LuaObject::instanceCounts[tt]--;
 }
 
-void * LuaObject::operator new(size_t size) {
-  void* blob = luaM_alloc(size);
-  return blob;
-}
-
-void LuaObject::operator delete(void* blob) {
-  luaM_free(blob);
-}
-
 void LuaObject::linkGC(LuaObject*& gcHead) {
   assert(next == NULL);
   next = gcHead;

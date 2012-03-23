@@ -6,6 +6,10 @@
 */
 class CallInfo {
 public:
+
+  CallInfo() {}
+  ~CallInfo() {}
+
   StkId func;  /* function index in the stack */
   StkId	top;  /* top for this function */
   CallInfo *previous, *next;  /* dynamic call link */

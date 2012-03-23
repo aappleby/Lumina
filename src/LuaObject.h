@@ -1,15 +1,12 @@
 #pragma once
+#include "LuaBase.h"
 #include "LuaTypes.h"
 
-class LuaObject {
+class LuaObject : public LuaBase {
 public:
 
   LuaObject(int type);
-
   ~LuaObject();
-
-  void* operator new(size_t size);
-  void operator delete(void*);
 
   void linkGC(LuaObject*& gcHead);
 
