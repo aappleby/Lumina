@@ -571,19 +571,20 @@ static void f_parser (lua_State *L, void *ud) {
 int luaD_protectedparser (lua_State *L, ZIO *z, const char *name,
                                         const char *mode) {
   THREAD_CHECK(L);
-  struct SParser p;
-  int status;
   L->nny++;  /* cannot yield during parsing */
-  p.z = z; p.name = name; p.mode = mode;
+
+  SParser p;
+  p.z = z;
+  p.name = name;
+  p.mode = mode;
   p.dyd.actvar.arr.init();
   p.dyd.gt.arr.init();
   p.dyd.label.arr.init();
   p.buff.buffer.init();
 
-  status = luaD_pcall(L, f_parser, &p, savestack(L, L->top), L->errfunc);
+  int status = luaD_pcall(L, f_parser, &p, savestack(L, L->top), L->errfunc);
 
   p.buff.buffer.clear();
-  
   p.dyd.actvar.arr.clear();
   p.dyd.gt.arr.clear();
   p.dyd.label.arr.clear();

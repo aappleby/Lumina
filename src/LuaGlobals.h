@@ -9,6 +9,12 @@
 */
 class global_State {
 public:
+
+  //global_State() {}
+
+  void* operator new(size_t size);
+  void operator delete(void*);
+
   size_t totalbytes;  /* number of bytes currently allocated - GCdebt */
   l_mem GCdebt;  /* bytes allocated not yet compensated by the collector */
   size_t lastmajormem;  /* memory in use after last major collection */
