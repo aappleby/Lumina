@@ -15,6 +15,10 @@ struct lua_longjmp {
 */
 class lua_State : public LuaObject {
 public:
+
+  lua_State() : LuaObject(LUA_TTHREAD, NULL) {}
+  ~lua_State() {}
+
   uint8_t status;
   StkId top;  /* first free slot in the stack */
   global_State *l_G;

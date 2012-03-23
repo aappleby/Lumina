@@ -31,8 +31,6 @@ typedef uint32_t Instruction;
 void* luaM_alloc(size_t size);
 void  luaM_free(void * blob);
 
-void  luaM_delobject(void * blob);
-
 //-----------------------------------------------------------------------------
 
 extern __declspec(thread) lua_State* thread_L;

@@ -130,20 +130,3 @@ void luaM_free(void * blob) {
 }
 
 //-----------------------------------------------------------------------------
-
-/*
-** create a new collectable object (with given type and size) and link
-** it to '*list'.
-*/
-LuaObject *luaC_newobj (int type, size_t size, LuaObject **list) {
-  LuaObject* o = (LuaObject*)luaM_alloc(size);
-  if(o == NULL) return NULL;
-  o->Init(type, list);
-  return o;
-}
-
-void luaM_delobject(void * blob) {
-  luaM_free(blob);
-}
-
-//-----------------------------------------------------------------------------

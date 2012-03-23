@@ -36,8 +36,5 @@ void* luaM_alloc_nothrow(size_t size);
 void* luaM_alloc(size_t size);
 void  luaM_free(void * blob);
 
-LuaObject *luaC_newobj (int tt, size_t sz, LuaObject **list);
-void  luaM_delobject(void * blob);
-
 #endif
 

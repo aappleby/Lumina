@@ -4,12 +4,9 @@
 class LuaObject {
 public:
 
-  LuaObject() {}
   LuaObject(int type, LuaObject** list);
 
   ~LuaObject();
-
-  void Init(int type, LuaObject** list);
 
   void* operator new(size_t size);
   void operator delete(void*);
@@ -23,4 +20,3 @@ public:
 
   static int instanceCounts[256];
 };
-
