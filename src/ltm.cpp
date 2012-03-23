@@ -5,6 +5,7 @@
 */
 
 #include "LuaGlobals.h"
+#include "LuaUserdata.h"
 
 #include <string.h>
 
@@ -95,7 +96,7 @@ const TValue *luaT_gettmbyobj (const TValue *o, TMS event) {
       mt = hvalue(o)->metatable;
       break;
     case LUA_TUSERDATA:
-      mt = uvalue(o)->metatable;
+      mt = uvalue(o)->metatable_;
       break;
     default:
       mt = thread_G->mt[ttypenv(o)];

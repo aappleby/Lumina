@@ -5,6 +5,7 @@
 */
 
 #include "LuaGlobals.h"
+#include "LuaUserdata.h"
 
 #include <string.h>
 
@@ -53,23 +54,20 @@ void luaS_resize (int newsize) {
 static TString *newlstr (const char *str, size_t l, unsigned int h) {
 
   LuaObject **list;  /* (pointer to) list where it will be inserted */
-  TString *ts;
   stringtable *tb = thread_G->strt;
   if (tb->nuse >= cast(uint32_t, tb->size) && tb->size <= MAX_INT/2)
     luaS_resize(tb->size*2);  /* too crowded */
   list = &tb->hash[lmod(h, tb->size)];
 
   char* buf = (char*)luaM_alloc(l+1);
-  if(buf == NULL) luaD_throw(LUA_ERRMEM);
+  if(buf == NULL) return NULL;
 
-  LuaObject* o = luaC_newobj(LUA_TSTRING, sizeof(TString), list);
-  if(o == NULL) {
+  TString* ts = new TString(list);
+  if(ts == NULL) {
     luaM_free(buf);
-    luaD_throw(LUA_ERRMEM);
+    return NULL;
   }
 
-  LuaObject::instanceCounts[LUA_TSTRING]++;
-  ts = gco2ts(o);
   ts->setHash(h);
   ts->setReserved(0);
   ts->setBuf(buf);
@@ -101,7 +99,9 @@ TString *luaS_newlstr (const char *str, size_t l) {
       return ts;
     }
   }
-  return newlstr(str, l, h);  /* not found; create a new string */
+  TString* s = newlstr(str, l, h);  /* not found; create a new string */
+  if(s == NULL) luaD_throw(LUA_ERRMEM);
+  return s;
 }
 
 
@@ -110,38 +110,28 @@ TString *luaS_new (const char *str) {
 }
 
 Udata *luaS_newudata (size_t s, Table *e) {
-  Udata *u;
   if (s > MAX_SIZET - sizeof(Udata)) luaG_runerror("memory allocation error: udata too big");
 
   uint8_t* b = (uint8_t*)luaM_alloc(s);
-  if(b == NULL) luaD_throw(LUA_ERRMEM);
+  if(b == NULL) return NULL;
 
-  LuaObject* o = luaC_newobj(LUA_TUSERDATA, sizeof(Udata), NULL);
-  if(o == NULL) {
+  Udata* u = new Udata(b,s,e);
+  if(u == NULL) {
     luaM_free(b);
-    luaD_throw(LUA_ERRMEM);
+    return NULL;
   }
 
-  LuaObject::instanceCounts[LUA_TUSERDATA]++;
-  u = gco2u(o);
-  u->len = s;
-  u->metatable = NULL;
-  u->env = e;
-  u->buf = b;
   return u;
 }
 
 void luaS_deludata(Udata* ud) {
-  luaM_free(ud->buf);
-  luaM_delobject(ud);
+  delete ud;
   LuaObject::instanceCounts[LUA_TUSERDATA]--;
 }
 
 void luaS_freestr (TString* ts) {
   thread_G->strt->nuse--;
-  luaM_free((void*)ts->c_str());
-  luaM_delobject(ts);
-  LuaObject::instanceCounts[LUA_TSTRING]--;
+  delete ts;
 }
 
 void luaS_initstrt() {

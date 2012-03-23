@@ -8,6 +8,7 @@
 #include "LuaGlobals.h"
 #include "LuaProto.h"
 #include "LuaState.h"
+#include "LuaUserdata.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -277,7 +278,7 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
     case LUA_TUSERDATA: {
       if (uvalue(t1) == uvalue(t2)) return 1;
       else if (L == NULL) return 0;
-      tm = get_equalTM(L, uvalue(t1)->metatable, uvalue(t2)->metatable, TM_EQ);
+      tm = get_equalTM(L, uvalue(t1)->metatable_, uvalue(t2)->metatable_, TM_EQ);
       break;  /* will try TM */
     }
     case LUA_TTABLE: {

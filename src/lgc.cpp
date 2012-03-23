@@ -8,6 +8,7 @@
 #include "LuaGlobals.h"
 #include "LuaProto.h"
 #include "LuaState.h"
+#include "LuaUserdata.h"
 
 #include <string.h>
 
@@ -226,9 +227,9 @@ static void reallymarkobject (global_State *g, LuaObject *o) {
       return;  /* for strings, gray is as good as black */
     }
     case LUA_TUSERDATA: {
-      Table *mt = gco2u(o)->metatable;
+      Table *mt = gco2u(o)->metatable_;
       markobject(g, mt);
-      markobject(g, gco2u(o)->env);
+      markobject(g, gco2u(o)->env_);
       gray2black(o);  /* all pointers marked */
       return;
     }

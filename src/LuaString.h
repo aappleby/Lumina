@@ -9,21 +9,21 @@ __declspec(align(8)) class TString : public LuaObject {
 public:
 
   //TString(int type, LuaObject** list) : LuaObject(type,list) {}
-  TString() {
+  TString(LuaObject** list) : LuaObject(LUA_TSTRING, list) {
     buf_ = NULL;
-    reserved = 0;
-    hash = 0;
-    len = 0;
+    reserved_ = 0;
+    hash_ = 0;
+    len_ = 0;
   }
 
   ~TString() {
-    if(buf_) {
-      luaM_free(buf_);
-    }
+    luaM_free(buf_);
+    buf_ = NULL;
+    len_ = NULL;
   }
 
-  size_t getLen() const { return len; }
-  void setLen(size_t l) { len = l; }
+  size_t getLen() const { return len_; }
+  void setLen(size_t len) { len_ = l; }
 
   void setBuf(char* buf) {
     buf_ = buf;
@@ -33,10 +33,10 @@ public:
     return buf_;
   }
 
-  void setText(const char * str, size_t l) {
-    len = l;
-    memcpy(buf_, str, l*sizeof(char));
-    buf_[len] = '\0'; // terminating null
+  void setText(const char * str, size_t len) {
+    len_ = len;
+    memcpy(buf_, str, len*sizeof(char));
+    buf_[len_] = '\0'; // terminating null
   }
 
   uint32_t getHash() const { return hash; }

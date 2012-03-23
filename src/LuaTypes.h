@@ -13,6 +13,7 @@ class TValue;
 class UpVal;
 class Table;
 class Proto;
+class Udata;
 
 typedef TValue* StkId;  /* index to stack elements */
 

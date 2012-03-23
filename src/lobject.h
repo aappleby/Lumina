@@ -27,16 +27,6 @@ class Table;
 #include "LuaString.h"
 
 
-/*
-** Header for userdata; memory area follows the end of this structure
-*/
-__declspec(align(8)) struct Udata : public LuaObject {
-  Table *metatable;
-  Table *env;
-  uint8_t* buf;
-  size_t len;  /* number of bytes */
-};
-
 
 
 

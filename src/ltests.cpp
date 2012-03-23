@@ -8,6 +8,7 @@
 #include "LuaGlobals.h"
 #include "LuaProto.h"
 #include "LuaState.h"
+#include "LuaUserdata.h"
 
 #include <limits.h>
 #include <stdio.h>
@@ -220,7 +221,7 @@ static void checkobject (global_State *g, LuaObject *o) {
         break;
       }
       case LUA_TUSERDATA: {
-        Table *mt = gco2u(o)->metatable;
+        Table *mt = gco2u(o)->metatable_;
         if (mt) checkobjref(g, o, mt);
         break;
       }

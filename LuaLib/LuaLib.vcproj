@@ -587,6 +587,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\LuaUserdata.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaUserdata.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\LuaValue.cpp"
 				>
 			</File>
