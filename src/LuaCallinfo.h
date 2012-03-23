@@ -1,10 +1,11 @@
 #pragma once
+#include "LuaBase.h"
 #include "LuaTypes.h"
 
 /*
 ** information about a call
 */
-class CallInfo {
+class CallInfo : public LuaBase {
 public:
 
   CallInfo() {}
