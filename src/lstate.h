@@ -64,7 +64,6 @@ struct lua_longjmp;  /* defined in ldo.c */
 #define gco2p(o)	check_exp((o)->tt == LUA_TPROTO, reinterpret_cast<Proto*>(o))
 #define gco2th(o)	check_exp((o)->tt == LUA_TTHREAD, reinterpret_cast<lua_State*>(o))
 
-/* macro to convert any Lua object into a LuaObject */
 #define obj2gco(v)	(cast(LuaObject *, (v)))
 
 

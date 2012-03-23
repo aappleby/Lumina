@@ -401,7 +401,7 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
     }
   }
   setobj(&mp->i_key, key);
-  luaC_barrierback(obj2gco(t), key);
+  luaC_barrierback(t, key);
   assert(ttisnil(&mp->i_val));
   return &mp->i_val;
 }

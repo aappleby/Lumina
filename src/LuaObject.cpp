@@ -32,3 +32,18 @@ bool LuaObject::isDead() {
   uint8_t live = (marked ^ WHITEBITS) & (thread_G->currentwhite ^ WHITEBITS);
   return !live;
 }
+
+bool LuaObject::isBlack() {
+  if(marked & (1 << BLACKBIT)) return true;
+  return false;
+}
+
+bool LuaObject::isWhite() {
+  if(marked & (1 << WHITE0BIT)) return true;
+  if(marked & (1 << WHITE1BIT)) return true;
+  return false;
+}
+
+bool LuaObject::isGray() {
+  return !isBlack() && !isWhite();
+}

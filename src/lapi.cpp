@@ -1158,7 +1158,7 @@ static const char *aux_upvalue (StkId fi, int n, TValue **val,
       Closure *f = clCvalue(fi);
       if (!(1 <= n && n <= f->nupvalues)) return NULL;
       *val = &f->pupvals_[n-1];
-      if (owner) *owner = obj2gco(f);
+      if (owner) *owner = f;
       return "";
     }
     case LUA_TLCL: {  /* Lua closure */
@@ -1167,7 +1167,7 @@ static const char *aux_upvalue (StkId fi, int n, TValue **val,
       Proto *p = f->p;
       if (!(1 <= n && n <= (int)p->upvalues.size())) return NULL;
       *val = f->ppupvals_[n-1]->v;
-      if (owner) *owner = obj2gco(f->ppupvals_[n - 1]);
+      if (owner) *owner = f->ppupvals_[n - 1];
       name = p->upvalues[n-1].name;
       return (name == NULL) ? "" : name->c_str();
     }

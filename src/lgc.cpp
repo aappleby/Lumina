@@ -614,10 +614,10 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
 static void freeobj (LuaObject *o) {
   lua_State *L = thread_L;
   switch (gch(o)->tt) {
-    case LUA_TPROTO: delete gco2p(o); break;
-    case LUA_TFUNCTION: delete gco2cl(o); break;
-    case LUA_TUPVAL: delete gco2uv(o); break;
-    case LUA_TTABLE: delete gco2t(o); break;
+    case LUA_TPROTO: delete o; break;
+    case LUA_TFUNCTION: delete o; break;
+    case LUA_TUPVAL: delete o; break;
+    case LUA_TTABLE: delete o; break;
     case LUA_TTHREAD: luaE_freethread(L, gco2th(o)); break;
     case LUA_TUSERDATA: luaS_deludata(gco2u(o)); break;
     case LUA_TSTRING: luaS_freestr(gco2ts(o)); break;

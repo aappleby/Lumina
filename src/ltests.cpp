@@ -95,7 +95,7 @@ static int testobjref (global_State *g, LuaObject *f, LuaObject *t) {
   return r;
 }
 
-#define checkobjref(g,f,t) assert(testobjref(g,f,obj2gco(t)))
+#define checkobjref(g,f,t) assert(testobjref(g,f,t))
 
 
 static void checkvalref (global_State *g, LuaObject *f, const TValue *t) {
@@ -107,17 +107,16 @@ static void checkvalref (global_State *g, LuaObject *f, const TValue *t) {
 
 
 static void checktable (global_State *g, Table *h) {
-  LuaObject *hgc = obj2gco(h);
   if (h->metatable)
-    checkobjref(g, hgc, h->metatable);
+    checkobjref(g, h, h->metatable);
   for (int i = 0; i < (int)h->array.size(); i++)
-    checkvalref(g, hgc, &h->array[i]);
+    checkvalref(g, h, &h->array[i]);
   for(int i = 0; i < (int)h->hashtable.size(); i++) {
     Node* n = h->getNode(i);
     if (!ttisnil(&n->i_val)) {
       assert(!ttisnil(&n->i_key));
-      checkvalref(g, hgc, &n->i_key);
-      checkvalref(g, hgc, &n->i_val);
+      checkvalref(g, h, &n->i_key);
+      checkvalref(g, h, &n->i_val);
     }
   }
 }
@@ -129,23 +128,22 @@ static void checktable (global_State *g, Table *h) {
 */
 static void checkproto (global_State *g, Proto *f) {
   int i;
-  LuaObject *fgc = obj2gco(f);
-  if (f->source) checkobjref(g, fgc, f->source);
+  if (f->source) checkobjref(g, f, f->source);
   for (i=0; i < (int)f->constants.size(); i++) {
     if (ttisstring(&f->constants[i]))
-      checkobjref(g, fgc, tsvalue(&f->constants[i]));
+      checkobjref(g, f, tsvalue(&f->constants[i]));
   }
   for (i=0; i < (int)f->upvalues.size(); i++) {
     if (f->upvalues[i].name)
-      checkobjref(g, fgc, f->upvalues[i].name);
+      checkobjref(g, f, f->upvalues[i].name);
   }
   for (i=0; i < (int)f->p.size(); i++) {
     if (f->p[i])
-      checkobjref(g, fgc, f->p[i]);
+      checkobjref(g, f, f->p[i]);
   }
   for (i=0; i < (int)f->locvars.size(); i++) {
     if (f->locvars[i].varname)
-      checkobjref(g, fgc, f->locvars[i].varname);
+      checkobjref(g, f, f->locvars[i].varname);
   }
 }
 

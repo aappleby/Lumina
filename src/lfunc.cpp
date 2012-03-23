@@ -83,14 +83,13 @@ UpVal *luaF_findupval (StkId level) {
   UpVal *p;
   UpVal *uv;
   while (*pp != NULL && (p = gco2uv(*pp))->v >= level) {
-    LuaObject *o = obj2gco(p);
     assert(p->v != &p->value);
     if (p->v == level) {  /* found a corresponding upvalue? */
-      if (isdead(o))  /* is it dead? */
-        changewhite(o);  /* resurrect it */
+      if (isdead(p))  /* is it dead? */
+        changewhite(p);  /* resurrect it */
       return p;
     }
-    resetoldbit(o);  /* may create a newer upval after this one */
+    resetoldbit(p);  /* may create a newer upval after this one */
     pp = &(p->next);
   }
   /* not found: create a new one */
@@ -111,17 +110,16 @@ void luaF_close (StkId level) {
   lua_State* L = thread_L;
   global_State *g = thread_G;
   while (L->openupval != NULL && (uv = gco2uv(L->openupval))->v >= level) {
-    LuaObject *o = obj2gco(uv);
-    assert(!isblack(o) && uv->v != &uv->value);
+    assert(!isblack(uv) && uv->v != &uv->value);
     L->openupval = uv->next;  /* remove from `open' list */
-    if (isdead(o))
+    if (isdead(uv))
       delete uv;
     else {
       uv->unlink();  /* remove upvalue from 'uvhead' list */
       setobj(&uv->value, uv->v);  /* move value to upvalue slot */
       uv->v = &uv->value;  /* now current value lives here */
-      gch(o)->next = g->allgc;  /* link upvalue into 'allgc' list */
-      g->allgc = o;
+      uv->next = g->allgc;  /* link upvalue into 'allgc' list */
+      g->allgc = uv;
       luaC_checkupvalcolor(g, uv);
     }
   }
