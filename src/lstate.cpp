@@ -178,9 +178,9 @@ static void close_state (lua_State *L) {
 
   L->freestack();
   assert(gettotalbytes(g) == (sizeof(lua_State) + sizeof(global_State)));
-  luaM_free(g);
+  delete g;
   L->l_G = NULL;
-  luaM_free(L);  /* free main block */
+  delete L;
 }
 
 
@@ -223,13 +223,11 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
 lua_State *lua_newstate () {
   GLOBAL_CHANGE(NULL);
   int i;
-  lua_State *L;
-  global_State *g;
-  L = (lua_State*)luaM_alloc(sizeof(lua_State));
+  lua_State* L = new lua_State();
   if(L == NULL) { return NULL; }
-  g = (global_State*)luaM_alloc(sizeof(global_State));
+  global_State* g = new global_State();
   if(g == NULL) {
-    luaM_free(L);
+    delete L;
     return NULL;
   }
   L->l_G = g;

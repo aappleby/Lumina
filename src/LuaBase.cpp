@@ -1,7 +1,5 @@
 #include "LuaBase.h"
-
-void* luaM_alloc(size_t size);
-void luaM_free(void* blob);
+#include "lmem.h"
 
 void * LuaBase::operator new(size_t size) {
   void* blob = luaM_alloc(size);

@@ -12,7 +12,7 @@ int LuaObject::instanceCounts[256];
 LuaObject::LuaObject(int type) {
 
   next = NULL;
-  marked = luaC_white(thread_G);
+  if(thread_G) marked = luaC_white(thread_G);
   tt = type;
 
   LuaObject::instanceCounts[tt]++;

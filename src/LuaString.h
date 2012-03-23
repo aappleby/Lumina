@@ -8,18 +8,8 @@
 __declspec(align(8)) class TString : public LuaObject {
 public:
 
-  TString() : LuaObject(LUA_TSTRING) {
-    buf_ = NULL;
-    reserved_ = 0;
-    hash_ = 0;
-    len_ = 0;
-  }
-
-  ~TString() {
-    luaM_free(buf_);
-    buf_ = NULL;
-    len_ = NULL;
-  }
+  TString();
+  ~TString();
 
   size_t getLen() const { return len_; }
   void setLen(size_t len) { len_ = len; }

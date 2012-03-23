@@ -8,17 +8,14 @@
 #include <stddef.h>
 #include <memory.h>
 #include <algorithm>
+#include <assert.h>
 
+#include "LuaTypes.h"
 #include "LuaGlobals.h"
 
-#include "lua.h"
-
-#include "ldebug.h"
-#include "ldo.h"
-#include "lgc.h"
 #include "lmem.h"
-#include "lobject.h"
-#include "lstate.h"
+
+void luaC_fullgc (int isemergency);
 
 Memcontrol l_memcontrol;
 
