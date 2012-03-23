@@ -4,7 +4,7 @@
 class LuaObject {
 public:
 
-  LuaObject(int type, LuaObject*& list);
+  LuaObject(int type);
 
   ~LuaObject();
 

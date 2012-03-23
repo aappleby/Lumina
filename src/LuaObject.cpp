@@ -9,12 +9,10 @@ void *luaM_alloc_ (size_t size, int type, int pool);
 
 int LuaObject::instanceCounts[256];
 
-LuaObject::LuaObject(int type, LuaObject*& gcHead) {
+LuaObject::LuaObject(int type) {
 
   marked = luaC_white(thread_G);
   tt = type;
-
-  linkGC(gcHead);
 
   LuaObject::instanceCounts[tt]++;
 }

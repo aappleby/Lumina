@@ -1,6 +1,6 @@
 #include "LuaProto.h"
 
-Proto::Proto() : LuaObject(LUA_TPROTO, getGlobalGCHead()) {
+Proto::Proto() : LuaObject(LUA_TPROTO) {
   cache = NULL;
   numparams = 0;
   is_vararg = 0;
@@ -8,4 +8,6 @@ Proto::Proto() : LuaObject(LUA_TPROTO, getGlobalGCHead()) {
   linedefined = 0;
   lastlinedefined = 0;
   source = NULL;
+
+  linkGC(getGlobalGCHead());
 }

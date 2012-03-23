@@ -6,6 +6,13 @@
 
 l_noret luaG_runerror (const char *fmt, ...);
 
+lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
+  linkGC(getGlobalGCHead());
+}
+
+lua_State::~lua_State() {
+}
+
 void lua_State::freeCI() {
   CallInfo *ci = ci_;
   CallInfo *next = ci->next;
