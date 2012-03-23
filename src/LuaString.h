@@ -23,7 +23,7 @@ public:
   }
 
   size_t getLen() const { return len_; }
-  void setLen(size_t len) { len_ = l; }
+  void setLen(size_t len) { len_ = len; }
 
   void setBuf(char* buf) {
     buf_ = buf;
@@ -39,18 +39,18 @@ public:
     buf_[len_] = '\0'; // terminating null
   }
 
-  uint32_t getHash() const { return hash; }
-  void setHash(uint32_t h) { hash = h; }
+  uint32_t getHash() const { return hash_; }
+  void setHash(uint32_t hash) { hash_ = hash; }
 
-  uint8_t getReserved() const { return reserved; }
-  void setReserved(uint8_t r) { reserved = r; }
+  uint8_t getReserved() const { return reserved_; }
+  void setReserved(uint8_t r) { reserved_ = r; }
 
 protected:
 
   char* buf_;
-  uint8_t reserved;
-  uint32_t hash;
-  size_t len;  /* number of characters in string */
+  uint8_t reserved_;
+  uint32_t hash_;
+  size_t len_;  /* number of characters in string */
 
 };
 

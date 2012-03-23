@@ -563,6 +563,7 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
     api_check(n <= MAXUPVAL, "upvalue index too large");
     luaC_checkGC();
     cl = luaF_newCclosure(n);
+    if(cl == NULL) luaD_throw(LUA_ERRMEM);
     cl->f = fn;
     L->top -= n;
     while (n--)
