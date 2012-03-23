@@ -433,6 +433,7 @@ static void pushclosure (lua_State *L, Proto *p, UpVal **encup, StkId base,
   Upvaldesc *uv = p->upvalues.begin();
   int i;
   Closure *ncl = luaF_newLclosure(p);
+  if(ncl == NULL) luaD_throw(LUA_ERRMEM);
   setclLvalue(L, ra, ncl);  /* anchor new closure in stack */
   for (i = 0; i < nup; i++) {  /* fill in its upvalues */
     if (uv[i].instack)  /* upvalue refers to local variable? */

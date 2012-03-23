@@ -15,9 +15,6 @@ Closure*  luaF_newCclosure (int nelems);
 Closure*  luaF_newLclosure (Proto *p);
 UpVal*    luaF_newupval    ();
 
-void luaF_freeclosure (Closure *c);
-void luaF_freeupval   (UpVal *uv);
-
 UpVal* luaF_findupval (StkId level);
 
 void luaF_close       (StkId level);

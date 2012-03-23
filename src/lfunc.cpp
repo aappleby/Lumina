@@ -25,17 +25,14 @@ using std::auto_ptr;
 
 Closure *luaF_newCclosure (int n) {
   TValue* b = (TValue*)luaM_alloc(n * sizeof(TValue));
-  if(b == NULL) luaD_throw(LUA_ERRMEM);
+  if(b == NULL) return NULL;
 
-  LuaObject* o = luaC_newobj(LUA_TFUNCTION, sizeof(Closure), NULL);
-  if(o == NULL) {
+  Closure *c = new Closure();
+  if(c == NULL) {
     luaM_free(b);
-    luaD_throw(LUA_ERRMEM);
+    return NULL;
   }
 
-  LuaObject::instanceCounts[LUA_TFUNCTION]++;
-
-  Closure *c = gco2cl(o);
   c->isC = 1;
   c->nupvalues = cast_byte(n);
   c->pupvals_ = b;
@@ -48,17 +45,14 @@ Closure *luaF_newLclosure (Proto *p) {
   int n = (int)p->upvalues.size();
 
   UpVal** b = (UpVal**)luaM_alloc(n * sizeof(TValue*));
-  if(b == NULL) luaD_throw(LUA_ERRMEM);
+  if(b == NULL) return NULL;
 
-  LuaObject* o = luaC_newobj(LUA_TFUNCTION, sizeof(Closure), NULL);
-  if(o == NULL) {
+  Closure* c = new Closure();
+  if(c == NULL) {
     luaM_free(b);
-    luaD_throw(LUA_ERRMEM);
+    return NULL;
   }
 
-  LuaObject::instanceCounts[LUA_TFUNCTION]++;
-
-  Closure *c = gco2cl(o);
   c->isC = 0;
   c->p = p;
   c->nupvalues = cast_byte(n);
@@ -106,21 +100,6 @@ UpVal *luaF_findupval (StkId level) {
   return uv;
 }
 
-
-static void unlinkupval (UpVal *uv) {
-  assert(uv->unext->uprev == uv && uv->uprev->unext == uv);
-  uv->unext->uprev = uv->uprev;  /* remove from `uvhead' list */
-  uv->uprev->unext = uv->unext;
-}
-
-
-void luaF_freeupval (UpVal *uv) {
-  if (uv->v != &uv->value)  /* is it open? */
-    unlinkupval(uv);  /* remove from open list */
-  delete uv;  /* free upvalue */
-}
-
-
 void luaF_close (StkId level) {
   UpVal *uv;
   lua_State* L = thread_L;
@@ -130,9 +109,9 @@ void luaF_close (StkId level) {
     assert(!isblack(o) && uv->v != &uv->value);
     L->openupval = uv->next;  /* remove from `open' list */
     if (isdead(o))
-      luaF_freeupval(uv);  /* free upvalue */
+      delete uv;
     else {
-      unlinkupval(uv);  /* remove upvalue from 'uvhead' list */
+      uv->unlink();  /* remove upvalue from 'uvhead' list */
       setobj(&uv->value, uv->v);  /* move value to upvalue slot */
       uv->v = &uv->value;  /* now current value lives here */
       gch(o)->next = g->allgc;  /* link upvalue into 'allgc' list */
@@ -140,14 +119,6 @@ void luaF_close (StkId level) {
       luaC_checkupvalcolor(g, uv);
     }
   }
-}
-
-
-void luaF_freeclosure (Closure *c) {
-  luaM_free(c->pupvals_);
-  luaM_free(c->ppupvals_);
-  luaM_delobject(c);
-  LuaObject::instanceCounts[LUA_TFUNCTION]--;
 }
 
 

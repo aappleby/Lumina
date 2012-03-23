@@ -615,8 +615,8 @@ static void freeobj (LuaObject *o) {
   lua_State *L = thread_L;
   switch (gch(o)->tt) {
     case LUA_TPROTO: delete gco2p(o); break;
-    case LUA_TFUNCTION: luaF_freeclosure(gco2cl(o)); break;
-    case LUA_TUPVAL: luaF_freeupval(gco2uv(o)); break;
+    case LUA_TFUNCTION: delete gco2cl(o); break;
+    case LUA_TUPVAL: delete gco2uv(o); break;
     case LUA_TTABLE: delete gco2t(o); break;
     case LUA_TTHREAD: luaE_freethread(L, gco2th(o)); break;
     case LUA_TUSERDATA: luaS_deludata(gco2u(o)); break;

@@ -561,6 +561,7 @@ static void f_parser (lua_State *L, void *ud) {
   setptvalue(L, L->top, tf);
   incr_top(L);
   cl = luaF_newLclosure(tf);
+  if(cl == NULL) luaD_throw(LUA_ERRMEM);
   setclLvalue(L, L->top - 1, cl);
   for (i = 0; i < (int)tf->upvalues.size(); i++)  /* initialize upvalues */
     cl->ppupvals_[i] = luaF_newupval();
