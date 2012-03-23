@@ -1,7 +1,7 @@
 #include "LuaUserdata.h"
 
 
-Udata::Udata(uint8_t* buf, size_t len, Table* env) : LuaObject(LUA_TUSERDATA, NULL) {
+Udata::Udata(uint8_t* buf, size_t len, Table* env) : LuaObject(LUA_TUSERDATA, getGlobalGCHead()) {
   buf_ = buf;
   len_ = len;
   metatable_ = NULL;

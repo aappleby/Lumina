@@ -8,8 +8,7 @@
 __declspec(align(8)) class TString : public LuaObject {
 public:
 
-  //TString(int type, LuaObject** list) : LuaObject(type,list) {}
-  TString(LuaObject** list) : LuaObject(LUA_TSTRING, list) {
+  TString(LuaObject*& gcHead) : LuaObject(LUA_TSTRING, gcHead) {
     buf_ = NULL;
     reserved_ = 0;
     hash_ = 0;

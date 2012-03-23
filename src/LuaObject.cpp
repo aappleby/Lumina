@@ -9,14 +9,12 @@ void *luaM_alloc_ (size_t size, int type, int pool);
 
 int LuaObject::instanceCounts[256];
 
-LuaObject::LuaObject(int type, LuaObject** list) {
-  if(list == NULL) list = &thread_G->allgc;
+LuaObject::LuaObject(int type, LuaObject*& gcHead) {
 
   marked = luaC_white(thread_G);
   tt = type;
 
-  next = *list;
-  *list = this;
+  linkGC(gcHead);
 
   LuaObject::instanceCounts[tt]++;
 }
@@ -32,6 +30,11 @@ void * LuaObject::operator new(size_t size) {
 
 void LuaObject::operator delete(void* blob) {
   luaM_free(blob);
+}
+
+void LuaObject::linkGC(LuaObject*& gcHead) {
+  next = gcHead;
+  gcHead = this;
 }
 
 bool LuaObject::isDead() {

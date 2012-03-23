@@ -1,6 +1,6 @@
 #include "LuaUpval.h"
 
-UpVal::UpVal(LuaObject** gclist) : LuaObject(LUA_TUPVAL, gclist) {
+UpVal::UpVal(LuaObject*& gcHead) : LuaObject(LUA_TUPVAL, gcHead) {
 }
 
 UpVal::~UpVal() {

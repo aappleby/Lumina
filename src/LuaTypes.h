@@ -31,6 +31,8 @@ typedef uint32_t Instruction;
 void* luaM_alloc(size_t size);
 void  luaM_free(void * blob);
 
+LuaObject*& getGlobalGCHead();
+
 //-----------------------------------------------------------------------------
 
 extern __declspec(thread) lua_State* thread_L;

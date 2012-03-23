@@ -1,6 +1,6 @@
 #include "LuaProto.h"
 
-Proto::Proto() : LuaObject(LUA_TPROTO, NULL) {
+Proto::Proto() : LuaObject(LUA_TPROTO, getGlobalGCHead()) {
   cache = NULL;
   numparams = 0;
   is_vararg = 0;

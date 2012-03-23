@@ -5,7 +5,7 @@
 class Closure : public LuaObject {
 public:
 
-  Closure() : LuaObject(LUA_TFUNCTION, NULL) {
+  Closure() : LuaObject(LUA_TFUNCTION, getGlobalGCHead()) {
   }
 
   ~Closure() {

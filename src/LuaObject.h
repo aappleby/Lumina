@@ -4,12 +4,14 @@
 class LuaObject {
 public:
 
-  LuaObject(int type, LuaObject** list);
+  LuaObject(int type, LuaObject*& list);
 
   ~LuaObject();
 
   void* operator new(size_t size);
   void operator delete(void*);
+
+  void linkGC(LuaObject*& gcHead);
 
   bool isDead();
   bool isDeadKey() { return tt == LUA_TDEADKEY; }

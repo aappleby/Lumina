@@ -53,15 +53,14 @@ void luaS_resize (int newsize) {
 
 static TString *newlstr (const char *str, size_t l, unsigned int h) {
 
-  LuaObject **list;  /* (pointer to) list where it will be inserted */
   stringtable *tb = thread_G->strt;
   if (tb->nuse >= cast(uint32_t, tb->size) && tb->size <= MAX_INT/2)
     luaS_resize(tb->size*2);  /* too crowded */
-  list = &tb->hash[lmod(h, tb->size)];
-
+  
   char* buf = (char*)luaM_alloc(l+1);
   if(buf == NULL) return NULL;
 
+  LuaObject*& list = tb->hash[lmod(h, tb->size)];
   TString* ts = new TString(list);
   if(ts == NULL) {
     luaM_free(buf);

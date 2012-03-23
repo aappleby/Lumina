@@ -64,7 +64,7 @@ Closure *luaF_newLclosure (Proto *p) {
 
 
 UpVal *luaF_newupval () {
-  UpVal *uv = new UpVal(NULL);
+  UpVal *uv = new UpVal(getGlobalGCHead());
   if(uv == NULL) luaD_throw(LUA_ERRMEM);
   uv->v = &uv->value;
   setnilvalue(uv->v);
@@ -89,7 +89,7 @@ UpVal *luaF_findupval (StkId level) {
     pp = &(p->next);
   }
   /* not found: create a new one */
-  uv = new UpVal(pp);
+  uv = new UpVal(*pp);
   if(uv == NULL) luaD_throw(LUA_ERRMEM);
   uv->v = level;  /* current value lives in the stack */
   uv->uprev = &g->uvhead;  /* double link it in `uvhead' list */

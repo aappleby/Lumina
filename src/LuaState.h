@@ -16,7 +16,7 @@ struct lua_longjmp {
 class lua_State : public LuaObject {
 public:
 
-  lua_State() : LuaObject(LUA_TTHREAD, NULL) {}
+  lua_State() : LuaObject(LUA_TTHREAD, getGlobalGCHead()) {}
   ~lua_State() {}
 
   uint8_t status;
