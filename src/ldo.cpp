@@ -196,8 +196,14 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
 
 
 
-#define next_ci(L) (L->ci_ = (L->ci_->next ? L->ci_->next : luaE_extendCI(L)))
-
+CallInfo* next_ci(lua_State* L) {
+  if(L->ci_->next == NULL) {
+    L->ci_ = luaE_extendCI(L);
+  } else {
+    L->ci_ = L->ci_->next;
+  }
+  return L->ci_;
+}
 
 /*
 ** returns true if function has been executed (C function)
