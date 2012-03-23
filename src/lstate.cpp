@@ -110,6 +110,7 @@ static void init_registry (lua_State *L, global_State *g) {
   /* create registry */
   Table *registry = new Table();
   if(registry == NULL) luaD_throw(LUA_ERRMEM);
+  registry->linkGC(getGlobalGCHead());
   sethvalue(L, &g->l_registry, registry);
   luaH_resize(registry, LUA_RIDX_LAST, 0);
   /* registry[LUA_RIDX_MAINTHREAD] = L */
@@ -118,6 +119,7 @@ static void init_registry (lua_State *L, global_State *g) {
   /* registry[LUA_RIDX_GLOBALS] = table of globals */
   Table* t = new Table();
   if(t == NULL) luaD_throw(LUA_ERRMEM);
+  t->linkGC(getGlobalGCHead());
   sethvalue(L, &mt, t);
   luaH_setint(registry, LUA_RIDX_GLOBALS, &mt);
 }
@@ -189,6 +191,7 @@ lua_State *lua_newthread (lua_State *L) {
 
   lua_State* L1 = new lua_State();
   if(L1 == NULL) luaD_throw(LUA_ERRMEM);
+  L1->linkGC(getGlobalGCHead());
 
   setthvalue(L, L->top, L1);
   api_incr_top(L);

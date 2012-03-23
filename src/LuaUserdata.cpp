@@ -6,8 +6,6 @@ Udata::Udata(uint8_t* buf, size_t len, Table* env) : LuaObject(LUA_TUSERDATA) {
   len_ = len;
   metatable_ = NULL;
   env_ = env;
-
-  linkGC(getGlobalGCHead());
 }
 
 Udata::~Udata() {

@@ -1,7 +1,6 @@
 #include "LuaClosure.h"
 
 Closure::Closure() : LuaObject(LUA_TFUNCTION) {
-  linkGC(getGlobalGCHead());
 }
 
 Closure::~Closure() {

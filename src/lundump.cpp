@@ -159,20 +159,21 @@ static void LoadDebug(LoadState* S, Proto* f)
 
 static Proto* LoadFunction(LoadState* S)
 {
- Proto* f= new Proto();
- if(f == NULL) luaD_throw(LUA_ERRMEM);
- setptvalue(S->L,S->L->top,f); incr_top(S->L);
- f->linedefined=LoadInt(S);
- f->lastlinedefined=LoadInt(S);
- f->numparams=LoadByte(S);
- f->is_vararg=LoadByte(S);
- f->maxstacksize=LoadByte(S);
- LoadCode(S,f);
- LoadConstants(S,f);
- LoadUpvalues(S,f);
- LoadDebug(S,f);
- S->L->top--;
- return f;
+  Proto* f = new Proto();
+  if(f == NULL) luaD_throw(LUA_ERRMEM);
+  f->linkGC(getGlobalGCHead());
+  setptvalue(S->L,S->L->top,f); incr_top(S->L);
+  f->linedefined=LoadInt(S);
+  f->lastlinedefined=LoadInt(S);
+  f->numparams=LoadByte(S);
+  f->is_vararg=LoadByte(S);
+  f->maxstacksize=LoadByte(S);
+  LoadCode(S,f);
+  LoadConstants(S,f);
+  LoadUpvalues(S,f);
+  LoadDebug(S,f);
+  S->L->top--;
+  return f;
 }
 
 /* the code below must be consistent with the code in luaU_header */

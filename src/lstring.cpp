@@ -61,12 +61,13 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
   if(buf == NULL) return NULL;
 
   LuaObject*& list = tb->hash[lmod(h, tb->size)];
-  TString* ts = new TString(list);
+  TString* ts = new TString();
   if(ts == NULL) {
     luaM_free(buf);
     return NULL;
   }
 
+  ts->linkGC(list);
   ts->setHash(h);
   ts->setReserved(0);
   ts->setBuf(buf);
@@ -120,6 +121,7 @@ Udata *luaS_newudata (size_t s, Table *e) {
     return NULL;
   }
 
+  u->linkGC(getGlobalGCHead());
   return u;
 }
 

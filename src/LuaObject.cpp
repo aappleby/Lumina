@@ -11,6 +11,7 @@ int LuaObject::instanceCounts[256];
 
 LuaObject::LuaObject(int type) {
 
+  next = NULL;
   marked = luaC_white(thread_G);
   tt = type;
 
@@ -31,6 +32,7 @@ void LuaObject::operator delete(void* blob) {
 }
 
 void LuaObject::linkGC(LuaObject*& gcHead) {
+  assert(next == NULL);
   next = gcHead;
   gcHead = this;
 }

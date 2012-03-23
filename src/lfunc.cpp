@@ -33,6 +33,8 @@ Closure *luaF_newCclosure (int n) {
     return NULL;
   }
 
+  c->linkGC(getGlobalGCHead());
+
   c->isC = 1;
   c->nupvalues = cast_byte(n);
   c->pupvals_ = b;
@@ -53,6 +55,8 @@ Closure *luaF_newLclosure (Proto *p) {
     return NULL;
   }
 
+  c->linkGC(getGlobalGCHead());
+
   c->isC = 0;
   c->p = p;
   c->nupvalues = cast_byte(n);
@@ -64,8 +68,9 @@ Closure *luaF_newLclosure (Proto *p) {
 
 
 UpVal *luaF_newupval () {
-  UpVal *uv = new UpVal(getGlobalGCHead());
+  UpVal *uv = new UpVal();
   if(uv == NULL) luaD_throw(LUA_ERRMEM);
+  uv->linkGC(getGlobalGCHead());
   uv->v = &uv->value;
   setnilvalue(uv->v);
   return uv;
@@ -89,8 +94,9 @@ UpVal *luaF_findupval (StkId level) {
     pp = &(p->next);
   }
   /* not found: create a new one */
-  uv = new UpVal(*pp);
+  uv = new UpVal();
   if(uv == NULL) luaD_throw(LUA_ERRMEM);
+  uv->linkGC(*pp);
   uv->v = level;  /* current value lives in the stack */
   uv->uprev = &g->uvhead;  /* double link it in `uvhead' list */
   uv->unext = g->uvhead.unext;

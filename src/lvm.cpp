@@ -632,6 +632,7 @@ void luaV_execute (lua_State *L) {
         int c = GETARG_C(i);
         Table *t = new Table();
         if(t == NULL) luaD_throw(LUA_ERRMEM);
+        t->linkGC(getGlobalGCHead());
         sethvalue(L, ra, t);
         if (b != 0 || c != 0)
           luaH_resize(t, luaO_fb2int(b), luaO_fb2int(c));

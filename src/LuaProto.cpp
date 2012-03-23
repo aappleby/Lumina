@@ -8,6 +8,4 @@ Proto::Proto() : LuaObject(LUA_TPROTO) {
   linedefined = 0;
   lastlinedefined = 0;
   source = NULL;
-
-  linkGC(getGlobalGCHead());
 }

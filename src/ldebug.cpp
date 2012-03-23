@@ -206,6 +206,7 @@ static void collectvalidlines (lua_State *L, Closure *f) {
     TValue v;
     Table *t = new Table();  /* new table to store active lines */
     if(t == NULL) luaD_throw(LUA_ERRMEM);
+    t->linkGC(getGlobalGCHead());
     sethvalue(L, L->top, t);  /* push it on stack */
     incr_top(L);
     v = true;
