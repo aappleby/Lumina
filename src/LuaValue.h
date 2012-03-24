@@ -186,52 +186,62 @@ public:
 #define setnilvalue2(obj) { TValue* io=(obj); io->bytes = 0; io->tt_ = LUA_TNIL; }
 
 #define setfvalue(obj,x) \
-  { TValue *io=(obj); io->f=(x); settt_(io, LUA_TLCF); }
+  { TValue *io=(obj); io->bytes = 0; io->f=(x); settt_(io, LUA_TLCF); }
 
 #define setpvalue(obj,x) \
-  { TValue *io=(obj); io->p=(x); settt_(io, LUA_TLIGHTUSERDATA); }
+  { TValue *io=(obj); io->bytes = 0; io->p=(x); settt_(io, LUA_TLIGHTUSERDATA); }
 
 #define setgcovalue(obj,x) \
-  { TValue *io=(obj); LuaObject *i_g=(x); \
+  { TValue *io=(obj); io->bytes = 0; LuaObject *i_g=(x); \
     io->gc=i_g; settt_(io, ctb(gch(i_g)->tt)); }
 
 #define setuvalue(L,obj,x) \
-  { THREAD_CHECK(L); TValue *io=(obj); \
+  { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
     io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TUSERDATA)); \
     checkliveness(io); }
 
 #define setthvalue(L,obj,x) \
-  { THREAD_CHECK(L); TValue *io=(obj); \
+  { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
     io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TTHREAD)); \
     checkliveness(io); }
 
 #define setclLvalue(L,obj,x) \
-  { THREAD_CHECK(L); TValue *io=(obj); \
+  { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
     io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TLCL)); \
     checkliveness(io); }
 
 #define setclCvalue(L,obj,x) \
-  { THREAD_CHECK(L); TValue *io=(obj); \
+  { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
     io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TCCL)); \
     checkliveness(io); }
 
 #define sethvalue(L,obj,x) \
-  { THREAD_CHECK(L); TValue *io=(obj); \
+  { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
     io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TTABLE)); \
     checkliveness(io); }
 
 #define setptvalue(L,obj,x) \
-  { THREAD_CHECK(L); TValue *io=(obj); \
+  { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
     io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TPROTO)); \
     checkliveness(io); }
 
 #define setdeadvalue(obj)	settt_(obj, LUA_TDEADKEY)
 
-
+/*
 #define setobj(obj1,obj2) \
 	{ const TValue *io2=(obj2); TValue *io1=(obj1); \
 	  io1->bytes = io2->bytes; io1->tt_ = io2->tt_; \
 	  checkliveness(io1); }
+*/
+
+inline void setobj(TValue* obj1, const TValue* obj2) {
+  const TValue *io2=(obj2);
+  TValue *io1=(obj1);
+  //io1->bytes = 0;
+	io1->bytes = io2->bytes;
+  io1->tt_ = io2->tt_;
+	checkliveness(io1); 
+}
 
 
 #define luai_checknum(L,o,c)	{ /* empty */ }
