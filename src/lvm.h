@@ -19,7 +19,7 @@
 
 #define equalobj(L,o1,o2)  (ttisequal(o1, o2) && luaV_equalobj_(L, o1, o2))
 
-#define luaV_rawequalobj(t1,t2)  (ttisequal(t1,t2) && luaV_equalobj2_(t1,t2))
+#define luaV_rawequalobj(t1,t2)  (((t1)->tt_ == (t2)->tt_) && ((t1)->bytes == (t2)->bytes))
 
 
 /* not to called directly */
