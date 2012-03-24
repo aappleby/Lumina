@@ -32,6 +32,11 @@ public:
     return &hashtable[i];
   }
 
+  Node* lookup(double key);
+  Node* lookup(void* key);
+
+  Node* nodeAt(uint32_t hash);
+
   uint8_t flags;  /* 1<<p means tagmethod(p) is not present */
   Table *metatable;
   LuaVector<TValue> array;

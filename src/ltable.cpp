@@ -114,18 +114,12 @@ static Node* hashnum (Table* t, lua_Number n) {
 static Node *mainposition (Table *t, const TValue *key) {
   if(t->hashtable.empty()) return NULL;
   switch (ttype(key)) {
-    case LUA_TNUMBER:
-      return hashnum(t, nvalue(key));
-    case LUA_TSTRING:
-      return hashstr(t, tsvalue(key));
-    case LUA_TBOOLEAN:
-      return hashboolean(t, bvalue(key));
-    case LUA_TLIGHTUSERDATA:
-      return hashpointer(t, pvalue(key));
-    case LUA_TLCF:
-      return hashpointer(t, fvalue(key));
-    default:
-      return hashpointer(t, gcvalue(key));
+    case LUA_TNUMBER:        return hashnum(t, nvalue(key));
+    case LUA_TSTRING:        return hashstr(t, tsvalue(key));
+    case LUA_TBOOLEAN:       return hashboolean(t, bvalue(key));
+    case LUA_TLIGHTUSERDATA: return hashpointer(t, pvalue(key));
+    case LUA_TLCF:           return hashpointer(t, fvalue(key));
+    default:                 return hashpointer(t, gcvalue(key));
   }
 }
 
@@ -299,8 +293,9 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   // larger than array, move the overflow to the hash table.
   if (temparray.size() > t->array.size()) {
     for(int i = (int)t->array.size(); i < (int)temparray.size(); i++) {
-      if (!ttisnil(&temparray[i]))
+      if (!temparray[i].isNil()) {
         luaH_setint_hash(t, i + 1, &temparray[i]);
+      }
     }
   }
   // And finally re-insert the saved nodes.
@@ -429,13 +424,12 @@ const TValue *luaH_getint (Table *t, int key) {
 }
 
 const TValue *luaH_getint_hash (Table *t, int key) {
-  /* (1 <= key && key <= t->sizearray) */
-  lua_Number nk = cast_num(key);
+  double nk = key;
   Node *n = hashnum(t, nk);
   if(n == NULL) return luaO_nilobject;
 
   do {  /* check whether `key' is somewhere in the chain */
-    if (ttisnumber(&n->i_key) && luai_numeq(nvalue(&n->i_key), nk))
+    if (n->i_key.isNumber() && (n->i_key.getNumber() == nk))
       return &n->i_val;  /* that's it */
     else n = n->next;
   } while (n);

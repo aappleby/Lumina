@@ -36,6 +36,8 @@ public:
 
   int getInteger() const { assert(isInteger()); return (int)n; }
 
+  double getNumber() const { assert(isNumber()); return n; }
+
   LuaObject* getObject()  { assert(isCollectable()); return gc; }
   LuaObject* getDeadKey() { assert(isDeadKey());     return gc; }
 

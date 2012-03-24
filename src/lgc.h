@@ -36,10 +36,9 @@
 #define GCSpause	5
 
 
-#define issweepphase(g)  \
-	(GCSsweepstring <= (g)->gcstate && (g)->gcstate <= GCSsweep)
+#define issweepphase(g) (GCSsweepstring <= (g)->gcstate && (g)->gcstate <= GCSsweep)
 
-#define isgenerational(g)	((g)->gckind == KGC_GEN)
+#define isgenerational(g)	(g->gckind == KGC_GEN)
 
 /*
 ** macro to tell when main invariant (white objects cannot point to black
@@ -49,7 +48,7 @@
 ** all objects are white again. During a generational collection, the
 ** invariant must be kept all times.
 */
-#define keepinvariant(g)  (isgenerational(g) || g->gcstate <= GCSatomic)
+#define keepinvariant(g)  (isgenerational(g) || (g->gcstate <= GCSatomic))
 
 
 /*

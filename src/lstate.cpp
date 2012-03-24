@@ -107,11 +107,13 @@ static void freestack (lua_State *L) {
 static void init_registry (lua_State *L, global_State *g) {
   THREAD_CHECK(L);
   TValue mt;
+  
   /* create registry */
   Table *registry = new Table();
   if(registry == NULL) luaD_throw(LUA_ERRMEM);
   registry->linkGC(getGlobalGCHead());
   sethvalue(L, &g->l_registry, registry);
+
   luaH_resize(registry, LUA_RIDX_LAST, 0);
   /* registry[LUA_RIDX_MAINTHREAD] = L */
   setthvalue(L, &mt, L);

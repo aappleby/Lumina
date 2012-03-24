@@ -130,3 +130,25 @@ void lua_State::reallocstack (int newsize) {
     }
   }
 }
+
+void lua_State::closeUpvals(StkId level) {
+  /*
+  UpVal *uv;
+  global_State *g = thread_G;
+  while (openupval != NULL && (uv = gco2uv(openupval))->v >= level) {
+    assert(!isblack(uv) && uv->v != &uv->value);
+    openupval = uv->next;  // remove from `open' list
+    if (isdead(uv))
+      delete uv;
+    else {
+      uv->unlink();  // remove upvalue from 'uvhead' list
+      setobj(&uv->value, uv->v);  // move value to upvalue slot
+      uv->v = &uv->value;  // now current value lives here
+      uv->next = g->allgc;  // link upvalue into 'allgc' list
+      g->allgc = uv;
+      luaC_checkupvalcolor(g, uv);
+    }
+  }
+  */
+}
+

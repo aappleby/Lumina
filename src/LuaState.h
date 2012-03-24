@@ -47,5 +47,7 @@ public:
   void growstack(int size);
   void shrinkstack();
   void reallocstack(int size);
+  
+  void closeUpvals(StkId level);
 };
 
