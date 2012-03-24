@@ -391,7 +391,7 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
       othern->next = n;  /* redo the chain with `n' in place of `mp' */
       *n = *mp;  /* copy colliding node into free pos. (mp->next also goes) */
       mp->next = NULL;  /* now `mp' is free */
-      setnilvalue(&mp->i_val);
+      setnilvalue2(&mp->i_val);
     }
     else {  /* colliding node is in its own main position */
       /* new node will go into free position */

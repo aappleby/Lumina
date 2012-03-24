@@ -97,7 +97,7 @@ static void LoadConstants(LoadState* S, Proto* f)
   int i,n;
   n=LoadInt(S);
   f->constants.resize(n);
-  for (i=0; i<n; i++) setnilvalue(&f->constants[i]);
+  for (i=0; i<n; i++) setnilvalue2(&f->constants[i]);
   for (i=0; i<n; i++)
   {
     TValue* o=&f->constants[i];
@@ -105,7 +105,7 @@ static void LoadConstants(LoadState* S, Proto* f)
     switch (t)
     {
     case LUA_TNIL:
-      setnilvalue(o);
+      setnilvalue2(o);
       break;
     case LUA_TBOOLEAN:
       o[0] = LoadChar(S) ? true : false;
