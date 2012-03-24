@@ -13,7 +13,8 @@ public:
 
   StkId func;  /* function index in the stack */
   StkId	top;  /* top for this function */
-  CallInfo *previous, *next;  /* dynamic call link */
+  CallInfo* previous;
+  CallInfo* next;  /* dynamic call link */
   short nresults;  /* expected number of results from this function */
   uint8_t callstatus;
 

@@ -24,8 +24,6 @@
 /*
 ** pseudo-indices
 */
-#define LUA_REGISTRYINDEX	LUAI_FIRSTPSEUDOIDX
-#define lua_upvalueindex(i)	(LUA_REGISTRYINDEX - (i))
 
 
 /*

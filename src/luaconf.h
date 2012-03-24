@@ -172,10 +172,9 @@
 ** its only purpose is to stop Lua to consume unlimited stack
 ** space (and to reserve some numbers for pseudo-indices).
 */
-#define LUAI_MAXSTACK		1000000
-
-/* reserve some space for error handling */
-#define LUAI_FIRSTPSEUDOIDX	(-LUAI_MAXSTACK - 1000)
+#define LUAI_MAXSTACK		    ( 1000000)
+#define LUA_REGISTRYINDEX	  (-1001000)
+#define lua_upvalueindex(i)	(LUA_REGISTRYINDEX - (i))
 
 
 

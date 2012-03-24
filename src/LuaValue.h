@@ -17,6 +17,11 @@ public:
     sanitycheck();
   }
 
+  void operator = (double v) {
+    n = v;
+    tt_ = LUA_TNUMBER;
+  }
+
   bool isCollectable() { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }
 
   bool isNil() const           { return rawtype() == LUA_TNIL; }
@@ -32,6 +37,11 @@ public:
   bool isUpval() const         { return tagtype() == LUA_TUPVAL; }
   bool isDeadKey() const       { return tagtype() == LUA_TDEADKEY; }
 
+  //bool isCClosure() const      { return 
+  bool isCClosure() const      { return rawtype() == (LUA_TCCL | BIT_ISCOLLECTABLE); }
+  bool isLClosure() const      { return rawtype() == (LUA_TLCL | BIT_ISCOLLECTABLE); }
+  bool isLightCFunc() const    { return tagtype() == LUA_TLCF; }
+
   bool isInteger() const { return isNumber() && (n == (int)n); }
 
   int getInteger() const { assert(isInteger()); return (int)n; }
@@ -40,6 +50,9 @@ public:
 
   LuaObject* getObject()  { assert(isCollectable()); return gc; }
   LuaObject* getDeadKey() { assert(isDeadKey());     return gc; }
+
+  Closure* getCClosure() { assert(isCClosure()); return reinterpret_cast<Closure*>(gc); }
+  Closure* getLClosure() { assert(isLClosure()); return reinterpret_cast<Closure*>(gc); }
 
   int32_t rawtype() const  { return tt_; }
   int32_t tagtype() const  { return tt_ & 0x3f; }

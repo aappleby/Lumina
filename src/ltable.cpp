@@ -114,7 +114,7 @@ static Node* hashnum (Table* t, lua_Number n) {
 static Node *mainposition (Table *t, const TValue *key) {
   if(t->hashtable.empty()) return NULL;
   switch (ttype(key)) {
-    case LUA_TNUMBER:        return hashnum(t, nvalue(key));
+    case LUA_TNUMBER:        return t->lookup(key->getNumber());
     case LUA_TSTRING:        return hashstr(t, tsvalue(key));
     case LUA_TBOOLEAN:       return hashboolean(t, bvalue(key));
     case LUA_TLIGHTUSERDATA: return hashpointer(t, pvalue(key));

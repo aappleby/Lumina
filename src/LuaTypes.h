@@ -82,6 +82,11 @@ enum LuaTag {
   LUA_TUPVAL = 10,
   LUA_TDEADKEY = 11,
 
+  LUA_TLCL = (LUA_TFUNCTION | (0 << 4)),  /* Lua closure */
+  LUA_TLCF = (LUA_TFUNCTION | (1 << 4)),  /* light C function */
+  LUA_TCCL = (LUA_TFUNCTION | (2 << 4)),  /* C closure */
+
+
   LUA_ALLTAGS = LUA_TDEADKEY+1,
 };
 
@@ -99,11 +104,6 @@ enum LuaTag {
 ** 1 - light C function
 ** 2 - regular C function (closure)
 */
-
-/* Variant tags for functions */
-#define LUA_TLCL	(LUA_TFUNCTION | (0 << 4))  /* Lua closure */
-#define LUA_TLCF	(LUA_TFUNCTION | (1 << 4))  /* light C function */
-#define LUA_TCCL	(LUA_TFUNCTION | (2 << 4))  /* C closure */
 
 
 /* Bit mark for collectable types */

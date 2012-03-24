@@ -48,32 +48,45 @@ void api_checknelems(lua_State* L, int n) {
   api_check((n) < (L->top - L->ci_->func), "not enough elements in the stack");
 }
 
+// Positive stack indices are indexed from the current call frame.
+// The first item in a call frame is the closure for the current function.
+// Negative stack indices are indexed from the stack top.
+// Negative indices less than or equal to LUA_REGISTRYINDEX are special.
 
 static TValue *index2addr (lua_State *L, int idx) {
   THREAD_CHECK(L);
   CallInfo *ci = L->ci_;
   if (idx > 0) {
     TValue *o = ci->func + idx;
-    api_check(idx <= ci->top - (ci->func + 1), "unacceptable index");
-    if (o >= L->top) return NONVALIDVALUE;
+    if (o >= L->top) {
+      return NONVALIDVALUE;
+    }
     else return o;
   }
-  else if (idx > LUA_REGISTRYINDEX) {
-    api_check(idx != 0 && -idx <= L->top - (ci->func + 1), "invalid index");
+
+  if (idx > LUA_REGISTRYINDEX) {
     return L->top + idx;
   }
-  else if (idx == LUA_REGISTRYINDEX)
-    return &G(L)->l_registry;
-  else {  /* upvalues */
-    idx = LUA_REGISTRYINDEX - idx;
-    api_check(idx <= MAXUPVAL + 1, "upvalue index too large");
-    if (ttislcf(ci->func))  /* light C function? */
-      return NONVALIDVALUE;  /* it has no upvalues */
-    else {
-      Closure *func = clCvalue(ci->func);
-      return (idx <= func->nupvalues) ? &func->pupvals_[idx-1] : NONVALIDVALUE;
-    }
+
+  if (idx == LUA_REGISTRYINDEX) {
+    return &thread_G->l_registry;
   }
+
+
+  // Light C functions have no upvals
+  if (ci->func->isLightCFunc()) {
+    return NONVALIDVALUE;
+  }
+
+  idx = LUA_REGISTRYINDEX - idx - 1;
+
+  Closure* func = ci->func->getCClosure();
+  if(idx < func->nupvalues) {
+    return &func->pupvals_[idx];
+  }
+
+  // Invalid stack index.
+  return NONVALIDVALUE;
 }
 
 
@@ -410,7 +423,7 @@ const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
 size_t lua_rawlen (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
-  switch (ttypenv(o)) {
+  switch (o->basetype()) {
     case LUA_TSTRING: return tsvalue(o)->getLen();
     case LUA_TUSERDATA: return uvalue(o)->len_;
     case LUA_TTABLE: return luaH_getn(hvalue(o));
