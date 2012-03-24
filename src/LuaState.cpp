@@ -131,6 +131,10 @@ void lua_State::reallocstack (int newsize) {
   }
 }
 
+void lua_State::checkstack(int size) {
+  if ((stack_last - top) <= size) growstack(size);
+}
+
 void lua_State::closeUpvals(StkId level) {
   /*
   UpVal *uv;

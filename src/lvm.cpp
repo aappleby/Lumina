@@ -96,7 +96,7 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
   setobj(L->top++, p2);  /* 2nd argument */
   if (!hasres)  /* no result? 'p3' is third argument */
     setobj(L->top++, p3);  /* 3rd argument */
-  luaD_checkstack(L, 0);
+  L->checkstack(0);
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->top - (4 - hasres), hasres, isLua(L->ci_));
   if (hasres) {  /* if has result, move it to its place */
@@ -885,7 +885,8 @@ void luaV_execute (lua_State *L) {
         int n = cast_int(base - ci->func) - cl->p->numparams - 1;
         if (b < 0) {  /* B == 0? */
           b = n;  /* get all var. arguments */
-          Protect(luaD_checkstack(L, n));
+          L->checkstack(n);
+          base = ci->base;
           ra = RA(i);  /* previous call may change the stack */
           L->top = ra + n;
         }

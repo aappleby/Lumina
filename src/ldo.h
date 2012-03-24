@@ -13,10 +13,7 @@
 #include "lzio.h"
 
 
-#define luaD_checkstack(L,n)	if (L->stack_last - L->top <= (n)) L->growstack(n);
-
-
-#define incr_top(L) {L->top++; luaD_checkstack(L,0);}
+#define incr_top(L) {L->top++; L->checkstack(0);}
 
 #define savestack(L,p)		((char *)(p) - (char *)L->stack.begin())
 #define restorestack(L,n)	((TValue *)((char *)L->stack.begin() + (n)))

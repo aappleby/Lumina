@@ -129,7 +129,7 @@ void luaD_hook (lua_State *L, int event, int line) {
     ar.event = event;
     ar.currentline = line;
     ar.i_ci = ci;
-    luaD_checkstack(L, LUA_MINSTACK);  /* ensure minimum stack size */
+    L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
     ci->top = L->top + LUA_MINSTACK;
     assert(ci->top <= L->stack_last);
     L->allowhook = 0;  /* cannot call hooks inside a hook */
@@ -221,7 +221,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
     case LUA_TCCL: {  /* C closure */
       f = clCvalue(func)->f;
      Cfunc:
-      luaD_checkstack(L, LUA_MINSTACK);  /* ensure minimum stack size */
+      L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
       ci = next_ci(L);  /* now 'enter' new function */
       ci->nresults = nresults;
       ci->func = restorestack(L, funcr);
@@ -238,7 +238,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
     case LUA_TLCL: {  /* Lua function: prepare its call */
       StkId base;
       Proto *p = clLvalue(func)->p;
-      luaD_checkstack(L, p->maxstacksize);
+      L->checkstack(p->maxstacksize);
       func = restorestack(L, funcr);
       n = cast_int(L->top - func) - 1;  /* number of real arguments */
       for (; n < p->numparams; n++)

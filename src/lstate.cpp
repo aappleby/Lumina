@@ -130,10 +130,9 @@ static void init_registry (lua_State *L, global_State *g) {
 /*
 ** open parts of the state that may cause memory-allocation errors
 */
-static void f_luaopen (lua_State *L, void *ud) {
+static void f_luaopen (lua_State *L, void *) {
   THREAD_CHECK(L);
-  global_State *g = G(L);
-  UNUSED(ud);
+  global_State *g = thread_G;
   L->initstack();  /* init stack */
   init_registry(L, g);
   luaS_resize(MINSTRTABSIZE);  /* initial size of string table */
