@@ -310,7 +310,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
       TValue* key = &old->i_key;
       TValue* val = &old->i_val;
       TValue* n = luaH_set(t, key);
-      setobj2(n, val);
+      setobj(n, val);
     }
   }
 }
@@ -391,7 +391,7 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
       othern->next = n;  /* redo the chain with `n' in place of `mp' */
       *n = *mp;  /* copy colliding node into free pos. (mp->next also goes) */
       mp->next = NULL;  /* now `mp' is free */
-      setnilvalue2(&mp->i_val);
+      setnilvalue(&mp->i_val);
     }
     else {  /* colliding node is in its own main position */
       /* new node will go into free position */
@@ -400,7 +400,7 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
       mp = n;
     }
   }
-  setobj2(&mp->i_key, key);
+  setobj(&mp->i_key, key);
   luaC_barrierback(t, key);
   assert(ttisnil(&mp->i_val));
   return &mp->i_val;
@@ -510,7 +510,7 @@ void luaH_setint (Table *t, int key, TValue *value) {
     setnvalue(&k, cast_num(key));
     cell = luaH_newkey(t, &k);
   }
-  setobj2(cell, value);
+  setobj(cell, value);
 }
 
 void luaH_setint_hash (Table *t, int key, TValue *value) {
@@ -523,7 +523,7 @@ void luaH_setint_hash (Table *t, int key, TValue *value) {
     setnvalue(&k, cast_num(key));
     cell = luaH_newkey(t, &k);
   }
-  setobj2(cell, value);
+  setobj(cell, value);
 }
 
 static int unbound_search (Table *t, unsigned int j) {

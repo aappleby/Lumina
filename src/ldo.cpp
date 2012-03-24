@@ -253,7 +253,7 @@ int luaD_precallLua(lua_State* L, StkId func, int nresults) {
   func = restorestack(L, funcr);
   int n = cast_int(L->top - func) - 1;  /* number of real arguments */
   for (; n < p->numparams; n++) {
-    setnilvalue2(L->top);  /* complete missing arguments */
+    setnilvalue(L->top);  /* complete missing arguments */
     L->top++;
   }
   base = (!p->is_vararg) ? func + 1 : adjust_varargs(L, p, n);
@@ -313,7 +313,7 @@ int luaD_poscall (lua_State *L, StkId firstResult) {
   for (i = wanted; i != 0 && firstResult < L->top; i--)
     setobj(res++, firstResult++);
   while (i-- > 0) {
-    setnilvalue2(res);
+    setnilvalue(res);
     res++;
   }
   L->top = res;

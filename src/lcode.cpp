@@ -343,7 +343,7 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
     f->constants.grow();
   }
   
-  while (oldsize < (int)f->constants.size()) setnilvalue2(&f->constants[oldsize++]);
+  while (oldsize < (int)f->constants.size()) setnilvalue(&f->constants[oldsize++]);
   setobj(&f->constants[k], v);
   fs->nk++;
   luaC_barrier(f, v);
@@ -389,7 +389,7 @@ static int boolK (FuncState *fs, int b) {
 static int nilK (FuncState *fs) {
   THREAD_CHECK(fs->ls->L);
   TValue k, v;
-  setnilvalue2(&v);
+  setnilvalue(&v);
   /* cannot use nil as key; instead use table itself to represent nil */
   sethvalue(fs->ls->L, &k, fs->h);
   return addk(fs, &k, &v);

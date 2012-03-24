@@ -181,9 +181,7 @@ public:
 
 #define changenvalue(o,x)	check_exp(ttisnumber(o), (o)->n=(x))
 
-#define setnilvalue(obj) settt_(obj, LUA_TNIL)
-
-#define setnilvalue2(obj) { TValue* io=(obj); io->bytes = 0; io->tt_ = LUA_TNIL; }
+#define setnilvalue(obj) { TValue* io=(obj); io->bytes = 0; io->tt_ = LUA_TNIL; }
 
 #define setfvalue(obj,x) \
   { TValue *io=(obj); io->bytes = 0; io->f=(x); settt_(io, LUA_TLCF); }
@@ -227,15 +225,7 @@ public:
 
 #define setdeadvalue(obj)	settt_(obj, LUA_TDEADKEY)
 
-/*
-#define setobj(obj1,obj2) \
-	{ const TValue *io2=(obj2); TValue *io1=(obj1); \
-	  io1->bytes = io2->bytes; io1->tt_ = io2->tt_; \
-	  checkliveness(io1); }
-*/
-
 void setobj(TValue* obj1, const TValue* obj2);
-void setobj2(TValue* obj1, const TValue* obj2);
 
 
 #define luai_checknum(L,o,c)	{ /* empty */ }
