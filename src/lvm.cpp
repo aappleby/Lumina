@@ -297,19 +297,66 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
 }
 
 int luaV_equalobj2_ (const TValue *t1, const TValue *t2) {
+  bool equal1 = (t1->bytes == t2->bytes);
+  //return equal1;
+
   assert(ttisequal(t1, t2));
   switch (ttype(t1)) {
-    case LUA_TNIL: return 1;
-    case LUA_TNUMBER: return luai_numeq(nvalue(t1), nvalue(t2));
-    case LUA_TBOOLEAN: return bvalue(t1) == bvalue(t2);  /* true must be 1 !! */
-    case LUA_TLIGHTUSERDATA: return pvalue(t1) == pvalue(t2);
-    case LUA_TLCF: return fvalue(t1) == fvalue(t2);
-    case LUA_TSTRING: return eqstr(tsvalue(t1), tsvalue(t2));
-    case LUA_TUSERDATA: return uvalue(t1) == uvalue(t2);
-    case LUA_TTABLE: return hvalue(t1) == hvalue(t2);
+    case LUA_TNIL:
+      {
+        assert(equal1);
+        return 1;
+      }
+    case LUA_TNUMBER:
+      {
+        bool equal2 = (t1->n == t2->n);
+        //assert(equal1 == equal2);
+        return equal2;
+      }
+    case LUA_TBOOLEAN:
+      {
+        bool equal2 = (bvalue(t1) == bvalue(t2));  // true must be 1 !!
+
+        //assert(equal1 == equal2);
+        return equal2;
+      }
+    case LUA_TLIGHTUSERDATA:
+      {
+        bool equal2 = (pvalue(t1) == pvalue(t2));
+        //assert(equal1 == equal2);
+        return equal2;
+      }
+    case LUA_TLCF:
+      {
+        bool equal2 = (fvalue(t1) == fvalue(t2));
+        //assert(equal1 == equal2);
+        return equal2;
+      }
+    case LUA_TSTRING:
+      {
+        bool equal2 = (eqstr(tsvalue(t1), tsvalue(t2)));
+        //assert(equal1 == equal2);
+        return equal2;
+      }
+    case LUA_TUSERDATA:
+      {
+        bool equal2 = (uvalue(t1) == uvalue(t2));
+        //assert(equal1 == equal2);
+        return equal2;
+      }
+    case LUA_TTABLE:
+      {
+        bool equal2 = (hvalue(t1) == hvalue(t2));
+        //assert(equal1 == equal2);
+        return equal2;
+      }
     default:
-      assert(iscollectable(t1));
-      return gcvalue(t1) == gcvalue(t2);
+      {
+        assert(iscollectable(t1));
+        bool equal2 = (gcvalue(t1) == gcvalue(t2));
+        //assert(equal1 == equal2);
+        return equal2;
+      }
   }
   return 0;
 }

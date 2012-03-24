@@ -5,11 +5,27 @@
 class TValue {
 public:
 
+  TValue() {
+    tt_ = LUA_TNIL;
+    bytes = 0;
+  }
+
+  explicit TValue(int v) {
+    tt_ = LUA_TNUMBER;
+    n = v;
+  }
+
+  explicit TValue(TString* v) {
+    tt_ = ctb(LUA_TSTRING);
+    gc = (LuaObject*)v;
+    sanitycheck();
+  }
+
   void operator = ( TValue const & V );
   void operator = ( TValue * pV );
 
   void operator = ( int v ) { tt_ = LUA_TNUMBER; n = (double)v; }
-  void operator = ( bool v ) { tt_ = LUA_TBOOLEAN; b = (int32_t)v; }
+  void operator = ( bool v ) { tt_ = LUA_TBOOLEAN; bytes = v ? 1 : 0; }
 
   void operator = (TString* v ) {
     gc = (LuaObject*)v;
@@ -20,6 +36,10 @@ public:
   void operator = (double v) {
     n = v;
     tt_ = LUA_TNUMBER;
+  }
+
+  bool operator == (TValue const& v) {
+    return (tt_ == v.tt_) && (bytes == v.bytes);
   }
 
   bool isCollectable() { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }
@@ -54,6 +74,8 @@ public:
   Closure* getCClosure() { assert(isCClosure()); return reinterpret_cast<Closure*>(gc); }
   Closure* getLClosure() { assert(isLClosure()); return reinterpret_cast<Closure*>(gc); }
 
+  TString* getString() { assert(isString()); return reinterpret_cast<TString*>(gc); }
+
   int32_t rawtype() const  { return tt_; }
   int32_t tagtype() const  { return tt_ & 0x3f; }
   int32_t basetype() const { return tt_ & 0x0f; }
@@ -61,7 +83,7 @@ public:
   void clear() { bytes = 0; tt_ = 0; }
 
 
-  void setBool  (int x)     { b = x; tt_ = LUA_TBOOLEAN; }
+  void setBool  (int x)     { bytes = x ? 1 : 0; tt_ = LUA_TBOOLEAN; }
   void setValue (TValue* x) { bytes = x->bytes; tt_ = x->tt_; }
 
   TString* asString() { assert(isString()); return reinterpret_cast<TString*>(gc); }
@@ -75,6 +97,10 @@ public:
     lua_CFunction f; /* light C functions */
     lua_Number n;    /* numbers */
     uint64_t bytes;
+    struct {
+      uint32_t low;
+      uint32_t high;
+    };
   };
   int32_t tt_;
 };

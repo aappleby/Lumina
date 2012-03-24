@@ -182,14 +182,18 @@ static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
 static StkId tryfuncTM (lua_State *L, StkId func) {
   THREAD_CHECK(L);
   const TValue *tm = luaT_gettmbyobj(func, TM_CALL);
-  StkId p;
-  ptrdiff_t funcr = savestack(L, func);
+
+  ptrdiff_t funcr = func - L->stack.begin();
   if (!ttisfunction(tm))
     luaG_typeerror(func, "call");
+
   /* Open a hole inside the stack at `func' */
-  for (p = L->top; p > func; p--) setobj(p, p-1);
+  for (StkId p = L->top; p > func; p--) {
+    setobj(p, p-1);
+  }
+
   incr_top(L);
-  func = restorestack(L, funcr);  /* previous call may change stack */
+  func = L->stack.begin() + funcr; /* previous call may change stack */
   setobj(func, tm);  /* tag method is the new function to be called */
   return func;
 }
@@ -205,63 +209,84 @@ CallInfo* next_ci(lua_State* L) {
   return L->ci_;
 }
 
+int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
+  ptrdiff_t funcr = savestack(L, func);
+  lua_CFunction f = fvalue(func);
+  L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
+  CallInfo* ci = next_ci(L);  /* now 'enter' new function */
+  ci->nresults = nresults;
+  ci->func = restorestack(L, funcr);
+  ci->top = L->top + LUA_MINSTACK;
+  assert(ci->top <= L->stack_last);
+  ci->callstatus = 0;
+  if (L->hookmask & LUA_MASKCALL)
+    luaD_hook(L, LUA_HOOKCALL, -1);
+  int n = (*f)(L);  /* do the actual call */
+  api_checknelems(L, n);
+  luaD_poscall(L, L->top - n);
+  return 1;
+}
+
+int luaD_precallC(lua_State* L, StkId func, int nresults) {
+  ptrdiff_t funcr = savestack(L, func);
+  lua_CFunction f = clCvalue(func)->f;
+  L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
+  CallInfo* ci = next_ci(L);  /* now 'enter' new function */
+  ci->nresults = nresults;
+  ci->func = restorestack(L, funcr);
+  ci->top = L->top + LUA_MINSTACK;
+  assert(ci->top <= L->stack_last);
+  ci->callstatus = 0;
+  if (L->hookmask & LUA_MASKCALL)
+    luaD_hook(L, LUA_HOOKCALL, -1);
+  int n = (*f)(L);  /* do the actual call */
+  api_checknelems(L, n);
+  luaD_poscall(L, L->top - n);
+  return 1;
+}
+
+int luaD_precallLua(lua_State* L, StkId func, int nresults) {
+  ptrdiff_t funcr = savestack(L, func);
+  StkId base;
+  Proto *p = clLvalue(func)->p;
+  L->checkstack(p->maxstacksize);
+  func = restorestack(L, funcr);
+  int n = cast_int(L->top - func) - 1;  /* number of real arguments */
+  for (; n < p->numparams; n++)
+    setnilvalue(L->top++);  /* complete missing arguments */
+  base = (!p->is_vararg) ? func + 1 : adjust_varargs(L, p, n);
+  CallInfo* ci = next_ci(L);  /* now 'enter' new function */
+  ci->nresults = nresults;
+  ci->func = func;
+  ci->base = base;
+  ci->top = base + p->maxstacksize;
+  assert(ci->top <= L->stack_last);
+  //ci->savedpc = p->code;  /* starting point */
+  ci->savedpc = &p->code[0];
+  ci->callstatus = CIST_LUA;
+  L->top = ci->top;
+  if (L->hookmask & LUA_MASKCALL)
+    callhook(L, ci);
+  return 0;
+}
+
 /*
 ** returns true if function has been executed (C function)
 */
 int luaD_precall (lua_State *L, StkId func, int nresults) {
   THREAD_CHECK(L);
-  lua_CFunction f;
-  CallInfo *ci;
-  int n;  /* number of arguments (Lua) or returns (C) */
-  ptrdiff_t funcr = savestack(L, func);
-  switch (ttype(func)) {
-    case LUA_TLCF:  /* light C function */
-      f = fvalue(func);
-      goto Cfunc;
-    case LUA_TCCL: {  /* C closure */
-      f = clCvalue(func)->f;
-     Cfunc:
-      L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
-      ci = next_ci(L);  /* now 'enter' new function */
-      ci->nresults = nresults;
-      ci->func = restorestack(L, funcr);
-      ci->top = L->top + LUA_MINSTACK;
-      assert(ci->top <= L->stack_last);
-      ci->callstatus = 0;
-      if (L->hookmask & LUA_MASKCALL)
-        luaD_hook(L, LUA_HOOKCALL, -1);
-      n = (*f)(L);  /* do the actual call */
-      api_checknelems(L, n);
-      luaD_poscall(L, L->top - n);
-      return 1;
-    }
-    case LUA_TLCL: {  /* Lua function: prepare its call */
-      StkId base;
-      Proto *p = clLvalue(func)->p;
-      L->checkstack(p->maxstacksize);
-      func = restorestack(L, funcr);
-      n = cast_int(L->top - func) - 1;  /* number of real arguments */
-      for (; n < p->numparams; n++)
-        setnilvalue(L->top++);  /* complete missing arguments */
-      base = (!p->is_vararg) ? func + 1 : adjust_varargs(L, p, n);
-      ci = next_ci(L);  /* now 'enter' new function */
-      ci->nresults = nresults;
-      ci->func = func;
-      ci->base = base;
-      ci->top = base + p->maxstacksize;
-      assert(ci->top <= L->stack_last);
-      //ci->savedpc = p->code;  /* starting point */
-      ci->savedpc = &p->code[0];
-      ci->callstatus = CIST_LUA;
-      L->top = ci->top;
-      if (L->hookmask & LUA_MASKCALL)
-        callhook(L, ci);
-      return 0;
-    }
-    default: {  /* not a function */
-      func = tryfuncTM(L, func);  /* retry with 'function' tag method */
-      return luaD_precall(L, func, nresults);  /* now it must be a function */
-    }
+  switch (func->tagtype()) {
+    case LUA_TLCF: return luaD_precallLightC(L,func,nresults);
+    case LUA_TCCL: return luaD_precallC(L,func,nresults);
+    case LUA_TLCL: return luaD_precallLua(L,func,nresults);
+    
+    // Not a function.
+    default:
+      {
+        ptrdiff_t funcr = savestack(L, func);
+        func = tryfuncTM(L, func);  /* retry with 'function' tag method */
+        return luaD_precall(L, func, nresults);  /* now it must be a function */
+      }
   }
 }
 

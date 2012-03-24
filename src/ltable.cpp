@@ -84,6 +84,11 @@ uint32_t hash32 (uint32_t a) {
   return a;
 }
 
+uint32_t hash_double(double v) {
+  uint32_t* block = reinterpret_cast<uint32_t*>(&v);
+  return hash64(block[0],block[1]);
+}
+
 static Node* hashpointer (Table* t, void* p ) {
   if(t->hashtable.empty()) return NULL;
   uint32_t* block = reinterpret_cast<uint32_t*>(&p);
@@ -114,8 +119,8 @@ static Node* hashnum (Table* t, lua_Number n) {
 static Node *mainposition (Table *t, const TValue *key) {
   if(t->hashtable.empty()) return NULL;
   switch (ttype(key)) {
-    case LUA_TNUMBER:        return t->lookup(key->getNumber());
-    case LUA_TSTRING:        return hashstr(t, tsvalue(key));
+    case LUA_TNUMBER:        return t->getBin(key->getNumber());
+    case LUA_TSTRING:        return t->nodeAt(tsvalue(key)->getHash());
     case LUA_TBOOLEAN:       return hashboolean(t, bvalue(key));
     case LUA_TLIGHTUSERDATA: return hashpointer(t, pvalue(key));
     case LUA_TLCF:           return hashpointer(t, fvalue(key));

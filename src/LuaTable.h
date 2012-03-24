@@ -21,19 +21,19 @@ public:
   Node* getNode(int i) {
     assert(hashtable.size());
     assert(i >= 0);
-    assert(i < hashtable.size());
+    assert(i < (int)hashtable.size());
     return &hashtable[i];
   }
 
   const Node* getNode(int i) const {
     assert(hashtable.size());
     assert(i >= 0);
-    assert(i < hashtable.size());
+    assert(i < (int)hashtable.size());
     return &hashtable[i];
   }
 
-  Node* lookup(double key);
-  Node* lookup(void* key);
+  Node* getBin(double key);
+  Node* getBin(void* key);
 
   Node* nodeAt(uint32_t hash);
 

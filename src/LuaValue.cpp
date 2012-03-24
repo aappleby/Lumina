@@ -11,6 +11,7 @@ void TValue::operator = ( TValue const & v )
 
 void TValue::operator = ( TValue * v )
 {
+  bytes = 0; 
   if(v) {
     bytes = v->bytes;
     tt_ = v->tt_;
