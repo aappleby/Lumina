@@ -27,3 +27,21 @@ void TValue::sanitycheck() {
     assert(!gc->isDead());
   }
 }
+
+void setobj(TValue* obj1, const TValue* obj2) {
+  const TValue *io2=(obj2);
+  TValue *io1=(obj1);
+  //io1->bytes = 0;
+	io1->bytes = io2->bytes;
+  io1->tt_ = io2->tt_;
+	checkliveness(io1); 
+}
+
+void setobj2(TValue* obj1, const TValue* obj2) {
+  const TValue *io2=(obj2);
+  TValue *io1=(obj1);
+  io1->bytes = 0;
+	io1->bytes = io2->bytes;
+  io1->tt_ = io2->tt_;
+	checkliveness(io1); 
+}
