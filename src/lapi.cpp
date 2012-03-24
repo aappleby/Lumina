@@ -181,8 +181,10 @@ void lua_settop (lua_State *L, int idx) {
   StkId func = L->ci_->func;
   if (idx >= 0) {
     api_check(idx <= L->stack_last - (func + 1), "new top too large");
-    while (L->top < (func + 1) + idx)
-      setnilvalue(L->top++);
+    while (L->top < (func + 1) + idx) {
+      setnilvalue2(L->top);
+      L->top++;
+    }
     L->top = (func + 1) + idx;
   }
   else {
@@ -485,7 +487,7 @@ const void *lua_topointer (lua_State *L, int idx) {
 
 void lua_pushnil (lua_State *L) {
   THREAD_CHECK(L);
-  setnilvalue(L->top);
+  setnilvalue2(L->top);
   api_incr_top(L);
 }
 
@@ -728,7 +730,7 @@ void lua_getuservalue (lua_State *L, int idx) {
   if (uvalue(o)->env_) {
     sethvalue(L, L->top, uvalue(o)->env_);
   } else
-    setnilvalue(L->top);
+    setnilvalue2(L->top);
   api_incr_top(L);
 }
 

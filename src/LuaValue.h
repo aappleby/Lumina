@@ -183,6 +183,8 @@ public:
 
 #define setnilvalue(obj) settt_(obj, LUA_TNIL)
 
+#define setnilvalue2(obj) { TValue* io=(obj); io->bytes = 0; io->tt_ = LUA_TNIL; }
+
 #define setfvalue(obj,x) \
   { TValue *io=(obj); io->f=(x); settt_(io, LUA_TLCF); }
 

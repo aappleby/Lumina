@@ -72,7 +72,7 @@ UpVal *luaF_newupval () {
   if(uv == NULL) luaD_throw(LUA_ERRMEM);
   uv->linkGC(getGlobalGCHead());
   uv->v = &uv->value;
-  setnilvalue(uv->v);
+  setnilvalue2(uv->v);
   return uv;
 }
 
