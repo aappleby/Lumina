@@ -310,7 +310,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
       TValue* key = &old->i_key;
       TValue* val = &old->i_val;
       TValue* n = luaH_set(t, key);
-      setobj(n, val);
+      setobj2(n, val);
     }
   }
 }
@@ -400,7 +400,7 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
       mp = n;
     }
   }
-  setobj(&mp->i_key, key);
+  setobj2(&mp->i_key, key);
   luaC_barrierback(t, key);
   assert(ttisnil(&mp->i_val));
   return &mp->i_val;
@@ -510,7 +510,7 @@ void luaH_setint (Table *t, int key, TValue *value) {
     setnvalue(&k, cast_num(key));
     cell = luaH_newkey(t, &k);
   }
-  setobj(cell, value);
+  setobj2(cell, value);
 }
 
 void luaH_setint_hash (Table *t, int key, TValue *value) {
@@ -523,7 +523,7 @@ void luaH_setint_hash (Table *t, int key, TValue *value) {
     setnvalue(&k, cast_num(key));
     cell = luaH_newkey(t, &k);
   }
-  setobj(cell, value);
+  setobj2(cell, value);
 }
 
 static int unbound_search (Table *t, unsigned int j) {

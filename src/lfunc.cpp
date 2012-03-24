@@ -116,7 +116,7 @@ void luaF_close (StkId level) {
       delete uv;
     else {
       uv->unlink();  /* remove upvalue from 'uvhead' list */
-      setobj(&uv->value, uv->v);  /* move value to upvalue slot */
+      setobj2(&uv->value, uv->v);  /* move value to upvalue slot */
       uv->v = &uv->value;  /* now current value lives here */
       uv->next = g->allgc;  /* link upvalue into 'allgc' list */
       g->allgc = uv;
