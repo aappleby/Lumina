@@ -16,12 +16,6 @@ public:
   {
   }
 
-  void init()
-  {
-    buf_ = NULL;
-    size_ = 0;
-  }
-
   ~LuaVector()
   {
     clear();

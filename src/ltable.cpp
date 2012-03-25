@@ -140,8 +140,6 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   // Allocate temporary storage for the resize before we modify the table
   LuaVector<Node> temphash;
   LuaVector<TValue> temparray;
-  temphash.init();
-  temparray.init();
 
   if(nasize) {
     temparray.resize(nasize);

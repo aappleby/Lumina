@@ -152,7 +152,6 @@ static void f_luaopen (lua_State *L, void *) {
 static void preinit_state (lua_State *L, global_State *g) {
   //THREAD_CHECK(L);
   L->l_G = g;
-  L->stack.init();
   L->ci_ = NULL;
   L->errorJmp = NULL;
   L->nCcalls = 0;
@@ -247,7 +246,6 @@ lua_State *lua_newstate () {
     g->lastmajormem = 0;
     luaS_initstrt();
     setnilvalue(&g->l_registry);
-    g->buff.buffer.init();
     g->panic = NULL;
     g->version = lua_version(NULL);
     g->gcstate = GCSpause;

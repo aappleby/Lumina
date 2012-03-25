@@ -140,7 +140,6 @@ void luaS_initstrt() {
   g->strt = new stringtable();
   g->strt->size = 0;
   g->strt->nuse = 0;
-  g->strt->hash.init();
 }
 
 void luaS_freestrt () {
