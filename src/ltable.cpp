@@ -367,7 +367,7 @@ static Node *getfreepos (Table *t) {
 */
 TValue *luaH_newkey (Table *t, const TValue *key) {
   Node *mp;
-  if (ttisnil(key)) luaG_runerror("table index is nil");
+  if (key->isNil()) luaG_runerror("table index is nil");
   else if (ttisnumber(key) && luai_numisnan(L, nvalue(key)))
     luaG_runerror("table index is NaN");
   mp = mainposition(t, key);
@@ -428,35 +428,21 @@ const TValue *luaH_getint (Table *t, int key) {
   }
 }
 
+const TValue* luaH_get2(Table* t, uint32_t hash, TValue key) {
+  for(Node* n = t->nodeAt(hash); n; n = n->next) {
+    if(n->i_key == key) return &n->i_val;
+  }
+
+  return luaO_nilobject;
+}
+
 const TValue *luaH_getint_hash (Table *t, int key) {
-  double nk = key;
-  Node *n = hashnum(t, nk);
-  if(n == NULL) return luaO_nilobject;
-
-  do {  /* check whether `key' is somewhere in the chain */
-    if (n->i_key.isNumber() && (n->i_key.getNumber() == nk))
-      return &n->i_val;  /* that's it */
-    else n = n->next;
-  } while (n);
-  return luaO_nilobject;
+  return luaH_get2(t, hash_double(key), TValue(key));
 }
 
-
-/*
-** search function for strings
-*/
 const TValue *luaH_getstr (Table *t, TString *key) {
-  Node *n = hashstr(t, key);
-  if(n == NULL) return luaO_nilobject;
-
-  do {  /* check whether `key' is somewhere in the chain */
-    if (ttisstring(&n->i_key) && eqstr(tsvalue(&n->i_key), key))
-      return &n->i_val;  /* that's it */
-    else n = n->next;
-  } while (n);
-  return luaO_nilobject;
+  return luaH_get2(t, key->getHash(), TValue(key));
 }
-
 
 /*
 ** main search function

@@ -16,6 +16,7 @@ public:
   }
 
   explicit TValue(TString* v) {
+    bytes = 0;
     tt_ = ctb(LUA_TSTRING);
     gc = (LuaObject*)v;
     sanitycheck();
@@ -28,6 +29,7 @@ public:
   void operator = ( bool v ) { tt_ = LUA_TBOOLEAN; bytes = v ? 1 : 0; }
 
   void operator = (TString* v ) {
+    bytes = 0;
     gc = (LuaObject*)v;
     tt_ = ctb(LUA_TSTRING);
     sanitycheck();
