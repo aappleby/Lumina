@@ -29,7 +29,9 @@ public:
   Node* findBin(TValue key);
   int   findBinIndex(TValue key);
 
-  //int   findTableIndex(TValue key);
+  int  getTableIndexSize() const;
+  bool keyToTableIndex(TValue key, int& outIndex);
+  bool tableIndexToKeyVal(int index, TValue& outKey, TValue& outValue);
 
   // Returns the value associated with the key
   const TValue* findValue(TValue key);

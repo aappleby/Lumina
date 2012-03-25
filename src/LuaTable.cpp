@@ -47,6 +47,54 @@ int Table::findBinIndex(TValue key) {
   return node ? (int)(node - hashtable.begin()) : -1;
 }
 
+int Table::getTableIndexSize() const {
+  return (int)(array.size() + hashtable.size());
+}
+
+bool Table::keyToTableIndex(TValue key, int& outIndex) {
+  if(key.isInteger()) {
+    int index = key.getInteger() - 1; // lua index -> c index
+    if((index >= 0) && (index < (int)array.size())) {
+      outIndex = index;
+      return true;
+    }
+  }
+
+  Node* node = findNode(key);
+  if(node == NULL) {
+    return false;
+  } else {
+    outIndex = (node - hashtable.begin()) + array.size();
+    return true;
+  }
+}
+
+bool Table::tableIndexToKeyVal(int index, TValue& outKey, TValue& outVal) {
+  if(index < 0) return false;
+  if(index < (int)array.size()) {
+    if(!array[index].isNil()) {
+      outKey = TValue(index + 1); // c index -> lua index
+      outVal = array[index];
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  index -= array.size();
+  if(index < (int)hashtable.size()) {
+    if(!hashtable[index].i_val.isNil()) {
+      outKey = hashtable[index].i_key;
+      outVal = hashtable[index].i_val;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  return false;
+}
+
 /*
 int Table::findTableIndex(TValue key) {
   if(key.isInteger()) {

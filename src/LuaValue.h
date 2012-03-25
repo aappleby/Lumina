@@ -44,6 +44,10 @@ public:
     return (tt_ == v.tt_) && (bytes == v.bytes);
   }
 
+  bool operator != (TValue const& v) {
+    return !(*this == v);
+  }
+
   bool isCollectable() { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }
 
   bool isNil() const           { return rawtype() == LUA_TNIL; }
