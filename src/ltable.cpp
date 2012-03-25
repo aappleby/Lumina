@@ -53,7 +53,6 @@ Node* hashpow2(Table* t, uint32_t n) {
   return t->getNode(n & mask);
 }
 
-#define hashstr(t,str)   hashpow2(t, (str)->getHash())
 #define hashboolean(t,p) hashpow2(t, p)
 
 uint32_t hash64 (uint32_t a, uint32_t b) {
@@ -65,16 +64,6 @@ uint32_t hash64 (uint32_t a, uint32_t b) {
 
   a ^= b;
 
-  a ^= a >> 16;
-  a *= 0x85ebca6b;
-  a ^= a >> 13;
-  a *= 0xc2b2ae35;
-  a ^= a >> 16;
-
-  return a;
-}
-
-uint32_t hash32 (uint32_t a) {
   a ^= a >> 16;
   a *= 0x85ebca6b;
   a ^= a >> 13;
@@ -96,18 +85,8 @@ static Node* hashpointer (Table* t, void* p ) {
   if(sizeof(p) == 8) {
     hash = hash64(block[0],block[1]);
   } else {
-    hash = hash32(block[0]);
+    hash = hash64(block[0], 0);
   }
-  uint32_t mask = (uint32_t)t->hashtable.size() - 1;
-  return t->getNode(hash & mask);
-}
-
-// Well damn, test suite goes from 21.5 to 18.9 seconds just by changing to
-// this hash...
-static Node* hashnum (Table* t, lua_Number n) {
-  if(t->hashtable.empty()) return NULL;
-  uint32_t* block = reinterpret_cast<uint32_t*>(&n);
-  uint32_t hash = hash64(block[0],block[1]);
   uint32_t mask = (uint32_t)t->hashtable.size() - 1;
   return t->getNode(hash & mask);
 }
@@ -121,7 +100,7 @@ static Node *mainposition (Table *t, const TValue *key) {
   switch (ttype(key)) {
     case LUA_TNUMBER:        return t->getBin(key->getNumber());
     case LUA_TSTRING:        return t->nodeAt(tsvalue(key)->getHash());
-    case LUA_TBOOLEAN:       return hashboolean(t, bvalue(key));
+    case LUA_TBOOLEAN:       return t->nodeAt(key->low);
     case LUA_TLIGHTUSERDATA: return hashpointer(t, pvalue(key));
     case LUA_TLCF:           return hashpointer(t, fvalue(key));
     default:                 return hashpointer(t, gcvalue(key));

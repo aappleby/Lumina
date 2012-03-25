@@ -1,6 +1,5 @@
 #include "LuaTable.h"
 
-uint32_t hash32 (uint32_t a);
 uint32_t hash64 (uint32_t a, uint32_t b);
 
 Table::Table() : LuaObject(LUA_TTABLE) {
@@ -18,7 +17,7 @@ Node* Table::getBin(void* key) {
   if(sizeof(key) == 8) {
     return nodeAt( hash64(block[0],block[1]) );
   } else {
-    return nodeAt( hash32(block[0]) );
+    return nodeAt( hash64(block[0], 0) );
   }
 }
 
