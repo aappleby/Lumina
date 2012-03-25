@@ -324,7 +324,7 @@ static void markroot (global_State *g) {
 static void traverseweakvalue (global_State *g, Table *h) {
   /* if there is array part, assume it may have white values (do not
      traverse it just to check) */
-  int hasclears = !h->array.empty();
+  int hasclears = h->hasArray();
 
   for(int i = 0; i < (int)h->hashtable.size(); i++) {
     Node* n = h->getNode(i);

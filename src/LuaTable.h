@@ -18,6 +18,9 @@ public:
 
   Table();
 
+  bool hasArray() { return !array.empty(); }
+  bool hasHash()  { return !hashtable.empty(); }
+
   Node* getNode(int i) {
     assert(hashtable.size());
     assert(i >= 0);
@@ -36,8 +39,9 @@ public:
 
   uint8_t flags;  /* 1<<p means tagmethod(p) is not present */
   Table *metatable;
-  LuaVector<TValue> array;
-  LuaVector<Node> hashtable;
   int lastfree;
   LuaObject *graylist;
+
+  LuaVector<TValue> array;
+  LuaVector<Node> hashtable;
 };
