@@ -296,6 +296,7 @@ const TValue *luaH_getstr (Table *t, TString *key) {
 /*
 ** main search function
 */
+
 const TValue *luaH_get (Table *t, const TValue *key) {
   if(key->isNil()) {
     return luaO_nilobject;

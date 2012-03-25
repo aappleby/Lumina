@@ -53,6 +53,7 @@ public:
 
   TValue at(int idx);
   void   push(TValue v);
+  void   push(const TValue* v);
   TValue pop();
 };
 

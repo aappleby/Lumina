@@ -106,44 +106,55 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
 }
 
 
-void luaV_gettable (lua_State *L, const TValue *original_t, TValue *key, StkId val) {
+void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId result) {
   THREAD_CHECK(L);
-  const TValue* t = original_t;
-  const TValue* tm = t;
   for (int loop = 0; loop < MAXTAGLOOP; loop++) {
-    if(t == NULL) {
-      val->clear();
+    if(source == NULL) {
+      result->clear();
       return;
     }
 
-    if (t->isTable()) {
-      Table* h = t->getTable();
-      const TValue *res = luaH_get(h, key);
+    if (source->isTable()) {
+      Table* table = source->getTable();
+      const TValue* value = luaH_get(table, key);
 
-      if (res && !res->isNil()) {
-        *val = *res;
+      if (value && !value->isNil()) {
+        *result = *value;
         return;
       }
     }
 
-    tm = t->isTable() ? fasttm(t->getTable()->metatable, TM_INDEX) : luaT_gettmbyobj(t, TM_INDEX);
+    // Table lookup failed. If there's no tag method, then either the search terminates
+    // (if object is a table) or throws an error (if object is not a table)
 
-    if (tm == NULL) {
-      val->clear();
+    const TValue* tagmethod = source->isTable() ? fasttm(source->getTable()->metatable, TM_INDEX) : 
+                                                  luaT_gettmbyobj(source, TM_INDEX);
+
+    if((tagmethod == NULL) || tagmethod->isNil()) {
+      if(source->isTable()) {
+        result->clear();
+        return;
+      } else {
+        luaG_typeerror(source, "index");
+        return;
+      }
+    }
+
+    // If the tagmethod is a function, call it. If it's a table, redo the search in
+    // the new table.
+
+    if (tagmethod->isFunction()) {
+      callTM(L, tagmethod, source, key, result, 1);
       return;
     }
-    
-    if(tm->isNil()) {
-      luaG_typeerror(t, "index");
-      return;
+
+    if(tagmethod->isTable()) {
+      source = tagmethod;
+      continue;
     }
 
-    if (tm->isFunction()) {
-      callTM(L, tm, t, key, val, 1);
-      return;
-    }
-
-    t = tm;  /* else repeat with 'tm' */
+    // Trying to use other things as the __index tagmethod is an error.
+    luaG_typeerror(source, "invalid type in __index method");
   }
   luaG_runerror("loop in gettable");
 }

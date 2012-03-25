@@ -215,3 +215,9 @@ void lua_State::push(TValue v) {
   top++;
   assert((top <= ci_->top) && "stack overflow");
 }
+
+void lua_State::push(const TValue* v) {
+  top[0] = *v;
+  top++;
+  assert((top <= ci_->top) && "stack overflow");
+}
