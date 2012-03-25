@@ -28,6 +28,11 @@ Node* Table::findNode(TValue key) {
   return NULL;
 }
 
+int Table::findNodeIndex(TValue key) {
+  Node* node = findNode(key);
+  return node ? (int)(node - hashtable.begin()) : -1;
+}
+
 Node* Table::findBin(TValue key) {
   if(hashtable.empty()) return NULL;
 
