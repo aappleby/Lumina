@@ -85,6 +85,21 @@ bool Table::tableIndexToKeyVal(int index, TValue& outKey, TValue& outVal) {
   return false;
 }
 
+const TValue* Table::findValue(TValue key) {
+
+  if(key.isNil()) return NULL;
+
+  if(key.isInteger()) {
+    // lua index -> c index
+    int index = key.getInteger() - 1;
+    if((index >= 0) && (index < (int)array.size())) {
+      return &array[index];
+    }
+  }
+
+  return findValueInHash(key);
+}
+
 const TValue* Table::findValueInHash(TValue key) {
   Node* node = findNode(key);
   return node ? &node->i_val : NULL;

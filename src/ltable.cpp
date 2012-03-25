@@ -235,8 +235,15 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
     luaG_runerror("table index is NaN");
   
   Node* mp = t->findBin(*key);
+
+  if(mp && mp->i_val.isNil()) {
+    mp->i_key = *key;
+    luaC_barrierback(t, key);
+    assert(ttisnil(&mp->i_val));
+    return &mp->i_val;
+  }
+
   if ((mp == NULL) || !ttisnil(&mp->i_val)) {  /* main position is taken? */
-    Node *othern;
     Node *n = getfreepos(t);  /* get a free place */
     if (n == NULL) {  /* cannot find a free place? */
       rehash(t, key);  /* grow table */
@@ -244,18 +251,15 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
       return luaH_set(t, key);  /* insert key into grown table */
     }
     assert(n);
-    othern = t->findBin(mp->i_key);
-    Node* bak = othern;
-    if(othern == NULL) {
-      printf("xxx");
-    }
+
+    Node* othern = t->findBin(mp->i_key);
     if (othern != mp) {  /* is colliding node out of its main position? */
       /* yes; move colliding node into free position */
       while (othern->next != mp) othern = othern->next;  /* find previous */
       othern->next = n;  /* redo the chain with `n' in place of `mp' */
       *n = *mp;  /* copy colliding node into free pos. (mp->next also goes) */
       mp->next = NULL;  /* now `mp' is free */
-      setnilvalue(&mp->i_val);
+      mp->i_val.clear();
     }
     else {  /* colliding node is in its own main position */
       /* new node will go into free position */
@@ -264,7 +268,7 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
       mp = n;
     }
   }
-  setobj(&mp->i_key, key);
+  mp->i_key = *key;
   luaC_barrierback(t, key);
   assert(ttisnil(&mp->i_val));
   return &mp->i_val;
@@ -293,29 +297,24 @@ const TValue *luaH_getstr (Table *t, TString *key) {
 ** main search function
 */
 const TValue *luaH_get (Table *t, const TValue *key) {
-  switch (ttypenv(key)) {
-    case LUA_TNIL: return luaO_nilobject;
-    case LUA_TSTRING: return luaH_getstr(t, tsvalue(key));
-    case LUA_TNUMBER: {
-      int k;
-      lua_Number n = nvalue(key);
-      lua_number2int(k, n);
-      if (luai_numeq(cast_num(k), nvalue(key))) /* index is int? */
-        return luaH_getint(t, k);  /* use specialized version */
-      /* else go through */
-    }
-    default: {
-      Node *n = t->findBin(*key);
-      if(n == NULL) return luaO_nilobject;
-
-      do {  /* check whether `key' is somewhere in the chain */
-        if (luaV_rawequalobj(&n->i_key, key))
-          return &n->i_val;  /* that's it */
-        else n = n->next;
-      } while (n);
-      return luaO_nilobject;
-    }
+  if(key->isNil()) {
+    return luaO_nilobject;
   }
+
+  if(key->isInteger()) {
+    const TValue* result = t->findValue(key->getInteger());
+    return result ? result : luaO_nilobject;
+  }
+
+  if(key->isString()) {
+    const TValue* result = t->findValueInHash(*key);
+    return result ? result : luaO_nilobject;
+  }
+
+  for(Node* n = t->findBin(*key); n; n = n->next) {
+    if(n->i_key == *key) return &n->i_val;
+  }
+  return luaO_nilobject;
 }
 
 

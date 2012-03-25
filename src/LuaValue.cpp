@@ -19,6 +19,8 @@ void TValue::operator = ( TValue * v )
     bytes = 0;
     tt_ = LUA_TNIL;
   }
+
+  sanitycheck();
 }
 
 void TValue::sanitycheck() {

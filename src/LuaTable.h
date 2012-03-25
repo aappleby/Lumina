@@ -35,8 +35,8 @@ public:
 
   // Returns the value associated with the key
   // can't turn this to value return until the rest of the code doesn't fetch by pointer...
+  const TValue* findValue(TValue key);
   const TValue* findValueInHash(TValue key);
-
   const TValue* findValue(int key);
 
   Node* getNode(int i) {
