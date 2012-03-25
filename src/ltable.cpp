@@ -59,36 +59,76 @@ static int findindex (Table *t, TValue key) {
   if (0 < i && i <= (int)t->array.size())  /* is `key' inside array part? */
     return i-1;  /* yes; that's the index (corrected to C) */
 
-  int index1 = t->findNodeIndex(key) + (int)t->array.size();
-
-  Node *n = t->findBin(key);
-  if (n == NULL) {
-    assert(index1 == -1);
+  int index = t->findNodeIndex(key);
+  
+  if (index < 0) {
     luaG_runerror("invalid key to 'next'");
   }
+  return index + (int)t->array.size();
+}
 
-  for (;;) {
-    if (n->i_key == key) {
-      int index2 = (int)(n - t->getNode(0)) + (int)t->array.size();
-      assert(index1 == index2);
-      return index2;
+bool findNextInArray(Table* t, int start, TValue& outKey, TValue& outVal) {
+  if(start < 0) return false;
+  if(start >= (int)t->array.size()) return false;
+
+  for(int i = start + 1; i < (int)t->array.size(); i++) {
+    if(!t->array[i].isNil()) {
+      outKey = i+1; // c index -> lua index
+      outVal = t->array[i];
+      return true;
     }
-    else n = n->next;
-    if (n == NULL) {
-      assert(index1 == -1);
-      luaG_runerror("invalid key to 'next'");
+  }
+  return false;
+}
+
+bool findNextInHash(Table* t, int start, TValue& outKey, TValue& outVal) {
+  if(start < 0) return false;
+  if(start >= (int)t->hashtable.size()) return false;
+
+  for(int i = start + 1; i < (int)t->hashtable.size(); i++) {
+    if(!t->hashtable[i].i_val.isNil()) {
+      outKey = t->hashtable[i].i_key;
+      outVal = t->hashtable[i].i_val;
+      return true;
     }
+  }
+  return false;
+}
+
+bool findNextPair(Table* t, TValue key, TValue& outKey, TValue& outValue) {
+  if(t->array.empty() && t->hashtable.empty()) return false;
+
+  if(key.isNil()) {
+    if(findNextInArray(t, 0, outKey, outValue)) return true;
+    if(findNextInHash(t, 0, outKey, outValue)) return true;
+    return false;
+  } else if(key.isInteger()) {
+    int arrayStart = key.getInteger() - 1; // lua index -> c index
+    if((arrayStart >= 0) && (arrayStart < (int)t->array.size())) {
+      // Scan starts in array, overflows into hash table.
+      if(findNextInArray(t, arrayStart, outKey, outValue)) return true;
+      if(findNextInHash(t, 0, outKey, outValue)) return true;
+      return false;
+    } else {
+      // Scan starting in hash table
+      int hashStart = t->findNodeIndex(key);
+      return findNextInHash(t, hashStart, outKey, outValue);
+    }
+  } else {
+    // Scan starting in hash table
+    int hashStart = t->findNodeIndex(key);
+    return findNextInHash(t, hashStart, outKey, outValue);
   }
 }
 
-int luaH_next (Table *t, StkId stack) {
+int luaH_next_old (Table *t, TValue key, TValue& outKey, TValue& outVal) {
   if(t->array.empty() && t->hashtable.empty()) return 0;
 
-  int i = findindex(t, stack[0]) + 1;
+  int i = findindex(t, key) + 1;
   for (;i < (int)t->array.size(); i++) {
     if (!t->array[i].isNil()) {
-      stack[0] = i+1;
-      stack[1] = t->array[i];
+      outKey = i+1;
+      outVal = t->array[i];
       return 1;
     }
   }
@@ -96,12 +136,18 @@ int luaH_next (Table *t, StkId stack) {
   for (; i < (int)t->hashtable.size(); i++) {
     Node& n = *t->getNode(i);
     if (!n.i_val.isNil()) {
-      stack[0] = n.i_key;
-      stack[1] = n.i_val;
+      outKey = n.i_key;
+      outVal = n.i_val;
       return 1;
     }
   }
-  return 0;  /* no more elements */
+  return 0;  // no more elements
+}
+
+int luaH_next(Table* t, StkId stack) {
+  TValue key = stack[0];
+
+  return luaH_next_old(t, key, stack[0], stack[1]);
 }
 
 

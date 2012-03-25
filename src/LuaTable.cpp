@@ -47,6 +47,21 @@ int Table::findBinIndex(TValue key) {
   return node ? (int)(node - hashtable.begin()) : -1;
 }
 
+/*
+int Table::findTableIndex(TValue key) {
+  if(key.isInteger()) {
+    int index = key.getInteger() - 1;
+
+    if((index >= 0) && (index < array.size()) {
+      return index;
+    }
+  }
+
+  int index = findNodeIndex(key);
+  return (index >= 0) ? index + array.size() : -1;
+}
+*/
+
 const TValue* Table::findValue(TValue key) {
   Node* node = findNode(key);
   return node ? &node->i_val : NULL;
