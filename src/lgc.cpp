@@ -110,6 +110,14 @@ static void removeentry (Node *n) {
   }
 }
 
+static void removeentry (TValue* key, TValue* val) {
+  assert(ttisnil(val));
+  
+  if (valiswhite(key)) {
+    setdeadvalue(key);  /* unused and unmarked key; remove it */
+  }
+}
+
 
 /*
 ** tells whether a key or value can be cleared from a weak
@@ -325,58 +333,43 @@ static void markroot (global_State *g) {
 ** =======================================================
 */
 
-typedef void (*nodeCallback)(Node* n, void* blob);
-typedef void (*valueCallback)(TValue* v, void* blob);
-
-void traverseNodes(Table* h, nodeCallback c, void* blob) {
-  for(int i = 0; i < (int)h->hashtable.size(); i++) {
-    c(h->getNode(i), blob);
-  }
-}
-
-void traverseArray(Table* h, valueCallback c, void* blob) {
-  for(int i = 0; i < (int)h->array.size(); i++) {
-    c(&h->array[i],blob);
-  }
-}
-
-
 struct tableTraverseInfo {
   int marked;
   int hasclears;
   int propagate;
 };
 
-void traverseweakvalue_callback (Node* n, void* blob) {
+void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
   int& hasclears = *(int*)blob;
-  checkdeadkey(n);
+  //checkdeadkey(n);
+  assert(!ttisdeadkey(key) || ttisnil(val));
 
   // Mark keys with nil values as dead.
-  if (n->i_val.isNil()) {
-    removeentry(n);
+  if (val->isNil()) {
+    removeentry(key,val);
     return;
   }
 
-  assert(!n->i_key.isNil());
+  assert(!key->isNil());
 
-  markvalue(thread_G, &n->i_key);  // mark key
+  markvalue(thread_G, key);  // mark key
 
-  if (!hasclears && iscleared(&n->i_val)) {  // is there a white value?
+  if (!hasclears && iscleared(val)) {  // is there a white value?
     hasclears = 1;  // table will have to be cleared
   }
 }
 
-static void traverseweakvalue (global_State *g, Table *h) {
+static void traverseweakvalue (Table *h) {
   /* if there is array part, assume it may have white values (do not
      traverse it just to check) */
   int hasclears = h->hasArray();
 
-  traverseNodes(h, traverseweakvalue_callback, &hasclears);
+  h->traverseNodes(traverseweakvalue_callback, &hasclears);
 
   if (hasclears)
-    linktable(h, &g->weak);  /* has to be cleared later */
+    linktable(h, &thread_G->weak);  /* has to be cleared later */
   else  /* no white values */
-    linktable(h, &g->grayagain);  /* no need to clean */
+    linktable(h, &thread_G->grayagain);  /* no need to clean */
 }
 
 void traverseephemeron_array(TValue* v, void* blob) {
@@ -387,66 +380,72 @@ void traverseephemeron_array(TValue* v, void* blob) {
   }
 }
 
-void traverseephemeron_hash(Node* n, void* blob) {
+void traverseephemeron_hash(TValue* key, TValue* val, void* blob) {
   tableTraverseInfo& info = *(tableTraverseInfo*)blob;
-  checkdeadkey(n);
+  assert(!ttisdeadkey(key) || ttisnil(val));
 
   // If the node's value is nil, mark the key as dead.
-  if (n->i_val.isNil()) {
-    removeentry(n);
+  if (val->isNil()) {
+    removeentry(key,val);
     return;
   }
 
-  if (iscleared(&n->i_key)) {  /* key is not marked (yet)? */
+  if (iscleared(key)) {  /* key is not marked (yet)? */
     info.hasclears = 1;  /* table must be cleared */
    
-    if (valiswhite(&n->i_val)) { /* value not marked yet? */
+    if (valiswhite(val)) { /* value not marked yet? */
       info.propagate = 1;  /* must propagate again */
     }
     return;
   }
 
-  if (valiswhite(&n->i_val)) {  /* value not marked yet? */
+  if (valiswhite(val)) {  /* value not marked yet? */
     info.marked = 1;
-    reallymarkobject(thread_G, gcvalue(&n->i_val));  /* mark it now */
+    reallymarkobject(thread_G, gcvalue(val));  /* mark it now */
     return;
   }
 }
 
-static int traverseephemeron (global_State *g, Table *h) {
+static int traverseephemeron (Table *h) {
   tableTraverseInfo info;
 
   info.marked = 0;
   info.hasclears = 0;
   info.propagate = 0;
 
-  traverseArray(h, traverseephemeron_array, &info);
-  traverseNodes(h, traverseephemeron_hash, &info);
+  h->traverseArray(traverseephemeron_array, &info);
+  h->traverseNodes(traverseephemeron_hash, &info);
 
   if (info.propagate)
-    linktable(h, &g->ephemeron);  /* have to propagate again */
+    linktable(h, &thread_G->ephemeron);  /* have to propagate again */
   else if (info.hasclears)  /* does table have white keys? */
-    linktable(h, &g->allweak);  /* may have to clean white keys */
+    linktable(h, &thread_G->allweak);  /* may have to clean white keys */
   else  /* no white keys */
-    linktable(h, &g->grayagain);  /* no need to clean */
+    linktable(h, &thread_G->grayagain);  /* no need to clean */
   return info.marked;
 }
 
+void traverseStrongArray(TValue* val, void*) {
+  markvalue(thread_G, val);
+}
 
-static void traversestrongtable (global_State *g, Table *h) {
-  for (int i = 0; i < (int)h->array.size(); i++)  /* traverse array part */
-    markvalue(g, &h->array[i]);
-  for(int i = 0; i < (int)h->hashtable.size(); i++) {
-    Node* n = h->getNode(i);
-    checkdeadkey(n);
-    if (ttisnil(&n->i_val))  /* entry is empty? */
-      removeentry(n);  /* remove it */
-    else {
-      assert(!ttisnil(&n->i_key));
-      markvalue(g, &n->i_key);  /* mark key */
-      markvalue(g, &n->i_val);  /* mark value */
-    }
+void traverseStrongNode(TValue* key, TValue* val, void*) {
+  assert(!ttisdeadkey(key) || ttisnil(val));
+  if (ttisnil(val)) {
+    removeentry(key, val);  /* remove it */
+  } else {
+    assert(!ttisnil(key));
+    markvalue(thread_G, key);  /* mark key */
+    markvalue(thread_G, val);  /* mark value */
   }
+}
+
+static void traversestrongtable (Table *h) {
+  /*
+  h->traverseArray(traverseStrongArray, NULL);
+  h->traverseNodes(traverseStrongNode, NULL);
+  */
+  h->traverse(traverseStrongNode, NULL);
 }
 
 // Table modes really should be a flag on the table instead
@@ -458,7 +457,7 @@ static int traversetable (global_State *g, Table *h) {
 
   // Strong keys, strong values - use strong table traversal.
   if(mode == NULL) {
-    traversestrongtable(g, h);
+    traversestrongtable(h);
     return TRAVCOST + (int)h->array.size() + (2 * (int)h->hashtable.size());
   }
 
@@ -472,13 +471,13 @@ static int traversetable (global_State *g, Table *h) {
 
   // Strong keys, weak values - use weak table traversal.
   if (!weakkey) {
-    traverseweakvalue(g, h);
+    traverseweakvalue(h);
     return TRAVCOST + (int)h->hashtable.size();
   }
 
   // Weak keys, strong values - use ephemeron traversal.
   if (!weakvalue) {
-    traverseephemeron(g, h);
+    traverseephemeron(h);
     return TRAVCOST + (int)h->array.size() + (int)h->hashtable.size();
   }
 
@@ -606,6 +605,8 @@ static void retraversegrays (global_State *g) {
 }
 
 
+// TODO(aappleby): what the hell does this do?
+
 static void convergeephemerons (global_State *g) {
   int changed;
   do {
@@ -615,7 +616,7 @@ static void convergeephemerons (global_State *g) {
     changed = 0;
     while ((w = next) != NULL) {
       next = gco2t(w)->graylist;
-      if (traverseephemeron(g, gco2t(w))) {  /* traverse marked some value? */
+      if (traverseephemeron(gco2t(w))) {  /* traverse marked some value? */
         propagateall(g);  /* propagate changes */
         changed = 1;  /* will have to revisit all ephemeron tables */
       }

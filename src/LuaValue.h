@@ -31,19 +31,15 @@ public:
   void operator = ( TValue const & V );
   void operator = ( TValue * pV );
 
-  void operator = ( int v ) { tt_ = LUA_TNUMBER; n = (double)v; }
-  void operator = ( bool v ) { tt_ = LUA_TBOOLEAN; bytes = v ? 1 : 0; }
+  void operator = (double v) { tt_ = LUA_TNUMBER; n = v; }
+  void operator = (int v)    { tt_ = LUA_TNUMBER; n = (double)v; }
+  void operator = (bool v)   { tt_ = LUA_TBOOLEAN; bytes = v ? 1 : 0; }
 
   void operator = (TString* v ) {
     bytes = 0;
     gc = (LuaObject*)v;
     tt_ = ctb(LUA_TSTRING);
     sanitycheck();
-  }
-
-  void operator = (double v) {
-    n = v;
-    tt_ = LUA_TNUMBER;
   }
 
   // Comparison operators

@@ -59,7 +59,21 @@ public:
     return &hashtable[i];
   }
 
+  //----------
+  // Visitor pattern stuff for GC
+
+  typedef void (*nodeCallback)(TValue* key, TValue* value, void* blob);
+  typedef void (*valueCallback)(TValue* v, void* blob);
+
+  void traverseNodes(Table::nodeCallback c, void* blob);
+  void traverseArray(Table::valueCallback c, void* blob);
+  void traverse(Table::nodeCallback c, void* blob);
+
+  //----------
+
   Node* nodeAt(uint32_t hash);
+
+  //----------
 
   uint8_t flags;  /* 1<<p means tagmethod(p) is not present */
   Table *metatable;

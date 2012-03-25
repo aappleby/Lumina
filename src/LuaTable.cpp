@@ -20,6 +20,13 @@ uint32_t hash64 (uint32_t a, uint32_t b) {
 
 //-----------------------------------------------------------------------------
 
+Table::Table() : LuaObject(LUA_TTABLE) {
+  metatable = NULL;
+  flags = 0xFF;
+}
+
+//-----------------------------------------------------------------------------
+
 Node* Table::findNode(TValue key) {
   if(hashtable.empty()) return NULL;
 
@@ -139,11 +146,7 @@ const TValue* Table::findValue(int key) {
   return findValueInHash(TValue(key));
 }
 
-
-Table::Table() : LuaObject(LUA_TTABLE) {
-  metatable = NULL;
-  flags = 0xFF;
-}
+//-----------------------------------------------------------------------------
 
 Node* Table::nodeAt(uint32_t hash) {
   if(hashtable.empty()) return NULL;
@@ -151,3 +154,33 @@ Node* Table::nodeAt(uint32_t hash) {
   uint32_t mask = (uint32_t)hashtable.size() - 1;
   return &hashtable[hash & mask];
 }
+
+//-----------------------------------------------------------------------------
+
+void Table::traverseNodes(Table::nodeCallback c, void* blob) {
+  for(int i = 0; i < (int)hashtable.size(); i++) {
+    Node* n = getNode(i);
+    c(&n->i_key, &n->i_val, blob);
+  }
+}
+
+void Table::traverseArray(Table::valueCallback c, void* blob) {
+  for(int i = 0; i < (int)array.size(); i++) {
+    c(&array[i],blob);
+  }
+}
+
+void Table::traverse(Table::nodeCallback c, void* blob) {
+  TValue temp;
+
+  for(int i = 0; i < (int)array.size(); i++) {
+    temp = i + 1; // c index -> lua index;
+    c(&temp,&array[i],blob);
+  }
+  for(int i = 0; i < (int)hashtable.size(); i++) {
+    Node* n = getNode(i);
+    c(&n->i_key, &n->i_val, blob);
+  }
+}
+
+//-----------------------------------------------------------------------------
