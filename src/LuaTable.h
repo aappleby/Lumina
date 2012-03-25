@@ -21,6 +21,15 @@ public:
   bool hasArray() { return !array.empty(); }
   bool hasHash()  { return !hashtable.empty(); }
 
+  // Returns the node matching the key.
+  Node* findNode(TValue key);
+
+  // Returns the node where the key would go.
+  Node* findBin(TValue key);
+
+  // Returns the value associated with the key
+  const TValue* findValue(TValue key);
+
   Node* getNode(int i) {
     assert(hashtable.size());
     assert(i >= 0);

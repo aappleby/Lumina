@@ -94,11 +94,6 @@ static int findindex (Table *t, TValue key) {
     if (n->i_key == key) {
       return (int)(n - t->getNode(0)) + (int)t->array.size();
     }
-
-    if (ttisdeadkey(&n->i_key) && iscollectable(&key) && (n->i_key.bytes == key.bytes)) {
-      return (int)(n - t->getNode(0)) + (int)t->array.size();
-    }
-
     else n = n->next;
     if (n == NULL)
       luaG_runerror("invalid key to 'next'");
