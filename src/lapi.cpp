@@ -1114,7 +1114,7 @@ int lua_error (lua_State *L) {
 
 int lua_next (lua_State* L, int idx) {
 
-  Table* t = index2addr(L, idx)->getTable();
+  Table* t = L->at(idx);
 
   TValue key = L->pop();
 

@@ -51,6 +51,7 @@ public:
   
   void closeUpvals(StkId level);
 
+  TValue at(int idx);
   void   push(TValue v);
   TValue pop();
 };

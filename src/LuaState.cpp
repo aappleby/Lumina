@@ -1,8 +1,13 @@
 #include "LuaState.h"
 
+#include "LuaClosure.h"
+#include "LuaGlobals.h"
 #include "LuaUpval.h"
 #include "LuaValue.h"
+
 #include <algorithm>
+
+extern const TValue luaO_nilobject_;
 
 l_noret luaG_runerror (const char *fmt, ...);
 
@@ -156,6 +161,50 @@ void lua_State::closeUpvals(StkId level) {
   */
 }
 
+// Positive stack indices are indexed from the current call frame.
+// The first item in a call frame is the closure for the current function.
+// Negative stack indices are indexed from the stack top.
+// Negative indices less than or equal to LUA_REGISTRYINDEX are special.
+
+TValue lua_State::at(int idx) {
+  CallInfo *ci = ci_;
+  if (idx > 0) {
+    TValue *o = ci->func + idx;
+    if (o >= top) {
+      assert(false);
+      return luaO_nilobject_;
+    }
+    else return *o;
+  }
+
+  if (idx > LUA_REGISTRYINDEX) {
+    return top[idx];
+  }
+
+  if (idx == LUA_REGISTRYINDEX) {
+    return thread_G->l_registry;
+  }
+
+
+  // Light C functions have no upvals
+  if (ci->func->isLightCFunc()) {
+    assert(false);
+    return luaO_nilobject_;
+  }
+
+  idx = LUA_REGISTRYINDEX - idx - 1;
+
+  Closure* func = ci->func->getCClosure();
+  if(idx < func->nupvalues) {
+    return func->pupvals_[idx];
+  }
+
+  // Invalid stack index.
+  assert(false);
+  return luaO_nilobject_;
+}
+
+
 TValue lua_State::pop() {
   top--;
   return *top;
@@ -164,4 +213,5 @@ TValue lua_State::pop() {
 void lua_State::push(TValue v) {
   top[0] = v;
   top++;
+  assert((top <= ci_->top) && "stack overflow");
 }

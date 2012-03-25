@@ -22,6 +22,12 @@ public:
     sanitycheck();
   }
 
+  // Conversion operators
+
+  operator Table*() { return getTable(); }
+
+  // Assignment operators
+
   void operator = ( TValue const & V );
   void operator = ( TValue * pV );
 
@@ -40,6 +46,8 @@ public:
     tt_ = LUA_TNUMBER;
   }
 
+  // Comparison operators
+
   bool operator == (TValue const& v) {
     return (tt_ == v.tt_) && (bytes == v.bytes);
   }
@@ -47,6 +55,8 @@ public:
   bool operator != (TValue const& v) {
     return !(*this == v);
   }
+
+  // stuff
 
   bool isCollectable() { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }
 
@@ -89,11 +99,8 @@ public:
 
   void clear() { bytes = 0; tt_ = 0; }
 
-
   void setBool  (int x)     { bytes = x ? 1 : 0; tt_ = LUA_TBOOLEAN; }
   void setValue (TValue* x) { bytes = x->bytes; tt_ = x->tt_; }
-
-  TString* asString() { assert(isString()); return reinterpret_cast<TString*>(gc); }
 
   void sanitycheck();
 
