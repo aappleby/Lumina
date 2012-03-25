@@ -17,6 +17,7 @@
 #include "ltable.h"
 #include "ltm.h"
 
+Table* lua_getmetatable (const TValue* o);
 
 const char *const luaT_typenames_[LUA_TOTALTAGS] = {
   "no value",
@@ -88,19 +89,8 @@ const TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
   else return tm;
 }
 
-
 const TValue *luaT_gettmbyobj (const TValue *o, TMS event) {
-  Table *mt;
-  switch (ttypenv(o)) {
-    case LUA_TTABLE:
-      mt = hvalue(o)->metatable;
-      break;
-    case LUA_TUSERDATA:
-      mt = uvalue(o)->metatable_;
-      break;
-    default:
-      mt = thread_G->mt[ttypenv(o)];
-  }
+  Table* mt = lua_getmetatable(o);
   if(mt == NULL) return luaO_nilobject;
   return luaH_getstr(mt, thread_G->tmname[event]);
 }

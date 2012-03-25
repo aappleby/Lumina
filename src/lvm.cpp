@@ -106,10 +106,16 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
 }
 
 
-void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
+void luaV_gettable (lua_State *L, const TValue *original_t, TValue *key, StkId val) {
   THREAD_CHECK(L);
+  const TValue* t = original_t;
+  const TValue* tm = t;
   for (int loop = 0; loop < MAXTAGLOOP; loop++) {
-    const TValue *tm;
+    if(t == NULL) {
+      val->clear();
+      return;
+    }
+
     if (t->isTable()) {
       Table* h = t->getTable();
       const TValue *res = luaH_get(h, key);
@@ -118,22 +124,25 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
         *val = *res;
         return;
       }
+    }
 
-      tm = fasttm(h->metatable, TM_INDEX);
-      if (tm == NULL) {
-        *val = *luaO_nilobject;
-        return;
-      }
+    tm = t->isTable() ? fasttm(t->getTable()->metatable, TM_INDEX) : luaT_gettmbyobj(t, TM_INDEX);
 
-    } else {
-      tm = luaT_gettmbyobj(t, TM_INDEX);
-      if (tm->isNil()) luaG_typeerror(t, "index");
+    if (tm == NULL) {
+      val->clear();
+      return;
     }
     
+    if(tm->isNil()) {
+      luaG_typeerror(t, "index");
+      return;
+    }
+
     if (tm->isFunction()) {
       callTM(L, tm, t, key, val, 1);
       return;
     }
+
     t = tm;  /* else repeat with 'tm' */
   }
   luaG_runerror("loop in gettable");
