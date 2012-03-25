@@ -70,15 +70,7 @@ uint32_t hash64 (uint32_t a, uint32_t b) {
 ** of its hash value)
 */
 static Node *mainposition (Table *t, const TValue *key) {
-  if(t->hashtable.empty()) return NULL;
-  switch (ttype(key)) {
-    case LUA_TNUMBER:        return t->nodeAt(hash64(key->low, key->high));
-    case LUA_TSTRING:        return t->nodeAt(hash64(key->low, key->high));
-    case LUA_TBOOLEAN:       return t->nodeAt(hash64(key->low, key->high));
-    case LUA_TLIGHTUSERDATA: return t->nodeAt(hash64(key->low, key->high));
-    case LUA_TLCF:           return t->nodeAt(hash64(key->low, key->high));
-    default:                 return t->nodeAt(hash64(key->low, key->high));
-  }
+  return t->nodeAt(hash64(key->low, key->high));
 }
 
 /*
@@ -99,16 +91,19 @@ static int findindex (Table *t, TValue key) {
   }
 
   for (;;) {
-    bool equal = luaV_rawequalobj(&n->i_key, &key);
-    if (equal || (ttisdeadkey(&n->i_key) && iscollectable(&key) && deadvalue(&n->i_key) == gcvalue(&key))) {
+    if (n->i_key == key) {
       return (int)(n - t->getNode(0)) + (int)t->array.size();
     }
+
+    if (ttisdeadkey(&n->i_key) && iscollectable(&key) && (n->i_key.bytes == key.bytes)) {
+      return (int)(n - t->getNode(0)) + (int)t->array.size();
+    }
+
     else n = n->next;
     if (n == NULL)
       luaG_runerror("invalid key to 'next'");
   }
 }
-
 
 int luaH_next (Table *t, StkId stack) {
   if(t->array.empty() && t->hashtable.empty()) return 0;
