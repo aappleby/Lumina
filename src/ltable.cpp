@@ -59,18 +59,25 @@ static int findindex (Table *t, TValue key) {
   if (0 < i && i <= (int)t->array.size())  /* is `key' inside array part? */
     return i-1;  /* yes; that's the index (corrected to C) */
 
+  int index1 = t->findNodeIndex(key) + (int)t->array.size();
+
   Node *n = t->findBin(key);
   if (n == NULL) {
+    assert(index1 == -1);
     luaG_runerror("invalid key to 'next'");
   }
 
   for (;;) {
     if (n->i_key == key) {
-      return (int)(n - t->getNode(0)) + (int)t->array.size();
+      int index2 = (int)(n - t->getNode(0)) + (int)t->array.size();
+      assert(index1 == index2);
+      return index2;
     }
     else n = n->next;
-    if (n == NULL)
+    if (n == NULL) {
+      assert(index1 == -1);
       luaG_runerror("invalid key to 'next'");
+    }
   }
 }
 
