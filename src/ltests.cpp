@@ -530,7 +530,7 @@ static int hash_query (lua_State *L) {
     Table *t;
     luaL_checktype(L, 2, LUA_TTABLE);
     t = hvalue(obj_at(L, 2));
-    lua_pushinteger(L, luaH_mainposition(t, o) - t->getNode(0));
+    lua_pushinteger(L, t->findBinIndex(*o));
   }
   return 1;
 }

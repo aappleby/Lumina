@@ -27,6 +27,8 @@ public:
   // Returns the node where the key would go.
   Node* findBin(TValue key);
 
+  int findBinIndex(TValue key);
+
   // Returns the value associated with the key
   const TValue* findValue(TValue key);
 

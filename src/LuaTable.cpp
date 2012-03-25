@@ -37,6 +37,11 @@ Node* Table::findBin(TValue key) {
   return &hashtable[hash & mask];
 }
 
+int Table::findBinIndex(TValue key) {
+  Node* node = findBin(key);
+  return node ? (int)(node - hashtable.begin()) : -1;
+}
+
 const TValue* Table::findValue(TValue key) {
   Node* node = findNode(key);
   return node ? &node->i_val : NULL;
