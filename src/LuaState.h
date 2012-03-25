@@ -50,5 +50,8 @@ public:
   void checkstack(int size);
   
   void closeUpvals(StkId level);
+
+  void   push(TValue v);
+  TValue pop();
 };
 

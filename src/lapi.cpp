@@ -1112,22 +1112,32 @@ int lua_error (lua_State *L) {
   return 0;  /* to avoid warnings */
 }
 
+int lua_next (lua_State* L, int idx) {
 
-int lua_next (lua_State *L, int idx) {
-  THREAD_CHECK(L);
-  StkId t;
-  int more;
-  t = index2addr(L, idx);
-  api_check(ttistable(t), "table expected");
-  more = luaH_next(hvalue(t), L->top - 1);
-  if (more) {
-    api_incr_top(L);
+  Table* t = index2addr(L, idx)->getTable();
+
+  TValue key = L->pop();
+
+  int start = -1;
+  if(!key.isNil()) {
+    bool found = t->keyToTableIndex(key,start);
+    if(!found) {
+      luaG_runerror("invalid key to 'next'");
+      return 0;
+    }
   }
-  else  /* no more elements */
-    L->top -= 1;  /* remove key */
-  return more;
-}
 
+  for(int cursor = start+1; cursor < t->getTableIndexSize(); cursor++) {
+    TValue key, val;
+    if(t->tableIndexToKeyVal(cursor,key,val) && !val.isNil()) {
+      L->push(key);
+      L->push(val);
+      return 1;
+    }
+  }
+
+  return 0;
+}
 
 void lua_concat (lua_State *L, int n) {
   THREAD_CHECK(L);

@@ -156,3 +156,12 @@ void lua_State::closeUpvals(StkId level) {
   */
 }
 
+TValue lua_State::pop() {
+  top--;
+  return *top;
+}
+
+void lua_State::push(TValue v) {
+  top[0] = v;
+  top++;
+}

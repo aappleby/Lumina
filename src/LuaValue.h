@@ -81,6 +81,7 @@ public:
   Closure* getLClosure() { assert(isLClosure()); return reinterpret_cast<Closure*>(gc); }
 
   TString* getString() { assert(isString()); return reinterpret_cast<TString*>(gc); }
+  Table*   getTable()  { assert(isTable()); return reinterpret_cast<Table*>(gc); }
 
   int32_t rawtype() const  { return tt_; }
   int32_t tagtype() const  { return tt_ & 0x3f; }
