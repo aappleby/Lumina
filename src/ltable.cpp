@@ -47,31 +47,28 @@ void luaH_setint_hash (Table *t, int key, TValue *value);
 #define MAXBITS		30
 #define MAXASIZE	(1 << MAXBITS)
 
-bool luaH_next3 (Table *t, TValue key, TValue& outKey, TValue& outVal) {
+int luaH_next (Table *t, StkId stack) {
   int start = -1;
 
-  if(!key.isNil()) {
-    bool found = t->keyToTableIndex(key,start);
+  if(!stack[0].isNil()) {
+    bool found = t->keyToTableIndex(stack[0],start);
     if(!found) {
       luaG_runerror("invalid key to 'next'");
-      return false;
+      return 0;
     }
   }
 
   for(int cursor = start+1; cursor < t->getTableIndexSize(); cursor++) {
-    if(t->tableIndexToKeyVal(cursor,outKey,outVal)) {
-      return true;
+    TValue key, val;
+    if(t->tableIndexToKeyVal(cursor,key,val) && !val.isNil()) {
+      stack[0] = key;
+      stack[1] = val;
+      return 1;
     }
   }
 
-  return false;
+  return 0;
 }
-
-int luaH_next(Table* t, StkId stack) {
-  bool result = luaH_next3(t, stack[0], stack[0], stack[1]);
-  return result ? 1 : 0;
-}
-
 
 /*
 ** {=============================================================

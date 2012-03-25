@@ -51,6 +51,10 @@ int Table::getTableIndexSize() const {
   return (int)(array.size() + hashtable.size());
 }
 
+// TODO(aappleby): It seems odd to me that the tests only pass if
+// keyToTableIndex ignores nil values and tableIndexToKeyVal doesn't.
+// Needs investigation.
+
 bool Table::keyToTableIndex(TValue key, int& outIndex) {
   if(key.isInteger()) {
     int index = key.getInteger() - 1; // lua index -> c index
@@ -61,35 +65,25 @@ bool Table::keyToTableIndex(TValue key, int& outIndex) {
   }
 
   Node* node = findNode(key);
-  if(node == NULL) {
-    return false;
-  } else {
-    outIndex = (node - hashtable.begin()) + array.size();
-    return true;
-  }
+  if(node == NULL) return false;
+  
+  outIndex = (node - hashtable.begin()) + array.size();
+  return true;
 }
 
 bool Table::tableIndexToKeyVal(int index, TValue& outKey, TValue& outVal) {
   if(index < 0) return false;
   if(index < (int)array.size()) {
-    if(!array[index].isNil()) {
-      outKey = TValue(index + 1); // c index -> lua index
-      outVal = array[index];
-      return true;
-    } else {
-      return false;
-    }
+    outKey = TValue(index + 1); // c index -> lua index
+    outVal = array[index];
+    return true;
   }
 
   index -= array.size();
   if(index < (int)hashtable.size()) {
-    if(!hashtable[index].i_val.isNil()) {
-      outKey = hashtable[index].i_key;
-      outVal = hashtable[index].i_val;
-      return true;
-    } else {
-      return false;
-    }
+    outKey = hashtable[index].i_key;
+    outVal = hashtable[index].i_val;
+    return true;
   }
 
   return false;
