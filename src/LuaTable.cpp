@@ -1,6 +1,22 @@
 #include "LuaTable.h"
 
-uint32_t hash64 (uint32_t a, uint32_t b);
+uint32_t hash64 (uint32_t a, uint32_t b) {
+  a ^= a >> 16;
+  a *= 0x85ebca6b;
+  a ^= a >> 13;
+  a *= 0xc2b2ae35;
+  a ^= a >> 16;
+
+  a ^= b;
+
+  a ^= a >> 16;
+  a *= 0x85ebca6b;
+  a ^= a >> 13;
+  a *= 0xc2b2ae35;
+  a ^= a >> 16;
+
+  return a;
+}
 
 Node* Table::findNode(TValue key) {
   if(hashtable.empty()) return NULL;

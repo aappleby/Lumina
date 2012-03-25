@@ -47,30 +47,12 @@ void luaH_setint_hash (Table *t, int key, TValue *value);
 #define MAXBITS		30
 #define MAXASIZE	(1 << MAXBITS)
 
-uint32_t hash64 (uint32_t a, uint32_t b) {
-  a ^= a >> 16;
-  a *= 0x85ebca6b;
-  a ^= a >> 13;
-  a *= 0xc2b2ae35;
-  a ^= a >> 16;
-
-  a ^= b;
-
-  a ^= a >> 16;
-  a *= 0x85ebca6b;
-  a ^= a >> 13;
-  a *= 0xc2b2ae35;
-  a ^= a >> 16;
-
-  return a;
-}
-
 /*
 ** returns the `main' position of an element in a table (that is, the index
 ** of its hash value)
 */
 static Node *mainposition (Table *t, const TValue *key) {
-  return t->nodeAt(hash64(key->low, key->high));
+  return t->findBin(*key);
 }
 
 /*
@@ -361,7 +343,7 @@ const TValue *luaH_getint (Table *t, int key) {
   else {
     TValue temp(key);
 
-    Node *n = t->nodeAt(hash64(temp.low, temp.high));
+    Node *n = t->findBin(temp);
 
     for(; n; n = n->next) {
       if (n->i_key.isNumber() && (n->i_key.n == key))
@@ -372,8 +354,8 @@ const TValue *luaH_getint (Table *t, int key) {
   }
 }
 
-const TValue* luaH_get2(Table* t, uint32_t hash, TValue key) {
-  for(Node* n = t->nodeAt(hash); n; n = n->next) {
+const TValue* luaH_get2(Table* t, TValue key) {
+  for(Node* n = t->findBin(key); n; n = n->next) {
     if(n->i_key == key) return &n->i_val;
   }
 
@@ -382,12 +364,12 @@ const TValue* luaH_get2(Table* t, uint32_t hash, TValue key) {
 
 const TValue *luaH_getint_hash (Table *t, int key) {
   TValue temp(key);
-  return luaH_get2(t, hash64(temp.low, temp.high), temp);
+  return luaH_get2(t, temp);
 }
 
 const TValue *luaH_getstr (Table *t, TString *key) {
   TValue temp(key);
-  return luaH_get2(t, hash64(temp.low, temp.high), TValue(key));
+  return luaH_get2(t, TValue(key));
 }
 
 /*
