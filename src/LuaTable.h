@@ -23,21 +23,27 @@ public:
 
   // Returns the node matching the key.
   Node* findNode(TValue key);
-  int   findNodeIndex(TValue key);
+  Node* findNode(int key);
 
   // Returns the node where the key would go.
   Node* findBin(TValue key);
+  Node* findBin(int key);
+
+  // This is only used by one test...
   int   findBinIndex(TValue key);
 
-  int  getTableIndexSize() const;
-  bool keyToTableIndex(TValue key, int& outIndex);
-  bool tableIndexToKeyVal(int index, TValue& outKey, TValue& outValue);
+  // Converts key to/from linear table index.
+  int  getTableIndexSize  () const;
+  bool keyToTableIndex    (TValue key, int& outIndex);
+  bool tableIndexToKeyVal (int index, TValue& outKey, TValue& outValue);
 
   // Returns the value associated with the key
   // can't turn this to value return until the rest of the code doesn't fetch by pointer...
   const TValue* findValue(TValue key);
-  const TValue* findValueInHash(TValue key);
   const TValue* findValue(int key);
+
+  const TValue* findValueInHash(TValue key);
+  const TValue* findValueInHash(int key);
 
   Node* getNode(int i) {
     assert(hashtable.size());

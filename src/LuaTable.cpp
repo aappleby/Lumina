@@ -18,6 +18,8 @@ uint32_t hash64 (uint32_t a, uint32_t b) {
   return a;
 }
 
+//-----------------------------------------------------------------------------
+
 Node* Table::findNode(TValue key) {
   if(hashtable.empty()) return NULL;
 
@@ -28,15 +30,31 @@ Node* Table::findNode(TValue key) {
   return NULL;
 }
 
-int Table::findNodeIndex(TValue key) {
-  Node* node = findNode(key);
-  return node ? (int)(node - hashtable.begin()) : -1;
+Node* Table::findNode(int key) {
+  if(hashtable.empty()) return NULL;
+
+  for(Node* node = findBin(key); node; node = node->next) {
+    if(node->i_key == key) return node;
+  }
+
+  return NULL;
 }
+
+//-----------------------------------------------------------------------------
 
 Node* Table::findBin(TValue key) {
   if(hashtable.empty()) return NULL;
 
   uint32_t hash = hash64(key.low, key.high);
+  uint32_t mask = (uint32_t)hashtable.size() - 1;
+
+  return &hashtable[hash & mask];
+}
+
+Node* Table::findBin(int key) {
+  if(hashtable.empty()) return NULL;
+
+  uint32_t hash = hash64(key, 0);
   uint32_t mask = (uint32_t)hashtable.size() - 1;
 
   return &hashtable[hash & mask];
@@ -94,6 +112,8 @@ const TValue* Table::findValue(TValue key) {
     int index = key.getInteger() - 1;
     if((index >= 0) && (index < (int)array.size())) {
       return &array[index];
+    } else {
+      return findValueInHash(key.getInteger());
     }
   }
 
@@ -101,6 +121,11 @@ const TValue* Table::findValue(TValue key) {
 }
 
 const TValue* Table::findValueInHash(TValue key) {
+  Node* node = findNode(key);
+  return node ? &node->i_val : NULL;
+}
+
+const TValue* Table::findValueInHash(int key) {
   Node* node = findNode(key);
   return node ? &node->i_val : NULL;
 }

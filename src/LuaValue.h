@@ -56,6 +56,11 @@ public:
     return !(*this == v);
   }
 
+  bool operator == (int v) {
+    if(!isNumber()) return false;
+    return n == v;
+  }
+
   // stuff
 
   bool isCollectable() { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }

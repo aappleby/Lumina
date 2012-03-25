@@ -321,29 +321,39 @@ static void markroot (global_State *g) {
 ** =======================================================
 */
 
+typedef void (*nodeCallback)(Node* n, void* blob);
+
+void traverseNodes(Table* h, nodeCallback c, void* blob) {
+  for(int i = 0; i < (int)h->hashtable.size(); i++) {
+    c(h->getNode(i), blob);
+  }
+}
+
+void traverseweakvalue_callback (Node* n, void* blob) {
+  int& hasclears = *(int*)blob;
+  checkdeadkey(n);
+  if (ttisnil(&n->i_val))  // entry is empty?
+    removeentry(n);  // remove it
+  else {
+    assert(!ttisnil(&n->i_key));
+    markvalue(thread_G, &n->i_key);  // mark key
+    if (!hasclears && iscleared(&n->i_val))  // is there a white value?
+      hasclears = 1;  // table will have to be cleared
+  }
+}
+
 static void traverseweakvalue (global_State *g, Table *h) {
   /* if there is array part, assume it may have white values (do not
      traverse it just to check) */
   int hasclears = h->hasArray();
 
-  for(int i = 0; i < (int)h->hashtable.size(); i++) {
-    Node* n = h->getNode(i);
-    checkdeadkey(n);
-    if (ttisnil(&n->i_val))  /* entry is empty? */
-      removeentry(n);  /* remove it */
-    else {
-      assert(!ttisnil(&n->i_key));
-      markvalue(g, &n->i_key);  /* mark key */
-      if (!hasclears && iscleared(&n->i_val))  /* is there a white value? */
-        hasclears = 1;  /* table will have to be cleared */
-    }
-  }
+  traverseNodes(h, traverseweakvalue_callback, &hasclears);
+
   if (hasclears)
     linktable(h, &g->weak);  /* has to be cleared later */
   else  /* no white values */
     linktable(h, &g->grayagain);  /* no need to clean */
 }
-
 
 static int traverseephemeron (global_State *g, Table *h) {
   int marked = 0;  /* true if an object is marked in this traversal */
