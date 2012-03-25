@@ -47,14 +47,6 @@ void luaH_setint_hash (Table *t, int key, TValue *value);
 #define MAXBITS		30
 #define MAXASIZE	(1 << MAXBITS)
 
-Node* hashpow2(Table* t, uint32_t n) {
-  if(t->hashtable.empty()) return NULL;
-  uint32_t mask = (uint32_t)t->hashtable.size() - 1;
-  return t->getNode(n & mask);
-}
-
-#define hashboolean(t,p) hashpow2(t, p)
-
 uint32_t hash64 (uint32_t a, uint32_t b) {
   a ^= a >> 16;
   a *= 0x85ebca6b;
@@ -73,24 +65,6 @@ uint32_t hash64 (uint32_t a, uint32_t b) {
   return a;
 }
 
-uint32_t hash_double(double v) {
-  uint32_t* block = reinterpret_cast<uint32_t*>(&v);
-  return hash64(block[0],block[1]);
-}
-
-static Node* hashpointer (Table* t, void* p ) {
-  if(t->hashtable.empty()) return NULL;
-  uint32_t* block = reinterpret_cast<uint32_t*>(&p);
-  uint32_t hash;
-  if(sizeof(p) == 8) {
-    hash = hash64(block[0],block[1]);
-  } else {
-    hash = hash64(block[0], 0);
-  }
-  uint32_t mask = (uint32_t)t->hashtable.size() - 1;
-  return t->getNode(hash & mask);
-}
-
 /*
 ** returns the `main' position of an element in a table (that is, the index
 ** of its hash value)
@@ -98,12 +72,12 @@ static Node* hashpointer (Table* t, void* p ) {
 static Node *mainposition (Table *t, const TValue *key) {
   if(t->hashtable.empty()) return NULL;
   switch (ttype(key)) {
-    case LUA_TNUMBER:        return t->getBin(key->getNumber());
+    case LUA_TNUMBER:        return t->nodeAt(hash64(key->low, key->high));
     case LUA_TSTRING:        return t->nodeAt(tsvalue(key)->getHash());
     case LUA_TBOOLEAN:       return t->nodeAt(key->low);
-    case LUA_TLIGHTUSERDATA: return hashpointer(t, pvalue(key));
-    case LUA_TLCF:           return hashpointer(t, fvalue(key));
-    default:                 return hashpointer(t, gcvalue(key));
+    case LUA_TLIGHTUSERDATA: return t->nodeAt(hash64(key->low, key->high));
+    case LUA_TLCF:           return t->nodeAt(hash64(key->low, key->high));
+    default:                 return t->nodeAt(hash64(key->low, key->high));
   }
 }
 
@@ -345,11 +319,11 @@ static Node *getfreepos (Table *t) {
 ** position), new key goes to an empty position.
 */
 TValue *luaH_newkey (Table *t, const TValue *key) {
-  Node *mp;
   if (key->isNil()) luaG_runerror("table index is nil");
   else if (ttisnumber(key) && luai_numisnan(L, nvalue(key)))
     luaG_runerror("table index is NaN");
-  mp = mainposition(t, key);
+  
+  Node* mp = mainposition(t, key);
   if ((mp == NULL) || !ttisnil(&mp->i_val)) {  /* main position is taken? */
     Node *othern;
     Node *n = getfreepos(t);  /* get a free place */
@@ -395,7 +369,9 @@ const TValue *luaH_getint (Table *t, int key) {
   if (index < t->array.size())
     return &t->array[index];
   else {
-    Node *n = t->nodeAt(hash_double(key));
+    TValue temp(key);
+
+    Node *n = t->nodeAt(hash64(temp.low, temp.high));
 
     for(; n; n = n->next) {
       if (n->i_key.isNumber() && (n->i_key.n == key))
@@ -415,7 +391,8 @@ const TValue* luaH_get2(Table* t, uint32_t hash, TValue key) {
 }
 
 const TValue *luaH_getint_hash (Table *t, int key) {
-  return luaH_get2(t, hash_double(key), TValue(key));
+  TValue temp(key);
+  return luaH_get2(t, hash64(temp.low, temp.high), temp);
 }
 
 const TValue *luaH_getstr (Table *t, TString *key) {

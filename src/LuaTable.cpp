@@ -7,20 +7,6 @@ Table::Table() : LuaObject(LUA_TTABLE) {
   flags = 0xFF;
 }
 
-Node* Table::getBin(double key) {
-  uint32_t* block = reinterpret_cast<uint32_t*>(&key);
-  return nodeAt( hash64(block[0],block[1]) );
-}
-
-Node* Table::getBin(void* key) {
-  uint32_t* block = reinterpret_cast<uint32_t*>(&key);
-  if(sizeof(key) == 8) {
-    return nodeAt( hash64(block[0],block[1]) );
-  } else {
-    return nodeAt( hash64(block[0], 0) );
-  }
-}
-
 Node* Table::nodeAt(uint32_t hash) {
   if(hashtable.empty()) return NULL;
 

@@ -32,9 +32,6 @@ public:
     return &hashtable[i];
   }
 
-  Node* getBin(double key);
-  Node* getBin(void* key);
-
   Node* nodeAt(uint32_t hash);
 
   uint8_t flags;  /* 1<<p means tagmethod(p) is not present */
