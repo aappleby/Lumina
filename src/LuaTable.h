@@ -34,7 +34,10 @@ public:
   bool tableIndexToKeyVal(int index, TValue& outKey, TValue& outValue);
 
   // Returns the value associated with the key
-  const TValue* findValue(TValue key);
+  // can't turn this to value return until the rest of the code doesn't fetch by pointer...
+  const TValue* findValueInHash(TValue key);
+
+  const TValue* findValue(int key);
 
   Node* getNode(int i) {
     assert(hashtable.size());

@@ -275,40 +275,18 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
 ** search function for integers
 */
 const TValue *luaH_getint (Table *t, int key) {
-  size_t index = (size_t)key - 1;
-  /* (1 <= key && key <= t->sizearray) */
-  if (index < t->array.size())
-    return &t->array[index];
-  else {
-    TValue temp(key);
-
-    Node *n = t->findBin(temp);
-
-    for(; n; n = n->next) {
-      if (n->i_key.isNumber() && (n->i_key.n == key))
-        return &n->i_val;
-    }
-
-    return luaO_nilobject;
-  }
-}
-
-const TValue* luaH_get2(Table* t, TValue key) {
-  for(Node* n = t->findBin(key); n; n = n->next) {
-    if(n->i_key == key) return &n->i_val;
-  }
-
-  return luaO_nilobject;
+  const TValue* result = t->findValue(key);
+  return result ? result : luaO_nilobject;
 }
 
 const TValue *luaH_getint_hash (Table *t, int key) {
-  TValue temp(key);
-  return luaH_get2(t, temp);
+  const TValue* result = t->findValueInHash(TValue(key));
+  return result ? result : luaO_nilobject;
 }
 
 const TValue *luaH_getstr (Table *t, TString *key) {
-  TValue temp(key);
-  return luaH_get2(t, TValue(key));
+  const TValue* result = t->findValueInHash(TValue(key));
+  return result ? result : luaO_nilobject;
 }
 
 /*

@@ -210,14 +210,21 @@ local a,b = '10', '20'
 assert(a*b == 200 and a+b == 30 and a-b == -10 and a/b == 0.5 and -b == -20)
 assert(a == '10' and b == '20')
 
+-- TODO(aappleby): Ok, I'm breaking a few of these tests intentionally so we
+-- can support totally generic table lookup, which means no special handling
+-- of lookups for bit patterns that mean something "special" in IEEE floating
+-- point formats.
 
 if not _port then
   print("testing -0 and NaN")
   local mz, z = -0, 0
   assert(mz == z)
   assert(1/mz < 0 and 0 < 1/z)
-  local a = {[mz] = 1}
-  assert(a[z] == 1 and a[mz] == 1)
+  
+  -- Minus zero != zero for table lookup
+  -- local a = {[mz] = 1}
+  -- assert(a[z] == 1 and a[mz] == 1)
+  
   local inf = math.huge * 2 + 1
   mz, z = -1/inf, 1/inf
   assert(mz == z)
@@ -231,12 +238,16 @@ if not _port then
   assert(not (0 < NaN) and not (NaN < 0))
   local NaN1 = 0/0
   assert(NaN ~= NaN1 and not (NaN <= NaN1) and not (NaN1 <= NaN))
-  local a = {}
-  assert(not pcall(function () a[NaN] = 1 end))
-  assert(a[NaN] == nil)
-  a[1] = 1
-  assert(not pcall(function () a[NaN] = 1 end))
-  assert(a[NaN] == nil)
+  
+  -- If you're trying to use NaNs as table keys you're doing something
+  -- wrong anyhow.
+  --local a = {}
+  --assert(not pcall(function () a[NaN] = 1 end))
+  --assert(a[NaN] == nil)
+  --a[1] = 1
+  --assert(not pcall(function () a[NaN] = 1 end))
+  --assert(a[NaN] == nil)
+  
   -- string with same binary representation as 0.0 (may create problems
   -- for constant manipulation in the pre-compiler)
   local a1, a2, a3, a4, a5 = 0, 0, "\0\0\0\0\0\0\0\0", 0, "\0\0\0\0\0\0\0\0"
