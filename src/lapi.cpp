@@ -619,11 +619,10 @@ int lua_pushthread (lua_State *L) {
 
 void lua_getglobal (lua_State *L, const char *var) {
   THREAD_CHECK(L);
-  Table *reg = hvalue(&G(L)->l_registry);
-  const TValue *gt;  /* global table */
-  gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
-  L->top[0] = luaS_new(var);
-  L->top++;
+  Table *reg = thread_G->getRegistry();
+  const TValue *gt = reg->findValue(LUA_RIDX_GLOBALS);
+  gt = gt ? gt : luaO_nilobject;
+  L->push(TValue(luaS_new(var)));
   luaV_gettable(L, gt, L->top - 1, L->top - 1);
 }
 

@@ -16,6 +16,7 @@ public:
   stringtable* strt;  /* hash table for strings */
 
   TValue l_registry;
+  Table* getRegistry() { return l_registry.getTable(); }
 
   size_t totalbytes;  /* number of bytes currently allocated - GCdebt */
   l_mem GCdebt;  /* bytes allocated not yet compensated by the collector */

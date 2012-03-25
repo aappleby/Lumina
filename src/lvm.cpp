@@ -108,22 +108,29 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
 
 void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
   THREAD_CHECK(L);
-  int loop;
-  for (loop = 0; loop < MAXTAGLOOP; loop++) {
+  for (int loop = 0; loop < MAXTAGLOOP; loop++) {
     const TValue *tm;
-    if (ttistable(t)) {  /* `t' is a table? */
-      Table *h = hvalue(t);
-      const TValue *res = luaH_get(h, key); /* do a primitive get */
-      if (!ttisnil(res) ||  /* result is not nil? */
-          (tm = fasttm(h->metatable, TM_INDEX)) == NULL) { /* or no TM? */
-        setobj(val, res);
+    if (t->isTable()) {
+      Table* h = t->getTable();
+      const TValue *res = luaH_get(h, key);
+
+      if (res && !res->isNil()) {
+        *val = *res;
         return;
       }
-      /* else will try the tag method */
+
+      tm = fasttm(h->metatable, TM_INDEX);
+      if (tm == NULL) {
+        *val = *luaO_nilobject;
+        return;
+      }
+
+    } else {
+      tm = luaT_gettmbyobj(t, TM_INDEX);
+      if (tm->isNil()) luaG_typeerror(t, "index");
     }
-    else if (ttisnil(tm = luaT_gettmbyobj(t, TM_INDEX)))
-      luaG_typeerror(t, "index");
-    if (ttisfunction(tm)) {
+    
+    if (tm->isFunction()) {
       callTM(L, tm, t, key, val, 1);
       return;
     }

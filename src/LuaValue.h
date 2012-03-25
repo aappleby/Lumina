@@ -66,7 +66,7 @@ public:
   bool isNumber() const        { return tagtype() == LUA_TNUMBER; }
   bool isString() const        { return tagtype() == LUA_TSTRING; }
   bool isTable() const         { return tagtype() == LUA_TTABLE; }
-  bool isFunction() const      { return tagtype() == LUA_TFUNCTION; }
+  bool isFunction() const      { return basetype() == LUA_TFUNCTION; }
   bool isUserdata() const      { return tagtype() == LUA_TUSERDATA; }
   bool isThread() const        { return tagtype() == LUA_TTHREAD; }
   bool isProto() const         { return tagtype() == LUA_TPROTO; }
@@ -92,6 +92,8 @@ public:
 
   TString* getString() { assert(isString()); return reinterpret_cast<TString*>(gc); }
   Table*   getTable()  { assert(isTable()); return reinterpret_cast<Table*>(gc); }
+
+  Table* getTable() const { assert(isTable()); return reinterpret_cast<Table*>(gc); }
 
   int32_t rawtype() const  { return tt_; }
   int32_t tagtype() const  { return tt_ & 0x3f; }
