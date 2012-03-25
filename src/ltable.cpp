@@ -48,14 +48,6 @@ void luaH_setint_hash (Table *t, int key, TValue *value);
 #define MAXASIZE	(1 << MAXBITS)
 
 /*
-** returns the `main' position of an element in a table (that is, the index
-** of its hash value)
-*/
-static Node *mainposition (Table *t, const TValue *key) {
-  return t->findBin(*key);
-}
-
-/*
 ** returns the index of a `key' for table traversals. First goes all
 ** elements in the array part, then elements in the hash part. The
 ** beginning of a traversal is signaled by -1.
@@ -67,7 +59,7 @@ static int findindex (Table *t, TValue key) {
   if (0 < i && i <= (int)t->array.size())  /* is `key' inside array part? */
     return i-1;  /* yes; that's the index (corrected to C) */
 
-  Node *n = mainposition(t, &key);
+  Node *n = t->findBin(key);
   if (n == NULL) {
     luaG_runerror("invalid key to 'next'");
   }
@@ -295,7 +287,7 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
   else if (ttisnumber(key) && luai_numisnan(L, nvalue(key)))
     luaG_runerror("table index is NaN");
   
-  Node* mp = mainposition(t, key);
+  Node* mp = t->findBin(*key);
   if ((mp == NULL) || !ttisnil(&mp->i_val)) {  /* main position is taken? */
     Node *othern;
     Node *n = getfreepos(t);  /* get a free place */
@@ -305,7 +297,7 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
       return luaH_set(t, key);  /* insert key into grown table */
     }
     assert(n);
-    othern = mainposition(t, &mp->i_key);
+    othern = t->findBin(mp->i_key);
     Node* bak = othern;
     if(othern == NULL) {
       printf("xxx");
@@ -388,7 +380,7 @@ const TValue *luaH_get (Table *t, const TValue *key) {
       /* else go through */
     }
     default: {
-      Node *n = mainposition(t, key);
+      Node *n = t->findBin(*key);
       if(n == NULL) return luaO_nilobject;
 
       do {  /* check whether `key' is somewhere in the chain */
@@ -484,8 +476,4 @@ int luaH_getn (Table *t) {
   else if (t->hashtable.empty())  /* hash part is empty? */
     return j;  /* that is easy... */
   else return unbound_search(t, j);
-}
-
-Node *luaH_mainposition (Table *t, const TValue *key) {
-  return mainposition(t, key);
 }
