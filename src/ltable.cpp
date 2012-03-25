@@ -415,15 +415,13 @@ const TValue *luaH_getint (Table *t, int key) {
   if (cast(unsigned int, key-1) < cast(unsigned int, t->array.size()))
     return &t->array[key-1];
   else {
-    lua_Number nk = cast_num(key);
-    Node *n = hashnum(t, nk);
-    if(n == NULL) return luaO_nilobject;
+    Node *n = t->nodeAt(hash_double(key));
 
-    do {  /* check whether `key' is somewhere in the chain */
-      if (ttisnumber(&n->i_key) && luai_numeq(nvalue(&n->i_key), nk))
-        return &n->i_val;  /* that's it */
-      else n = n->next;
-    } while (n);
+    for(; n; n = n->next) {
+      if (n->i_key.isNumber() && (n->i_key.n == key))
+        return &n->i_val;
+    }
+
     return luaO_nilobject;
   }
 }
