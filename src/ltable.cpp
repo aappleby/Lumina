@@ -411,9 +411,10 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
 ** search function for integers
 */
 const TValue *luaH_getint (Table *t, int key) {
+  size_t index = (size_t)key - 1;
   /* (1 <= key && key <= t->sizearray) */
-  if (cast(unsigned int, key-1) < cast(unsigned int, t->array.size()))
-    return &t->array[key-1];
+  if (index < t->array.size())
+    return &t->array[index];
   else {
     Node *n = t->nodeAt(hash_double(key));
 
