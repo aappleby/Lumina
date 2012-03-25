@@ -38,9 +38,6 @@
 #include <float.h>
 #include <math.h>
 
-const TValue *luaH_getint_hash (Table *t, int key);
-void luaH_setint_hash (Table *t, int key, TValue *value);
-
 /*
 ** max size of array part is 2^MAXBITS
 */
@@ -163,7 +160,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   if (temparray.size() > t->array.size()) {
     for(int i = (int)t->array.size(); i < (int)temparray.size(); i++) {
       if (!temparray[i].isNil()) {
-        luaH_setint_hash(t, i + 1, &temparray[i]);
+        luaH_setint(t, i + 1, &temparray[i]);
       }
     }
   }
@@ -283,16 +280,6 @@ const TValue *luaH_getint (Table *t, int key) {
   return result ? result : luaO_nilobject;
 }
 
-const TValue *luaH_getint_hash (Table *t, int key) {
-  const TValue* result = t->findValueInHash(TValue(key));
-  return result ? result : luaO_nilobject;
-}
-
-const TValue *luaH_getstr (Table *t, TString *key) {
-  const TValue* result = t->findValueInHash(TValue(key));
-  return result ? result : luaO_nilobject;
-}
-
 /*
 ** main search function
 */
@@ -333,19 +320,6 @@ TValue *luaH_set (Table *t, const TValue *key) {
 
 void luaH_setint (Table *t, int key, TValue *value) {
   const TValue *p = luaH_getint(t, key);
-  TValue *cell;
-  if (p != luaO_nilobject)
-    cell = cast(TValue *, p);
-  else {
-    TValue k;
-    setnvalue(&k, cast_num(key));
-    cell = luaH_newkey(t, &k);
-  }
-  setobj(cell, value);
-}
-
-void luaH_setint_hash (Table *t, int key, TValue *value) {
-  const TValue *p = luaH_getint_hash(t, key);
   TValue *cell;
   if (p != luaO_nilobject)
     cell = cast(TValue *, p);

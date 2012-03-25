@@ -80,7 +80,8 @@ void luaT_init() {
 ** tag methods
 */
 const TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
-  const TValue *tm = luaH_getstr(events, ename);
+  TValue temp(ename);
+  const TValue *tm = luaH_get(events, &temp);
   assert(event <= TM_EQ);
   if (tm->isNil()) {  /* no tag method? */
     events->flags |= cast_byte(1u<<event);  /* cache this fact */
@@ -92,7 +93,8 @@ const TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
 const TValue *luaT_gettmbyobj (const TValue *o, TMS event) {
   Table* mt = lua_getmetatable(o);
   if(mt == NULL) return luaO_nilobject;
-  return luaH_getstr(mt, thread_G->tmname[event]);
+  TValue temp(thread_G->tmname[event]);
+  return luaH_get(mt, &temp);
 }
 
 const TValue* fasttm ( Table* table, TMS tag) {

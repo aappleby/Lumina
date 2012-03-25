@@ -15,7 +15,6 @@
 const TValue *luaH_getint (Table *t, int key);
 void luaH_setint (Table *t, int key, TValue *value);
 
-const TValue *luaH_getstr (Table *t, TString *key);
 const TValue *luaH_get (Table *t, const TValue *key);
 TValue *luaH_newkey (Table *t, const TValue *key);
 TValue *luaH_set (Table *t, const TValue *key);
