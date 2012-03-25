@@ -73,8 +73,8 @@ static Node *mainposition (Table *t, const TValue *key) {
   if(t->hashtable.empty()) return NULL;
   switch (ttype(key)) {
     case LUA_TNUMBER:        return t->nodeAt(hash64(key->low, key->high));
-    case LUA_TSTRING:        return t->nodeAt(tsvalue(key)->getHash());
-    case LUA_TBOOLEAN:       return t->nodeAt(key->low);
+    case LUA_TSTRING:        return t->nodeAt(hash64(key->low, key->high));
+    case LUA_TBOOLEAN:       return t->nodeAt(hash64(key->low, key->high));
     case LUA_TLIGHTUSERDATA: return t->nodeAt(hash64(key->low, key->high));
     case LUA_TLCF:           return t->nodeAt(hash64(key->low, key->high));
     default:                 return t->nodeAt(hash64(key->low, key->high));
@@ -396,7 +396,8 @@ const TValue *luaH_getint_hash (Table *t, int key) {
 }
 
 const TValue *luaH_getstr (Table *t, TString *key) {
-  return luaH_get2(t, key->getHash(), TValue(key));
+  TValue temp(key);
+  return luaH_get2(t, hash64(temp.low, temp.high), TValue(key));
 }
 
 /*
