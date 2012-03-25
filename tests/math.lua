@@ -241,12 +241,12 @@ if not _port then
   
   -- If you're trying to use NaNs as table keys you're doing something
   -- wrong anyhow.
-  --local a = {}
-  --assert(not pcall(function () a[NaN] = 1 end))
-  --assert(a[NaN] == nil)
-  --a[1] = 1
-  --assert(not pcall(function () a[NaN] = 1 end))
-  --assert(a[NaN] == nil)
+  local a = {}
+  assert(not pcall(function () a[NaN] = 1 end))
+  assert(a[NaN] == nil)
+  a[1] = 1
+  assert(not pcall(function () a[NaN] = 1 end))
+  assert(a[NaN] == nil)
   
   -- string with same binary representation as 0.0 (may create problems
   -- for constant manipulation in the pre-compiler)
