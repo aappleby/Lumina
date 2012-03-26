@@ -228,10 +228,8 @@
 #define luai_nummul(L,a,b)	((a)*(b))
 #define luai_numdiv(L,a,b)	((a)/(b))
 #define luai_numunm(L,a)	(-(a))
-#define luai_numeq(a,b)		((a)==(b))
 #define luai_numlt(L,a,b)	((a)<(b))
 #define luai_numle(L,a,b)	((a)<=(b))
-#define luai_numisnan(L,a)	(!luai_numeq((a), (a)))
 
 #endif
 

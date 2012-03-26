@@ -293,34 +293,47 @@ int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
 */
 int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
   THREAD_CHECK(L);
-  const TValue *tm;
-  assert(ttisequal(t1, t2));
-  switch (ttype(t1)) {
+  
+  assert(t1->rawtype() == t2->rawtype());
+
+  switch (t1->tagtype()) {
     case LUA_TNIL: return 1;
-    case LUA_TNUMBER: return luai_numeq(nvalue(t1), nvalue(t2));
+    case LUA_TNUMBER: {
+      // note - if you compare raw bytes, this comparison fails for positive and
+      // negative zero.
+      return nvalue(t1) == nvalue(t2);
+    }
     case LUA_TBOOLEAN: return bvalue(t1) == bvalue(t2);  /* true must be 1 !! */
     case LUA_TLIGHTUSERDATA: return pvalue(t1) == pvalue(t2);
     case LUA_TLCF: return fvalue(t1) == fvalue(t2);
-    case LUA_TSTRING: return eqstr(tsvalue(t1), tsvalue(t2));
+    case LUA_TSTRING: return tsvalue(t1) == tsvalue(t2);
+
     case LUA_TUSERDATA: {
       if (uvalue(t1) == uvalue(t2)) return 1;
-      else if (L == NULL) return 0;
-      tm = get_equalTM(L, uvalue(t1)->metatable_, uvalue(t2)->metatable_, TM_EQ);
-      break;  /* will try TM */
+      if (L == NULL) return 0;
+
+      const TValue* tm = get_equalTM(L, uvalue(t1)->metatable_, uvalue(t2)->metatable_, TM_EQ);
+      if (tm == NULL) return 0;  /* no TM? */
+
+      callTM(L, tm, t1, t2, L->top, 1);  /* call TM */
+      return !l_isfalse(L->top);
     }
+
     case LUA_TTABLE: {
       if (hvalue(t1) == hvalue(t2)) return 1;
-      else if (L == NULL) return 0;
-      tm = get_equalTM(L, hvalue(t1)->metatable, hvalue(t2)->metatable, TM_EQ);
-      break;  /* will try TM */
+      if (L == NULL) return 0;
+
+      const TValue* tm = get_equalTM(L, hvalue(t1)->metatable, hvalue(t2)->metatable, TM_EQ);
+      if (tm == NULL) return 0;  /* no TM? */
+
+      callTM(L, tm, t1, t2, L->top, 1);  /* call TM */
+      return !l_isfalse(L->top);
     }
+
     default:
       assert(iscollectable(t1));
       return gcvalue(t1) == gcvalue(t2);
   }
-  if (tm == NULL) return 0;  /* no TM? */
-  callTM(L, tm, t1, t2, L->top, 1);  /* call TM */
-  return !l_isfalse(L->top);
 }
 
 void luaV_concat (lua_State *L, int total) {

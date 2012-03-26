@@ -358,14 +358,14 @@ int luaK_stringK (FuncState *fs, TString *s) {
   return addk(fs, &o, &o);
 }
 
-
+// TODO(aappleby): negative zero and NaN stuff here, investigate.
 int luaK_numberK (FuncState *fs, lua_Number r) {
   THREAD_CHECK(fs->ls->L);
   int n;
   lua_State *L = fs->ls->L;
   TValue o;
   setnvalue(&o, r);
-  if (r == 0 || luai_numisnan(NULL, r)) {  /* handle -0 and NaN */
+  if (r == 0 || (r != r)) {  /* handle -0 and NaN */
     /* use raw representation as key to avoid numeric problems */
     L->top[0] = luaS_newlstr((char *)&r, sizeof(r));
     incr_top(L);

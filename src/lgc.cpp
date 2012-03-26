@@ -57,12 +57,28 @@
 ** sets only the current white bit
 */
 #define maskcolors	(~(bit2mask(BLACKBIT, OLDBIT) | WHITEBITS))
-#define makewhite(g,x)	(x->marked = cast_byte((x->marked & maskcolors) | luaC_white(g)))
 
-#define white2gray(x)	resetbits(x->marked, WHITEBITS)
-#define black2gray(x)	resetbit(x->marked, BLACKBIT)
+inline void makewhite(global_State* g, LuaObject* o) {
+  o->marked = cast_byte((o->marked & maskcolors) | luaC_white(g));
+}
 
-#define stringmark(s)	((void)((s) && resetbits((s)->marked, WHITEBITS)))
+inline void white2gray(LuaObject* o) {
+  if(o) {
+    resetbits(o->marked, WHITEBITS);
+  }
+}
+
+inline void black2gray(LuaObject* o) {
+  if(o) {
+    resetbit(o->marked, BLACKBIT);
+  }
+}
+
+inline void stringmark(LuaObject* o) {
+  if(o) {
+    resetbits(o->marked, WHITEBITS);
+  }
+}
 
 
 #define isfinalized(x)		testbit(x->marked, FINALIZEDBIT)
@@ -239,22 +255,11 @@ static void reallymarkobject (global_State *g, LuaObject *o) {
         gray2black(o);  /* make it black */
       return;
     }
-    case LUA_TFUNCTION: {
-      gco2cl(o)->next_gray_ = g->grayhead_;
-      g->grayhead_ = o;
-      break;
-    }
-    case LUA_TTABLE: {
-      linktable(gco2t(o), &g->grayhead_);
-      break;
-    }
-    case LUA_TTHREAD: {
-      gco2th(o)->next_gray_ = g->grayhead_;
-      g->grayhead_ = o;
-      break;
-    }
+    case LUA_TFUNCTION:
+    case LUA_TTABLE:
+    case LUA_TTHREAD:
     case LUA_TPROTO: {
-      gco2p(o)->next_gray_  = g->grayhead_;
+      o->next_gray_  = g->grayhead_;
       g->grayhead_ = o;
       break;
     }
@@ -400,12 +405,23 @@ static int traverseephemeron (Table *h) {
 
   h->traverse(traverseephemeronCB, &info);
 
-  if (info.propagate)
-    linktable(h, &thread_G->ephemeron);  /* have to propagate again */
-  else if (info.hasclears)  /* does table have white keys? */
-    linktable(h, &thread_G->allweak);  /* may have to clean white keys */
-  else  /* no white keys */
-    linktable(h, &thread_G->grayagain);  /* no need to clean */
+  if (info.propagate) {
+    /* have to propagate again */
+    h->next_gray_ = thread_G->ephemeron;
+    thread_G->ephemeron = h;
+  }
+  else if (info.hasclears) {
+    /* does table have white keys? */
+    /* may have to clean white keys */
+    h->next_gray_ = thread_G->allweak;
+    thread_G->allweak = h;
+  }
+  else {
+    /* no white keys */
+    /* no need to clean */
+    h->next_gray_ = thread_G->grayagain;
+    thread_G->grayagain = h;
+  }
   return info.marked;
 }
 
@@ -443,10 +459,14 @@ static int traversetable (global_State *g, Table *h) {
     black2gray(h);
     h->traverse(traverseweakvalue_callback, &info);
 
-    if (info.hasclears)
+    if (info.hasclears) {
       linktable(h, &thread_G->weak);  /* has to be cleared later */
-    else  /* no white values */
-      linktable(h, &thread_G->grayagain);  /* no need to clean */
+    }
+    else {
+      /* no white values */
+      /* no need to clean */
+      linktable(h, &thread_G->grayagain);
+    }
     return TRAVCOST + (int)h->hashtable.size();
   }
 
@@ -529,32 +549,32 @@ static int traversestack (global_State *g, lua_State *L) {
 ** Returns number of values traversed.
 */
 static int propagatemark (global_State *g) {
+  // pop gray object off the list
   LuaObject *o = g->grayhead_;
+  g->grayhead_ = o->next_gray_;
+
+  // make it black
+  // (why do we make it black _before_ we traverse its children?)
   assert(isgray(o));
   gray2black(o);
+
+  // traverse its children and add them to the gray list(s)
   switch (o->tt) {
     case LUA_TTABLE: {
-      Table *h = gco2t(o);
-      g->grayhead_ = h->next_gray_;
-      return traversetable(g, h);
+      return traversetable(g, gco2t(o));
     }
     case LUA_TFUNCTION: {
-      Closure *cl = gco2cl(o);
-      g->grayhead_ = cl->next_gray_;
-      return traverseclosure(g, cl);
+      return traverseclosure(g, gco2cl(o));
     }
     case LUA_TTHREAD: {
-      lua_State *th = gco2th(o);
-      g->grayhead_ = th->next_gray_;
-      th->next_gray_ = g->grayagain;
+      // why do threads go on the 'grayagain' list?
+      o->next_gray_ = g->grayagain;
       g->grayagain = o;
       black2gray(o);
-      return traversestack(g, th);
+      return traversestack(g, gco2th(o));
     }
     case LUA_TPROTO: {
-      Proto *p = gco2p(o);
-      g->grayhead_ = p->next_gray_;
-      return traverseproto(g, p);
+      return traverseproto(g, gco2p(o));
     }
     default: {
       assert(0);
@@ -597,7 +617,7 @@ static void convergeephemerons (global_State *g) {
     g->ephemeron = NULL;  /* tables will return to this list when traversed */
     changed = 0;
     while ((w = next) != NULL) {
-      next = gco2t(w)->next_gray_;
+      next = w->next_gray_;
       if (traverseephemeron(gco2t(w))) {  /* traverse marked some value? */
         /* propagate changes */
         while (g->grayhead_) propagatemark(g);
@@ -621,9 +641,10 @@ static void convergeephemerons (global_State *g) {
 ** clear entries with unmarked keys from all weaktables in list 'l' up
 ** to element 'f'
 */
-static void clearkeys (LuaObject *l, LuaObject *f) {
-  for (; l != f; l = gco2t(l)->next_gray_) {
+static void clearkeys (LuaObject *l) {
+  for (; l != NULL; l = l->next_gray_) {
     Table *h = gco2t(l);
+
     for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
       if (!ttisnil(&n->i_val) && (iscleared(&n->i_key))) {
@@ -640,7 +661,7 @@ static void clearkeys (LuaObject *l, LuaObject *f) {
 ** to element 'f'
 */
 static void clearvalues (LuaObject *l, LuaObject *f) {
-  for (; l != f; l = gco2t(l)->next_gray_) {
+  for (; l != f; l = l->next_gray_) {
     Table *h = gco2t(l);
     for (int i = 0; i < (int)h->array.size(); i++) {
       TValue *o = &h->array[i];
@@ -966,8 +987,8 @@ static void atomic () {
   convergeephemerons(g);
   /* at this point, all resurrected objects are marked. */
   /* remove dead objects from weak tables */
-  clearkeys(g->ephemeron, NULL);  /* clear keys from all ephemeron tables */
-  clearkeys(g->allweak, NULL);  /* clear keys from all allweak tables */
+  clearkeys(g->ephemeron);  /* clear keys from all ephemeron tables */
+  clearkeys(g->allweak);  /* clear keys from all allweak tables */
   /* clear values from resurrected weak tables */
   clearvalues(g->weak, origweak);
   clearvalues(g->allweak, origall);

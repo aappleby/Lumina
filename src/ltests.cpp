@@ -247,19 +247,12 @@ static void checkobject (global_State *g, LuaObject *o) {
 
 #define TESTGRAYBIT		7
 
-static void checkgraylist (LuaObject *l) {
-  while (l) {
-    assert(isgray(l));
-    assert(!testbit(l->marked, TESTGRAYBIT));
-    l_setbit(l->marked, TESTGRAYBIT);
-    switch (l->tt) {
-      case LUA_TTABLE:    l = gco2t(l)->next_gray_; break;
-      case LUA_TFUNCTION: l = gco2cl(l)->next_gray_; break;
-      case LUA_TTHREAD:   l = gco2th(l)->next_gray_; break;
-      case LUA_TPROTO:    l = gco2p(l)->next_gray_; break;
-      default: 
-        assert(0);  /* other objects cannot be gray */
-    }
+static void checkgraylist (LuaObject* o) {
+  while (o) {
+    assert(isgray(o));
+    assert(!testbit(o->marked, TESTGRAYBIT));
+    l_setbit(o->marked, TESTGRAYBIT);
+    o = o->next_gray_;
   }
 }
 

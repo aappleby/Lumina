@@ -227,9 +227,18 @@ static Node *getfreepos (Table *t) {
 ** position), new key goes to an empty position.
 */
 TValue *luaH_newkey (Table *t, const TValue *key) {
-  if (key->isNil()) luaG_runerror("table index is nil");
-  else if (ttisnumber(key) && luai_numisnan(L, nvalue(key)))
-    luaG_runerror("table index is NaN");
+  if (key->isNil()) {
+    luaG_runerror("table index is nil");
+    return NULL;
+  }
+
+  if (key->isNumber()) {
+    double n = key->getNumber();
+    if(n != n) {
+      luaG_runerror("table index is NaN");
+      return NULL;
+    }
+  }
   
   Node* mp = t->findBin(*key);
 

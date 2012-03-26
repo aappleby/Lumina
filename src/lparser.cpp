@@ -226,7 +226,7 @@ static int searchupvalue (FuncState *fs, TString *name) {
   int i;
   Upvaldesc *up = fs->f->upvalues.begin();
   for (i = 0; i < fs->nups; i++) {
-    if (eqstr(up[i].name, name)) return i;
+    if (up[i].name == name) return i;
   }
   return -1;  /* not found */
 }
@@ -251,7 +251,7 @@ static int newupvalue (FuncState *fs, TString *name, expdesc *v) {
 static int searchvar (FuncState *fs, TString *n) {
   int i;
   for (i=fs->nactvar-1; i >= 0; i--) {
-    if (eqstr(n, getlocvar(fs, i)->varname))
+    if (n == getlocvar(fs, i)->varname)
       return i;
   }
   return -1;  /* not found */
@@ -347,7 +347,7 @@ static void closegoto (LexState *ls, int g, Labeldesc *label) {
   FuncState *fs = ls->fs;
   Labellist *gl = &ls->dyd->gt;
   Labeldesc *gt = &gl->arr[g];
-  assert(eqstr(gt->name, label->name));
+  assert(gt->name == label->name);
   if (gt->nactvar < label->nactvar) {
     TString *vname = getlocvar(fs, gt->nactvar)->varname;
     const char *msg = luaO_pushfstring(ls->L,
@@ -374,7 +374,7 @@ static int findlabel (LexState *ls, int g) {
   /* check labels in current block for a match */
   for (i = bl->firstlabel; i < dyd->label.n; i++) {
     Labeldesc *lb = &dyd->label.arr[i];
-    if (eqstr(lb->name, gt->name)) {  /* correct label? */
+    if (lb->name == gt->name) {  /* correct label? */
       if (gt->nactvar > lb->nactvar &&
           (bl->upval || dyd->label.n > bl->firstlabel))
         luaK_patchclose(ls->fs, gt->pc, lb->nactvar);
@@ -409,7 +409,7 @@ static void findgotos (LexState *ls, Labeldesc *lb) {
   Labellist *gl = &ls->dyd->gt;
   int i = ls->fs->bl->firstgoto;
   while (i < gl->n) {
-    if (eqstr(gl->arr[i].name, lb->name))
+    if (gl->arr[i].name == lb->name)
       closegoto(ls, i, lb);
     else
       i++;
@@ -1205,7 +1205,7 @@ static void gotostat (LexState *ls, int pc) {
 static void checkrepeated (FuncState *fs, Labellist *ll, TString *label) {
   int i;
   for (i = fs->bl->firstlabel; i < ll->n; i++) {
-    if (eqstr(label, ll->arr[i].name)) {
+    if (label == ll->arr[i].name) {
       const char *msg = luaO_pushfstring(fs->ls->L,
                           "label " LUA_QS " already defined on line %d",
                           label->c_str(), ll->arr[i].line);

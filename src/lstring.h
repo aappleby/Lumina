@@ -18,13 +18,6 @@
 
 #define luaS_fix(s)	l_setbit((s)->marked, FIXEDBIT)
 
-
-/*
-** as all string are internalized, string equality becomes
-** pointer equality
-*/
-#define eqstr(a,b)	((a) == (b))
-
 void     luaS_resize   (int newsize);
 TString* luaS_newlstr  (const char *str, size_t l);
 TString* luaS_new      (const char *str);
