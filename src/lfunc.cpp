@@ -108,19 +108,26 @@ UpVal *luaF_findupval (StkId level) {
 void luaF_close (StkId level) {
   UpVal *uv;
   lua_State* L = thread_L;
-  global_State *g = thread_G;
-  while (L->openupval != NULL && (uv = gco2uv(L->openupval))->v >= level) {
+
+  while (L->openupval != NULL) {
+    uv = gco2uv(L->openupval);
+    if(uv->v < level) break;
+
     assert(!isblack(uv) && uv->v != &uv->value);
     L->openupval = uv->next;  /* remove from `open' list */
+
     if (isdead(uv))
       delete uv;
     else {
       uv->unlink();  /* remove upvalue from 'uvhead' list */
-      setobj(&uv->value, uv->v);  /* move value to upvalue slot */
+
+      uv->value = *uv->v;  /* move value to upvalue slot */
       uv->v = &uv->value;  /* now current value lives here */
-      uv->next = g->allgc;  /* link upvalue into 'allgc' list */
-      g->allgc = uv;
-      luaC_checkupvalcolor(g, uv);
+      
+      uv->next = thread_G->allgc;  /* link upvalue into 'allgc' list */
+      thread_G->allgc = uv;
+
+      luaC_checkupvalcolor(thread_G, uv);
     }
   }
 }
