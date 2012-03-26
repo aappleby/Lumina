@@ -59,7 +59,8 @@
 #define maskcolors	(~(bit2mask(BLACKBIT, OLDBIT) | WHITEBITS))
 
 inline void makewhite(global_State* g, LuaObject* o) {
-  o->marked = cast_byte((o->marked & maskcolors) | luaC_white(g));
+  o->marked &= maskcolors;
+  o->marked |= luaC_white(g);
 }
 
 inline void white2gray(LuaObject* o) {
@@ -166,9 +167,11 @@ void luaC_barrier_ (LuaObject *o, LuaObject *v) {
 */
 void luaC_barrierback_ (LuaObject *o) {
   global_State *g = thread_G;
+
   assert(isblack(o) && !isdead(o) && o->tt == LUA_TTABLE);
   black2gray(o);  /* make object gray (again) */
-  gco2t(o)->next_gray_ = g->grayagain;
+
+  o->next_gray_ = g->grayagain;
   g->grayagain = o;
 }
 

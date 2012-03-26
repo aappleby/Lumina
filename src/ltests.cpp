@@ -78,8 +78,13 @@ static void printobj (global_State *g, LuaObject *o) {
   LuaObject *p;
   for (p = g->allgc; p != o && p != NULL; p = p->next) i++;
   if (p == NULL) i = -1;
-  printf("%d:%s(%p)-%c(%02X)", i, ttypename(o->tt), (void *)o,
-           isdead(o)?'d':isblack(o)?'b':iswhite(o)?'w':'g', o->marked);
+
+  char c = 'g';
+  if(isdead(o)) c = 'd';
+  if(isblack(o)) c = 'b';
+  if(iswhite(o)) c = 'w';
+
+  printf("%d:%s(%p)-%c(%02X)", i, ttypename(o->tt), (void *)o, c, o->marked);
 }
 
 
