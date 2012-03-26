@@ -337,11 +337,12 @@ struct tableTraverseInfo {
   int marked;
   int hasclears;
   int propagate;
+  int cost;
 };
 
 void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
-  int& hasclears = *(int*)blob;
-  //checkdeadkey(n);
+  tableTraverseInfo& info = *(tableTraverseInfo*)blob;
+
   assert(!ttisdeadkey(key) || ttisnil(val));
 
   // Mark keys with nil values as dead.
@@ -354,19 +355,21 @@ void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
 
   markvalue(thread_G, key);  // mark key
 
-  if (!hasclears && iscleared(val)) {  // is there a white value?
-    hasclears = 1;  // table will have to be cleared
+  if (!info.hasclears && iscleared(val)) {  // is there a white value?
+    info.hasclears = 1;  // table will have to be cleared
   }
 }
 
 static void traverseweakvalue (Table *h) {
   /* if there is array part, assume it may have white values (do not
      traverse it just to check) */
-  int hasclears = h->hasArray();
+  tableTraverseInfo info;
 
-  h->traverseNodes(traverseweakvalue_callback, &hasclears);
+  info.hasclears = h->hasArray() ? 1 : 0;
 
-  if (hasclears)
+  h->traverseNodes(traverseweakvalue_callback, &info);
+
+  if (info.hasclears)
     linktable(h, &thread_G->weak);  /* has to be cleared later */
   else  /* no white values */
     linktable(h, &thread_G->grayagain);  /* no need to clean */
@@ -425,11 +428,8 @@ static int traverseephemeron (Table *h) {
   return info.marked;
 }
 
-void traverseStrongArray(TValue* val, void*) {
-  markvalue(thread_G, val);
-}
-
-void traverseStrongNode(TValue* key, TValue* val, void*) {
+void traverseStrongNode(TValue* key, TValue* val, void* blob) {
+  tableTraverseInfo& info = *(tableTraverseInfo*)blob;
   assert(!ttisdeadkey(key) || ttisnil(val));
   if (ttisnil(val)) {
     removeentry(key, val);  /* remove it */
@@ -437,15 +437,15 @@ void traverseStrongNode(TValue* key, TValue* val, void*) {
     assert(!ttisnil(key));
     markvalue(thread_G, key);  /* mark key */
     markvalue(thread_G, val);  /* mark value */
+    info.cost += 2;
   }
 }
 
-static void traversestrongtable (Table *h) {
-  /*
-  h->traverseArray(traverseStrongArray, NULL);
-  h->traverseNodes(traverseStrongNode, NULL);
-  */
-  h->traverse(traverseStrongNode, NULL);
+static int traversestrongtable (Table *h) {
+  tableTraverseInfo info;
+  info.cost = 0;
+  h->traverse(traverseStrongNode, &info);
+  return info.cost;
 }
 
 // Table modes really should be a flag on the table instead
@@ -457,8 +457,9 @@ static int traversetable (global_State *g, Table *h) {
 
   // Strong keys, strong values - use strong table traversal.
   if(mode == NULL) {
-    traversestrongtable(h);
-    return TRAVCOST + (int)h->array.size() + (2 * (int)h->hashtable.size());
+    int cost = traversestrongtable(h);
+    //return TRAVCOST + (int)h->array.size() + (2 * (int)h->hashtable.size());
+    return TRAVCOST + cost;
   }
 
   assert(ttisstring(mode));
