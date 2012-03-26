@@ -7,6 +7,7 @@
 #ifndef lgc_h
 #define lgc_h
 
+#include "LuaGlobals.h"
 
 #include "lobject.h"
 #include "lstate.h"
@@ -106,7 +107,12 @@
 
 #define otherwhite()	(thread_G->currentwhite ^ WHITEBITS)
 #define isdeadm(ow,m)	(!(((m) ^ WHITEBITS) & (ow)))
-#define isdead(v)	isdeadm(otherwhite(), (v)->marked)
+
+inline bool isdead(LuaObject* o) {
+  uint8_t markA = o->marked ^ WHITEBITS;
+  uint8_t markB = thread_G->currentwhite ^ WHITEBITS;
+  return !(markA & markB);
+}
 
 #define changewhite(x)	((x)->marked ^= WHITEBITS)
 #define gray2black(x)	l_setbit((x)->marked, BLACKBIT)
