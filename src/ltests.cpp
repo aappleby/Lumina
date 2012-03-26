@@ -150,20 +150,19 @@ static void checkproto (global_State *g, Proto *f) {
 
 
 static void checkclosure (global_State *g, Closure *cl) {
-  LuaObject *clgc = obj2gco(cl);
   if (cl->isC) {
     int i;
     for (i=0; i<cl->nupvalues; i++)
-      checkvalref(g, clgc, &cl->pupvals_[i]);
+      checkvalref(g, cl, &cl->pupvals_[i]);
   }
   else {
     int i;
     assert(cl->nupvalues == cl->p->upvalues.size());
-    checkobjref(g, clgc, cl->p);
+    checkobjref(g, cl, cl->p);
     for (i=0; i<cl->nupvalues; i++) {
       if (cl->ppupvals_[i]) {
         assert(cl->ppupvals_[i]->tt == LUA_TUPVAL);
-        checkobjref(g, clgc, cl->ppupvals_[i]);
+        checkobjref(g, cl, cl->ppupvals_[i]);
       }
     }
   }
@@ -186,7 +185,7 @@ static void checkstack (global_State *g, lua_State *L1) {
   StkId o;
   CallInfo *ci;
   LuaObject *uvo;
-  assert(!isdead(obj2gco(L1)));
+  assert(!isdead(L1));
   for (uvo = L1->openupval; uvo != NULL; uvo = uvo->next) {
     UpVal *uv = gco2uv(uvo);
     assert(uv->v != &uv->value);  /* must be open */
@@ -303,7 +302,7 @@ int lua_checkmemory (lua_State *L) {
   LuaObject *o;
   UpVal *uv;
   if (keepinvariant(g)) {
-    assert(!iswhite(obj2gco(g->mainthread)));
+    assert(!iswhite(g->mainthread));
     assert(!iswhite(gcvalue(&g->l_registry)));
   }
   assert(!isdead(gcvalue(&g->l_registry)));
@@ -334,11 +333,11 @@ int lua_checkmemory (lua_State *L) {
   for (uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {
     assert(uv->unext->uprev == uv && uv->uprev->unext == uv);
     assert(uv->v != &uv->value);  /* must be open */
-    assert(!isblack(obj2gco(uv)));  /* open upvalues are never black */
-    if (isdead(obj2gco(uv)))
+    assert(!isblack(uv));  /* open upvalues are never black */
+    if (isdead(uv))
       assert(issweepphase(g));
     else
-      checkvalref(g, obj2gco(uv), uv->v);
+      checkvalref(g, uv, uv->v);
   }
   return 0;
 }

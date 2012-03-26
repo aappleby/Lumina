@@ -123,18 +123,11 @@ void luaC_step();
 void luaC_checkGC();
 
 
-#define luaC_barrier(p,v) { if (valiswhite(v) && isblack(obj2gco(p)))	luaC_barrier_(obj2gco(p),gcvalue(v)); }
-#define luaC_barrierback(p,v) { if (valiswhite(v) && isblack(obj2gco(p))) luaC_barrierback_(p); }
-
-#define luaC_objbarrier(L,p,o)  \
-	{ if (iswhite(obj2gco(o)) && isblack(obj2gco(p))) \
-		luaC_barrier_(obj2gco(p),obj2gco(o)); }
-
-#define luaC_objbarrierback(L,p,o)  \
-   { if (iswhite(obj2gco(o)) && isblack(obj2gco(p))) luaC_barrierback_(p); }
-
-#define luaC_barrierproto(p,c) \
-   { if (isblack(obj2gco(p))) luaC_barrierproto_(p,c); }
+#define luaC_barrier(p,v) { if (valiswhite(v) && isblack(p))	luaC_barrier_(p,gcvalue(v)); }
+#define luaC_barrierback(p,v) { if (valiswhite(v) && isblack(p)) luaC_barrierback_(p); }
+#define luaC_objbarrier(L,p,o)  { if (iswhite(o) && isblack(p)) luaC_barrier_(p,o); }
+#define luaC_objbarrierback(L,p,o)  { if (iswhite(o) && isblack(p)) luaC_barrierback_(p); }
+#define luaC_barrierproto(p,c) { if (isblack(p)) luaC_barrierproto_(p,c); }
 
 void luaC_freeallobjects ();
 void luaC_step ();

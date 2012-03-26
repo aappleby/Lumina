@@ -18,6 +18,7 @@ public:
   bool isGray();
 
   LuaObject *next;
+  LuaObject *next_gray_;
   uint8_t tt;
   uint8_t marked;
 

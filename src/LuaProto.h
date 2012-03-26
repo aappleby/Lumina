@@ -40,7 +40,6 @@ public:
   TString  *source;  /* used for debug information */
   int linedefined;
   int lastlinedefined;
-  LuaObject *next_gray_;
   uint8_t numparams;  /* number of fixed parameters */
   uint8_t is_vararg;
   uint8_t maxstacksize;  /* maximum stack used by this function */

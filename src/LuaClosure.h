@@ -10,7 +10,6 @@ public:
 
   uint8_t isC;
   uint8_t nupvalues;
-  LuaObject *next_gray_;
 
   TValue* pupvals_;
   UpVal** ppupvals_;

@@ -75,7 +75,7 @@
 
 #define markvalue(g,o) { checkconsistency(o); if (valiswhite(o)) reallymarkobject(g,gcvalue(o)); }
 
-#define markobject(g,t) { if ((t) && iswhite(obj2gco(t))) reallymarkobject(g, obj2gco(t)); }
+#define markobject(g,t) { if ((t) && iswhite(t)) reallymarkobject(g, t); }
 
 static void reallymarkobject (global_State *g, LuaObject *o);
 
@@ -90,7 +90,7 @@ static void reallymarkobject (global_State *g, LuaObject *o);
 /*
 ** link table 'h' into list pointed by 'p'
 */
-#define linktable(h,p)	((h)->next_gray_ = *(p), *(p) = obj2gco(h))
+#define linktable(h,p)	((h)->next_gray_ = *(p), *(p) = h)
 
 
 
@@ -167,14 +167,14 @@ void luaC_barrierback_ (LuaObject *o) {
 */
 void luaC_barrierproto_ (Proto *p, Closure *c) {
   global_State *g = thread_G;
-  assert(isblack(obj2gco(p)));
+  assert(isblack(p));
   if (p->cache == NULL) {  /* first time? */
     luaC_objbarrier(L, p, c);
   }
   else {  /* use a backward barrier */
-    black2gray(obj2gco(p));  /* make prototype gray (again) */
+    black2gray(p);  /* make prototype gray (again) */
     p->next_gray_ = g->grayagain;
-    g->grayagain = obj2gco(p);
+    g->grayagain = p;
   }
 }
 
@@ -292,7 +292,7 @@ static void markbeingfnz (global_State *g) {
 static void remarkupvals (global_State *g) {
   UpVal *uv;
   for (uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {
-    if (isgray(obj2gco(uv)))
+    if (isgray(uv))
       markvalue(g, uv->v);
   }
 }
@@ -440,7 +440,7 @@ static int traversetable (global_State *g, Table *h) {
 
   // Strong keys, weak values - use weak table traversal.
   if (!info.weakkey) {
-    black2gray(obj2gco(h));
+    black2gray(h);
     h->traverse(traverseweakvalue_callback, &info);
 
     if (info.hasclears)
@@ -452,7 +452,7 @@ static int traversetable (global_State *g, Table *h) {
 
   // Weak keys, strong values - use ephemeron traversal.
   if (!info.weakval) {
-    black2gray(obj2gco(h));
+    black2gray(h);
     h->traverse(traverseephemeronCB, &info);
 
     if (info.propagate)
@@ -465,14 +465,14 @@ static int traversetable (global_State *g, Table *h) {
   }
 
   // Both keys and values are weak.
-  black2gray(obj2gco(h));
+  black2gray(h);
   linktable(h, &thread_G->allweak);  /* nothing to traverse now */
   return TRAVCOST;
 }
 
 
 static int traverseproto (global_State *g, Proto *f) {
-  if (f->cache && iswhite(obj2gco(f->cache)))
+  if (f->cache && iswhite(f->cache))
     f->cache = NULL;  /* allow cache to be collected */
   stringmark(f->source);
   for (size_t i = 0; i < f->constants.size(); i++)  /* mark literals */
@@ -944,7 +944,7 @@ void luaC_freeallobjects () {
 static void atomic () {
   global_State *g = thread_G;
   LuaObject *origweak, *origall;
-  assert(!iswhite(obj2gco(g->mainthread)));
+  assert(!iswhite(g->mainthread));
   markobject(g, thread_L);  /* mark running thread */
   /* registry and global metatables may be changed by API */
   markvalue(g, &g->l_registry);
@@ -983,7 +983,7 @@ static l_mem singlestep () {
     case GCSpause: {
       if (!isgenerational(g)) markroot(g);  /* start a new collection */
       /* in any case, root must be marked */
-      assert(!iswhite(obj2gco(g->mainthread)) && !iswhite(gcvalue(&g->l_registry)));
+      assert(!iswhite(g->mainthread) && !iswhite(gcvalue(&g->l_registry)));
       g->gcstate = GCSpropagate;
       return GCROOTCOST;
     }
@@ -1025,7 +1025,7 @@ static l_mem singlestep () {
       }
       else {
         /* sweep main thread */
-        LuaObject *mt = obj2gco(g->mainthread);
+        LuaObject *mt = g->mainthread;
         sweeplist(&mt, 1);
         checkSizes();
         g->gcstate = GCSpause;  /* finish collection */

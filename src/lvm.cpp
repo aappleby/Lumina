@@ -182,7 +182,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
         setobj(oldval, val);  /* assign new value to that entry */
         // invalidate TM cache
         h->flags = 0;
-        luaC_barrierback(obj2gco(h), val);
+        luaC_barrierback(h, val);
         return;
       }
       /* else will try the metamethod */
@@ -871,7 +871,7 @@ void luaV_execute (lua_State *L) {
         for (; n > 0; n--) {
           TValue *val = ra+n;
           luaH_setint(h, last--, val);
-          luaC_barrierback(obj2gco(h), val);
+          luaC_barrierback(h, val);
         }
         L->top = ci->top;  /* correct top (in case of previous open call) */
       )
