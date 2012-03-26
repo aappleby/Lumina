@@ -30,7 +30,9 @@ public:
   LuaObject *allgc;  /* list of all collectable objects */
   LuaObject *finobj;  /* list of collectable objects with finalizers */
   LuaObject **sweepgc;  /* current position of sweep */
-  LuaObject *gray;  /* list of gray objects */
+
+  LuaObject *grayhead_;  /* list of gray objects */
+
   LuaObject *grayagain;  /* list of objects to be traversed atomically */
   LuaObject *weak;  /* list of tables with weak values */
   LuaObject *ephemeron;  /* list of ephemeron tables (weak keys) */

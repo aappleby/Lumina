@@ -90,20 +90,12 @@ static void reallymarkobject (global_State *g, LuaObject *o);
 /*
 ** link table 'h' into list pointed by 'p'
 */
-#define linktable(h,p)	((h)->graylist = *(p), *(p) = obj2gco(h))
+#define linktable(h,p)	((h)->next_gray_ = *(p), *(p) = obj2gco(h))
 
 
 
 // The key for this node is about to be garbage collected. Mark the
 // keyvalue as dead so we don't try and dereference it later.
-static void removeentry (Node *n) {
-  assert(ttisnil(&n->i_val));
-  
-  if (valiswhite(&n->i_key)) {
-    setdeadvalue(&n->i_key);  /* unused and unmarked key; remove it */
-  }
-}
-
 static void removeentry (TValue* key, TValue* val) {
   assert(ttisnil(val));
   
@@ -160,7 +152,7 @@ void luaC_barrierback_ (LuaObject *o) {
   global_State *g = thread_G;
   assert(isblack(o) && !isdead(o) && o->tt == LUA_TTABLE);
   black2gray(o);  /* make object gray (again) */
-  gco2t(o)->graylist = g->grayagain;
+  gco2t(o)->next_gray_ = g->grayagain;
   g->grayagain = o;
 }
 
@@ -181,7 +173,7 @@ void luaC_barrierproto_ (Proto *p, Closure *c) {
   }
   else {  /* use a backward barrier */
     black2gray(obj2gco(p));  /* make prototype gray (again) */
-    p->gclist = g->grayagain;
+    p->next_gray_ = g->grayagain;
     g->grayagain = obj2gco(p);
   }
 }
@@ -192,17 +184,18 @@ void luaC_barrierproto_ (Proto *p, Closure *c) {
 ** i.e., moved into the 'allgc' list
 */
 void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
-  LuaObject *o = obj2gco(uv);
-  assert(!isblack(o));  /* open upvalues are never black */
-  if (isgray(o)) {
+  // open upvalues are never black
+  assert(!isblack(uv));
+
+  if (isgray(uv)) {
     if (keepinvariant(g)) {
-      resetoldbit(o);  /* see MOVE OLD rule */
-      gray2black(o);  /* it is being visited now */
+      resetoldbit(uv);  /* see MOVE OLD rule */
+      gray2black(uv);  /* it is being visited now */
       markvalue(g, uv->v);
     }
     else {
       assert(issweepphase(g));
-      makewhite(g, o);
+      makewhite(g, uv);
     }
   }
 }
@@ -247,22 +240,22 @@ static void reallymarkobject (global_State *g, LuaObject *o) {
       return;
     }
     case LUA_TFUNCTION: {
-      gco2cl(o)->gclist = g->gray;
-      g->gray = o;
+      gco2cl(o)->next_gray_ = g->grayhead_;
+      g->grayhead_ = o;
       break;
     }
     case LUA_TTABLE: {
-      linktable(gco2t(o), &g->gray);
+      linktable(gco2t(o), &g->grayhead_);
       break;
     }
     case LUA_TTHREAD: {
-      gco2th(o)->gclist = g->gray;
-      g->gray = o;
+      gco2th(o)->next_gray_ = g->grayhead_;
+      g->grayhead_ = o;
       break;
     }
     case LUA_TPROTO: {
-      gco2p(o)->gclist = g->gray;
-      g->gray = o;
+      gco2p(o)->next_gray_  = g->grayhead_;
+      g->grayhead_ = o;
       break;
     }
     default: assert(0);
@@ -310,7 +303,7 @@ static void remarkupvals (global_State *g) {
 ** incremental (or full) collection
 */
 static void markroot (global_State *g) {
-  g->gray = NULL;
+  g->grayhead_ = NULL;
   g->grayagain = NULL;
   g->weak = NULL;
   g->allweak = NULL;
@@ -536,34 +529,37 @@ static int traversestack (global_State *g, lua_State *L) {
 ** Returns number of values traversed.
 */
 static int propagatemark (global_State *g) {
-  LuaObject *o = g->gray;
+  LuaObject *o = g->grayhead_;
   assert(isgray(o));
   gray2black(o);
   switch (o->tt) {
     case LUA_TTABLE: {
       Table *h = gco2t(o);
-      g->gray = h->graylist;
+      g->grayhead_ = h->next_gray_;
       return traversetable(g, h);
     }
     case LUA_TFUNCTION: {
       Closure *cl = gco2cl(o);
-      g->gray = cl->gclist;
+      g->grayhead_ = cl->next_gray_;
       return traverseclosure(g, cl);
     }
     case LUA_TTHREAD: {
       lua_State *th = gco2th(o);
-      g->gray = th->gclist;
-      th->gclist = g->grayagain;
+      g->grayhead_ = th->next_gray_;
+      th->next_gray_ = g->grayagain;
       g->grayagain = o;
       black2gray(o);
       return traversestack(g, th);
     }
     case LUA_TPROTO: {
       Proto *p = gco2p(o);
-      g->gray = p->gclist;
+      g->grayhead_ = p->next_gray_;
       return traverseproto(g, p);
     }
-    default: assert(0); return 0;
+    default: {
+      assert(0);
+      return 0;
+    }
   }
 }
 
@@ -581,13 +577,13 @@ static void retraversegrays (global_State *g) {
   g->grayagain = NULL;
   g->ephemeron = NULL;
 
-  while (g->gray) propagatemark(g);
-  g->gray = grayagain;
-  while (g->gray) propagatemark(g);
-  g->gray = weak;
-  while (g->gray) propagatemark(g);
-  g->gray = ephemeron;
-  while (g->gray) propagatemark(g);
+  while (g->grayhead_) propagatemark(g);
+  g->grayhead_ = grayagain;
+  while (g->grayhead_) propagatemark(g);
+  g->grayhead_ = weak;
+  while (g->grayhead_) propagatemark(g);
+  g->grayhead_ = ephemeron;
+  while (g->grayhead_) propagatemark(g);
 }
 
 
@@ -601,10 +597,10 @@ static void convergeephemerons (global_State *g) {
     g->ephemeron = NULL;  /* tables will return to this list when traversed */
     changed = 0;
     while ((w = next) != NULL) {
-      next = gco2t(w)->graylist;
+      next = gco2t(w)->next_gray_;
       if (traverseephemeron(gco2t(w))) {  /* traverse marked some value? */
         /* propagate changes */
-        while (g->gray) propagatemark(g);
+        while (g->grayhead_) propagatemark(g);
         changed = 1;  /* will have to revisit all ephemeron tables */
       }
     }
@@ -626,13 +622,13 @@ static void convergeephemerons (global_State *g) {
 ** to element 'f'
 */
 static void clearkeys (LuaObject *l, LuaObject *f) {
-  for (; l != f; l = gco2t(l)->graylist) {
+  for (; l != f; l = gco2t(l)->next_gray_) {
     Table *h = gco2t(l);
     for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
       if (!ttisnil(&n->i_val) && (iscleared(&n->i_key))) {
         setnilvalue(&n->i_val);  /* remove value ... */
-        removeentry(n);  /* and remove entry from table */
+        removeentry(&n->i_key, &n->i_val);  /* and remove entry from table */
       }
     }
   }
@@ -644,7 +640,7 @@ static void clearkeys (LuaObject *l, LuaObject *f) {
 ** to element 'f'
 */
 static void clearvalues (LuaObject *l, LuaObject *f) {
-  for (; l != f; l = gco2t(l)->graylist) {
+  for (; l != f; l = gco2t(l)->next_gray_) {
     Table *h = gco2t(l);
     for (int i = 0; i < (int)h->array.size(); i++) {
       TValue *o = &h->array[i];
@@ -655,7 +651,7 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
       Node* n = h->getNode(i);
       if (!ttisnil(&n->i_val) && iscleared(&n->i_val)) {
         setnilvalue(&n->i_val);  /* remove value ... */
-        removeentry(n);  /* and remove entry from table */
+        removeentry(&n->i_key, &n->i_val);  /* and remove entry from table */
       }
     }
   }
@@ -869,6 +865,8 @@ void luaC_checkfinalizer (LuaObject *o, Table *mt) {
       fasttm(mt, TM_GC) == NULL)                /* or has no finalizer? */
     return;  /* nothing to be done */
   else {  /* move 'o' to 'finobj' list */
+    // Removing a node in the middle of a singly-linked list requires
+    // a scan of the list, lol.
     LuaObject **p;
     for (p = &g->allgc; *p != o; p = &(*p)->next) ;
     *p = o->next;  /* remove 'o' from root list */
@@ -964,7 +962,7 @@ static void atomic () {
   separatetobefnz(0);  /* separate objects to be finalized */
   markbeingfnz(g);  /* mark userdata that will be finalized */
   /* remark, to propagate `preserveness' */
-  while (g->gray) propagatemark(g);
+  while (g->grayhead_) propagatemark(g);
   convergeephemerons(g);
   /* at this point, all resurrected objects are marked. */
   /* remove dead objects from weak tables */
@@ -990,7 +988,7 @@ static l_mem singlestep () {
       return GCROOTCOST;
     }
     case GCSpropagate: {
-      if (g->gray)
+      if (g->grayhead_)
         return propagatemark(g);
       else {  /* no more `gray' objects */
         g->gcstate = GCSatomic;  /* finish mark phase */

@@ -14,31 +14,6 @@
 #include "lzio.h"
 
 
-/*
-
-** Some notes about garbage-collected objects:  All objects in Lua must
-** be kept somehow accessible until being freed.
-**
-** Lua keeps most objects linked in list g->allgc. The link uses field
-** 'next' of the common header.
-**
-** Strings are kept in several lists headed by the array g->strt.hash.
-**
-** Open upvalues are not subject to independent garbage collection. They
-** are collected together with their respective threads. Lua keeps a
-** double-linked list with all open upvalues (g->uvhead) so that it can
-** mark objects referred by them. (They are always gray, so they must
-** be remarked in the atomic step. Usually their contents would be marked
-** when traversing the respective threads, but the thread may already be
-** dead, while the upvalue is still accessible through closures.)
-**
-** Objects with finalizers are kept in the list g->finobj.
-**
-** The list g->tobefnz links all objects being finalized.
-
-*/
-
-
 struct lua_longjmp;  /* defined in ldo.c */
 
 

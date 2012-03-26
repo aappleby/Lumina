@@ -213,7 +213,8 @@ lua_State *lua_newstate () {
     g->allgc = NULL;
     g->finobj = NULL;
     g->tobefnz = NULL;
-    g->gray = g->grayagain = NULL;
+    g->grayhead_ = NULL;
+    g->grayagain = NULL;
     g->weak = g->ephemeron = g->allweak = NULL;
     g->totalbytes = sizeof(lua_State) + sizeof(global_State);
     g->GCdebt = 0;

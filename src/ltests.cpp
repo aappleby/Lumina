@@ -254,11 +254,12 @@ static void checkgraylist (LuaObject *l) {
     assert(!testbit(l->marked, TESTGRAYBIT));
     l_setbit(l->marked, TESTGRAYBIT);
     switch (l->tt) {
-      case LUA_TTABLE: l = gco2t(l)->graylist; break;
-      case LUA_TFUNCTION: l = gco2cl(l)->gclist; break;
-      case LUA_TTHREAD: l = gco2th(l)->gclist; break;
-      case LUA_TPROTO: l = gco2p(l)->gclist; break;
-      default: assert(0);  /* other objects cannot be gray */
+      case LUA_TTABLE:    l = gco2t(l)->next_gray_; break;
+      case LUA_TFUNCTION: l = gco2cl(l)->next_gray_; break;
+      case LUA_TTHREAD:   l = gco2th(l)->next_gray_; break;
+      case LUA_TPROTO:    l = gco2p(l)->next_gray_; break;
+      default: 
+        assert(0);  /* other objects cannot be gray */
     }
   }
 }
@@ -270,7 +271,7 @@ static void checkgraylist (LuaObject *l) {
 */
 static void markgrays (global_State *g) {
   if (!keepinvariant(g)) return;
-  checkgraylist(g->gray);
+  checkgraylist(g->grayhead_);
   checkgraylist(g->grayagain);
   checkgraylist(g->weak);
   checkgraylist(g->ephemeron);

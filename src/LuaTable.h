@@ -79,7 +79,7 @@ public:
   uint8_t flags;  /* 1<<p means tagmethod(p) is not present */
   Table *metatable;
   int lastfree;
-  LuaObject *graylist;
+  LuaObject *next_gray_;
 
   LuaVector<TValue> array;
   LuaVector<Node> hashtable;

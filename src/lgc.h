@@ -24,6 +24,31 @@
 ** is not being enforced (e.g., sweep phase).
 */
 
+/*
+
+** Some notes about garbage-collected objects:  All objects in Lua must
+** be kept somehow accessible until being freed.
+**
+** Lua keeps most objects linked in list g->allgc. The link uses field
+** 'next' of the common header.
+**
+** Strings are kept in several lists headed by the array g->strt.hash.
+**
+** Open upvalues are not subject to independent garbage collection. They
+** are collected together with their respective threads. Lua keeps a
+** double-linked list with all open upvalues (g->uvhead) so that it can
+** mark objects referred by them. (They are always gray, so they must
+** be remarked in the atomic step. Usually their contents would be marked
+** when traversing the respective threads, but the thread may already be
+** dead, while the upvalue is still accessible through closures.)
+**
+** Objects with finalizers are kept in the list g->finobj.
+**
+** The list g->tobefnz links all objects being finalized.
+
+*/
+
+
 
 /*
 ** Possible states of the Garbage Collector
@@ -69,8 +94,9 @@
 
 #define iswhite(x)      testbits((x)->marked, WHITEBITS)
 #define isblack(x)      testbit((x)->marked, BLACKBIT)
-#define isgray(x)  /* neither white nor black */  \
-	(!testbits((x)->marked, WHITEBITS | bitmask(BLACKBIT)))
+
+// neither white nor black
+#define isgray(x)  (!testbits((x)->marked, WHITEBITS | bitmask(BLACKBIT)))
 
 #define isold(x)	testbit((x)->marked, OLDBIT)
 
