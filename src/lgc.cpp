@@ -562,18 +562,6 @@ static int propagatemark (global_State *g) {
   }
 }
 
-
-static void propagateall (global_State *g) {
-  while (g->gray) propagatemark(g);
-}
-
-
-static void propagatelist (global_State *g, LuaObject *l) {
-  assert(g->gray == NULL);  /* no grays left */
-  g->gray = l;
-  propagateall(g);  /* traverse all elements from 'l' */
-}
-
 /*
 ** retraverse all gray lists. Because tables may be reinserted in other
 ** lists when traversed, traverse the original lists to avoid traversing
@@ -583,11 +571,18 @@ static void retraversegrays (global_State *g) {
   LuaObject *weak = g->weak;  /* save original lists */
   LuaObject *grayagain = g->grayagain;
   LuaObject *ephemeron = g->ephemeron;
-  g->weak = g->grayagain = g->ephemeron = NULL;
-  propagateall(g);  /* traverse main gray list */
-  propagatelist(g, grayagain);
-  propagatelist(g, weak);
-  propagatelist(g, ephemeron);
+  
+  g->weak = NULL;
+  g->grayagain = NULL;
+  g->ephemeron = NULL;
+
+  while (g->gray) propagatemark(g);
+  g->gray = grayagain;
+  while (g->gray) propagatemark(g);
+  g->gray = weak;
+  while (g->gray) propagatemark(g);
+  g->gray = ephemeron;
+  while (g->gray) propagatemark(g);
 }
 
 
@@ -603,7 +598,8 @@ static void convergeephemerons (global_State *g) {
     while ((w = next) != NULL) {
       next = gco2t(w)->graylist;
       if (traverseephemeron(gco2t(w))) {  /* traverse marked some value? */
-        propagateall(g);  /* propagate changes */
+        /* propagate changes */
+        while (g->gray) propagatemark(g);
         changed = 1;  /* will have to revisit all ephemeron tables */
       }
     }
@@ -683,12 +679,19 @@ static LuaObject **sweeplist (LuaObject **p, size_t count);
 ** sweep the (open) upvalues of a thread and resize its stack and
 ** list of call-info structures.
 */
+
 static void sweepthread (lua_State *L1) {
   if (L1->stack.empty()) return;  /* stack not completely built yet */
   sweepwholelist(&L1->openupval);  /* sweep open upvalues */
   {
     THREAD_CHANGE(L1);
-    luaE_freeCI(L1);  /* free extra CallInfo slots */
+    CallInfo *ci = L1->ci_;
+    CallInfo *next = ci->next;
+    ci->next = NULL;
+    while ((ci = next) != NULL) {
+      next = ci->next;
+      delete ci;
+    }
   }
   /* should not change the stack during an emergency gc cycle */
   if (thread_G->gckind != KGC_EMERGENCY) {
@@ -709,7 +712,7 @@ static void sweepthread (lua_State *L1) {
 ** one will be old too.
 ** When object is a thread, sweep its list of open upvalues too.
 */
-static LuaObject **sweeplist (LuaObject **p, size_t count) {
+static LuaObject** sweeplist (LuaObject **p, size_t count) {
   global_State *g = thread_G;
   int ow = otherwhite();
   int toclear, toset;  /* bits to clear and to set in all live objects */
@@ -793,30 +796,31 @@ static void dothecall (lua_State *L, void *ud) {
 static void GCTM (int propagateerrors) {
   lua_State* L = thread_L;
   global_State *g = thread_G;
-  const TValue *tm;
   TValue v;
   setgcovalue(&v, udata2finalize(g));
-  tm = luaT_gettmbyobj(&v, TM_GC);
-  if (tm != NULL && ttisfunction(tm)) {  /* is there a finalizer? */
-    int status;
-    uint8_t oldah = L->allowhook;
-    int running  = g->gcrunning;
-    L->allowhook = 0;  /* stop debug hooks during GC metamethod */
-    g->gcrunning = 0;  /* avoid GC steps */
-    setobj(L->top, tm);  /* push finalizer... */
-    setobj(L->top + 1, &v);  /* ... and its argument */
-    L->top += 2;  /* and (next line) call the finalizer */
-    status = luaD_pcall(L, dothecall, NULL, savestack(L, L->top - 2), 0);
-    L->allowhook = oldah;  /* restore hooks */
-    g->gcrunning = running;  /* restore state */
-    if (status != LUA_OK && propagateerrors) {  /* error while running __gc? */
-      if (status == LUA_ERRRUN) {  /* is there an error msg.? */
-        luaO_pushfstring(L, "error in __gc metamethod (%s)",
-                                        lua_tostring(L, -1));
-        status = LUA_ERRGCMM;  /* error in __gc metamethod */
-      }
-      luaD_throw(status);  /* re-send error */
+  const TValue *tm = luaT_gettmbyobj(&v, TM_GC);
+  if(tm == NULL) return;
+  if(!ttisfunction(tm)) return;
+
+  int status;
+  uint8_t oldah = L->allowhook;
+  int running  = g->gcrunning;
+  L->allowhook = 0;  /* stop debug hooks during GC metamethod */
+  g->gcrunning = 0;  /* avoid GC steps */
+  setobj(L->top, tm);  /* push finalizer... */
+  setobj(L->top + 1, &v);  /* ... and its argument */
+  L->top += 2;  /* and (next line) call the finalizer */
+  status = luaD_pcall(L, dothecall, NULL, savestack(L, L->top - 2), 0);
+  L->allowhook = oldah;  /* restore hooks */
+  g->gcrunning = running;  /* restore state */
+
+  if (status != LUA_OK && propagateerrors) {  /* error while running __gc? */
+    if (status == LUA_ERRRUN) {  /* is there an error msg.? */
+      luaO_pushfstring(L, "error in __gc metamethod (%s)",
+                                      lua_tostring(L, -1));
+      status = LUA_ERRGCMM;  /* error in __gc metamethod */
     }
+    luaD_throw(status);  /* re-send error */
   }
 }
 
@@ -880,8 +884,7 @@ void luaC_checkfinalizer (LuaObject *o, Table *mt) {
 */
 
 
-#define sweepphases  \
-	(bitmask(GCSsweepstring) | bitmask(GCSsweepudata) | bitmask(GCSsweep))
+#define sweepphases (bitmask(GCSsweepstring) | bitmask(GCSsweepudata) | bitmask(GCSsweep))
 
 /*
 ** change GC mode
@@ -955,7 +958,8 @@ static void atomic () {
   origweak = g->weak; origall = g->allweak;
   separatetobefnz(0);  /* separate objects to be finalized */
   markbeingfnz(g);  /* mark userdata that will be finalized */
-  propagateall(g);  /* remark, to propagate `preserveness' */
+  /* remark, to propagate `preserveness' */
+  while (g->gray) propagatemark(g);
   convergeephemerons(g);
   /* at this point, all resurrected objects are marked. */
   /* remove dead objects from weak tables */

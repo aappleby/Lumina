@@ -62,45 +62,6 @@ CallInfo *luaE_extendCI (lua_State *L) {
 }
 
 
-void luaE_freeCI (lua_State *L) {
-  THREAD_CHECK(L);
-  CallInfo *ci = L->ci_;
-  CallInfo *next = ci->next;
-  ci->next = NULL;
-  while ((ci = next) != NULL) {
-    next = ci->next;
-    delete ci;
-  }
-}
-
-/*
-static void stack_init (lua_State *L1) {
-  // initialize stack array
-  L1->stack.resize(BASIC_STACK_SIZE);
-  L1->top = L1->stack.begin();
-  L1->stack_last = L1->stack.end() - EXTRA_STACK;
-
-  // initialize first ci
-  CallInfo* ci = &L1->base_ci;
-  ci->next = ci->previous = NULL;
-  ci->callstatus = 0;
-  ci->func = L1->top;
-  L1->top++;
-  ci->top = L1->top + LUA_MINSTACK;
-  L1->ci_ = ci;
-}
-
-
-static void freestack (lua_State *L) {
-  THREAD_CHECK(L);
-  if (L->stack.empty())
-    return;  // stack not completely built yet
-  L->ci_ = &L->base_ci;  // free the entire 'ci' list
-  luaE_freeCI(L);
-  L->stack.clear();
-}
-*/
-
 /*
 ** Create registry table and its predefined values
 */

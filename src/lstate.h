@@ -73,7 +73,6 @@ struct lua_longjmp;  /* defined in ldo.c */
 void luaE_setdebt (global_State *g, l_mem debt);
 void luaE_freethread (lua_State *L, lua_State *L1);
 CallInfo *luaE_extendCI (lua_State *L);
-void luaE_freeCI (lua_State *L);
 
 
 #endif
