@@ -360,9 +360,10 @@ static void traverseweakvalue (Table *h) {
      traverse it just to check) */
   tableTraverseInfo info;
 
-  info.hasclears = h->hasArray() ? 1 : 0;
+  //info.hasclears = h->hasArray() ? 1 : 0;
+  info.hasclears = 0;
 
-  h->traverseNodes(traverseweakvalue_callback, &info);
+  h->traverse(traverseweakvalue_callback, &info);
 
   if (info.hasclears)
     linktable(h, &thread_G->weak);  /* has to be cleared later */
@@ -370,7 +371,7 @@ static void traverseweakvalue (Table *h) {
     linktable(h, &thread_G->grayagain);  /* no need to clean */
 }
 
-void traverseephemeron_hash(TValue* key, TValue* val, void* blob) {
+void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
   tableTraverseInfo& info = *(tableTraverseInfo*)blob;
   assert(!ttisdeadkey(key) || ttisnil(val));
 
@@ -403,7 +404,7 @@ static int traverseephemeron (Table *h) {
   info.hasclears = 0;
   info.propagate = 0;
 
-  h->traverse(traverseephemeron_hash, &info);
+  h->traverse(traverseephemeronCB, &info);
 
   if (info.propagate)
     linktable(h, &thread_G->ephemeron);  /* have to propagate again */
