@@ -57,16 +57,15 @@
 ** sets only the current white bit
 */
 #define maskcolors	(~(bit2mask(BLACKBIT, OLDBIT) | WHITEBITS))
-#define makewhite(g,x)	\
- (gch(x)->marked = cast_byte((gch(x)->marked & maskcolors) | luaC_white(g)))
+#define makewhite(g,x)	(x->marked = cast_byte((x->marked & maskcolors) | luaC_white(g)))
 
-#define white2gray(x)	resetbits(gch(x)->marked, WHITEBITS)
-#define black2gray(x)	resetbit(gch(x)->marked, BLACKBIT)
+#define white2gray(x)	resetbits(x->marked, WHITEBITS)
+#define black2gray(x)	resetbit(x->marked, BLACKBIT)
 
 #define stringmark(s)	((void)((s) && resetbits((s)->marked, WHITEBITS)))
 
 
-#define isfinalized(x)		testbit(gch(x)->marked, FINALIZEDBIT)
+#define isfinalized(x)		testbit(x->marked, FINALIZEDBIT)
 
 #define checkdeadkey(n)	assert(!ttisdeadkey(&n->i_key) || ttisnil(&n->i_val))
 
@@ -141,7 +140,7 @@ void luaC_barrier_ (LuaObject *o, LuaObject *v) {
   global_State *g = thread_G;
   assert(isblack(o) && iswhite(v) && !isdead(v) && !isdead(o));
   assert(isgenerational(g) || g->gcstate != GCSpause);
-  assert(gch(o)->tt != LUA_TTABLE);
+  assert(o->tt != LUA_TTABLE);
   if (keepinvariant(g))  /* must keep invariant? */
     reallymarkobject(g, v);  /* restore invariant */
   else {  /* sweep phase */
@@ -159,7 +158,7 @@ void luaC_barrier_ (LuaObject *o, LuaObject *v) {
 */
 void luaC_barrierback_ (LuaObject *o) {
   global_State *g = thread_G;
-  assert(isblack(o) && !isdead(o) && gch(o)->tt == LUA_TTABLE);
+  assert(isblack(o) && !isdead(o) && o->tt == LUA_TTABLE);
   black2gray(o);  /* make object gray (again) */
   gco2t(o)->graylist = g->grayagain;
   g->grayagain = o;
@@ -229,7 +228,7 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
 static void reallymarkobject (global_State *g, LuaObject *o) {
   assert(iswhite(o) && !isdead(o));
   white2gray(o);
-  switch (gch(o)->tt) {
+  switch (o->tt) {
     case LUA_TSTRING: {
       return;  /* for strings, gray is as good as black */
     }
@@ -286,7 +285,7 @@ static void markmt (global_State *g) {
 */
 static void markbeingfnz (global_State *g) {
   LuaObject *o;
-  for (o = g->tobefnz; o != NULL; o = gch(o)->next) {
+  for (o = g->tobefnz; o != NULL; o = o->next) {
     makewhite(g, o);
     reallymarkobject(g, o);
   }
@@ -311,12 +310,18 @@ static void remarkupvals (global_State *g) {
 ** incremental (or full) collection
 */
 static void markroot (global_State *g) {
-  g->gray = g->grayagain = NULL;
-  g->weak = g->allweak = g->ephemeron = NULL;
+  g->gray = NULL;
+  g->grayagain = NULL;
+  g->weak = NULL;
+  g->allweak = NULL;
+  g->ephemeron = NULL;
+
   markobject(g, g->mainthread);
   markvalue(g, &g->l_registry);
   markmt(g);
-  markbeingfnz(g);  /* mark any finalizing object left from previous cycle */
+
+  /* mark any finalizing object left from previous cycle */
+  markbeingfnz(g);
 }
 
 /* }====================================================== */
@@ -534,7 +539,7 @@ static int propagatemark (global_State *g) {
   LuaObject *o = g->gray;
   assert(isgray(o));
   gray2black(o);
-  switch (gch(o)->tt) {
+  switch (o->tt) {
     case LUA_TTABLE: {
       Table *h = gco2t(o);
       g->gray = h->graylist;
@@ -658,7 +663,7 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
 
 static void freeobj (LuaObject *o) {
   lua_State *L = thread_L;
-  switch (gch(o)->tt) {
+  switch (o->tt) {
     case LUA_TPROTO: delete o; break;
     case LUA_TFUNCTION: delete o; break;
     case LUA_TUPVAL: delete o; break;
@@ -730,13 +735,13 @@ static LuaObject** sweeplist (LuaObject **p, size_t count) {
   }
   while (*p != NULL && count-- > 0) {
     LuaObject *curr = *p;
-    int marked = gch(curr)->marked;
+    int marked = curr->marked;
     if (isdeadm(ow, marked)) {  /* is 'curr' dead? */
-      *p = gch(curr)->next;  /* remove 'curr' from list */
+      *p = curr->next;  /* remove 'curr' from list */
       freeobj(curr);  /* erase 'curr' */
     }
     else {
-      if (gch(curr)->tt == LUA_TTHREAD)
+      if (curr->tt == LUA_TTHREAD)
         sweepthread(gco2th(curr));  /* sweep thread's upvalues */
       if (testbits(marked, tostop)) {
         static LuaObject *nullp = NULL;
@@ -744,8 +749,8 @@ static LuaObject** sweeplist (LuaObject **p, size_t count) {
         break;
       }
       /* update marks */
-      gch(curr)->marked = cast_byte((marked & toclear) | toset);
-      p = &gch(curr)->next;  /* go to next element */
+      curr->marked = cast_byte((marked & toclear) | toset);
+      p = &curr->next;  /* go to next element */
     }
   }
   luaE_setdebt(g, debt);  /* sweeping should not change debt */
@@ -775,10 +780,10 @@ static void checkSizes () {
 static LuaObject *udata2finalize (global_State *g) {
   LuaObject *o = g->tobefnz;  /* get first element */
   assert(isfinalized(o));
-  g->tobefnz = gch(o)->next;  /* remove it from 'tobefnz' list */
-  gch(o)->next = g->allgc;  /* return it to 'allgc' list */
+  g->tobefnz = o->next;  /* remove it from 'tobefnz' list */
+  o->next = g->allgc;  /* return it to 'allgc' list */
   g->allgc = o;
-  resetbit(gch(o)->marked, SEPARATED);  /* mark that it is not in 'tobefnz' */
+  resetbit(o->marked, SEPARATED);  /* mark that it is not in 'tobefnz' */
   assert(!isold(o));  /* see MOVE OLD rule */
   if (!keepinvariant(g))  /* not keeping invariant? */
     makewhite(g, o);  /* "sweep" object */
@@ -836,18 +841,18 @@ static void separatetobefnz (int all) {
   LuaObject **lastnext = &g->tobefnz;
   /* find last 'next' field in 'tobefnz' list (to add elements in its end) */
   while (*lastnext != NULL)
-    lastnext = &gch(*lastnext)->next;
+    lastnext = &(*lastnext)->next;
   while ((curr = *p) != NULL) {  /* traverse all finalizable objects */
     assert(!isfinalized(curr));
-    assert(testbit(gch(curr)->marked, SEPARATED));
+    assert(testbit(curr->marked, SEPARATED));
     if (!(all || iswhite(curr)))  /* not being collected? */
-      p = &gch(curr)->next;  /* don't bother with it */
+      p = &curr->next;  /* don't bother with it */
     else {
-      l_setbit(gch(curr)->marked, FINALIZEDBIT); /* won't be finalized again */
-      *p = gch(curr)->next;  /* remove 'curr' from 'finobj' list */
-      gch(curr)->next = *lastnext;  /* link at the end of 'tobefnz' list */
+      l_setbit(curr->marked, FINALIZEDBIT); /* won't be finalized again */
+      *p = curr->next;  /* remove 'curr' from 'finobj' list */
+      curr->next = *lastnext;  /* link at the end of 'tobefnz' list */
       *lastnext = curr;
-      lastnext = &gch(curr)->next;
+      lastnext = &curr->next;
     }
   }
 }
@@ -859,17 +864,17 @@ static void separatetobefnz (int all) {
 */
 void luaC_checkfinalizer (LuaObject *o, Table *mt) {
   global_State *g = thread_G;
-  if (testbit(gch(o)->marked, SEPARATED) || /* obj. is already separated... */
+  if (testbit(o->marked, SEPARATED) || /* obj. is already separated... */
       isfinalized(o) ||                           /* ... or is finalized... */
       fasttm(mt, TM_GC) == NULL)                /* or has no finalizer? */
     return;  /* nothing to be done */
   else {  /* move 'o' to 'finobj' list */
     LuaObject **p;
-    for (p = &g->allgc; *p != o; p = &gch(*p)->next) ;
-    *p = gch(o)->next;  /* remove 'o' from root list */
-    gch(o)->next = g->finobj;  /* link it in list 'finobj' */
+    for (p = &g->allgc; *p != o; p = &(*p)->next) ;
+    *p = o->next;  /* remove 'o' from root list */
+    o->next = g->finobj;  /* link it in list 'finobj' */
     g->finobj = o;
-    l_setbit(gch(o)->marked, SEPARATED);  /* mark it as such */
+    l_setbit(o->marked, SEPARATED);  /* mark it as such */
     resetoldbit(o);  /* see MOVE OLD rule */
   }
 }
@@ -978,11 +983,9 @@ static l_mem singlestep () {
   global_State *g = thread_G;
   switch (g->gcstate) {
     case GCSpause: {
-      if (!isgenerational(g))
-        markroot(g);  /* start a new collection */
+      if (!isgenerational(g)) markroot(g);  /* start a new collection */
       /* in any case, root must be marked */
-      assert(!iswhite(obj2gco(g->mainthread))
-              && !iswhite(gcvalue(&g->l_registry)));
+      assert(!iswhite(obj2gco(g->mainthread)) && !iswhite(gcvalue(&g->l_registry)));
       g->gcstate = GCSpropagate;
       return GCROOTCOST;
     }

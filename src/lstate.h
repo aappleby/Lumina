@@ -51,8 +51,6 @@ struct lua_longjmp;  /* defined in ldo.c */
 
 #include "LuaObject.h"
 
-#define gch(o)		(o)
-
 /* macros to convert a LuaObject into a specific value */
 #define gco2ts(o)	check_exp((o)->tt == LUA_TSTRING, reinterpret_cast<TString*>(o))
 #define rawgco2u(o)	check_exp((o)->tt == LUA_TUSERDATA, reinterpret_cast<Udata*>(o))

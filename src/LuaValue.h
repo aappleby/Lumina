@@ -208,7 +208,7 @@ public:
 
 #define setgcovalue(obj,x) \
   { TValue *io=(obj); io->bytes = 0; LuaObject *i_g=(x); \
-    io->gc=i_g; settt_(io, ctb(gch(i_g)->tt)); }
+    io->gc=i_g; settt_(io, ctb(i_g->tt)); }
 
 #define setuvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \

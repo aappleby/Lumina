@@ -76,10 +76,10 @@ static int testobjref1 (global_State *g, LuaObject *f, LuaObject *t) {
 static void printobj (global_State *g, LuaObject *o) {
   int i = 0;
   LuaObject *p;
-  for (p = g->allgc; p != o && p != NULL; p = gch(p)->next) i++;
+  for (p = g->allgc; p != o && p != NULL; p = p->next) i++;
   if (p == NULL) i = -1;
-  printf("%d:%s(%p)-%c(%02X)", i, ttypename(gch(o)->tt), (void *)o,
-           isdead(o)?'d':isblack(o)?'b':iswhite(o)?'w':'g', gch(o)->marked);
+  printf("%d:%s(%p)-%c(%02X)", i, ttypename(o->tt), (void *)o,
+           isdead(o)?'d':isblack(o)?'b':iswhite(o)?'w':'g', o->marked);
 }
 
 
@@ -187,7 +187,7 @@ static void checkstack (global_State *g, lua_State *L1) {
   CallInfo *ci;
   LuaObject *uvo;
   assert(!isdead(obj2gco(L1)));
-  for (uvo = L1->openupval; uvo != NULL; uvo = gch(uvo)->next) {
+  for (uvo = L1->openupval; uvo != NULL; uvo = uvo->next) {
     UpVal *uv = gco2uv(uvo);
     assert(uv->v != &uv->value);  /* must be open */
     assert(!isblack(uvo));  /* open upvalues cannot be black */
@@ -210,7 +210,7 @@ static void checkobject (global_State *g, LuaObject *o) {
   else {
     if (g->gcstate == GCSpause && !isgenerational(g))
       assert(iswhite(o));
-    switch (gch(o)->tt) {
+    switch (o->tt) {
       case LUA_TUPVAL: {
         UpVal *uv = gco2uv(o);
         assert(uv->v == &uv->value);  /* must be closed */
@@ -253,7 +253,7 @@ static void checkgraylist (LuaObject *l) {
     assert(isgray(l));
     assert(!testbit(l->marked, TESTGRAYBIT));
     l_setbit(l->marked, TESTGRAYBIT);
-    switch (gch(l)->tt) {
+    switch (l->tt) {
       case LUA_TTABLE: l = gco2t(l)->graylist; break;
       case LUA_TFUNCTION: l = gco2cl(l)->gclist; break;
       case LUA_TTHREAD: l = gco2th(l)->gclist; break;
@@ -280,7 +280,7 @@ static void markgrays (global_State *g) {
 
 static void checkold (global_State *g, LuaObject *o) {
   int isold = 0;
-  for (; o != NULL; o = gch(o)->next) {
+  for (; o != NULL; o = o->next) {
     if (isold(o)) {  /* old generation? */
       assert(isgenerational(g));
       if (!issweepphase(g))
@@ -311,25 +311,23 @@ int lua_checkmemory (lua_State *L) {
   /* check 'allgc' list */
   markgrays(g);
   checkold(g, g->allgc);
-  for (o = g->allgc; o != NULL; o = gch(o)->next) {
+  for (o = g->allgc; o != NULL; o = o->next) {
     checkobject(g, o);
     assert(!testbit(o->marked, SEPARATED));
   }
   /* check 'finobj' list */
   checkold(g, g->finobj);
-  for (o = g->finobj; o != NULL; o = gch(o)->next) {
+  for (o = g->finobj; o != NULL; o = o->next) {
     assert(!isdead(o) && testbit(o->marked, SEPARATED));
-    assert(gch(o)->tt == LUA_TUSERDATA ||
-               gch(o)->tt == LUA_TTABLE);
+    assert(o->tt == LUA_TUSERDATA || o->tt == LUA_TTABLE);
     checkobject(g, o);
   }
   /* check 'tobefnz' list */
   checkold(g, g->tobefnz);
-  for (o = g->tobefnz; o != NULL; o = gch(o)->next) {
+  for (o = g->tobefnz; o != NULL; o = o->next) {
     assert(!iswhite(o));
     assert(!isdead(o) && testbit(o->marked, SEPARATED));
-    assert(gch(o)->tt == LUA_TUSERDATA ||
-               gch(o)->tt == LUA_TTABLE);
+    assert(o->tt == LUA_TUSERDATA || o->tt == LUA_TTABLE);
   }
   /* check 'uvhead' list */
   for (uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {
@@ -593,7 +591,7 @@ static int string_query (lua_State *L) {
   else if (s < tb->size) {
     LuaObject *ts;
     int n = 0;
-    for (ts = tb->hash[s]; ts; ts = gch(ts)->next) {
+    for (ts = tb->hash[s]; ts; ts = ts->next) {
       L->top[0] = gco2ts(ts);
       incr_top(L);
       n++;
