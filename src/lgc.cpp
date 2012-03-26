@@ -45,11 +45,6 @@
 /* cost of atomic step */
 #define GCATOMICCOST	1000
 
-/* basic cost to traverse one object (to be added to the links the
-   object may have) */
-#define TRAVCOST	5
-
-
 /*
 ** standard negative debt for GC; a reasonable "time" to wait before
 ** starting a new cycle
@@ -375,14 +370,6 @@ static void traverseweakvalue (Table *h) {
     linktable(h, &thread_G->grayagain);  /* no need to clean */
 }
 
-void traverseephemeron_array(TValue* v, void* blob) {
-  tableTraverseInfo& info = *(tableTraverseInfo*)blob;
-  if (valiswhite(v)) {
-    info.marked = 1;
-    reallymarkobject(thread_G, gcvalue(v));
-  }
-}
-
 void traverseephemeron_hash(TValue* key, TValue* val, void* blob) {
   tableTraverseInfo& info = *(tableTraverseInfo*)blob;
   assert(!ttisdeadkey(key) || ttisnil(val));
@@ -416,8 +403,7 @@ static int traverseephemeron (Table *h) {
   info.hasclears = 0;
   info.propagate = 0;
 
-  h->traverseArray(traverseephemeron_array, &info);
-  h->traverseNodes(traverseephemeron_hash, &info);
+  h->traverse(traverseephemeron_hash, &info);
 
   if (info.propagate)
     linktable(h, &thread_G->ephemeron);  /* have to propagate again */
@@ -428,8 +414,7 @@ static int traverseephemeron (Table *h) {
   return info.marked;
 }
 
-void traverseStrongNode(TValue* key, TValue* val, void* blob) {
-  tableTraverseInfo& info = *(tableTraverseInfo*)blob;
+void traverseStrongNode(TValue* key, TValue* val, void*) {
   assert(!ttisdeadkey(key) || ttisnil(val));
   if (ttisnil(val)) {
     removeentry(key, val);  /* remove it */
@@ -437,15 +422,7 @@ void traverseStrongNode(TValue* key, TValue* val, void* blob) {
     assert(!ttisnil(key));
     markvalue(thread_G, key);  /* mark key */
     markvalue(thread_G, val);  /* mark value */
-    info.cost += 2;
   }
-}
-
-static int traversestrongtable (Table *h) {
-  tableTraverseInfo info;
-  info.cost = 0;
-  h->traverse(traverseStrongNode, &info);
-  return info.cost;
 }
 
 // Table modes really should be a flag on the table instead
@@ -457,9 +434,7 @@ static int traversetable (global_State *g, Table *h) {
 
   // Strong keys, strong values - use strong table traversal.
   if(mode == NULL) {
-    int cost = traversestrongtable(h);
-    //return TRAVCOST + (int)h->array.size() + (2 * (int)h->hashtable.size());
-    return TRAVCOST + cost;
+    return h->traverse(traverseStrongNode, NULL);
   }
 
   assert(ttisstring(mode));

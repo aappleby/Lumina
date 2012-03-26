@@ -81,4 +81,10 @@
 /* some space for error handling */
 #define ERRORSTACKSIZE	(LUAI_MAXSTACK + 200)
 
+/* basic cost to traverse one object (to be added to the links the
+   object may have) */
+#define TRAVCOST	5
+
+
+
 #include "luaconf.h"

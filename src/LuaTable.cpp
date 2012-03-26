@@ -157,20 +157,24 @@ Node* Table::nodeAt(uint32_t hash) {
 
 //-----------------------------------------------------------------------------
 
-void Table::traverseNodes(Table::nodeCallback c, void* blob) {
+int Table::traverseNodes(Table::nodeCallback c, void* blob) {
   for(int i = 0; i < (int)hashtable.size(); i++) {
     Node* n = getNode(i);
     c(&n->i_key, &n->i_val, blob);
   }
+
+  return TRAVCOST + 2 * (int)hashtable.size();
 }
 
-void Table::traverseArray(Table::valueCallback c, void* blob) {
+int Table::traverseArray(Table::valueCallback c, void* blob) {
   for(int i = 0; i < (int)array.size(); i++) {
     c(&array[i],blob);
   }
+
+  return TRAVCOST + (int)array.size();
 }
 
-void Table::traverse(Table::nodeCallback c, void* blob) {
+int Table::traverse(Table::nodeCallback c, void* blob) {
   TValue temp;
 
   for(int i = 0; i < (int)array.size(); i++) {
@@ -181,6 +185,8 @@ void Table::traverse(Table::nodeCallback c, void* blob) {
     Node* n = getNode(i);
     c(&n->i_key, &n->i_val, blob);
   }
+
+  return TRAVCOST + (int)array.size() + 2 * (int)hashtable.size();
 }
 
 //-----------------------------------------------------------------------------

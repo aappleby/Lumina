@@ -60,14 +60,15 @@ public:
   }
 
   //----------
-  // Visitor pattern stuff for GC
+  // Visitor pattern stuff for GC. Traversal returns the 'cost'
+  // of visiting the nodes, used for GC heuristics.
 
   typedef void (*nodeCallback)(TValue* key, TValue* value, void* blob);
   typedef void (*valueCallback)(TValue* v, void* blob);
 
-  void traverseNodes(Table::nodeCallback c, void* blob);
-  void traverseArray(Table::valueCallback c, void* blob);
-  void traverse(Table::nodeCallback c, void* blob);
+  int traverseNodes(Table::nodeCallback c, void* blob);
+  int traverseArray(Table::valueCallback c, void* blob);
+  int traverse(Table::nodeCallback c, void* blob);
 
   //----------
 
