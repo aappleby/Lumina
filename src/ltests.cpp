@@ -474,7 +474,6 @@ static int get_gccolor (lua_State *L) {
   if (!iscollectable(o))
     lua_pushstring(L, "no collectable");
   else {
-    int marked = gcvalue(o)->marked;
     int n = 1;
     lua_pushstring(L, gcvalue(o)->isWhite() ? "white" :
                       gcvalue(o)->isBlack() ? "black" : "grey");
@@ -506,7 +505,7 @@ static int gc_state (lua_State *L) {
     return 1;
   }
   else {
-    luaC_runtilstate(bitmask(option));
+    luaC_runtilstate(1 << option);
     assert(thread_G->gcstate == option);
     return 0;
   }

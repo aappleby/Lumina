@@ -74,12 +74,13 @@ public:
   bool isUpval() const         { return tagtype() == LUA_TUPVAL; }
   bool isDeadKey() const       { return tagtype() == LUA_TDEADKEY; }
 
-  //bool isCClosure() const      { return 
   bool isCClosure() const      { return rawtype() == (LUA_TCCL | BIT_ISCOLLECTABLE); }
   bool isLClosure() const      { return rawtype() == (LUA_TLCL | BIT_ISCOLLECTABLE); }
   bool isLightCFunc() const    { return tagtype() == LUA_TLCF; }
 
   bool isInteger() const { return isNumber() && (n == (int)n); }
+
+  void setDeadKey() { tt_ = LUA_TDEADKEY; }
 
   //----------
 
@@ -241,8 +242,6 @@ public:
   { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
     io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TPROTO)); \
     io->sanityCheck(); }
-
-#define setdeadvalue(obj)	settt_(obj, LUA_TDEADKEY)
 
 void setobj(TValue* obj1, const TValue* obj2);
 

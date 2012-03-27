@@ -77,21 +77,6 @@
 #define keepinvariant(g)  (isgenerational(g) || (g->gcstate <= GCSatomic))
 
 
-/*
-** some useful bit tricks
-*/
-#define resetbits(x,m)		((x) &= cast(uint8_t, ~(m)))
-#define setbits(x,m)		((x) |= (m))
-#define testbits(x,m)		((x) & (m))
-#define bitmask(b)		(1<<(b))
-#define bit2mask(b1,b2)		(bitmask(b1) | bitmask(b2))
-#define l_setbit(x,b)		setbits(x, bitmask(b))
-#define resetbit(x,b)		resetbits(x, bitmask(b))
-#define testbit(x,b)		testbits(x, bitmask(b))
-
-
-#define WHITEBITS	bit2mask(WHITE0BIT, WHITE1BIT)
-
 #define luaC_condGC(L,c) {if (thread_G->GCdebt > 0) {c;};}
 
 void luaC_step();

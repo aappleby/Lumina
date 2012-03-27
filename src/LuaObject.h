@@ -29,6 +29,13 @@ public:
 
   void changeWhite();
 
+  //----------
+
+  bool isThread() { return tt == LUA_TTHREAD; }
+
+  //----------
+  // Flag read/write
+
   bool isBlack();
   void setBlack();
   void clearBlack();
@@ -53,10 +60,14 @@ public:
   void setTestGray();
   void clearTestGray();
 
+  //----------
+
   LuaObject *next;
   LuaObject *next_gray_;
   uint8_t tt;
-  uint8_t marked;
 
   static int instanceCounts[256];
+
+private:
+  uint8_t marked;
 };

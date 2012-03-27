@@ -25,7 +25,7 @@ void luaS_resize (int newsize) {
   int i;
   stringtable *tb = thread_G->strt;
   /* cannot resize while GC is traversing strings */
-  luaC_runtilstate(~bitmask(GCSsweepstring));
+  luaC_runtilstate(~(1 << GCSsweepstring));
   if (newsize > tb->size) {
     tb->hash.resize(newsize);
   }

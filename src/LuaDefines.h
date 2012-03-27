@@ -46,9 +46,9 @@
 #define SEPARATED	4  /* object is in 'finobj' list or in 'tobefnz' */
 #define FIXEDBIT	5  /* object is fixed (should not be collected) */
 #define OLDBIT		6  /* object is old (only in generational mode) */
-/* bit 7 is currently used by tests (luaL_checkmemory) */
-#define TESTGRAYBIT		7
+#define TESTGRAYBIT		7 // bit 7 is currently used by tests (luaL_checkmemory)
 
+#define WHITEBITS	((1 << WHITE0BIT) | (1 << WHITE1BIT))
 
 
 /* kinds of Garbage Collection */
