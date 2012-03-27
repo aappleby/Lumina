@@ -16,8 +16,6 @@
 
 #define luaS_newliteral(s)	(luaS_newlstr("" s, (sizeof(s)/sizeof(char))-1))
 
-#define luaS_fix(s)	l_setbit((s)->marked, FIXEDBIT)
-
 void     luaS_resize   (int newsize);
 TString* luaS_newlstr  (const char *str, size_t l);
 TString* luaS_new      (const char *str);

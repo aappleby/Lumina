@@ -6,7 +6,7 @@ void TValue::operator = ( TValue const & v )
 {
   bytes = v.bytes;
   tt_ = v.tt_;
-  sanitycheck();
+  sanityCheck();
 }
 
 void TValue::operator = ( TValue * v )
@@ -20,12 +20,12 @@ void TValue::operator = ( TValue * v )
     tt_ = LUA_TNIL;
   }
 
-  sanitycheck();
+  sanityCheck();
 }
 
-void TValue::sanitycheck() {
+void TValue::sanityCheck() {
   if(isCollectable()) {
-    assert((gc->marked & 3) != 3);
+    gc->sanityCheck();
     assert(basetype() == gc->tt);
     assert(!gc->isDead());
   }
@@ -35,5 +35,10 @@ void setobj(TValue* obj1, const TValue* obj2) {
   if(obj1 == obj2) return;
 	obj1->bytes = obj2->bytes;
   obj1->tt_ = obj2->tt_;
-	checkliveness(obj1); 
+	obj1->sanityCheck(); 
+}
+
+bool TValue::isWhite() const {
+  if(!isCollectable()) return false;
+  return gc->isWhite();
 }

@@ -70,7 +70,7 @@ void luaT_init() {
   int i;
   for (i=0; i<TM_N; i++) {
     thread_G->tmname[i] = luaS_new(luaT_eventname[i]);
-    luaS_fix(thread_G->tmname[i]);  /* never collect these names */
+    thread_G->tmname[i]->setFixed();  /* never collect these names */
   }
 }
 

@@ -47,6 +47,8 @@
 #define FIXEDBIT	5  /* object is fixed (should not be collected) */
 #define OLDBIT		6  /* object is old (only in generational mode) */
 /* bit 7 is currently used by tests (luaL_checkmemory) */
+#define TESTGRAYBIT		7
+
 
 
 /* kinds of Garbage Collection */

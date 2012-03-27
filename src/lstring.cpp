@@ -38,7 +38,7 @@ void luaS_resize (int newsize) {
       unsigned int h = lmod(gco2ts(p)->getHash(), newsize);  /* new position */
       p->next = tb->hash[h];  /* chain it */
       tb->hash[h] = p;
-      p->resetOldBit();  /* see MOVE OLD rule */
+      p->clearOld();  /* see MOVE OLD rule */
       p = next;
     }
   }

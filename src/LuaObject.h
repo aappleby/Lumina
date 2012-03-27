@@ -10,16 +10,48 @@ public:
 
   void linkGC(LuaObject*& gcHead);
 
+  void sanityCheck();
+
+  uint8_t getFlags();
+
   bool isDeadKey() { return tt == LUA_TDEADKEY; }
 
   bool isDead();
-  bool isBlack();
   bool isWhite();
   bool isGray();
 
-  void changeWhite();
+  void setWhite();
+
+  void whiteToGray();
+  void blackToGray();
   void grayToBlack();
-  void resetOldBit();
+  void stringmark();
+
+  void changeWhite();
+
+  bool isBlack();
+  void setBlack();
+  void clearBlack();
+
+  bool isFinalized();
+  void setFinalized();
+  void clearFinalized();
+
+  bool isSeparated();
+  void setSeparated();
+  void clearSeparated();
+
+  bool isFixed();
+  void setFixed();
+  void clearFixed();
+
+  bool isOld();
+  void setOld();
+  void clearOld();
+
+  bool isTestGray();
+  void setTestGray();
+  void clearTestGray();
 
   LuaObject *next;
   LuaObject *next_gray_;

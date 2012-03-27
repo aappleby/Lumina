@@ -101,7 +101,7 @@ static void f_luaopen (lua_State *L, void *) {
   luaX_init(L);
   /* pre-create memory-error message */
   g->memerrmsg = luaS_newliteral(MEMERRMSG);
-  luaS_fix(g->memerrmsg);  /* it should never be collected */
+  g->memerrmsg->setFixed();  /* it should never be collected */
   g->gcrunning = 1;  /* allow gc */
 }
 
@@ -197,7 +197,7 @@ lua_State *lua_newstate () {
     L->next = NULL;
     L->tt = LUA_TTHREAD;
     g->currentwhite = bit2mask(WHITE0BIT, FIXEDBIT);
-    L->marked = (1 << WHITE0BIT);
+    L->setWhite();
     g->gckind = KGC_NORMAL;
     preinit_state(L, g);
     g->mainthread = L;

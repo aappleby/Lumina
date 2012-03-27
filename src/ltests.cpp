@@ -84,7 +84,7 @@ static void printobj (global_State *g, LuaObject *o) {
   if(o->isBlack()) c = 'b';
   if(o->isWhite()) c = 'w';
 
-  printf("%d:%s(%p)-%c(%02X)", i, ttypename(o->tt), (void *)o, c, o->marked);
+  printf("%d:%s(%p)-%c(%02X)", i, ttypename(o->tt), (void *)o, c, o->getFlags());
 }
 
 
@@ -202,7 +202,7 @@ static void checkstack (global_State *g, lua_State *L1) {
   }
   if (L1->stack.size()) {
     for (o = L1->stack.begin(); o < L1->top; o++)
-      checkliveness(o);
+      o->sanityCheck();
   }
   else assert(L1->stack.empty());
 }
@@ -250,20 +250,18 @@ static void checkobject (global_State *g, LuaObject *o) {
 }
 
 
-#define TESTGRAYBIT		7
-
 static void checkgraylist (LuaObject* o) {
   while (o) {
     assert(o->isGray());
-    assert(!testbit(o->marked, TESTGRAYBIT));
-    l_setbit(o->marked, TESTGRAYBIT);
+    assert(!o->isTestGray());
+    o->setTestGray();
     o = o->next_gray_;
   }
 }
 
 
 /*
-** mark all objects in gray lists with the TESTGRAYBIT, so that
+** mark all objects in gray lists as TestGray, so that
 ** 'checkmemory' can check that all gray objects are in a gray list
 */
 static void markgrays (global_State *g) {
@@ -279,17 +277,17 @@ static void markgrays (global_State *g) {
 static void checkold (global_State *g, LuaObject *o) {
   int isold = 0;
   for (; o != NULL; o = o->next) {
-    if (isold(o)) {  /* old generation? */
+    if (o->isOld()) {  /* old generation? */
       assert(isgenerational(g));
       if (!issweepphase(g))
         isold = 1;
     }
     else assert(!isold);  /* non-old object cannot be after an old one */
     if (o->isGray()) {
-      assert(!keepinvariant(g) || testbit(o->marked, TESTGRAYBIT));
-      resetbit(o->marked, TESTGRAYBIT);
+      assert(!keepinvariant(g) || o->isTestGray());
+      o->clearTestGray();
     }
-    assert(!testbit(o->marked, TESTGRAYBIT));
+    assert(!o->isTestGray());
   }
 }
 
@@ -305,18 +303,18 @@ int lua_checkmemory (lua_State *L) {
   }
   assert(!gcvalue(&g->l_registry)->isDead());
   checkstack(g, g->mainthread);
-  resetbit(g->mainthread->marked, TESTGRAYBIT);
+  g->mainthread->clearTestGray();
   /* check 'allgc' list */
   markgrays(g);
   checkold(g, g->allgc);
   for (o = g->allgc; o != NULL; o = o->next) {
     checkobject(g, o);
-    assert(!testbit(o->marked, SEPARATED));
+    assert(!o->isSeparated());
   }
   /* check 'finobj' list */
   checkold(g, g->finobj);
   for (o = g->finobj; o != NULL; o = o->next) {
-    assert(!o->isDead() && testbit(o->marked, SEPARATED));
+    assert(!o->isDead() && o->isSeparated());
     assert(o->tt == LUA_TUSERDATA || o->tt == LUA_TTABLE);
     checkobject(g, o);
   }
@@ -324,7 +322,7 @@ int lua_checkmemory (lua_State *L) {
   checkold(g, g->tobefnz);
   for (o = g->tobefnz; o != NULL; o = o->next) {
     assert(!o->isWhite());
-    assert(!o->isDead() && testbit(o->marked, SEPARATED));
+    assert(!o->isDead() && o->isSeparated());
     assert(o->tt == LUA_TUSERDATA || o->tt == LUA_TTABLE);
   }
   /* check 'uvhead' list */
@@ -480,16 +478,16 @@ static int get_gccolor (lua_State *L) {
     int n = 1;
     lua_pushstring(L, gcvalue(o)->isWhite() ? "white" :
                       gcvalue(o)->isBlack() ? "black" : "grey");
-    if (testbit(marked, FINALIZEDBIT)) {
+    if (gcvalue(o)->isFinalized()) {
       lua_pushliteral(L, "/finalized"); n++;
     }
-    if (testbit(marked, SEPARATED)) {
+    if (gcvalue(o)->isSeparated()) {
       lua_pushliteral(L, "/separated"); n++;
     }
-    if (testbit(marked, FIXEDBIT)) {
+    if (gcvalue(o)->isFixed()) {
       lua_pushliteral(L, "/fixed"); n++;
     }
-    if (testbit(marked, OLDBIT)) {
+    if (gcvalue(o)->isOld()) {
       lua_pushliteral(L, "/old"); n++;
     }
     lua_concat(L, n);

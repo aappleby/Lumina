@@ -92,16 +92,6 @@
 
 #define WHITEBITS	bit2mask(WHITE0BIT, WHITE1BIT)
 
-
-// neither white nor black
-#define isold(x)	testbit((x)->marked, OLDBIT)
-
-/* MOVE OLD rule: whenever an object is moved to the beginning of
-   a GC list, its old bit must be cleared */
-#define resetoldbit(o)	resetbit((o)->marked, OLDBIT)
-
-#define valiswhite(x)	(iscollectable(x) && gcvalue(x)->isWhite())
-
 #define luaC_condGC(L,c) {if (thread_G->GCdebt > 0) {c;};}
 
 void luaC_step();
@@ -109,8 +99,8 @@ void luaC_step();
 void luaC_checkGC();
 
 
-#define luaC_barrier(p,v) { if (valiswhite(v) && (p)->isBlack())	luaC_barrier_(p,gcvalue(v)); }
-#define luaC_barrierback(p,v) { if (valiswhite(v) && (p)->isBlack()) luaC_barrierback_(p); }
+#define luaC_barrier(p,v) { if ((v)->isWhite() && (p)->isBlack())	luaC_barrier_(p,gcvalue(v)); }
+#define luaC_barrierback(p,v) { if ((v)->isWhite() && (p)->isBlack()) luaC_barrierback_(p); }
 #define luaC_objbarrier(L,p,o)  { if ((o)->isWhite() && (p)->isBlack()) luaC_barrier_(p,o); }
 #define luaC_objbarrierback(L,p,o)  { if ((o)->isWhite() && (p)->isBlack()) luaC_barrierback_(p); }
 #define luaC_barrierproto(p,c) { if ((p)->isBlack()) luaC_barrierproto_(p,c); }

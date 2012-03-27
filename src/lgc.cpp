@@ -51,17 +51,7 @@
 */
 #define stddebt(g)	(-cast(l_mem, gettotalbytes(g)/100) * g->gcpause)
 
-
-/*
-** 'makewhite' erases all color bits plus the old bit and then
-** sets only the current white bit
-*/
 #define maskcolors	(~(bit2mask(BLACKBIT, OLDBIT) | WHITEBITS))
-
-inline void makewhite(global_State* g, LuaObject* o) {
-  o->marked &= maskcolors;
-  o->marked |= thread_G->currentwhite & WHITEBITS;
-}
 
 inline void white2gray(LuaObject* o) {
   if(o) {
@@ -90,7 +80,7 @@ inline void stringmark(LuaObject* o) {
 #define checkconsistency(obj) assert(!iscollectable(obj) || righttt(obj))
 
 
-#define markvalue(g,o) { checkconsistency(o); if (valiswhite(o)) reallymarkobject(g,gcvalue(o)); }
+#define markvalue(g,o) { checkconsistency(o); if ((o)->isWhite()) reallymarkobject(g,gcvalue(o)); }
 
 #define markobject(g,t) { if ((t) && t->isWhite()) reallymarkobject(g, t); }
 
@@ -116,7 +106,7 @@ static void reallymarkobject (global_State *g, LuaObject *o);
 static void removeentry (TValue* key, TValue* val) {
   assert(ttisnil(val));
   
-  if (valiswhite(key)) {
+  if (key->isWhite()) {
     setdeadvalue(key);  /* unused and unmarked key; remove it */
   }
 }
@@ -154,7 +144,7 @@ void luaC_barrier_ (LuaObject *o, LuaObject *v) {
     reallymarkobject(g, v);  /* restore invariant */
   else {  /* sweep phase */
     assert(issweepphase(g));
-    makewhite(g, o);  /* mark main obj. as white to avoid other barriers */
+    o->setWhite();  /* mark main obj. as white to avoid other barriers */
   }
 }
 
@@ -208,13 +198,13 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
 
   if (uv->isGray()) {
     if (keepinvariant(g)) {
-      uv->resetOldBit();  /* see MOVE OLD rule */
+      uv->clearOld();  /* see MOVE OLD rule */
       uv->grayToBlack();  /* it is being visited now */
       markvalue(g, uv->v);
     }
     else {
       assert(issweepphase(g));
-      makewhite(g, uv);
+      uv->setWhite();
     }
   }
 }
@@ -287,7 +277,7 @@ static void markmt (global_State *g) {
 static void markbeingfnz (global_State *g) {
   LuaObject *o;
   for (o = g->tobefnz; o != NULL; o = o->next) {
-    makewhite(g, o);
+    o->setWhite();
     reallymarkobject(g, o);
   }
 }
@@ -374,13 +364,13 @@ void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
   if (iscleared(key)) {  /* key is not marked (yet)? */
     info.hasclears = 1;  /* table must be cleared */
    
-    if (valiswhite(val)) { /* value not marked yet? */
+    if (val->isWhite()) { /* value not marked yet? */
       info.propagate = 1;  /* must propagate again */
     }
     return;
   }
 
-  if (valiswhite(val)) {  /* value not marked yet? */
+  if (val->isWhite()) {  /* value not marked yet? */
     info.marked = 1;
     reallymarkobject(thread_G, gcvalue(val));  /* mark it now */
   }
@@ -748,7 +738,7 @@ static LuaObject** sweeplist (LuaObject **p, size_t count) {
     tostop = bitmask(OLDBIT);  /* do not sweep old generation */
   }
   else {  /* normal mode */
-    toclear = maskcolors;  /* clear all color bits + old bit */
+    toclear = (~(bit2mask(BLACKBIT, OLDBIT) | WHITEBITS));  /* clear all color bits + old bit */
     toset = thread_G->currentwhite & WHITEBITS;  /* make object white */
     tostop = 0;  /* do not stop */
   }
@@ -803,9 +793,9 @@ static LuaObject *udata2finalize (global_State *g) {
   o->next = g->allgc;  /* return it to 'allgc' list */
   g->allgc = o;
   resetbit(o->marked, SEPARATED);  /* mark that it is not in 'tobefnz' */
-  assert(!isold(o));  /* see MOVE OLD rule */
+  assert(!o->isOld());  /* see MOVE OLD rule */
   if (!keepinvariant(g))  /* not keeping invariant? */
-    makewhite(g, o);  /* "sweep" object */
+    o->setWhite();  /* "sweep" object */
   return o;
 }
 
@@ -896,7 +886,7 @@ void luaC_checkfinalizer (LuaObject *o, Table *mt) {
     o->next = g->finobj;  /* link it in list 'finobj' */
     g->finobj = o;
     l_setbit(o->marked, SEPARATED);  /* mark it as such */
-    o->resetOldBit();  /* see MOVE OLD rule */
+    o->clearOld();  /* see MOVE OLD rule */
   }
 }
 
@@ -942,7 +932,7 @@ void luaC_changemode (lua_State *L, int mode) {
 static void callallpendingfinalizers (int propagateerrors) {
   global_State *g = thread_G;
   while (g->tobefnz) {
-    g->tobefnz->resetOldBit();
+    g->tobefnz->clearOld();
     GCTM(propagateerrors);
   }
 }

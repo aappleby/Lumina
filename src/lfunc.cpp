@@ -89,7 +89,7 @@ UpVal *luaF_findupval (StkId level) {
         p->changeWhite();  /* resurrect it */
       return p;
     }
-    p->resetOldBit();  /* may create a newer upval after this one */
+    p->clearOld();  /* may create a newer upval after this one */
     pp = &(p->next);
   }
   /* not found: create a new one */
