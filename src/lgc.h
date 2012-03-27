@@ -93,34 +93,14 @@
 #define WHITEBITS	bit2mask(WHITE0BIT, WHITE1BIT)
 
 
-#define iswhite(x)      testbits((x)->marked, WHITEBITS)
-#define isblack(x)      testbit((x)->marked, BLACKBIT)
-
 // neither white nor black
-#define isgray(x)  (!testbits((x)->marked, WHITEBITS | bitmask(BLACKBIT)))
-
 #define isold(x)	testbit((x)->marked, OLDBIT)
 
 /* MOVE OLD rule: whenever an object is moved to the beginning of
    a GC list, its old bit must be cleared */
 #define resetoldbit(o)	resetbit((o)->marked, OLDBIT)
 
-#define otherwhite()	(thread_G->currentwhite ^ WHITEBITS)
-#define isdeadm(ow,m)	(!(((m) ^ WHITEBITS) & (ow)))
-
-inline bool isdead(LuaObject* o) {
-  uint8_t markA = o->marked ^ WHITEBITS;
-  uint8_t markB = thread_G->currentwhite ^ WHITEBITS;
-  return !(markA & markB);
-}
-
-#define changewhite(x)	((x)->marked ^= WHITEBITS)
-#define gray2black(x)	l_setbit((x)->marked, BLACKBIT)
-
-#define valiswhite(x)	(iscollectable(x) && iswhite(gcvalue(x)))
-
-#define luaC_white(g)	cast(uint8_t, (g)->currentwhite & WHITEBITS)
-
+#define valiswhite(x)	(iscollectable(x) && gcvalue(x)->isWhite())
 
 #define luaC_condGC(L,c) {if (thread_G->GCdebt > 0) {c;};}
 
@@ -129,11 +109,11 @@ void luaC_step();
 void luaC_checkGC();
 
 
-#define luaC_barrier(p,v) { if (valiswhite(v) && isblack(p))	luaC_barrier_(p,gcvalue(v)); }
-#define luaC_barrierback(p,v) { if (valiswhite(v) && isblack(p)) luaC_barrierback_(p); }
-#define luaC_objbarrier(L,p,o)  { if (iswhite(o) && isblack(p)) luaC_barrier_(p,o); }
-#define luaC_objbarrierback(L,p,o)  { if (iswhite(o) && isblack(p)) luaC_barrierback_(p); }
-#define luaC_barrierproto(p,c) { if (isblack(p)) luaC_barrierproto_(p,c); }
+#define luaC_barrier(p,v) { if (valiswhite(v) && (p)->isBlack())	luaC_barrier_(p,gcvalue(v)); }
+#define luaC_barrierback(p,v) { if (valiswhite(v) && (p)->isBlack()) luaC_barrierback_(p); }
+#define luaC_objbarrier(L,p,o)  { if ((o)->isWhite() && (p)->isBlack()) luaC_barrier_(p,o); }
+#define luaC_objbarrierback(L,p,o)  { if ((o)->isWhite() && (p)->isBlack()) luaC_barrierback_(p); }
+#define luaC_barrierproto(p,c) { if ((p)->isBlack()) luaC_barrierproto_(p,c); }
 
 void luaC_freeallobjects ();
 void luaC_step ();

@@ -38,7 +38,7 @@ void luaS_resize (int newsize) {
       unsigned int h = lmod(gco2ts(p)->getHash(), newsize);  /* new position */
       p->next = tb->hash[h];  /* chain it */
       tb->hash[h] = p;
-      resetoldbit(p);  /* see MOVE OLD rule */
+      p->resetOldBit();  /* see MOVE OLD rule */
       p = next;
     }
   }
@@ -94,8 +94,8 @@ TString *luaS_newlstr (const char *str, size_t l) {
     if (h == ts->getHash() &&
         ts->getLen() == l &&
         (memcmp(str, ts->c_str(), l * sizeof(char)) == 0)) {
-      if (isdead(o))  /* string is dead (but was not collected yet)? */
-        changewhite(o);  /* resurrect it */
+      if (o->isDead())  /* string is dead (but was not collected yet)? */
+        o->changeWhite();  /* resurrect it */
       return ts;
     }
   }

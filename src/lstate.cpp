@@ -197,7 +197,7 @@ lua_State *lua_newstate () {
     L->next = NULL;
     L->tt = LUA_TTHREAD;
     g->currentwhite = bit2mask(WHITE0BIT, FIXEDBIT);
-    L->marked = luaC_white(g);
+    L->marked = (1 << WHITE0BIT);
     g->gckind = KGC_NORMAL;
     preinit_state(L, g);
     g->mainthread = L;

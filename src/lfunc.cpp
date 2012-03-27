@@ -85,11 +85,11 @@ UpVal *luaF_findupval (StkId level) {
   while (*pp != NULL && (p = gco2uv(*pp))->v >= level) {
     assert(p->v != &p->value);
     if (p->v == level) {  /* found a corresponding upvalue? */
-      if (isdead(p))  /* is it dead? */
-        changewhite(p);  /* resurrect it */
+      if (p->isDead())  /* is it dead? */
+        p->changeWhite();  /* resurrect it */
       return p;
     }
-    resetoldbit(p);  /* may create a newer upval after this one */
+    p->resetOldBit();  /* may create a newer upval after this one */
     pp = &(p->next);
   }
   /* not found: create a new one */
@@ -113,10 +113,10 @@ void luaF_close (StkId level) {
     uv = gco2uv(L->openupval);
     if(uv->v < level) break;
 
-    assert(!isblack(uv) && uv->v != &uv->value);
+    assert(!uv->isBlack() && uv->v != &uv->value);
     L->openupval = uv->next;  /* remove from `open' list */
 
-    if (isdead(uv))
+    if (uv->isDead())
       delete uv;
     else {
       uv->unlink();  /* remove upvalue from 'uvhead' list */

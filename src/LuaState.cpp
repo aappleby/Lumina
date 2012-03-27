@@ -145,9 +145,9 @@ void lua_State::closeUpvals(StkId level) {
   UpVal *uv;
   global_State *g = thread_G;
   while (openupval != NULL && (uv = gco2uv(openupval))->v >= level) {
-    assert(!isblack(uv) && uv->v != &uv->value);
+    assert(!uv->isBlack() && uv->v != &uv->value);
     openupval = uv->next;  // remove from `open' list
-    if (isdead(uv))
+    if (uv->isDead())
       delete uv;
     else {
       uv->unlink();  // remove upvalue from 'uvhead' list

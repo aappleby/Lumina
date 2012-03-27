@@ -60,7 +60,7 @@
 
 inline void makewhite(global_State* g, LuaObject* o) {
   o->marked &= maskcolors;
-  o->marked |= luaC_white(g);
+  o->marked |= thread_G->currentwhite & WHITEBITS;
 }
 
 inline void white2gray(LuaObject* o) {
@@ -92,7 +92,7 @@ inline void stringmark(LuaObject* o) {
 
 #define markvalue(g,o) { checkconsistency(o); if (valiswhite(o)) reallymarkobject(g,gcvalue(o)); }
 
-#define markobject(g,t) { if ((t) && iswhite(t)) reallymarkobject(g, t); }
+#define markobject(g,t) { if ((t) && t->isWhite()) reallymarkobject(g, t); }
 
 static void reallymarkobject (global_State *g, LuaObject *o);
 
@@ -137,7 +137,7 @@ static int iscleared (const TValue *o) {
     return 0;
   }
   
-  return iswhite(gcvalue(o));
+  return gcvalue(o)->isWhite();
 }
 
 
@@ -147,7 +147,7 @@ static int iscleared (const TValue *o) {
 */
 void luaC_barrier_ (LuaObject *o, LuaObject *v) {
   global_State *g = thread_G;
-  assert(isblack(o) && iswhite(v) && !isdead(v) && !isdead(o));
+  assert(o->isBlack() && v->isWhite() && !v->isDead() && !o->isDead());
   assert(isgenerational(g) || g->gcstate != GCSpause);
   assert(o->tt != LUA_TTABLE);
   if (keepinvariant(g))  /* must keep invariant? */
@@ -168,7 +168,7 @@ void luaC_barrier_ (LuaObject *o, LuaObject *v) {
 void luaC_barrierback_ (LuaObject *o) {
   global_State *g = thread_G;
 
-  assert(isblack(o) && !isdead(o) && o->tt == LUA_TTABLE);
+  assert(o->isBlack() && !o->isDead() && o->tt == LUA_TTABLE);
   black2gray(o);  /* make object gray (again) */
 
   o->next_gray_ = g->grayagain;
@@ -186,7 +186,7 @@ void luaC_barrierback_ (LuaObject *o) {
 */
 void luaC_barrierproto_ (Proto *p, Closure *c) {
   global_State *g = thread_G;
-  assert(isblack(p));
+  assert(p->isBlack());
   if (p->cache == NULL) {  /* first time? */
     luaC_objbarrier(L, p, c);
   }
@@ -204,12 +204,12 @@ void luaC_barrierproto_ (Proto *p, Closure *c) {
 */
 void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
   // open upvalues are never black
-  assert(!isblack(uv));
+  assert(!uv->isBlack());
 
-  if (isgray(uv)) {
+  if (uv->isGray()) {
     if (keepinvariant(g)) {
-      resetoldbit(uv);  /* see MOVE OLD rule */
-      gray2black(uv);  /* it is being visited now */
+      uv->resetOldBit();  /* see MOVE OLD rule */
+      uv->grayToBlack();  /* it is being visited now */
       markvalue(g, uv->v);
     }
     else {
@@ -238,7 +238,7 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
 ** linked in 'headuv' list.)
 */
 static void reallymarkobject (global_State *g, LuaObject *o) {
-  assert(iswhite(o) && !isdead(o));
+  assert(o->isWhite() && !o->isDead());
   white2gray(o);
   switch (o->tt) {
     case LUA_TSTRING: {
@@ -248,14 +248,14 @@ static void reallymarkobject (global_State *g, LuaObject *o) {
       Table *mt = gco2u(o)->metatable_;
       markobject(g, mt);
       markobject(g, gco2u(o)->env_);
-      gray2black(o);  /* all pointers marked */
+      o->grayToBlack();  /* all pointers marked */
       return;
     }
     case LUA_TUPVAL: {
       UpVal *uv = gco2uv(o);
       markvalue(g, uv->v);
       if (uv->v == &uv->value)  /* closed? (open upvalues remain gray) */
-        gray2black(o);  /* make it black */
+        o->grayToBlack();  /* make it black */
       return;
     }
     case LUA_TFUNCTION:
@@ -300,7 +300,7 @@ static void markbeingfnz (global_State *g) {
 static void remarkupvals (global_State *g) {
   UpVal *uv;
   for (uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {
-    if (isgray(uv))
+    if (uv->isGray())
       markvalue(g, uv->v);
   }
 }
@@ -495,7 +495,7 @@ static int traversetable (global_State *g, Table *h) {
 
 
 static int traverseproto (global_State *g, Proto *f) {
-  if (f->cache && iswhite(f->cache))
+  if (f->cache && f->cache->isWhite())
     f->cache = NULL;  /* allow cache to be collected */
   stringmark(f->source);
   for (size_t i = 0; i < f->constants.size(); i++)  /* mark literals */
@@ -558,8 +558,8 @@ static int propagatemark (global_State *g) {
 
   // make it black
   // (why do we make it black _before_ we traverse its children?)
-  assert(isgray(o));
-  gray2black(o);
+  assert(o->isGray());
+  o->grayToBlack();
 
   // traverse its children and add them to the gray list(s)
   switch (o->tt) {
@@ -739,7 +739,6 @@ static void sweepthread (lua_State *L1) {
 */
 static LuaObject** sweeplist (LuaObject **p, size_t count) {
   global_State *g = thread_G;
-  int ow = otherwhite();
   int toclear, toset;  /* bits to clear and to set in all live objects */
   int tostop;  /* stop sweep when this is true */
   l_mem debt = g->GCdebt;  /* current debt */
@@ -750,26 +749,26 @@ static LuaObject** sweeplist (LuaObject **p, size_t count) {
   }
   else {  /* normal mode */
     toclear = maskcolors;  /* clear all color bits + old bit */
-    toset = luaC_white(g);  /* make object white */
+    toset = thread_G->currentwhite & WHITEBITS;  /* make object white */
     tostop = 0;  /* do not stop */
   }
   while (*p != NULL && count-- > 0) {
     LuaObject *curr = *p;
-    int marked = curr->marked;
-    if (isdeadm(ow, marked)) {  /* is 'curr' dead? */
+    if (curr->isDead()) {  /* is 'curr' dead? */
       *p = curr->next;  /* remove 'curr' from list */
       freeobj(curr);  /* erase 'curr' */
     }
     else {
-      if (curr->tt == LUA_TTHREAD)
+      if (curr->tt == LUA_TTHREAD) {
         sweepthread(gco2th(curr));  /* sweep thread's upvalues */
-      if (testbits(marked, tostop)) {
+      }
+      if (testbits(curr->marked, tostop)) {
         static LuaObject *nullp = NULL;
         p = &nullp;  /* stop sweeping this list */
         break;
       }
       /* update marks */
-      curr->marked = cast_byte((marked & toclear) | toset);
+      curr->marked = cast_byte((curr->marked & toclear) | toset);
       p = &curr->next;  /* go to next element */
     }
   }
@@ -865,7 +864,7 @@ static void separatetobefnz (int all) {
   while ((curr = *p) != NULL) {  /* traverse all finalizable objects */
     assert(!isfinalized(curr));
     assert(testbit(curr->marked, SEPARATED));
-    if (!(all || iswhite(curr)))  /* not being collected? */
+    if (!(all || curr->isWhite()))  /* not being collected? */
       p = &curr->next;  /* don't bother with it */
     else {
       l_setbit(curr->marked, FINALIZEDBIT); /* won't be finalized again */
@@ -897,7 +896,7 @@ void luaC_checkfinalizer (LuaObject *o, Table *mt) {
     o->next = g->finobj;  /* link it in list 'finobj' */
     g->finobj = o;
     l_setbit(o->marked, SEPARATED);  /* mark it as such */
-    resetoldbit(o);  /* see MOVE OLD rule */
+    o->resetOldBit();  /* see MOVE OLD rule */
   }
 }
 
@@ -943,7 +942,7 @@ void luaC_changemode (lua_State *L, int mode) {
 static void callallpendingfinalizers (int propagateerrors) {
   global_State *g = thread_G;
   while (g->tobefnz) {
-    resetoldbit(g->tobefnz);
+    g->tobefnz->resetOldBit();
     GCTM(propagateerrors);
   }
 }
@@ -968,7 +967,7 @@ void luaC_freeallobjects () {
 static void atomic () {
   global_State *g = thread_G;
   LuaObject *origweak, *origall;
-  assert(!iswhite(g->mainthread));
+  assert(!g->mainthread->isWhite());
   markobject(g, thread_L);  /* mark running thread */
   /* registry and global metatables may be changed by API */
   markvalue(g, &g->l_registry);
@@ -997,7 +996,7 @@ static void atomic () {
   clearvalues(g->allweak, origall);
   g->sweepstrgc = 0;  /* prepare to sweep strings */
   g->gcstate = GCSsweepstring;
-  g->currentwhite = cast_byte(otherwhite());  /* flip current white */
+  g->currentwhite ^= WHITEBITS;  /* flip current white */
 }
 
 
@@ -1007,7 +1006,7 @@ static l_mem singlestep () {
     case GCSpause: {
       if (!isgenerational(g)) markroot(g);  /* start a new collection */
       /* in any case, root must be marked */
-      assert(!iswhite(g->mainthread) && !iswhite(gcvalue(&g->l_registry)));
+      assert(!g->mainthread->isWhite() && !gcvalue(&g->l_registry)->isWhite());
       g->gcstate = GCSpropagate;
       return GCROOTCOST;
     }

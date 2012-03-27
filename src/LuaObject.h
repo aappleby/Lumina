@@ -10,12 +10,16 @@ public:
 
   void linkGC(LuaObject*& gcHead);
 
-  bool isDead();
   bool isDeadKey() { return tt == LUA_TDEADKEY; }
 
+  bool isDead();
   bool isBlack();
   bool isWhite();
   bool isGray();
+
+  void changeWhite();
+  void grayToBlack();
+  void resetOldBit();
 
   LuaObject *next;
   LuaObject *next_gray_;

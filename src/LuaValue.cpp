@@ -25,6 +25,7 @@ void TValue::operator = ( TValue * v )
 
 void TValue::sanitycheck() {
   if(isCollectable()) {
+    assert((gc->marked & 3) != 3);
     assert(basetype() == gc->tt);
     assert(!gc->isDead());
   }

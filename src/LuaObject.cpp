@@ -12,7 +12,8 @@ int LuaObject::instanceCounts[256];
 LuaObject::LuaObject(int type) {
 
   next = NULL;
-  if(thread_G) marked = luaC_white(thread_G);
+  marked = 0;
+  if(thread_G) marked = thread_G->currentwhite & WHITEBITS;
   tt = type;
 
   LuaObject::instanceCounts[tt]++;
@@ -34,16 +35,25 @@ bool LuaObject::isDead() {
 }
 
 bool LuaObject::isBlack() {
-  if(marked & (1 << BLACKBIT)) return true;
-  return false;
+  return marked & (1 << BLACKBIT) ? true : false;
 }
 
 bool LuaObject::isWhite() {
-  if(marked & (1 << WHITE0BIT)) return true;
-  if(marked & (1 << WHITE1BIT)) return true;
-  return false;
+  return marked & ((1 << WHITE0BIT) | (1 << WHITE1BIT)) ? true : false;
 }
 
 bool LuaObject::isGray() {
   return !isBlack() && !isWhite();
+}
+
+void LuaObject::changeWhite() {
+  marked ^= WHITEBITS;
+}
+
+void LuaObject::grayToBlack() {
+  marked |= (1 << BLACKBIT);
+}
+
+void LuaObject::resetOldBit() {
+  marked &= ~(1 << OLDBIT);
 }

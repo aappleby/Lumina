@@ -186,7 +186,6 @@ public:
 /* Macros for internal tests */
 #define righttt(obj)		(ttypenv(obj) == gcvalue(obj)->tt)
 
-//#define checkliveness(obj) assert(!iscollectable(obj) || (righttt(obj) && !isdead(gcvalue(obj))))
 #define checkliveness(v) ((v)->sanitycheck())
 
 
