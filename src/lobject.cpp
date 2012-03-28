@@ -73,7 +73,7 @@ int luaO_ceillog2 (unsigned int x) {
 
 lua_Number luaO_arith (int op, lua_Number v1, lua_Number v2) {
   switch (op) {
-    case LUA_OPADD: return luai_numadd(NULL, v1, v2);
+    case LUA_OPADD: return v1 + v2;
     case LUA_OPSUB: return luai_numsub(NULL, v1, v2);
     case LUA_OPMUL: return luai_nummul(NULL, v1, v2);
     case LUA_OPDIV: return luai_numdiv(NULL, v1, v2);
@@ -201,12 +201,12 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
         break;
       }
       case 'd': {
-        setnvalue(L->top, cast_num(va_arg(argp, int)));
+        L->top[0] = va_arg(argp, int);
         incr_top(L);
         break;
       }
       case 'f': {
-        setnvalue(L->top, cast_num(va_arg(argp, lua_Number)));
+        L->top[0] = va_arg(argp, lua_Number);
         incr_top(L);
         break;
       }

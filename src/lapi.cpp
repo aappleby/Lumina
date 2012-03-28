@@ -321,8 +321,8 @@ void  lua_arith (lua_State *L, int op) {
   }
   o1 = L->top - 2;
   o2 = L->top - 1;
-  if (ttisnumber(o1) && ttisnumber(o2)) {
-    changenvalue(o1, luaO_arith(op, nvalue(o1), nvalue(o2)));
+  if (o1->isNumber() && o2->isNumber()) {
+    changenvalue(o1, luaO_arith(op, o1->getNumber(), o2->getNumber()));
   }
   else
     luaV_arith(L, o1, o1, o2, cast(TMS, op - LUA_OPADD + TM_ADD));
@@ -354,7 +354,7 @@ lua_Number lua_tonumberx (lua_State *L, int idx, int *isnum) {
   const TValue *o = index2addr(L, idx);
   if (tonumber(o, &n)) {
     if (isnum) *isnum = 1;
-    return nvalue(o);
+    return o->getNumber();
   }
   else {
     if (isnum) *isnum = 0;
@@ -369,7 +369,7 @@ lua_Integer lua_tointegerx (lua_State *L, int idx, int *isnum) {
   const TValue *o = index2addr(L, idx);
   if (tonumber(o, &n)) {
     lua_Integer res;
-    lua_Number num = nvalue(o);
+    lua_Number num = o->getNumber();
     lua_number2integer(res, num);
     if (isnum) *isnum = 1;
     return res;
@@ -387,7 +387,7 @@ lua_Unsigned lua_tounsignedx (lua_State *L, int idx, int *isnum) {
   const TValue *o = index2addr(L, idx);
   if (tonumber(o, &n)) {
     lua_Unsigned res;
-    lua_Number num = nvalue(o);
+    lua_Number num = o->getNumber();
     lua_number2unsigned(res, num);
     if (isnum) *isnum = 1;
     return res;
@@ -494,7 +494,7 @@ void lua_pushnil (lua_State *L) {
 
 void lua_pushnumber (lua_State *L, lua_Number n) {
   THREAD_CHECK(L);
-  setnvalue(L->top, n);
+  L->top[0] = n;
   luai_checknum(L, L->top,
     luaG_runerror("C API - attempt to push a signaling NaN"));
   api_incr_top(L);
@@ -503,7 +503,7 @@ void lua_pushnumber (lua_State *L, lua_Number n) {
 
 void lua_pushinteger (lua_State *L, lua_Integer n) {
   THREAD_CHECK(L);
-  setnvalue(L->top, cast_num(n));
+  L->top[0] = n;
   api_incr_top(L);
 }
 
@@ -512,7 +512,7 @@ void lua_pushunsigned (lua_State *L, lua_Unsigned u) {
   THREAD_CHECK(L);
   lua_Number n;
   n = lua_unsigned2number(u);
-  setnvalue(L->top, n);
+  L->top[0] = n;
   api_incr_top(L);
 }
 

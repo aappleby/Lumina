@@ -559,7 +559,7 @@ static int table_query (lua_State *L) {
     Node* n = t->getNode(i);
     if (!ttisnil(&n->i_val) ||
         ttisnil(&n->i_key) ||
-        ttisnumber(&n->i_key)) {
+        n->i_key.isNumber()) {
       pushobject(L, &n->i_key);
     }
     else

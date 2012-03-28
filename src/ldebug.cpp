@@ -523,8 +523,8 @@ l_noret luaG_typeerror (const TValue *o, const char *op) {
 
 
 l_noret luaG_concaterror (StkId p1, StkId p2) {
-  if (ttisstring(p1) || ttisnumber(p1)) p1 = p2;
-  assert(!ttisstring(p1) && !ttisnumber(p2));
+  if (ttisstring(p1) || p1->isNumber()) p1 = p2;
+  assert(!ttisstring(p1) && !p2->isNumber());
   luaG_typeerror(p1, "concatenate");
 }
 

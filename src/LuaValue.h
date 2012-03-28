@@ -150,7 +150,6 @@ public:
 
 /* Macros to test type */
 #define checktag(o,t)		      (rttype(o) == (t))
-#define ttisnumber(o)		      checktag((o), LUA_TNUMBER)
 #define ttisnil(o)		        checktag((o), LUA_TNIL)
 #define ttisboolean(o)		    checktag((o), LUA_TBOOLEAN)
 #define ttislightuserdata(o)	checktag((o), LUA_TLIGHTUSERDATA)
@@ -168,7 +167,7 @@ public:
 #define ttisequal(o1,o2)	    (rttype(o1) == rttype(o2))
 
 /* Macros to access values */
-#define nvalue(o)	            check_exp(ttisnumber(o), (o)->n)
+#define nvalue(o)	            check_exp((o)->isNumber(), (o)->n)
 #define gcvalue(o)	          check_exp(iscollectable(o), (o)->gc)
 #define pvalue(o)	            check_exp(ttislightuserdata(o), (o)->p)
 #define tsvalue(o)	          check_exp(ttisstring(o), reinterpret_cast<TString*>((o)->gc))
@@ -199,7 +198,7 @@ public:
 #define setnvalue(obj,x) \
   { TValue *io=(obj); io->n=(x); io->tt_=LUA_TNUMBER; }
 
-#define changenvalue(o,x)	check_exp(ttisnumber(o), (o)->n=(x))
+#define changenvalue(o,x)	check_exp(o->isNumber(), (o)->n=(x))
 
 #define setnilvalue(obj) { TValue* io=(obj); io->bytes = 0; io->tt_ = LUA_TNIL; }
 

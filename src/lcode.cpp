@@ -324,8 +324,8 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   TValue *idx = luaH_set(fs->h, key);
   Proto *f = fs->f;
   int k, oldsize;
-  if (ttisnumber(idx)) {
-    lua_Number n = nvalue(idx);
+  if (idx->isNumber()) {
+    lua_Number n = idx->getNumber();
     lua_number2int(k, n);
     if (luaV_rawequalobj(&f->constants[k], v))
       return k;
