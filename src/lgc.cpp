@@ -829,8 +829,7 @@ static void dothecall (lua_State *L, void *ud) {
 static void GCTM (int propagateerrors) {
   lua_State* L = thread_L;
   global_State *g = thread_G;
-  TValue v;
-  setgcovalue(&v, udata2finalize(g));
+  TValue v = TValue(udata2finalize(g));
   const TValue *tm = luaT_gettmbyobj(&v, TM_GC);
   if(tm == NULL) return;
   if(!tm->isFunction()) return;

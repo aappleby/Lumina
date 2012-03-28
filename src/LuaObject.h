@@ -31,7 +31,10 @@ public:
 
   //----------
 
-  bool isThread() { return tt == LUA_TTHREAD; }
+  //----------
+
+  bool isUserdata() { return tt == LUA_TUSERDATA; }
+  bool isThread()   { return tt == LUA_TTHREAD; }
 
   //----------
   // Flag read/write

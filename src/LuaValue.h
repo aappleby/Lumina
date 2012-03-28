@@ -12,12 +12,8 @@ public:
   explicit TValue(int v)    { tt_ = LUA_TNUMBER; n = v; }
   explicit TValue(double v) { tt_ = LUA_TNUMBER; n = v; }
 
-  explicit TValue(TString* v) {
-    bytes = 0;
-    tt_ = ctb(LUA_TSTRING);
-    gc = (LuaObject*)v;
-    sanityCheck();
-  }
+  explicit TValue(TString* v);
+  explicit TValue(LuaObject* o);
 
   // Conversion operators
 
@@ -25,8 +21,10 @@ public:
 
   // Assignment operators
 
-  void operator = ( TValue const & V );
-  void operator = ( TValue * pV );
+  void operator = (TValue const & V);
+  void operator = (TValue * pV);
+
+  void operator = (LuaObject* o);
 
   void operator = (double v)  { tt_ = LUA_TNUMBER; n = v; }
   void operator = (int v)     { tt_ = LUA_TNUMBER; n = (double)v; }
