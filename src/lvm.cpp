@@ -307,15 +307,15 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
       return t1->getNumber() == t2->getNumber();
     }
     case LUA_TBOOLEAN: return t1->getBool() == t2->getBool();  /* true must be 1 !! */
-    case LUA_TLIGHTUSERDATA: return pvalue(t1) == pvalue(t2);
-    case LUA_TLCF: return fvalue(t1) == fvalue(t2);
+    case LUA_TLIGHTUSERDATA: return t1->getLightUserdata() == t2->getLightUserdata();
+    case LUA_TLCF: return t1->getLightFunction() == t2->getLightFunction();
     case LUA_TSTRING: return t1->getString() == t2->getString();
 
     case LUA_TUSERDATA: {
-      if (uvalue(t1) == uvalue(t2)) return 1;
+      if (t1->getUserdata() == t2->getUserdata()) return 1;
       if (L == NULL) return 0;
 
-      const TValue* tm = get_equalTM(L, uvalue(t1)->metatable_, uvalue(t2)->metatable_, TM_EQ);
+      const TValue* tm = get_equalTM(L, t1->getUserdata()->metatable_, t2->getUserdata()->metatable_, TM_EQ);
       if (tm == NULL) return 0;  /* no TM? */
 
       callTM(L, tm, t1, t2, L->top, 1);  /* call TM */
@@ -593,7 +593,7 @@ void luaV_execute (lua_State *L) {
   StkId base;
  newframe:  /* reentry point when frame changes (call/return) */
   assert(ci == L->ci_);
-  cl = clLvalue(ci->func);
+  cl = ci->func->getLClosure();
   k = cl->p->constants.begin();
   base = ci->base;
   /* main loop of interpreter */

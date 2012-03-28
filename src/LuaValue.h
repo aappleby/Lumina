@@ -108,6 +108,13 @@ public:
 
   Table* getTable() const { assert(isTable()); return reinterpret_cast<Table*>(gc); }
 
+  Udata* getUserdata() const { assert(isUserdata()); return reinterpret_cast<Udata*>(gc); }
+  void* getLightUserdata() const { assert(isLightUserdata()); return p; }
+
+  lua_State* getThread() const { assert(isThread()); return reinterpret_cast<lua_State*>(gc); }
+
+  lua_CFunction getLightFunction() const { assert(isLightFunction()); return f; }
+
   //----------
 
   int32_t rawtype() const  { return tt_; }
@@ -162,14 +169,7 @@ public:
 #define ttisequal(o1,o2)	    (rttype(o1) == rttype(o2))
 
 /* Macros to access values */
-#define pvalue(o)	            check_exp((o)->isLightUserdata(), (o)->p)
-#define uvalue(o)	            check_exp((o)->isUserdata(), reinterpret_cast<Udata*>((o)->gc))
-#define clvalue(o)	          check_exp((o)->isClosure(), reinterpret_cast<Closure*>((o)->gc))
-#define clLvalue(o)	          check_exp((o)->isLClosure(), reinterpret_cast<Closure*>((o)->gc))
-#define clCvalue(o)	          check_exp((o)->isCClosure(), reinterpret_cast<Closure*>((o)->gc))
-#define fvalue(o)	            check_exp((o)->isLightFunction(), (o)->f)
 #define hvalue(o)	            check_exp((o)->isTable(), reinterpret_cast<Table*>((o)->gc))
-#define thvalue(o)	          check_exp((o)->isThread(), reinterpret_cast<lua_State*>((o)->gc))
 
 /* a dead value may get the 'gc' field, but cannot access its contents */
 #define deadvalue(o)	        check_exp((o)->isDeadKey(), cast(void *, (o)->gc))

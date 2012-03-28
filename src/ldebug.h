@@ -16,7 +16,7 @@
 #define getfuncline(f,pc)	(((f)->lineinfo.size()) ? (f)->lineinfo[pc] : 0)
 
 /* Active Lua function (given call info) */
-#define ci_func(ci)		(clLvalue((ci)->func))
+#define ci_func(ci)		((ci)->func->getLClosure())
 
 
 l_noret luaG_typeerror (const TValue *o, const char *opname);

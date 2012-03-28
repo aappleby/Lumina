@@ -208,7 +208,7 @@ CallInfo* next_ci(lua_State* L) {
 
 int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
   ptrdiff_t funcr = savestack(L, func);
-  lua_CFunction f = fvalue(func);
+  lua_CFunction f = func->getLightFunction();
   L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
   CallInfo* ci = next_ci(L);  /* now 'enter' new function */
   ci->nresults = nresults;
@@ -226,7 +226,7 @@ int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
 
 int luaD_precallC(lua_State* L, StkId func, int nresults) {
   ptrdiff_t funcr = savestack(L, func);
-  lua_CFunction f = clCvalue(func)->f;
+  lua_CFunction f = func->getCClosure()->f;
   L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
   CallInfo* ci = next_ci(L);  /* now 'enter' new function */
   ci->nresults = nresults;
@@ -245,7 +245,7 @@ int luaD_precallC(lua_State* L, StkId func, int nresults) {
 int luaD_precallLua(lua_State* L, StkId func, int nresults) {
   ptrdiff_t funcr = savestack(L, func);
   StkId base;
-  Proto *p = clLvalue(func)->p;
+  Proto *p = func->getLClosure()->p;
   L->checkstack(p->maxstacksize);
   func = restorestack(L, funcr);
   int n = cast_int(L->top - func) - 1;  /* number of real arguments */

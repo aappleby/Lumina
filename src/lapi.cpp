@@ -221,7 +221,7 @@ static void moveto (lua_State *L, TValue *fr, int idx) {
   api_checkvalidindex(to);
   setobj(to, fr);
   if (idx < LUA_REGISTRYINDEX)  /* function upvalue? */
-    luaC_barrier(clCvalue(L->ci_->func), fr);
+    luaC_barrier(L->ci_->func->getCClosure(), fr);
   /* LUA_REGISTRYINDEX does not need gc barrier
      (collector revisits it before finishing collection) */
 }
@@ -427,7 +427,7 @@ size_t lua_rawlen (lua_State *L, int idx) {
   StkId o = index2addr(L, idx);
   switch (o->basetype()) {
     case LUA_TSTRING: return o->getString()->getLen();
-    case LUA_TUSERDATA: return uvalue(o)->len_;
+    case LUA_TUSERDATA: return o->getUserdata()->len_;
     case LUA_TTABLE: return luaH_getn(hvalue(o));
     default: return 0;
   }
@@ -437,9 +437,9 @@ size_t lua_rawlen (lua_State *L, int idx) {
 lua_CFunction lua_tocfunction (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
-  if (o->isLightFunction()) return fvalue(o);
+  if (o->isLightFunction()) return o->getLightFunction();
   else if (o->isCClosure())
-    return clCvalue(o)->f;
+    return o->getCClosure()->f;
   else return NULL;  /* not a C function */
 }
 
@@ -448,8 +448,8 @@ void *lua_touserdata (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
   switch (ttypenv(o)) {
-    case LUA_TUSERDATA: return (uvalue(o)->buf_);
-    case LUA_TLIGHTUSERDATA: return pvalue(o);
+    case LUA_TUSERDATA: return (o->getUserdata()->buf_);
+    case LUA_TLIGHTUSERDATA: return o->getLightUserdata();
     default: return NULL;
   }
 }
@@ -458,7 +458,7 @@ void *lua_touserdata (lua_State *L, int idx) {
 lua_State *lua_tothread (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
-  return (!o->isThread()) ? NULL : thvalue(o);
+  return (!o->isThread()) ? NULL : o->getThread();
 }
 
 
@@ -467,10 +467,10 @@ const void *lua_topointer (lua_State *L, int idx) {
   StkId o = index2addr(L, idx);
   switch (ttype(o)) {
     case LUA_TTABLE: return hvalue(o);
-    case LUA_TLCL: return clLvalue(o);
-    case LUA_TCCL: return clCvalue(o);
-    case LUA_TLCF: return cast(void *, cast(size_t, fvalue(o)));
-    case LUA_TTHREAD: return thvalue(o);
+    case LUA_TLCL: return o->getLClosure();
+    case LUA_TCCL: return o->getCClosure();
+    case LUA_TLCF: return cast(void *, cast(size_t, o->getLightFunction()));
+    case LUA_TTHREAD: return o->getThread();
     case LUA_TUSERDATA:
     case LUA_TLIGHTUSERDATA:
       return lua_touserdata(L, idx);
@@ -695,7 +695,7 @@ Table* lua_getmetatable( const TValue* o ) {
   int type = o->basetype();
   switch (type) {
     case LUA_TTABLE:    return hvalue(o)->metatable;
-    case LUA_TUSERDATA: return uvalue(o)->metatable_;
+    case LUA_TUSERDATA: return o->getUserdata()->metatable_;
     default:            return thread_G->mt[type];
   }
 }
@@ -723,8 +723,8 @@ void lua_getuservalue (lua_State *L, int idx) {
   o = index2addr(L, idx);
   api_checkvalidindex(o);
   api_check(o->isUserdata(), "userdata expected");
-  if (uvalue(o)->env_) {
-    sethvalue(L, L->top, uvalue(o)->env_);
+  if (o->getUserdata()->env_) {
+    sethvalue(L, L->top, o->getUserdata()->env_);
   } else {
     L->top[0] = TValue::nil;
   }
@@ -836,9 +836,9 @@ int lua_setmetatable (lua_State *L, int objindex) {
       break;
     }
     case LUA_TUSERDATA: {
-      uvalue(obj)->metatable_ = mt;
+      obj->getUserdata()->metatable_ = mt;
       if (mt) {
-        luaC_objbarrier(L, uvalue(obj), mt);
+        luaC_objbarrier(L, obj->getUserdata(), mt);
         luaC_checkfinalizer(obj->getObject(), mt);
       }
       break;
@@ -861,10 +861,10 @@ void lua_setuservalue (lua_State *L, int idx) {
   api_checkvalidindex(o);
   api_check(o->isUserdata(), "userdata expected");
   if (L->top[-1].isNil())
-    uvalue(o)->env_ = NULL;
+    o->getUserdata()->env_ = NULL;
   else {
     api_check(L->top[-1].isTable(), "table expected");
-    uvalue(o)->env_ = hvalue(L->top - 1);
+    o->getUserdata()->env_ = hvalue(L->top - 1);
     luaC_objbarrier(L, o->getObject(), hvalue(L->top - 1));
   }
   L->top--;
@@ -982,7 +982,7 @@ int lua_load (lua_State *L, lua_Reader reader, void *data,
   luaZ_init(L, &z, reader, data);
   status = luaD_protectedparser(L, &z, chunkname, mode);
   if (status == LUA_OK) {  /* no errors? */
-    Closure *f = clLvalue(L->top - 1);  /* get newly created function */
+    Closure *f = L->top[-1].getLClosure();  /* get newly created function */
     if (f->nupvalues == 1) {  /* does it have one upvalue? */
       /* get global table from registry */
       Table *reg = hvalue(&G(L)->l_registry);
@@ -1177,14 +1177,14 @@ static const char *aux_upvalue (StkId fi, int n, TValue **val,
                                 LuaObject **owner) {
   switch (ttype(fi)) {
     case LUA_TCCL: {  /* C closure */
-      Closure *f = clCvalue(fi);
+      Closure *f = fi->getCClosure();
       if (!(1 <= n && n <= f->nupvalues)) return NULL;
       *val = &f->pupvals_[n-1];
       if (owner) *owner = f;
       return "";
     }
     case LUA_TLCL: {  /* Lua closure */
-      Closure *f = clLvalue(fi);
+      Closure *f = fi->getLClosure();
       TString *name;
       Proto *p = f->p;
       if (!(1 <= n && n <= (int)p->upvalues.size())) return NULL;
@@ -1234,7 +1234,7 @@ static UpVal **getupvalref (lua_State *L, int fidx, int n, Closure **pf) {
   Closure *f;
   StkId fi = index2addr(L, fidx);
   api_check(fi->isLClosure(), "Lua function expected");
-  f = clLvalue(fi);
+  f = fi->getLClosure();
   api_check((1 <= n && n <= (int)f->p->upvalues.size()), "invalid upvalue index");
   if (pf) *pf = f;
   return &f->ppupvals_[n - 1];  /* get its upvalue pointer */
@@ -1249,7 +1249,7 @@ void *lua_upvalueid (lua_State *L, int fidx, int n) {
       return *getupvalref(L, fidx, n, NULL);
     }
     case LUA_TCCL: {  /* C closure */
-      Closure *f = clCvalue(fi);
+      Closure *f = fi->getCClosure();
       api_check(1 <= n && n <= f->nupvalues, "invalid upvalue index");
       return &f->pupvals_[n - 1];
     }
