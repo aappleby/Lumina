@@ -333,8 +333,7 @@ void luaH_setint (Table *t, int key, TValue *value) {
   if (p != luaO_nilobject)
     cell = cast(TValue *, p);
   else {
-    TValue k;
-    setnvalue(&k, cast_num(key));
+    TValue k = TValue(key);
     cell = luaH_newkey(t, &k);
   }
   setobj(cell, value);

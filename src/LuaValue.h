@@ -5,15 +5,10 @@
 class TValue {
 public:
 
-  TValue() {
-    tt_ = LUA_TNIL;
-    bytes = 0;
-  }
+  TValue() { tt_ = LUA_TNIL; bytes = 0; }
 
-  explicit TValue(int v) {
-    tt_ = LUA_TNUMBER;
-    n = v;
-  }
+  explicit TValue(int v)    { tt_ = LUA_TNUMBER; n = v; }
+  explicit TValue(double v) { tt_ = LUA_TNUMBER; n = v; }
 
   explicit TValue(TString* v) {
     bytes = 0;
@@ -31,9 +26,11 @@ public:
   void operator = ( TValue const & V );
   void operator = ( TValue * pV );
 
-  void operator = (double v) { tt_ = LUA_TNUMBER; n = v; }
-  void operator = (int v)    { tt_ = LUA_TNUMBER; n = (double)v; }
-  void operator = (bool v)   { tt_ = LUA_TBOOLEAN; bytes = v ? 1 : 0; }
+  void operator = (double v)    { tt_ = LUA_TNUMBER; n = v; }
+  void operator = (int v)       { tt_ = LUA_TNUMBER; n = (double)v; }
+  void operator = (size_t v)    { tt_ = LUA_TNUMBER; n = (double)v; }
+  void operator = (ptrdiff_t v) { tt_ = LUA_TNUMBER; n = (double)v; }
+  void operator = (bool v)      { tt_ = LUA_TBOOLEAN; bytes = v ? 1 : 0; }
 
   void operator = (TString* v ) {
     bytes = 0;
@@ -167,7 +164,6 @@ public:
 #define ttisequal(o1,o2)	    (rttype(o1) == rttype(o2))
 
 /* Macros to access values */
-#define nvalue(o)	            check_exp((o)->isNumber(), (o)->n)
 #define gcvalue(o)	          check_exp(iscollectable(o), (o)->gc)
 #define pvalue(o)	            check_exp(ttislightuserdata(o), (o)->p)
 #define tsvalue(o)	          check_exp(ttisstring(o), reinterpret_cast<TString*>((o)->gc))
@@ -194,11 +190,6 @@ public:
 
 /* Macros to set values */
 #define settt_(o,t)	((o)->tt_=(t))
-
-#define setnvalue(obj,x) \
-  { TValue *io=(obj); io->n=(x); io->tt_=LUA_TNUMBER; }
-
-#define changenvalue(o,x)	check_exp(o->isNumber(), (o)->n=(x))
 
 #define setnilvalue(obj) { TValue* io=(obj); io->bytes = 0; io->tt_ = LUA_TNIL; }
 

@@ -88,7 +88,7 @@ bool Table::keyToTableIndex(TValue key, int& outIndex) {
   Node* node = findNode(key);
   if(node == NULL) return false;
   
-  outIndex = (node - hashtable.begin()) + array.size();
+  outIndex = (int)(node - hashtable.begin()) + (int)array.size();
   return true;
 }
 
@@ -100,7 +100,7 @@ bool Table::tableIndexToKeyVal(int index, TValue& outKey, TValue& outVal) {
     return true;
   }
 
-  index -= array.size();
+  index -= (int)array.size();
   if(index < (int)hashtable.size()) {
     outKey = hashtable[index].i_key;
     outVal = hashtable[index].i_val;

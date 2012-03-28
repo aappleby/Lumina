@@ -322,7 +322,7 @@ void  lua_arith (lua_State *L, int op) {
   o1 = L->top - 2;
   o2 = L->top - 1;
   if (o1->isNumber() && o2->isNumber()) {
-    changenvalue(o1, luaO_arith(op, o1->getNumber(), o2->getNumber()));
+    o1[0] = luaO_arith(op, o1->getNumber(), o2->getNumber());
   }
   else
     luaV_arith(L, o1, o1, o2, cast(TMS, op - LUA_OPADD + TM_ADD));

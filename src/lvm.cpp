@@ -40,7 +40,7 @@ const TValue *luaV_tonumber (const TValue *obj, TValue *n) {
   lua_Number num;
   if (obj->isNumber()) return obj;
   if (ttisstring(obj) && luaO_str2d(tsvalue(obj)->c_str(), tsvalue(obj)->getLen(), &num)) {
-    setnvalue(n, num);
+    n[0] = num;
     return n;
   }
   else
@@ -387,11 +387,11 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
       Table *h = hvalue(rb);
       tm = fasttm(h->metatable, TM_LEN);
       if (tm) break;  /* metamethod? break switch to call it */
-      setnvalue(ra, cast_num(luaH_getn(h)));  /* else primitive len */
+      ra[0] = luaH_getn(h);  /* else primitive len */
       return;
     }
     case LUA_TSTRING: {
-      setnvalue(ra, cast_num(tsvalue(rb)->getLen()));
+      ra[0] = tsvalue(rb)->getLen();
       return;
     }
     default: {  /* try metamethod */
@@ -413,7 +413,7 @@ void luaV_arith (lua_State *L, StkId ra, const TValue *rb,
   if ((b = luaV_tonumber(rb, &tempb)) != NULL &&
       (c = luaV_tonumber(rc, &tempc)) != NULL) {
     lua_Number res = luaO_arith(op - TM_ADD + LUA_OPADD, b->getNumber(), c->getNumber());
-    setnvalue(ra, res);
+    ra[0] = res;
   }
   else if (!call_binTM(L, rb, rc, ra, op))
     luaG_aritherror(rb, rc);
@@ -569,7 +569,7 @@ void luaV_finishOp (lua_State *L) {
         TValue *rc = RKC(i); \
         if (rb->isNumber() && rc->isNumber()) { \
           lua_Number nb = rb->getNumber(), nc = rc->getNumber(); \
-          setnvalue(ra, op(L, nb, nc)); \
+          ra[0] = op(L, nb, nc); \
         } \
         else { Protect(luaV_arith(L, ra, rb, rc, tm)); } }
 
@@ -689,7 +689,7 @@ void luaV_execute (lua_State *L) {
         TValue *rb = RB(i);
         if (rb->isNumber()) {
           lua_Number nb = rb->getNumber();
-          setnvalue(ra, luai_numunm(L, nb));
+          ra[0] = -nb;
         }
         else {
           Protect(luaV_arith(L, ra, rb, rb, TM_UNM));
@@ -827,8 +827,8 @@ void luaV_execute (lua_State *L) {
         if (luai_numlt(L, 0, step) ? luai_numle(L, idx, limit)
                                    : luai_numle(L, limit, idx)) {
           ci->savedpc += GETARG_sBx(i);  /* jump back */
-          setnvalue(ra, idx);  /* update internal index... */
-          setnvalue(ra+3, idx);  /* ...and external index */
+          ra[0] = idx;  /* update internal index... */
+          ra[3] = idx;  /* ...and external index */
         }
       )
       vmcase(OP_FORPREP,
@@ -841,7 +841,7 @@ void luaV_execute (lua_State *L) {
           luaG_runerror(LUA_QL("for") " limit must be a number");
         else if (!tonumber(pstep, ra+2))
           luaG_runerror(LUA_QL("for") " step must be a number");
-        setnvalue(ra, luai_numsub(L, nvalue(ra), nvalue(pstep)));
+        ra[0] = ra->getNumber() - pstep->getNumber();
         ci->savedpc += GETARG_sBx(i);
       )
       vmcasenb(OP_TFORCALL,
