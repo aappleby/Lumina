@@ -26,11 +26,11 @@ public:
   void operator = ( TValue const & V );
   void operator = ( TValue * pV );
 
-  void operator = (double v)    { tt_ = LUA_TNUMBER; n = v; }
-  void operator = (int v)       { tt_ = LUA_TNUMBER; n = (double)v; }
-  void operator = (size_t v)    { tt_ = LUA_TNUMBER; n = (double)v; }
-  void operator = (ptrdiff_t v) { tt_ = LUA_TNUMBER; n = (double)v; }
-  void operator = (bool v)      { tt_ = LUA_TBOOLEAN; bytes = v ? 1 : 0; }
+  void operator = (double v)  { tt_ = LUA_TNUMBER; n = v; }
+  void operator = (int v)     { tt_ = LUA_TNUMBER; n = (double)v; }
+  void operator = (size_t v)  { tt_ = LUA_TNUMBER; n = (double)v; }
+  void operator = (int64_t v) { tt_ = LUA_TNUMBER; n = (double)v; }
+  void operator = (bool v)    { tt_ = LUA_TBOOLEAN; bytes = v ? 1 : 0; }
 
   void operator = (TString* v ) {
     bytes = 0;
@@ -59,6 +59,7 @@ public:
   bool isCollectable() const { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }
 
   bool isNil() const           { return rawtype() == LUA_TNIL; }
+  bool isNotNil() const        { return rawtype() != LUA_TNIL; }
   bool isBoolean() const       { return tagtype() == LUA_TBOOLEAN; }
   bool isLightUserdata() const { return tagtype() == LUA_TLIGHTUSERDATA; }
   bool isNumber() const        { return tagtype() == LUA_TNUMBER; }
@@ -85,7 +86,7 @@ public:
 
   //----------
 
-  int getInteger() const { assert(isInteger()); return (int)n; }
+  int getInteger() const { return (int)getNumber(); }
 
   double getNumber() const { assert(isNumber()); return n; }
 
@@ -116,7 +117,7 @@ public:
     void *p;         /* light userdata */
     int32_t b;           /* booleans */
     lua_CFunction f; /* light C functions */
-    lua_Number n;    /* numbers */
+    lua_Number n;
     uint64_t bytes;
     struct {
       uint32_t low;
@@ -179,7 +180,7 @@ public:
 /* a dead value may get the 'gc' field, but cannot access its contents */
 #define deadvalue(o)	        check_exp(ttisdeadkey(o), cast(void *, (o)->gc))
 
-#define l_isfalse(o)	(ttisnil(o) || (ttisboolean(o) && bvalue(o) == 0))
+#define l_isfalse(o)	((o)->isNil() || (ttisboolean(o) && bvalue(o) == 0))
 
 
 #define iscollectable(o)	(rttype(o) & BIT_ISCOLLECTABLE)

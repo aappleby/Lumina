@@ -99,7 +99,7 @@ static int numusearray (Table *t, int *nums) {
     }
     /* count elements in range (2^(lg-1), 2^lg] */
     for (; i <= lim; i++) {
-      if (!ttisnil(&t->array[i-1]))
+      if (!t->array[i-1].isNil())
         lc++;
     }
     nums[lg] += lc;
@@ -115,7 +115,7 @@ static int numusehash (Table *t, int *nums, int *pnasize) {
   int i = (int)t->hashtable.size();
   while (i--) {
     Node *n = t->getNode(i);
-    if (!ttisnil(&n->i_val)) {
+    if (!n->i_val.isNil()) {
       ause += countint(&n->i_key, nums);
       totaluse++;
     }
@@ -167,7 +167,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   // And finally re-insert the saved nodes.
   for (int i = (int)temphash.size() - 1; i >= 0; i--) {
     Node* old = &temphash[i];
-    if (!ttisnil(&old->i_val)) {
+    if (!old->i_val.isNil()) {
       TValue* key = &old->i_key;
       TValue* val = &old->i_val;
       TValue* n = luaH_set(t, key);
@@ -211,7 +211,7 @@ static Node *getfreepos (Table *t) {
   while (t->lastfree > 0) {
     t->lastfree--;
     Node* last = t->getNode(t->lastfree);
-    if (ttisnil(&last->i_key))
+    if (last->i_key.isNil())
       return last;
   }
   return NULL;  /* could not find a free place */
@@ -245,11 +245,11 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
   if(mp && mp->i_val.isNil()) {
     mp->i_key = *key;
     luaC_barrierback(t, key);
-    assert(ttisnil(&mp->i_val));
+    assert(mp->i_val.isNil());
     return &mp->i_val;
   }
 
-  if ((mp == NULL) || !ttisnil(&mp->i_val)) {  /* main position is taken? */
+  if ((mp == NULL) || !mp->i_val.isNil()) {  /* main position is taken? */
     Node *n = getfreepos(t);  /* get a free place */
     if (n == NULL) {  /* cannot find a free place? */
       rehash(t, key);  /* grow table */
@@ -276,7 +276,7 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
   }
   mp->i_key = *key;
   luaC_barrierback(t, key);
-  assert(ttisnil(&mp->i_val));
+  assert(mp->i_val.isNil());
   return &mp->i_val;
 }
 
@@ -343,20 +343,20 @@ static int unbound_search (Table *t, unsigned int j) {
   unsigned int i = j;  /* i is zero or a present index */
   j++;
   /* find `i' and `j' such that i is present and j is not */
-  while (!ttisnil(luaH_getint(t, j))) {
+  while (t->findValue(j)) {
     i = j;
     j *= 2;
     if (j > cast(unsigned int, MAX_INT)) {  /* overflow? */
       /* table was built with bad purposes: resort to linear search */
       i = 1;
-      while (!ttisnil(luaH_getint(t, i))) i++;
+      while (t->findValue(i)) i++;
       return i - 1;
     }
   }
   /* now do a binary search between them */
   while (j - i > 1) {
     unsigned int m = (i+j)/2;
-    if (ttisnil(luaH_getint(t, m))) j = m;
+    if (t->findValue(m) == NULL) j = m;
     else i = m;
   }
   return i;
@@ -369,12 +369,12 @@ static int unbound_search (Table *t, unsigned int j) {
 */
 int luaH_getn (Table *t) {
   unsigned int j = (unsigned int)t->array.size();
-  if (j > 0 && ttisnil(&t->array[j - 1])) {
+  if (j > 0 && t->array[j-1].isNil()) {
     /* there is a boundary in the array part: (binary) search for it */
     unsigned int i = 0;
     while (j - i > 1) {
       unsigned int m = (i+j)/2;
-      if (ttisnil(&t->array[m - 1])) j = m;
+      if (t->array[m-1].isNil()) j = m;
       else i = m;
     }
     return i;

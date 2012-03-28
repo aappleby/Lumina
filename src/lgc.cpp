@@ -52,7 +52,7 @@
 */
 #define stddebt(g)	(-cast(l_mem, gettotalbytes(g)/100) * g->gcpause)
 
-#define checkdeadkey(n)	assert(!ttisdeadkey(&n->i_key) || ttisnil(&n->i_val))
+#define checkdeadkey(n)	assert(!ttisdeadkey(&n->i_key) || n->i_val.isNil())
 
 
 #define checkconsistency(obj) assert(!iscollectable(obj) || righttt(obj))
@@ -75,7 +75,7 @@ static void reallymarkobject (global_State *g, LuaObject *o);
 // The key for this node is about to be garbage collected. Mark the
 // keyvalue as dead so we don't try and dereference it later.
 static void removeentry (TValue* key, TValue* val) {
-  assert(ttisnil(val));
+  assert(val->isNil());
   
   if (key->isWhite()) {
     key->setDeadKey();  /* unused and unmarked key; remove it */
@@ -306,7 +306,7 @@ struct tableTraverseInfo {
 
 void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
   tableTraverseInfo& info = *(tableTraverseInfo*)blob;
-  assert(!ttisdeadkey(key) || ttisnil(val));
+  assert(!ttisdeadkey(key) || val->isNil());
 
   if (val->isNil()) {
     removeentry(key,val);
@@ -325,7 +325,7 @@ void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
 
 void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
   tableTraverseInfo& info = *(tableTraverseInfo*)blob;
-  assert(!ttisdeadkey(key) || ttisnil(val));
+  assert(!ttisdeadkey(key) || val->isNil());
 
   // If the node's value is nil, mark the key as dead.
   if (val->isNil()) {
@@ -350,14 +350,14 @@ void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
 
 void traverseStrongNode(TValue* key, TValue* val, void* blob) {
   tableTraverseInfo& info = *(tableTraverseInfo*)blob;
-  assert(!ttisdeadkey(key) || ttisnil(val));
+  assert(!ttisdeadkey(key) || val->isNil());
 
   if (val->isNil()) {
     removeentry(key, val);  /* remove it */
     return;
   }
 
-  assert(!ttisnil(key));
+  assert(key->isNotNil());
   markvalue(thread_G, key);  /* mark key */
   markvalue(thread_G, val);  /* mark value */
 }
@@ -629,7 +629,7 @@ static void clearkeys (LuaObject *l) {
 
     for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
-      if (!ttisnil(&n->i_val) && (iscleared(&n->i_key))) {
+      if (n->i_val.isNotNil() && (iscleared(&n->i_key))) {
         setnilvalue(&n->i_val);  /* remove value ... */
         removeentry(&n->i_key, &n->i_val);  /* and remove entry from table */
       }
@@ -652,7 +652,7 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
     }
     for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
-      if (!ttisnil(&n->i_val) && iscleared(&n->i_val)) {
+      if (n->i_val.isNotNil() && iscleared(&n->i_val)) {
         setnilvalue(&n->i_val);  /* remove value ... */
         removeentry(&n->i_key, &n->i_val);  /* and remove entry from table */
       }

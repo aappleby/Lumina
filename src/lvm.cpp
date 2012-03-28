@@ -170,7 +170,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       TValue *oldval = cast(TValue *, luaH_get(h, key));
       /* if previous value is not nil, there must be a previous entry
          in the table; moreover, a metamethod has no relevance */
-      if (!ttisnil(oldval) ||
+      if (oldval->isNotNil() ||
          /* previous value is nil; must check the metamethod */
          ((tm = fasttm(h->metatable, TM_NEWINDEX)) == NULL &&
          /* no metamethod; is there a previous entry in the table? */
@@ -187,9 +187,12 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       }
       /* else will try the metamethod */
     }
-    else  /* not a table; check metamethod */
-      if (ttisnil(tm = luaT_gettmbyobj(t, TM_NEWINDEX)))
+    else {
+      /* not a table; check metamethod */
+      tm = luaT_gettmbyobj(t, TM_NEWINDEX);
+      if (tm->isNil())
         luaG_typeerror(t, "index");
+    }
     /* there is a metamethod */
     if (ttisfunction(tm)) {
       callTM(L, tm, t, key, val, 0);
@@ -205,9 +208,9 @@ static int call_binTM (lua_State *L, const TValue *p1, const TValue *p2,
                        StkId res, TMS event) {
   THREAD_CHECK(L);
   const TValue *tm = luaT_gettmbyobj(p1, event);  /* try first operand */
-  if (ttisnil(tm))
+  if (tm->isNil())
     tm = luaT_gettmbyobj(p2, event);  /* try second operand */
-  if (ttisnil(tm)) return 0;
+  if (tm->isNil()) return 0;
   callTM(L, tm, p1, p2, res, 1);
   return 1;
 }
@@ -396,7 +399,7 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
     }
     default: {  /* try metamethod */
       tm = luaT_gettmbyobj(rb, TM_LEN);
-      if (ttisnil(tm))  /* no metamethod? */
+      if (tm->isNil())  /* no metamethod? */
         luaG_typeerror(rb, "get length of");
       break;
     }
@@ -488,12 +491,16 @@ void luaV_finishOp (lua_State *L) {
       L->top--;
       /* metamethod should not be called when operand is K */
       assert(!ISK(GETARG_B(inst)));
-      if (op == OP_LE &&  /* "<=" using "<" instead? */
-          ttisnil(luaT_gettmbyobj(base + GETARG_B(inst), TM_LE)))
+      /* "<=" using "<" instead? */
+      const TValue* tm = luaT_gettmbyobj(base + GETARG_B(inst), TM_LE);
+      if (op == OP_LE && tm->isNil()) {
         res = !res;  /* invert result */
+      }
       assert(GET_OPCODE(*ci->savedpc) == OP_JMP);
-      if (res != GETARG_A(inst))  /* condition failed? */
+      if (res != GETARG_A(inst)) {
+        /* condition failed? */
         ci->savedpc++;  /* skip jump instruction */
+      }
       break;
     }
     case OP_CONCAT: {
@@ -859,7 +866,7 @@ void luaV_execute (lua_State *L) {
       )
       vmcase(OP_TFORLOOP,
         l_tforloop:
-        if (!ttisnil(ra + 1)) {  /* continue loop? */
+        if (ra[1].isNotNil()) {  /* continue loop? */
           setobj(ra, ra + 1);  /* save control variable */
            ci->savedpc += GETARG_sBx(i);  /* jump back */
         }

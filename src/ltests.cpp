@@ -118,8 +118,8 @@ static void checktable (global_State *g, Table *h) {
     checkvalref(g, h, &h->array[i]);
   for(int i = 0; i < (int)h->hashtable.size(); i++) {
     Node* n = h->getNode(i);
-    if (!ttisnil(&n->i_val)) {
-      assert(!ttisnil(&n->i_key));
+    if (n->i_val.isNotNil()) {
+      assert(n->i_key.isNotNil());
       checkvalref(g, h, &n->i_key);
       checkvalref(g, h, &n->i_val);
     }
@@ -557,9 +557,7 @@ static int table_query (lua_State *L) {
   }
   else if ((i -= (int)t->array.size()) < (int)t->hashtable.size()) {
     Node* n = t->getNode(i);
-    if (!ttisnil(&n->i_val) ||
-        ttisnil(&n->i_key) ||
-        n->i_key.isNumber()) {
+    if (n->i_val.isNotNil() || n->i_key.isNil() || n->i_key.isNumber()) {
       pushobject(L, &n->i_key);
     }
     else

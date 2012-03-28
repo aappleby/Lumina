@@ -134,7 +134,7 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
   L->top[0] = ts;  /* temporarily anchor it in stack */
   L->top++;
   o = luaH_set(ls->fs->h, L->top - 1);
-  if (ttisnil(o)) {  /* not in use yet? (see 'addK') */
+  if (o->isNil()) {  /* not in use yet? (see 'addK') */
     /* boolean value does not need GC barrier;
        table has no metatable, so it does not need to invalidate cache */
     /* t[string] = true */

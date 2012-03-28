@@ -820,7 +820,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
   api_checknelems(L, 1);
   obj = index2addr(L, objindex);
   api_checkvalidindex(obj);
-  if (ttisnil(L->top - 1))
+  if (L->top[-1].isNil())
     mt = NULL;
   else {
     api_check(ttistable(L->top - 1), "table expected");
@@ -859,7 +859,7 @@ void lua_setuservalue (lua_State *L, int idx) {
   o = index2addr(L, idx);
   api_checkvalidindex(o);
   api_check(ttisuserdata(o), "userdata expected");
-  if (ttisnil(L->top - 1))
+  if (L->top[-1].isNil())
     uvalue(o)->env_ = NULL;
   else {
     api_check(ttistable(L->top - 1), "table expected");
