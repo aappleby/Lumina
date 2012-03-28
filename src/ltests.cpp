@@ -524,7 +524,7 @@ static int hash_query (lua_State *L) {
     TValue *o = obj_at(L, 1);
     Table *t;
     luaL_checktype(L, 2, LUA_TTABLE);
-    t = hvalue(obj_at(L, 2));
+    t = obj_at(L, 2)->getTable();
     lua_pushinteger(L, t->findBinIndex(*o));
   }
   return 1;
@@ -546,7 +546,7 @@ static int table_query (lua_State *L) {
   Table *t;
   int i = luaL_optint(L, 2, -1);
   luaL_checktype(L, 1, LUA_TTABLE);
-  t = hvalue(obj_at(L, 1));
+  t = obj_at(L, 1)->getTable();
   if (i == -1) {
     lua_pushinteger(L, (int)t->array.size());
     lua_pushinteger(L, (int)t->hashtable.size());

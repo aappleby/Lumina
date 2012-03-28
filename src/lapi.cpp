@@ -428,7 +428,7 @@ size_t lua_rawlen (lua_State *L, int idx) {
   switch (o->basetype()) {
     case LUA_TSTRING: return o->getString()->getLen();
     case LUA_TUSERDATA: return o->getUserdata()->len_;
-    case LUA_TTABLE: return luaH_getn(hvalue(o));
+    case LUA_TTABLE: return luaH_getn(o->getTable());
     default: return 0;
   }
 }
@@ -466,7 +466,7 @@ const void *lua_topointer (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
   switch (ttype(o)) {
-    case LUA_TTABLE: return hvalue(o);
+    case LUA_TTABLE: return o->getTable();
     case LUA_TLCL: return o->getLClosure();
     case LUA_TCCL: return o->getCClosure();
     case LUA_TLCF: return cast(void *, cast(size_t, o->getLightFunction()));
@@ -652,7 +652,7 @@ void lua_rawget (lua_State *L, int idx) {
   StkId t;
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  setobj(L->top - 1, luaH_get(hvalue(t), L->top - 1));
+  setobj(L->top - 1, luaH_get(t->getTable(), L->top - 1));
 }
 
 
@@ -661,7 +661,7 @@ void lua_rawgeti (lua_State *L, int idx, int n) {
   StkId t;
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  setobj(L->top, luaH_getint(hvalue(t), n));
+  setobj(L->top, luaH_getint(t->getTable(), n));
   api_incr_top(L);
 }
 
@@ -673,7 +673,7 @@ void lua_rawgetp (lua_State *L, int idx, const void *p) {
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
   setpvalue(&k, cast(void *, p));
-  setobj(L->top, luaH_get(hvalue(t), &k));
+  setobj(L->top, luaH_get(t->getTable(), &k));
   api_incr_top(L);
 }
 
@@ -694,7 +694,7 @@ void lua_createtable (lua_State *L, int narray, int nrec) {
 Table* lua_getmetatable( const TValue* o ) {
   int type = o->basetype();
   switch (type) {
-    case LUA_TTABLE:    return hvalue(o)->metatable;
+    case LUA_TTABLE:    return o->getTable()->metatable;
     case LUA_TUSERDATA: return o->getUserdata()->metatable_;
     default:            return thread_G->mt[type];
   }
@@ -739,7 +739,7 @@ void lua_getuservalue (lua_State *L, int idx) {
 
 void lua_setglobal (lua_State *L, const char *var) {
   THREAD_CHECK(L);
-  Table *reg = hvalue(&G(L)->l_registry);
+  Table *reg = thread_G->l_registry.getTable();
   const TValue *gt;  /* global table */
   api_checknelems(L, 1);
   gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
@@ -780,9 +780,9 @@ void lua_rawset (lua_State *L, int idx) {
   api_checknelems(L, 2);
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  setobj(luaH_set(hvalue(t), L->top-2), L->top-1);
+  setobj(luaH_set(t->getTable(), L->top-2), L->top-1);
   // invalidate TM cache
-  hvalue(t)->flags = 0;
+  t->getTable()->flags = 0;
   luaC_barrierback(t->getObject(), L->top-1);
   L->top -= 2;
 }
@@ -794,7 +794,7 @@ void lua_rawseti (lua_State *L, int idx, int n) {
   api_checknelems(L, 1);
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  luaH_setint(hvalue(t), n, L->top - 1);
+  luaH_setint(t->getTable(), n, L->top - 1);
   luaC_barrierback(t->getObject(), L->top-1);
   L->top--;
 }
@@ -808,7 +808,7 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
   setpvalue(&k, cast(void *, p));
-  setobj(luaH_set(hvalue(t), &k), L->top - 1);
+  setobj(luaH_set(t->getTable(), &k), L->top - 1);
   luaC_barrierback(t->getObject(), L->top - 1);
   L->top--;
 }
@@ -825,11 +825,11 @@ int lua_setmetatable (lua_State *L, int objindex) {
     mt = NULL;
   else {
     api_check(L->top[-1].isTable(), "table expected");
-    mt = hvalue(L->top - 1);
+    mt = L->top[-1].getTable();
   }
   switch (ttypenv(obj)) {
     case LUA_TTABLE: {
-      hvalue(obj)->metatable = mt;
+      obj->getTable()->metatable = mt;
       if (mt)
         luaC_objbarrierback(L, obj->getObject(), mt);
         luaC_checkfinalizer(obj->getObject(), mt);
@@ -864,8 +864,8 @@ void lua_setuservalue (lua_State *L, int idx) {
     o->getUserdata()->env_ = NULL;
   else {
     api_check(L->top[-1].isTable(), "table expected");
-    o->getUserdata()->env_ = hvalue(L->top - 1);
-    luaC_objbarrier(L, o->getObject(), hvalue(L->top - 1));
+    o->getUserdata()->env_ = L->top[-1].getTable();
+    luaC_objbarrier(L, o->getObject(), L->top[-1].getTable());
   }
   L->top--;
 }
@@ -985,7 +985,7 @@ int lua_load (lua_State *L, lua_Reader reader, void *data,
     Closure *f = L->top[-1].getLClosure();  /* get newly created function */
     if (f->nupvalues == 1) {  /* does it have one upvalue? */
       /* get global table from registry */
-      Table *reg = hvalue(&G(L)->l_registry);
+      Table *reg = thread_G->l_registry.getTable();
       const TValue *gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
       /* set global table as 1st upvalue of 'f' (may be LUA_ENV) */
       setobj(f->ppupvals_[0]->v, gt);

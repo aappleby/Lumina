@@ -166,7 +166,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
     const TValue *tm;
     if (t->isTable()) {  /* `t' is a table? */
-      Table *h = hvalue(t);
+      Table *h = t->getTable();
       TValue *oldval = cast(TValue *, luaH_get(h, key));
       /* if previous value is not nil, there must be a previous entry
          in the table; moreover, a metamethod has no relevance */
@@ -323,10 +323,10 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
     }
 
     case LUA_TTABLE: {
-      if (hvalue(t1) == hvalue(t2)) return 1;
+      if (t1->getTable() == t2->getTable()) return 1;
       if (L == NULL) return 0;
 
-      const TValue* tm = get_equalTM(L, hvalue(t1)->metatable, hvalue(t2)->metatable, TM_EQ);
+      const TValue* tm = get_equalTM(L, t1->getTable()->metatable, t2->getTable()->metatable, TM_EQ);
       if (tm == NULL) return 0;  /* no TM? */
 
       callTM(L, tm, t1, t2, L->top, 1);  /* call TM */
@@ -387,7 +387,7 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
   const TValue *tm;
   switch (ttypenv(rb)) {
     case LUA_TTABLE: {
-      Table *h = hvalue(rb);
+      Table *h = rb->getTable();
       tm = fasttm(h->metatable, TM_LEN);
       if (tm) break;  /* metamethod? break switch to call it */
       ra[0] = luaH_getn(h);  /* else primitive len */
@@ -882,7 +882,7 @@ void luaV_execute (lua_State *L) {
           c = GETARG_Ax(*ci->savedpc++);
         }
         luai_runtimecheck(L, ra->isTable());
-        h = hvalue(ra);
+        h = ra->getTable();
         last = ((c-1)*LFIELDS_PER_FLUSH) + n;
         if (last > (int)h->array.size())  /* needs more space? */
           luaH_resizearray(h, last);  /* pre-allocate it at once */
