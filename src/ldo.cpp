@@ -34,9 +34,6 @@
 #include "lvm.h"
 #include "lzio.h"
 
-
-
-
 /*
 ** {======================================================
 ** Error-recovery functions
@@ -253,7 +250,7 @@ int luaD_precallLua(lua_State* L, StkId func, int nresults) {
   func = restorestack(L, funcr);
   int n = cast_int(L->top - func) - 1;  /* number of real arguments */
   for (; n < p->numparams; n++) {
-    setnilvalue(L->top);  /* complete missing arguments */
+    L->top[0] = TValue::nil;  /* complete missing arguments */
     L->top++;
   }
   base = (!p->is_vararg) ? func + 1 : adjust_varargs(L, p, n);
@@ -313,7 +310,7 @@ int luaD_poscall (lua_State *L, StkId firstResult) {
   for (i = wanted; i != 0 && firstResult < L->top; i--)
     setobj(res++, firstResult++);
   while (i-- > 0) {
-    setnilvalue(res);
+    *res = TValue::nil;
     res++;
   }
   L->top = res;

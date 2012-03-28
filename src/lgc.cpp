@@ -526,7 +526,7 @@ static int traversestack (global_State *g, lua_State *L) {
   if (g->gcstate == GCSatomic) {  /* final traversal? */
     StkId lim = L->stack.end();  /* real end of stack */
     for (; o < lim; o++)  /* clear not-marked stack slice */
-      setnilvalue(o);
+      *o = TValue::nil;
   }
   return TRAVCOST + cast_int(o - L->stack.begin());
 }
@@ -637,7 +637,7 @@ static void clearkeys (LuaObject *l) {
     for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
       if (n->i_val.isNotNil() && (iscleared(&n->i_key))) {
-        setnilvalue(&n->i_val);  /* remove value ... */
+        n->i_val = TValue::nil;  /* remove value ... */
         removeentry(&n->i_key, &n->i_val);  /* and remove entry from table */
       }
     }
@@ -654,13 +654,14 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
     Table *h = gco2t(l);
     for (int i = 0; i < (int)h->array.size(); i++) {
       TValue *o = &h->array[i];
-      if (iscleared(o))  /* value was collected? */
-        setnilvalue(o);  /* remove value */
+      if (iscleared(o)) {  /* value was collected? */
+        *o = TValue::nil;  /* remove value */
+      }
     }
     for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
       if (n->i_val.isNotNil() && iscleared(&n->i_val)) {
-        setnilvalue(&n->i_val);  /* remove value ... */
+        n->i_val = TValue::nil;  /* remove value ... */
         removeentry(&n->i_key, &n->i_val);  /* and remove entry from table */
       }
     }

@@ -629,7 +629,7 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_LOADNIL,
         int b = GETARG_B(i);
         do {
-          setnilvalue(ra);
+          *ra = TValue::nil;
           ra++;
         } while (b--);
       )
@@ -922,7 +922,7 @@ void luaV_execute (lua_State *L) {
             setobj(ra + j, base - n + j);
           }
           else {
-            setnilvalue(ra + j);
+            ra[j] = TValue::nil;
           }
         }
       )

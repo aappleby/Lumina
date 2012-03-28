@@ -2,6 +2,8 @@
 
 #include "LuaObject.h"
 
+TValue TValue::nil;
+
 void TValue::operator = ( TValue const & v )
 {
   bytes = v.bytes;

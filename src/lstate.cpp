@@ -206,7 +206,6 @@ lua_State *lua_newstate () {
     g->gcrunning = 0;  /* no GC while building state */
     g->lastmajormem = 0;
     luaS_initstrt();
-    setnilvalue(&g->l_registry);
     g->panic = NULL;
     g->version = lua_version(NULL);
     g->gcstate = GCSpause;

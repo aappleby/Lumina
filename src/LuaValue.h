@@ -7,6 +7,8 @@ public:
 
   TValue() { tt_ = LUA_TNIL; bytes = 0; }
 
+  static TValue nil;
+
   explicit TValue(int v)    { tt_ = LUA_TNUMBER; n = v; }
   explicit TValue(double v) { tt_ = LUA_TNUMBER; n = v; }
 
@@ -183,8 +185,6 @@ public:
 
 /* Macros to set values */
 #define settt_(o,t)	((o)->tt_=(t))
-
-#define setnilvalue(obj) { TValue* io=(obj); io->bytes = 0; io->tt_ = LUA_TNIL; }
 
 #define setfvalue(obj,x) \
   { TValue *io=(obj); io->bytes = 0; io->f=(x); settt_(io, LUA_TLCF); }

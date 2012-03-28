@@ -198,7 +198,7 @@ static void funcinfo (lua_Debug *ar, Closure *cl) {
 static void collectvalidlines (lua_State *L, Closure *f) {
   THREAD_CHECK(L);
   if (f == NULL || f->isC) {
-    setnilvalue(L->top);
+    L->top[0] = TValue::nil;
     incr_top(L);
   }
   else {
