@@ -165,7 +165,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
   int loop;
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
     const TValue *tm;
-    if (ttistable(t)) {  /* `t' is a table? */
+    if (t->isTable()) {  /* `t' is a table? */
       Table *h = hvalue(t);
       TValue *oldval = cast(TValue *, luaH_get(h, key));
       /* if previous value is not nil, there must be a previous entry
@@ -194,7 +194,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
         luaG_typeerror(t, "index");
     }
     /* there is a metamethod */
-    if (ttisfunction(tm)) {
+    if (tm->isFunction()) {
       callTM(L, tm, t, key, val, 0);
       return;
     }
@@ -281,7 +281,7 @@ int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
   int res;
   if (l->isNumber() && r->isNumber())
     return luai_numle(L, l->getNumber(), r->getNumber());
-  else if (ttisstring(l) && ttisstring(r))
+  else if (l->isString() && r->isString())
     return l_strcmp(l->getString(), r->getString()) <= 0;
   else if ((res = call_orderTM(L, l, r, TM_LE)) >= 0)  /* first try `le' */
     return res;
@@ -881,7 +881,7 @@ void luaV_execute (lua_State *L) {
           assert(GET_OPCODE(*ci->savedpc) == OP_EXTRAARG);
           c = GETARG_Ax(*ci->savedpc++);
         }
-        luai_runtimecheck(L, ttistable(ra));
+        luai_runtimecheck(L, ra->isTable());
         h = hvalue(ra);
         last = ((c-1)*LFIELDS_PER_FLUSH) + n;
         if (last > (int)h->array.size())  /* needs more space? */

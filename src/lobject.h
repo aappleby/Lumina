@@ -32,8 +32,6 @@ class Table;
 
 
 
-#define isLfunction(o)	ttisLclosure(o)
-
 #define getproto(o)	(clLvalue(o)->p)
 
 

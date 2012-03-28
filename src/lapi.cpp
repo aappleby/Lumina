@@ -74,7 +74,7 @@ static TValue *index2addr (lua_State *L, int idx) {
 
 
   // Light C functions have no upvals
-  if (ci->func->isLightCFunc()) {
+  if (ci->func->isLightFunction()) {
     return NONVALIDVALUE;
   }
 
@@ -274,7 +274,7 @@ const char *lua_typename (lua_State *L, int t) {
 int lua_iscfunction (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
-  return (ttislcf(o) || (ttisCclosure(o)));
+  return (o->isLightFunction() || o->isCClosure());
 }
 
 
@@ -296,7 +296,7 @@ int lua_isstring (lua_State *L, int idx) {
 int lua_isuserdata (lua_State *L, int idx) {
   THREAD_CHECK(L);
   const TValue *o = index2addr(L, idx);
-  return (ttisuserdata(o) || ttislightuserdata(o));
+  return (o->isUserdata() || o->isLightUserdata());
 }
 
 
@@ -437,8 +437,8 @@ size_t lua_rawlen (lua_State *L, int idx) {
 lua_CFunction lua_tocfunction (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
-  if (ttislcf(o)) return fvalue(o);
-  else if (ttisCclosure(o))
+  if (o->isLightFunction()) return fvalue(o);
+  else if (o->isCClosure())
     return clCvalue(o)->f;
   else return NULL;  /* not a C function */
 }
@@ -458,7 +458,7 @@ void *lua_touserdata (lua_State *L, int idx) {
 lua_State *lua_tothread (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
-  return (!ttisthread(o)) ? NULL : thvalue(o);
+  return (!o->isThread()) ? NULL : thvalue(o);
 }
 
 
@@ -651,7 +651,7 @@ void lua_rawget (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId t;
   t = index2addr(L, idx);
-  api_check(ttistable(t), "table expected");
+  api_check(t->isTable(), "table expected");
   setobj(L->top - 1, luaH_get(hvalue(t), L->top - 1));
 }
 
@@ -660,7 +660,7 @@ void lua_rawgeti (lua_State *L, int idx, int n) {
   THREAD_CHECK(L);
   StkId t;
   t = index2addr(L, idx);
-  api_check(ttistable(t), "table expected");
+  api_check(t->isTable(), "table expected");
   setobj(L->top, luaH_getint(hvalue(t), n));
   api_incr_top(L);
 }
@@ -671,7 +671,7 @@ void lua_rawgetp (lua_State *L, int idx, const void *p) {
   StkId t;
   TValue k;
   t = index2addr(L, idx);
-  api_check(ttistable(t), "table expected");
+  api_check(t->isTable(), "table expected");
   setpvalue(&k, cast(void *, p));
   setobj(L->top, luaH_get(hvalue(t), &k));
   api_incr_top(L);
@@ -722,7 +722,7 @@ void lua_getuservalue (lua_State *L, int idx) {
   StkId o;
   o = index2addr(L, idx);
   api_checkvalidindex(o);
-  api_check(ttisuserdata(o), "userdata expected");
+  api_check(o->isUserdata(), "userdata expected");
   if (uvalue(o)->env_) {
     sethvalue(L, L->top, uvalue(o)->env_);
   } else {
@@ -779,7 +779,7 @@ void lua_rawset (lua_State *L, int idx) {
   StkId t;
   api_checknelems(L, 2);
   t = index2addr(L, idx);
-  api_check(ttistable(t), "table expected");
+  api_check(t->isTable(), "table expected");
   setobj(luaH_set(hvalue(t), L->top-2), L->top-1);
   // invalidate TM cache
   hvalue(t)->flags = 0;
@@ -793,7 +793,7 @@ void lua_rawseti (lua_State *L, int idx, int n) {
   StkId t;
   api_checknelems(L, 1);
   t = index2addr(L, idx);
-  api_check(ttistable(t), "table expected");
+  api_check(t->isTable(), "table expected");
   luaH_setint(hvalue(t), n, L->top - 1);
   luaC_barrierback(t->getObject(), L->top-1);
   L->top--;
@@ -806,7 +806,7 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
   TValue k;
   api_checknelems(L, 1);
   t = index2addr(L, idx);
-  api_check(ttistable(t), "table expected");
+  api_check(t->isTable(), "table expected");
   setpvalue(&k, cast(void *, p));
   setobj(luaH_set(hvalue(t), &k), L->top - 1);
   luaC_barrierback(t->getObject(), L->top - 1);
@@ -824,7 +824,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
   if (L->top[-1].isNil())
     mt = NULL;
   else {
-    api_check(ttistable(L->top - 1), "table expected");
+    api_check(L->top[-1].isTable(), "table expected");
     mt = hvalue(L->top - 1);
   }
   switch (ttypenv(obj)) {
@@ -859,11 +859,11 @@ void lua_setuservalue (lua_State *L, int idx) {
   api_checknelems(L, 1);
   o = index2addr(L, idx);
   api_checkvalidindex(o);
-  api_check(ttisuserdata(o), "userdata expected");
+  api_check(o->isUserdata(), "userdata expected");
   if (L->top[-1].isNil())
     uvalue(o)->env_ = NULL;
   else {
-    api_check(ttistable(L->top - 1), "table expected");
+    api_check(L->top[-1].isTable(), "table expected");
     uvalue(o)->env_ = hvalue(L->top - 1);
     luaC_objbarrier(L, o->getObject(), hvalue(L->top - 1));
   }
@@ -1002,7 +1002,7 @@ int lua_dump (lua_State *L, lua_Writer writer, void *data) {
   TValue *o;
   api_checknelems(L, 1);
   o = L->top - 1;
-  if (isLfunction(o))
+  if (o->isLClosure())
     status = luaU_dump(L, getproto(o), writer, data, 0);
   else
     status = 1;
@@ -1233,7 +1233,7 @@ static UpVal **getupvalref (lua_State *L, int fidx, int n, Closure **pf) {
   THREAD_CHECK(L);
   Closure *f;
   StkId fi = index2addr(L, fidx);
-  api_check(ttisLclosure(fi), "Lua function expected");
+  api_check(fi->isLClosure(), "Lua function expected");
   f = clLvalue(fi);
   api_check((1 <= n && n <= (int)f->p->upvalues.size()), "invalid upvalue index");
   if (pf) *pf = f;

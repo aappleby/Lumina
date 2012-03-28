@@ -181,7 +181,7 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
   const TValue *tm = luaT_gettmbyobj(func, TM_CALL);
 
   ptrdiff_t funcr = func - L->stack.begin();
-  if (!ttisfunction(tm))
+  if (!tm->isFunction())
     luaG_typeerror(func, "call");
 
   /* Open a hole inside the stack at `func' */

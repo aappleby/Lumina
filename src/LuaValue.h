@@ -58,27 +58,30 @@ public:
 
   // stuff
 
-  bool isCollectable() const   { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }
-
   bool isNil() const           { return rawtype() == LUA_TNIL; }
   bool isNotNil() const        { return rawtype() != LUA_TNIL; }
-  bool isBool() const          { return tagtype() == LUA_TBOOLEAN; }
-  bool isLightUserdata() const { return tagtype() == LUA_TLIGHTUSERDATA; }
-  bool isNumber() const        { return tagtype() == LUA_TNUMBER; }
+
+  bool isBool() const          { return rawtype() == LUA_TBOOLEAN; }
+  bool isInteger() const { return isNumber() && (n == (int)n); }
+  bool isNumber() const        { return rawtype() == LUA_TNUMBER; }
+
+  bool isCollectable() const   { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }
+
+  bool isLightUserdata() const { return rawtype() == LUA_TLIGHTUSERDATA; }
+
   bool isString() const        { return tagtype() == LUA_TSTRING; }
   bool isTable() const         { return tagtype() == LUA_TTABLE; }
-  bool isFunction() const      { return basetype() == LUA_TFUNCTION; }
   bool isUserdata() const      { return tagtype() == LUA_TUSERDATA; }
-  bool isThread() const        { return tagtype() == LUA_TTHREAD; }
+  bool isThread() const        { return rawtype() == (LUA_TTHREAD | BIT_ISCOLLECTABLE); }
   bool isProto() const         { return tagtype() == LUA_TPROTO; }
   bool isUpval() const         { return tagtype() == LUA_TUPVAL; }
-  bool isDeadKey() const       { return tagtype() == LUA_TDEADKEY; }
+  bool isDeadKey() const       { return rawtype() == LUA_TDEADKEY; }
 
+  bool isFunction() const      { return basetype() == LUA_TFUNCTION; }
+  bool isClosure() const       { return (rawtype() & 0x1F) == LUA_TFUNCTION; }
   bool isCClosure() const      { return rawtype() == (LUA_TCCL | BIT_ISCOLLECTABLE); }
   bool isLClosure() const      { return rawtype() == (LUA_TLCL | BIT_ISCOLLECTABLE); }
-  bool isLightCFunc() const    { return tagtype() == LUA_TLCF; }
-
-  bool isInteger() const { return isNumber() && (n == (int)n); }
+  bool isLightFunction() const { return rawtype() == LUA_TLCF; }
 
   void setDeadKey() { tt_ = LUA_TDEADKEY; }
 
@@ -96,6 +99,7 @@ public:
   LuaObject* getObject() const { assert(isCollectable()); return gc; }
   LuaObject* getDeadKey() { assert(isDeadKey());     return gc; }
 
+  Closure* getClosure()  { assert(isClosure()); return reinterpret_cast<Closure*>(gc); }
   Closure* getCClosure() { assert(isCClosure()); return reinterpret_cast<Closure*>(gc); }
   Closure* getLClosure() { assert(isLClosure()); return reinterpret_cast<Closure*>(gc); }
 
@@ -154,32 +158,21 @@ public:
 
 /* Macros to test type */
 #define checktag(o,t)		      (rttype(o) == (t))
-#define ttislightuserdata(o)	checktag((o), LUA_TLIGHTUSERDATA)
-#define ttisstring(o)		      checktag((o), ctb(LUA_TSTRING))
-#define ttistable(o)		      checktag((o), ctb(LUA_TTABLE))
-#define ttisfunction(o)		    (ttypenv(o) == LUA_TFUNCTION)
-#define ttisclosure(o)		    ((rttype(o) & 0x1F) == LUA_TFUNCTION)
-#define ttisCclosure(o)		    checktag((o), ctb(LUA_TCCL))
-#define ttisLclosure(o)		    checktag((o), ctb(LUA_TLCL))
-#define ttislcf(o)		        checktag((o), LUA_TLCF)
-#define ttisuserdata(o)		    checktag((o), ctb(LUA_TUSERDATA))
-#define ttisthread(o)		      checktag((o), ctb(LUA_TTHREAD))
-#define ttisdeadkey(o)		    checktag((o), LUA_TDEADKEY)
 
 #define ttisequal(o1,o2)	    (rttype(o1) == rttype(o2))
 
 /* Macros to access values */
-#define pvalue(o)	            check_exp(ttislightuserdata(o), (o)->p)
-#define uvalue(o)	            check_exp(ttisuserdata(o), reinterpret_cast<Udata*>((o)->gc))
-#define clvalue(o)	          check_exp(ttisclosure(o), reinterpret_cast<Closure*>((o)->gc))
-#define clLvalue(o)	          check_exp(ttisLclosure(o), reinterpret_cast<Closure*>((o)->gc))
-#define clCvalue(o)	          check_exp(ttisCclosure(o), reinterpret_cast<Closure*>((o)->gc))
-#define fvalue(o)	            check_exp(ttislcf(o), (o)->f)
-#define hvalue(o)	            check_exp(ttistable(o), reinterpret_cast<Table*>((o)->gc))
-#define thvalue(o)	          check_exp(ttisthread(o), reinterpret_cast<lua_State*>((o)->gc))
+#define pvalue(o)	            check_exp((o)->isLightUserdata(), (o)->p)
+#define uvalue(o)	            check_exp((o)->isUserdata(), reinterpret_cast<Udata*>((o)->gc))
+#define clvalue(o)	          check_exp((o)->isClosure(), reinterpret_cast<Closure*>((o)->gc))
+#define clLvalue(o)	          check_exp((o)->isLClosure(), reinterpret_cast<Closure*>((o)->gc))
+#define clCvalue(o)	          check_exp((o)->isCClosure(), reinterpret_cast<Closure*>((o)->gc))
+#define fvalue(o)	            check_exp((o)->isLightFunction(), (o)->f)
+#define hvalue(o)	            check_exp((o)->isTable(), reinterpret_cast<Table*>((o)->gc))
+#define thvalue(o)	          check_exp((o)->isThread(), reinterpret_cast<lua_State*>((o)->gc))
 
 /* a dead value may get the 'gc' field, but cannot access its contents */
-#define deadvalue(o)	        check_exp(ttisdeadkey(o), cast(void *, (o)->gc))
+#define deadvalue(o)	        check_exp((o)->isDeadKey(), cast(void *, (o)->gc))
 
 #define l_isfalse(o)	((o)->isNil() || ((o)->isBool() && !(o)->getBool()))
 

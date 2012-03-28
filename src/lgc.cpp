@@ -52,7 +52,7 @@
 */
 #define stddebt(g)	(-cast(l_mem, gettotalbytes(g)/100) * g->gcpause)
 
-#define checkdeadkey(n)	assert(!ttisdeadkey(&n->i_key) || n->i_val.isNil())
+#define checkdeadkey(n)	assert(!n->i_key.isDeadKey() || n->i_val.isNil())
 
 
 static void reallymarkobject (LuaObject *o);
@@ -313,7 +313,7 @@ struct tableTraverseInfo {
 
 void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
   tableTraverseInfo& info = *(tableTraverseInfo*)blob;
-  assert(!ttisdeadkey(key) || val->isNil());
+  assert(!key->isDeadKey() || val->isNil());
 
   if (val->isNil()) {
     removeentry(key,val);
@@ -332,7 +332,7 @@ void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
 
 void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
   tableTraverseInfo& info = *(tableTraverseInfo*)blob;
-  assert(!ttisdeadkey(key) || val->isNil());
+  assert(!key->isDeadKey() || val->isNil());
 
   // If the node's value is nil, mark the key as dead.
   if (val->isNil()) {
@@ -357,7 +357,7 @@ void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
 
 void traverseStrongNode(TValue* key, TValue* val, void* blob) {
   tableTraverseInfo& info = *(tableTraverseInfo*)blob;
-  assert(!ttisdeadkey(key) || val->isNil());
+  assert(!key->isDeadKey() || val->isNil());
 
   if (val->isNil()) {
     removeentry(key, val);  /* remove it */
@@ -833,7 +833,7 @@ static void GCTM (int propagateerrors) {
   setgcovalue(&v, udata2finalize(g));
   const TValue *tm = luaT_gettmbyobj(&v, TM_GC);
   if(tm == NULL) return;
-  if(!ttisfunction(tm)) return;
+  if(!tm->isFunction()) return;
 
   int status;
   uint8_t oldah = L->allowhook;

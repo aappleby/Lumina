@@ -187,7 +187,7 @@ TValue lua_State::at(int idx) {
 
 
   // Light C functions have no upvals
-  if (ci->func->isLightCFunc()) {
+  if (ci->func->isLightFunction()) {
     assert(false);
     return luaO_nilobject_;
   }

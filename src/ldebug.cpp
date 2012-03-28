@@ -149,7 +149,7 @@ const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n) {
   THREAD_CHECK(L);
   const char *name;
   if (ar == NULL) {  /* information about non-active function? */
-    if (!isLfunction(L->top - 1))  /* not a Lua function? */
+    if (!L->top[-1].isLClosure())  /* not a Lua function? */
       name = NULL;
     else  /* consider live variables at function start (parameters) */
       name = luaF_getlocalname(clLvalue(L->top - 1)->p, n, 0);
@@ -277,16 +277,16 @@ int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
   if (*what == '>') {
     ci = NULL;
     func = L->top - 1;
-    api_check(ttisfunction(func), "function expected");
+    api_check(func->isFunction(), "function expected");
     what++;  /* skip the '>' */
     L->top--;  /* pop function */
   }
   else {
     ci = ar->i_ci;
     func = ci->func;
-    assert(ttisfunction(ci->func));
+    assert(ci->func->isFunction());
   }
-  cl = ttisclosure(func) ? clvalue(func) : NULL;
+  cl = func->isClosure() ? func->getClosure() : NULL;
   status = auxgetinfo(L, what, ar, cl, ci);
   if (strchr(what, 'f')) {
     setobj(L->top, func);
@@ -568,7 +568,7 @@ l_noret luaG_errormsg () {
   lua_State *L = thread_L;
   if (L->errfunc != 0) {  /* is there an error handling function? */
     StkId errfunc = restorestack(L, L->errfunc);
-    if (!ttisfunction(errfunc)) luaD_throw(LUA_ERRERR);
+    if (!errfunc->isFunction()) luaD_throw(LUA_ERRERR);
     setobj(L->top, L->top - 1);  /* move argument */
     setobj(L->top - 1, errfunc);  /* push function */
     incr_top(L);
