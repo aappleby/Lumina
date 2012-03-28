@@ -251,7 +251,7 @@ static void PrintString(const TString* ts)
 static void PrintConstant(const Proto* f, int i)
 {
  const TValue* o=&f->constants[i];
- switch (ttype(o))
+ switch (o->tagtype())
  {
   case LUA_TNIL:
 	printf("nil");
@@ -266,7 +266,7 @@ static void PrintConstant(const Proto* f, int i)
 	PrintString(o->getString());
 	break;
   default:				/* cannot happen */
-	printf("? type=%d",ttype(o));
+	printf("? type=%d",o->tagtype());
 	break;
  }
 }

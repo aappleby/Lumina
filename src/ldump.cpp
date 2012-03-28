@@ -84,8 +84,8 @@ static void DumpConstants(const Proto* f, DumpState* D)
  for (i=0; i<n; i++)
  {
   const TValue* o=&f->constants[i];
-  DumpChar(ttype(o),D);
-  switch (ttype(o))
+  DumpChar(o->tagtype(),D);
+  switch (o->tagtype())
   {
    case LUA_TNIL:
 	break;

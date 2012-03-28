@@ -385,7 +385,7 @@ void luaV_concat (lua_State *L, int total) {
 void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
   THREAD_CHECK(L);
   const TValue *tm;
-  switch (ttypenv(rb)) {
+  switch (rb->basetype()) {
     case LUA_TTABLE: {
       Table *h = rb->getTable();
       tm = fasttm(h->metatable, TM_LEN);

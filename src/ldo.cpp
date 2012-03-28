@@ -590,7 +590,7 @@ static void f_parser (lua_State *L, void *ud) {
     checkmode(L, p->mode, "text");
     tf = luaY_parser(L, p->z, &p->buff, &p->dyd, p->name, c);
   }
-  setptvalue(L, L->top, tf);
+  L->top[0] = tf;
   incr_top(L);
   cl = luaF_newLclosure(tf);
   if(cl == NULL) luaD_throw(LUA_ERRMEM);

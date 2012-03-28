@@ -543,7 +543,7 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   f->source = ls->source;
   f->maxstacksize = 2;  /* registers 0/1 are always valid */
   /* anchor prototype (to avoid being collected) */
-  setptvalue(L, L->top, f);
+  L->top[0] = f;
   incr_top(L);
   fs->h = new Table();
   if(fs->h == NULL) luaD_throw(LUA_ERRMEM);

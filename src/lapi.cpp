@@ -260,7 +260,7 @@ void lua_pushvalue (lua_State *L, int idx) {
 int lua_type (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
-  return (isvalid(o) ? ttypenv(o) : LUA_TNONE);
+  return (isvalid(o) ? o->basetype() : LUA_TNONE);
 }
 
 
@@ -447,7 +447,7 @@ lua_CFunction lua_tocfunction (lua_State *L, int idx) {
 void *lua_touserdata (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
-  switch (ttypenv(o)) {
+  switch (o->basetype()) {
     case LUA_TUSERDATA: return (o->getUserdata()->buf_);
     case LUA_TLIGHTUSERDATA: return o->getLightUserdata();
     default: return NULL;
@@ -465,7 +465,7 @@ lua_State *lua_tothread (lua_State *L, int idx) {
 const void *lua_topointer (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
-  switch (ttype(o)) {
+  switch (o->tagtype()) {
     case LUA_TTABLE: return o->getTable();
     case LUA_TLCL: return o->getLClosure();
     case LUA_TCCL: return o->getCClosure();
@@ -827,7 +827,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
     api_check(L->top[-1].isTable(), "table expected");
     mt = L->top[-1].getTable();
   }
-  switch (ttypenv(obj)) {
+  switch (obj->basetype()) {
     case LUA_TTABLE: {
       obj->getTable()->metatable = mt;
       if (mt)
@@ -844,7 +844,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
       break;
     }
     default: {
-      G(L)->mt[ttypenv(obj)] = mt;
+      G(L)->mt[obj->basetype()] = mt;
       break;
     }
   }
@@ -1175,7 +1175,7 @@ void *lua_newuserdata (lua_State *L, size_t size) {
 
 static const char *aux_upvalue (StkId fi, int n, TValue **val,
                                 LuaObject **owner) {
-  switch (ttype(fi)) {
+  switch (fi->tagtype()) {
     case LUA_TCCL: {  /* C closure */
       Closure *f = fi->getCClosure();
       if (!(1 <= n && n <= f->nupvalues)) return NULL;
@@ -1244,7 +1244,7 @@ static UpVal **getupvalref (lua_State *L, int fidx, int n, Closure **pf) {
 void *lua_upvalueid (lua_State *L, int fidx, int n) {
   THREAD_CHECK(L);
   StkId fi = index2addr(L, fidx);
-  switch (ttype(fi)) {
+  switch (fi->tagtype()) {
     case LUA_TLCL: {  /* lua closure */
       return *getupvalref(L, fidx, n, NULL);
     }

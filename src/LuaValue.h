@@ -37,7 +37,14 @@ public:
   void operator = (TString* v ) {
     bytes = 0;
     gc = (LuaObject*)v;
-    tt_ = ctb(LUA_TSTRING);
+    tt_ = LUA_TSTRING | BIT_ISCOLLECTABLE;
+    sanityCheck();
+  }
+
+  void operator = (Proto* p) {
+    bytes = 0;
+    gc = (LuaObject*)p;
+    tt_ = LUA_TPROTO | BIT_ISCOLLECTABLE;
     sanityCheck();
   }
 
@@ -73,9 +80,9 @@ public:
   bool isTable() const         { return tagtype() == LUA_TTABLE; }
   bool isUserdata() const      { return tagtype() == LUA_TUSERDATA; }
   bool isThread() const        { return rawtype() == (LUA_TTHREAD | BIT_ISCOLLECTABLE); }
-  bool isProto() const         { return tagtype() == LUA_TPROTO; }
   bool isUpval() const         { return tagtype() == LUA_TUPVAL; }
   bool isDeadKey() const       { return rawtype() == LUA_TDEADKEY; }
+  bool isProto() const         { return rawtype() == (LUA_TPROTO | BIT_ISCOLLECTABLE); }
 
   bool isFunction() const      { return basetype() == LUA_TFUNCTION; }
   bool isClosure() const       { return (rawtype() & 0x1F) == LUA_TFUNCTION; }
@@ -152,28 +159,6 @@ public:
 ** an actual value plus a tag with its type.
 */
 
-/* raw type tag of a TValue */
-#define rttype(o)	((o)->tt_)
-
-/* type tag of a TValue (bits 0-3 for tags + variant bits 4-5) */
-#define ttype(o)	(rttype(o) & 0x3F)
-
-
-/* type tag of a TValue with no variants (bits 0-3) */
-#define ttypenv(o)	(rttype(o) & 0x0F)
-
-
-/* Macros to test type */
-#define checktag(o,t)		      (rttype(o) == (t))
-
-#define ttisequal(o1,o2)	    (rttype(o1) == rttype(o2))
-
-/* Macros to access values */
-#define hvalue(o)	            check_exp((o)->isTable(), reinterpret_cast<Table*>((o)->gc))
-
-/* a dead value may get the 'gc' field, but cannot access its contents */
-#define deadvalue(o)	        check_exp((o)->isDeadKey(), cast(void *, (o)->gc))
-
 #define l_isfalse(o)	((o)->isNil() || ((o)->isBool() && !(o)->getBool()))
 
 /* Macros to set values */
@@ -212,11 +197,6 @@ public:
 #define sethvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
     io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TTABLE)); \
-    io->sanityCheck(); }
-
-#define setptvalue(L,obj,x) \
-  { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
-    io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TPROTO)); \
     io->sanityCheck(); }
 
 void setobj(TValue* obj1, const TValue* obj2);
