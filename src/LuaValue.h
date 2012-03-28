@@ -56,7 +56,7 @@ public:
 
   // stuff
 
-  bool isCollectable() const { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }
+  bool isCollectable() const   { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }
 
   bool isNil() const           { return rawtype() == LUA_TNIL; }
   bool isNotNil() const        { return rawtype() != LUA_TNIL; }
@@ -90,7 +90,7 @@ public:
 
   double getNumber() const { assert(isNumber()); return n; }
 
-  LuaObject* getObject()  { assert(isCollectable()); return gc; }
+  LuaObject* getObject() const { assert(isCollectable()); return gc; }
   LuaObject* getDeadKey() { assert(isDeadKey());     return gc; }
 
   Closure* getCClosure() { assert(isCClosure()); return reinterpret_cast<Closure*>(gc); }
@@ -110,7 +110,8 @@ public:
   void setBool  (int x)     { bytes = x ? 1 : 0; tt_ = LUA_TBOOLEAN; }
   void setValue (TValue* x) { bytes = x->bytes; tt_ = x->tt_; }
 
-  void sanityCheck();
+  void sanityCheck() const;
+  void typeCheck() const;
 
   union {
     LuaObject *gc;    /* collectable objects */
@@ -165,7 +166,6 @@ public:
 #define ttisequal(o1,o2)	    (rttype(o1) == rttype(o2))
 
 /* Macros to access values */
-#define gcvalue(o)	          check_exp(iscollectable(o), (o)->gc)
 #define pvalue(o)	            check_exp(ttislightuserdata(o), (o)->p)
 #define tsvalue(o)	          check_exp(ttisstring(o), reinterpret_cast<TString*>((o)->gc))
 #define uvalue(o)	            check_exp(ttisuserdata(o), reinterpret_cast<Udata*>((o)->gc))
@@ -181,13 +181,6 @@ public:
 #define deadvalue(o)	        check_exp(ttisdeadkey(o), cast(void *, (o)->gc))
 
 #define l_isfalse(o)	((o)->isNil() || (ttisboolean(o) && bvalue(o) == 0))
-
-
-#define iscollectable(o)	(rttype(o) & BIT_ISCOLLECTABLE)
-
-
-/* Macros for internal tests */
-#define righttt(obj)		(ttypenv(obj) == gcvalue(obj)->tt)
 
 /* Macros to set values */
 #define settt_(o,t)	((o)->tt_=(t))

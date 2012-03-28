@@ -23,11 +23,17 @@ void TValue::operator = ( TValue * v )
   sanityCheck();
 }
 
-void TValue::sanityCheck() {
+void TValue::sanityCheck() const {
   if(isCollectable()) {
     gc->sanityCheck();
     assert(basetype() == gc->tt);
     assert(!gc->isDead());
+  }
+}
+
+void TValue::typeCheck() const {
+  if(isCollectable()) {
+    assert(basetype() == gc->tt);
   }
 }
 

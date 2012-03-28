@@ -55,14 +55,20 @@
 #define checkdeadkey(n)	assert(!ttisdeadkey(&n->i_key) || n->i_val.isNil())
 
 
-#define checkconsistency(obj) assert(!iscollectable(obj) || righttt(obj))
+static void reallymarkobject (LuaObject *o);
 
+inline void markvalue(TValue* v) {
+  v->typeCheck();
+  if (v->isWhite()) {
+    reallymarkobject(v->getObject());
+  }
+}
 
-#define markvalue(g,o) { checkconsistency(o); if ((o)->isWhite()) reallymarkobject(g,gcvalue(o)); }
-
-#define markobject(g,t) { if ((t) && t->isWhite()) reallymarkobject(g, t); }
-
-static void reallymarkobject (global_State *g, LuaObject *o);
+inline void markobject(LuaObject* o) {
+  if (o && o->isWhite()) {
+    reallymarkobject(o);
+  }
+}
 
 
 /*
@@ -91,14 +97,14 @@ static void removeentry (TValue* key, TValue* val) {
 ** being finalized, keep them in keys, but not in values
 */
 static int iscleared (const TValue *o) {
-  if (!iscollectable(o)) return 0;
+  if (!o->isCollectable()) return 0;
   
   if (ttisstring(o)) {
     tsvalue(o)->stringmark();  /* strings are `values', so are never weak */
     return 0;
   }
   
-  return gcvalue(o)->isWhite();
+  return o->getObject()->isWhite();
 }
 
 
@@ -112,7 +118,7 @@ void luaC_barrier_ (LuaObject *o, LuaObject *v) {
   assert(isgenerational(g) || g->gcstate != GCSpause);
   assert(o->tt != LUA_TTABLE);
   if (keepinvariant(g))  /* must keep invariant? */
-    reallymarkobject(g, v);  /* restore invariant */
+    reallymarkobject(v);  /* restore invariant */
   else {  /* sweep phase */
     assert(issweepphase(g));
     o->setWhite();  /* mark main obj. as white to avoid other barriers */
@@ -171,7 +177,7 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
     if (keepinvariant(g)) {
       uv->clearOld();  /* see MOVE OLD rule */
       uv->grayToBlack();  /* it is being visited now */
-      markvalue(g, uv->v);
+      markvalue(uv->v);
     }
     else {
       assert(issweepphase(g));
@@ -198,7 +204,8 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
 ** to be visited (and turned black) later. (Open upvalues are already
 ** linked in 'headuv' list.)
 */
-static void reallymarkobject (global_State *g, LuaObject *o) {
+static void reallymarkobject (LuaObject *o) {
+  global_State* g = thread_G;
   assert(o->isWhite() && !o->isDead());
   o->whiteToGray();
   switch (o->tt) {
@@ -207,15 +214,15 @@ static void reallymarkobject (global_State *g, LuaObject *o) {
     }
     case LUA_TUSERDATA: {
       Table *mt = gco2u(o)->metatable_;
-      markobject(g, mt);
-      markobject(g, gco2u(o)->env_);
+      markobject(mt);
+      markobject(gco2u(o)->env_);
       /* all pointers marked */
       o->grayToBlack();
       return;
     }
     case LUA_TUPVAL: {
       UpVal *uv = gco2uv(o);
-      markvalue(g, uv->v);
+      markvalue(uv->v);
       if (uv->v == &uv->value)  /* closed? (open upvalues remain gray) */
         o->grayToBlack();  /* make it black */
       return;
@@ -239,7 +246,7 @@ static void reallymarkobject (global_State *g, LuaObject *o) {
 static void markmt (global_State *g) {
   int i;
   for (i=0; i < LUA_NUMTAGS; i++)
-    markobject(g, g->mt[i]);
+    markobject(g->mt[i]);
 }
 
 
@@ -250,7 +257,7 @@ static void markbeingfnz (global_State *g) {
   LuaObject *o;
   for (o = g->tobefnz; o != NULL; o = o->next) {
     o->setWhite();
-    reallymarkobject(g, o);
+    reallymarkobject(o);
   }
 }
 
@@ -263,7 +270,7 @@ static void remarkupvals (global_State *g) {
   UpVal *uv;
   for (uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {
     if (uv->isGray())
-      markvalue(g, uv->v);
+      markvalue(uv->v);
   }
 }
 
@@ -279,8 +286,8 @@ static void markroot (global_State *g) {
   g->allweak = NULL;
   g->ephemeron = NULL;
 
-  markobject(g, g->mainthread);
-  markvalue(g, &g->l_registry);
+  markobject(g->mainthread);
+  markvalue(&g->l_registry);
   markmt(g);
 
   /* mark any finalizing object left from previous cycle */
@@ -315,7 +322,7 @@ void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
 
   assert(!key->isNil());
 
-  markvalue(thread_G, key);  // mark key
+  markvalue(key);  // mark key
 
   // is there a white value? table will have to be cleared
   if (iscleared(val)) {
@@ -344,7 +351,7 @@ void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
 
   if (val->isWhite()) {  /* value not marked yet? */
     info.markedAny = 1;
-    reallymarkobject(thread_G, gcvalue(val));  /* mark it now */
+    reallymarkobject(val->getObject());  /* mark it now */
   }
 }
 
@@ -358,8 +365,8 @@ void traverseStrongNode(TValue* key, TValue* val, void* blob) {
   }
 
   assert(key->isNotNil());
-  markvalue(thread_G, key);  /* mark key */
-  markvalue(thread_G, val);  /* mark value */
+  markvalue(key);  /* mark key */
+  markvalue(val);  /* mark value */
 }
 
 static int traverseephemeron (Table *h) {
@@ -394,7 +401,7 @@ static int traverseephemeron (Table *h) {
 // Table modes really should be a flag on the table instead
 // of a special tag method just to get/set two flags...
 static int traversetable (global_State *g, Table *h) {
-  markobject(g, h->metatable);
+  markobject(h->metatable);
 
   const TValue *mode = fasttm(h->metatable, TM_MODE);
 
@@ -474,13 +481,13 @@ static int traverseproto (global_State *g, Proto *f) {
     f->cache = NULL;  /* allow cache to be collected */
   if(f->source) f->source->stringmark();
   for (size_t i = 0; i < f->constants.size(); i++)  /* mark literals */
-    markvalue(g, &f->constants[i]);
+    markvalue(&f->constants[i]);
   for (size_t i = 0; i < f->upvalues.size(); i++) {
     /* mark upvalue names */
     if(f->upvalues[i].name) f->upvalues[i].name->stringmark();
   }
   for (size_t i = 0; i < f->p.size(); i++)  /* mark nested protos */
-    markobject(g, f->p[i]);
+    markobject(f->p[i]);
   for (size_t i = 0; i < f->locvars.size(); i++) {
     /* mark local-variable names */
     if(f->locvars[i].varname) f->locvars[i].varname->stringmark();
@@ -497,14 +504,14 @@ static int traverseclosure (global_State *g, Closure *cl) {
   if (cl->isC) {
     int i;
     for (i=0; i<cl->nupvalues; i++)  /* mark its upvalues */
-      markvalue(g, &cl->pupvals_[i]);
+      markvalue(&cl->pupvals_[i]);
   }
   else {
     int i;
     assert(cl->nupvalues == cl->p->upvalues.size());
-    markobject(g, cl->p);  /* mark its prototype */
+    markobject(cl->p);  /* mark its prototype */
     for (i=0; i<cl->nupvalues; i++)  /* mark its upvalues */
-      markobject(g, cl->ppupvals_[i]);
+      markobject(cl->ppupvals_[i]);
   }
   return TRAVCOST + cl->nupvalues;
 }
@@ -515,7 +522,7 @@ static int traversestack (global_State *g, lua_State *L) {
   if (o == NULL)
     return 1;  /* stack not completely built yet */
   for (; o < L->top; o++)
-    markvalue(g, o);
+    markvalue(o);
   if (g->gcstate == GCSatomic) {  /* final traversal? */
     StkId lim = L->stack.end();  /* real end of stack */
     for (; o < lim; o++)  /* clear not-marked stack slice */
@@ -970,9 +977,9 @@ static void atomic () {
   global_State *g = thread_G;
   LuaObject *origweak, *origall;
   assert(!g->mainthread->isWhite());
-  markobject(g, thread_L);  /* mark running thread */
+  markobject(thread_L);  /* mark running thread */
   /* registry and global metatables may be changed by API */
-  markvalue(g, &g->l_registry);
+  markvalue(&g->l_registry);
   markmt(g);  /* mark basic metatables */
   /* remark occasional upvalues of (maybe) dead threads */
   remarkupvals(g);
@@ -1008,7 +1015,7 @@ static l_mem singlestep () {
     case GCSpause: {
       if (!isgenerational(g)) markroot(g);  /* start a new collection */
       /* in any case, root must be marked */
-      assert(!g->mainthread->isWhite() && !gcvalue(&g->l_registry)->isWhite());
+      assert(!g->mainthread->isWhite() && !g->l_registry.getObject()->isWhite());
       g->gcstate = GCSpropagate;
       return GCROOTCOST;
     }

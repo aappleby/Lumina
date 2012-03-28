@@ -104,9 +104,9 @@ static int testobjref (global_State *g, LuaObject *f, LuaObject *t) {
 
 
 static void checkvalref (global_State *g, LuaObject *f, const TValue *t) {
-  if (iscollectable(t)) {
-    assert(righttt(t));
-    assert(testobjref(g, f, gcvalue(t)));
+  if (t->isCollectable()) {
+    t->typeCheck();
+    assert(testobjref(g, f, t->getObject()));
   }
 }
 
@@ -299,9 +299,9 @@ int lua_checkmemory (lua_State *L) {
   UpVal *uv;
   if (keepinvariant(g)) {
     assert(!g->mainthread->isWhite());
-    assert(!gcvalue(&g->l_registry)->isWhite());
+    assert(!g->l_registry.getObject()->isWhite());
   }
-  assert(!gcvalue(&g->l_registry)->isDead());
+  assert(!g->l_registry.getObject()->isDead());
   checkstack(g, g->mainthread);
   g->mainthread->clearTestGray();
   /* check 'allgc' list */
@@ -471,22 +471,24 @@ static int get_gccolor (lua_State *L) {
   TValue *o;
   luaL_checkany(L, 1);
   o = obj_at(L, 1);
-  if (!iscollectable(o))
+  if (!o->isCollectable()) {
     lua_pushstring(L, "no collectable");
+  }
   else {
+    LuaObject* lo = o->getObject();
     int n = 1;
-    lua_pushstring(L, gcvalue(o)->isWhite() ? "white" :
-                      gcvalue(o)->isBlack() ? "black" : "grey");
-    if (gcvalue(o)->isFinalized()) {
+    lua_pushstring(L, lo->isWhite() ? "white" :
+                      lo->isBlack() ? "black" : "grey");
+    if (lo->isFinalized()) {
       lua_pushliteral(L, "/finalized"); n++;
     }
-    if (gcvalue(o)->isSeparated()) {
+    if (lo->isSeparated()) {
       lua_pushliteral(L, "/separated"); n++;
     }
-    if (gcvalue(o)->isFixed()) {
+    if (lo->isFixed()) {
       lua_pushliteral(L, "/fixed"); n++;
     }
-    if (gcvalue(o)->isOld()) {
+    if (lo->isOld()) {
       lua_pushliteral(L, "/old"); n++;
     }
     lua_concat(L, n);

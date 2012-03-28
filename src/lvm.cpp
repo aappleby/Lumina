@@ -334,8 +334,8 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
     }
 
     default:
-      assert(iscollectable(t1));
-      return gcvalue(t1) == gcvalue(t2);
+      assert(t1->isCollectable());
+      return t1->getObject() == t2->getObject();
   }
 }
 

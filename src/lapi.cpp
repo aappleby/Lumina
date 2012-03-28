@@ -782,7 +782,7 @@ void lua_rawset (lua_State *L, int idx) {
   setobj(luaH_set(hvalue(t), L->top-2), L->top-1);
   // invalidate TM cache
   hvalue(t)->flags = 0;
-  luaC_barrierback(gcvalue(t), L->top-1);
+  luaC_barrierback(t->getObject(), L->top-1);
   L->top -= 2;
 }
 
@@ -794,7 +794,7 @@ void lua_rawseti (lua_State *L, int idx, int n) {
   t = index2addr(L, idx);
   api_check(ttistable(t), "table expected");
   luaH_setint(hvalue(t), n, L->top - 1);
-  luaC_barrierback(gcvalue(t), L->top-1);
+  luaC_barrierback(t->getObject(), L->top-1);
   L->top--;
 }
 
@@ -808,7 +808,7 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
   api_check(ttistable(t), "table expected");
   setpvalue(&k, cast(void *, p));
   setobj(luaH_set(hvalue(t), &k), L->top - 1);
-  luaC_barrierback(gcvalue(t), L->top - 1);
+  luaC_barrierback(t->getObject(), L->top - 1);
   L->top--;
 }
 
@@ -830,15 +830,15 @@ int lua_setmetatable (lua_State *L, int objindex) {
     case LUA_TTABLE: {
       hvalue(obj)->metatable = mt;
       if (mt)
-        luaC_objbarrierback(L, gcvalue(obj), mt);
-        luaC_checkfinalizer(gcvalue(obj), mt);
+        luaC_objbarrierback(L, obj->getObject(), mt);
+        luaC_checkfinalizer(obj->getObject(), mt);
       break;
     }
     case LUA_TUSERDATA: {
       uvalue(obj)->metatable_ = mt;
       if (mt) {
         luaC_objbarrier(L, uvalue(obj), mt);
-        luaC_checkfinalizer(gcvalue(obj), mt);
+        luaC_checkfinalizer(obj->getObject(), mt);
       }
       break;
     }
@@ -864,7 +864,7 @@ void lua_setuservalue (lua_State *L, int idx) {
   else {
     api_check(ttistable(L->top - 1), "table expected");
     uvalue(o)->env_ = hvalue(L->top - 1);
-    luaC_objbarrier(L, gcvalue(o), hvalue(L->top - 1));
+    luaC_objbarrier(L, o->getObject(), hvalue(L->top - 1));
   }
   L->top--;
 }

@@ -84,7 +84,7 @@ void luaC_step();
 void luaC_checkGC();
 
 
-#define luaC_barrier(p,v) { if ((v)->isWhite() && (p)->isBlack())	luaC_barrier_(p,gcvalue(v)); }
+#define luaC_barrier(p,v) { if ((v)->isWhite() && (p)->isBlack())	luaC_barrier_(p,v->getObject()); }
 #define luaC_barrierback(p,v) { if ((v)->isWhite() && (p)->isBlack()) luaC_barrierback_(p); }
 #define luaC_objbarrier(L,p,o)  { if ((o)->isWhite() && (p)->isBlack()) luaC_barrier_(p,o); }
 #define luaC_objbarrierback(L,p,o)  { if ((o)->isWhite() && (p)->isBlack()) luaC_barrierback_(p); }
