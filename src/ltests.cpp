@@ -135,8 +135,8 @@ static void checkproto (global_State *g, Proto *f) {
   int i;
   if (f->source) checkobjref(g, f, f->source);
   for (i=0; i < (int)f->constants.size(); i++) {
-    if (ttisstring(&f->constants[i]))
-      checkobjref(g, f, tsvalue(&f->constants[i]));
+    if (f->constants[i].isString())
+      checkobjref(g, f, f->constants[i].getString());
   }
   for (i=0; i < (int)f->upvalues.size(); i++) {
     if (f->upvalues[i].name)
@@ -518,7 +518,7 @@ static int hash_query (lua_State *L) {
   THREAD_CHECK(L);
   if (lua_isnone(L, 2)) {
     luaL_argcheck(L, lua_type(L, 1) == LUA_TSTRING, 1, "string expected");
-    lua_pushinteger(L, tsvalue(obj_at(L, 1))->getHash());
+    lua_pushinteger(L, obj_at(L, 1)->getString()->getHash());
   }
   else {
     TValue *o = obj_at(L, 1);

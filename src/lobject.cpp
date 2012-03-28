@@ -229,7 +229,7 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
   }
   pushstr(L, fmt, strlen(fmt));
   if (n > 0) luaV_concat(L, n + 1);
-  return tsvalue(L->top - 1)->c_str();
+  return L->top[-1].getString()->c_str();
 }
 
 

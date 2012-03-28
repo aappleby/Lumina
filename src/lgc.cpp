@@ -99,8 +99,8 @@ static void removeentry (TValue* key, TValue* val) {
 static int iscleared (const TValue *o) {
   if (!o->isCollectable()) return 0;
   
-  if (ttisstring(o)) {
-    tsvalue(o)->stringmark();  /* strings are `values', so are never weak */
+  if (o->isString()) {
+    o->getString()->stringmark();  /* strings are `values', so are never weak */
     return 0;
   }
   
@@ -418,9 +418,9 @@ static int traversetable (global_State *g, Table *h) {
   }
 
   if(mode) {
-    assert(ttisstring(mode));
-    info.weakkey = (strchr(tsvalue(mode)->c_str(), 'k') != NULL);
-    info.weakval = (strchr(tsvalue(mode)->c_str(), 'v') != NULL);
+    assert(mode->isString());
+    info.weakkey = (strchr(mode->getString()->c_str(), 'k') != NULL);
+    info.weakval = (strchr(mode->getString()->c_str(), 'v') != NULL);
     assert(info.weakkey || info.weakval);
   }
 

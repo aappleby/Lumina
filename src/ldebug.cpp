@@ -314,8 +314,8 @@ static const char *getobjname (Proto *p, int lastpc, int reg,
 static void kname (Proto *p, int pc, int c, const char **name) {
   if (ISK(c)) {  /* is 'c' a constant? */
     TValue *kvalue = &p->constants[INDEXK(c)];
-    if (ttisstring(kvalue)) {  /* literal constant? */
-      *name = tsvalue(kvalue)->c_str();  /* it is its own name */
+    if (kvalue->isString()) {  /* literal constant? */
+      *name = kvalue->getString()->c_str();  /* it is its own name */
       return;
     }
     /* else no reasonable name found */
@@ -415,8 +415,8 @@ static const char *getobjname (Proto *p, int lastpc, int reg,
       case OP_LOADKX: {
         int b = (op == OP_LOADK) ? GETARG_Bx(i)
                                  : GETARG_Ax(p->code[pc + 1]);
-        if (ttisstring(&p->constants[b])) {
-          *name = tsvalue(&p->constants[b])->c_str();
+        if (p->constants[b].isString()) {
+          *name = p->constants[b].getString()->c_str();
           return "constant";
         }
         break;
@@ -523,8 +523,8 @@ l_noret luaG_typeerror (const TValue *o, const char *op) {
 
 
 l_noret luaG_concaterror (StkId p1, StkId p2) {
-  if (ttisstring(p1) || p1->isNumber()) p1 = p2;
-  assert(!ttisstring(p1) && !p2->isNumber());
+  if (p1->isString() || p1->isNumber()) p1 = p2;
+  assert(!p1->isString() && !p2->isNumber());
   luaG_typeerror(p1, "concatenate");
 }
 

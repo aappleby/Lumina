@@ -257,13 +257,13 @@ static void PrintConstant(const Proto* f, int i)
 	printf("nil");
 	break;
   case LUA_TBOOLEAN:
-	printf(bvalue(o) ? "true" : "false");
+	printf(o->getBool() ? "true" : "false");
 	break;
   case LUA_TNUMBER:
 	printf(LUA_NUMBER_FMT,o->getNumber());
 	break;
   case LUA_TSTRING:
-	PrintString(tsvalue(o));
+	PrintString(o->getString());
 	break;
   default:				/* cannot happen */
 	printf("? type=%d",ttype(o));

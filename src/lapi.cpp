@@ -409,7 +409,7 @@ int lua_toboolean (lua_State *L, int idx) {
 const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
-  if (!ttisstring(o)) {
+  if (!o->isString()) {
     if (!luaV_tostring(L, o)) {  /* conversion failed? */
       if (len != NULL) *len = 0;
       return NULL;
@@ -417,8 +417,8 @@ const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
     luaC_checkGC();
     o = index2addr(L, idx);  /* previous call may reallocate the stack */
   }
-  if (len != NULL) *len = tsvalue(o)->getLen();
-  return tsvalue(o)->c_str();
+  if (len != NULL) *len = o->getString()->getLen();
+  return o->getString()->c_str();
 }
 
 
@@ -426,7 +426,7 @@ size_t lua_rawlen (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
   switch (o->basetype()) {
-    case LUA_TSTRING: return tsvalue(o)->getLen();
+    case LUA_TSTRING: return o->getString()->getLen();
     case LUA_TUSERDATA: return uvalue(o)->len_;
     case LUA_TTABLE: return luaH_getn(hvalue(o));
     default: return 0;

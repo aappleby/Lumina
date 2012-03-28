@@ -90,13 +90,13 @@ static void DumpConstants(const Proto* f, DumpState* D)
    case LUA_TNIL:
 	break;
    case LUA_TBOOLEAN:
-	DumpChar(bvalue(o),D);
+   DumpChar(o->getBool() ? 1 : 0,D);
 	break;
    case LUA_TNUMBER:
 	DumpNumber(o->getNumber(),D);
 	break;
    case LUA_TSTRING:
-	DumpString(tsvalue(o),D);
+	DumpString(o->getString(),D);
 	break;
   }
  }

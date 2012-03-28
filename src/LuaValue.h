@@ -60,7 +60,7 @@ public:
 
   bool isNil() const           { return rawtype() == LUA_TNIL; }
   bool isNotNil() const        { return rawtype() != LUA_TNIL; }
-  bool isBoolean() const       { return tagtype() == LUA_TBOOLEAN; }
+  bool isBool() const          { return tagtype() == LUA_TBOOLEAN; }
   bool isLightUserdata() const { return tagtype() == LUA_TLIGHTUSERDATA; }
   bool isNumber() const        { return tagtype() == LUA_TNUMBER; }
   bool isString() const        { return tagtype() == LUA_TSTRING; }
@@ -86,6 +86,7 @@ public:
 
   //----------
 
+  bool getBool() const { assert(isBool()); return b ? true : false; }
   int getInteger() const { return (int)getNumber(); }
 
   double getNumber() const { assert(isNumber()); return n; }
@@ -96,10 +97,12 @@ public:
   Closure* getCClosure() { assert(isCClosure()); return reinterpret_cast<Closure*>(gc); }
   Closure* getLClosure() { assert(isLClosure()); return reinterpret_cast<Closure*>(gc); }
 
-  TString* getString() { assert(isString()); return reinterpret_cast<TString*>(gc); }
+  TString* getString() const { assert(isString()); return reinterpret_cast<TString*>(gc); }
   Table*   getTable()  { assert(isTable()); return reinterpret_cast<Table*>(gc); }
 
   Table* getTable() const { assert(isTable()); return reinterpret_cast<Table*>(gc); }
+
+  //----------
 
   int32_t rawtype() const  { return tt_; }
   int32_t tagtype() const  { return tt_ & 0x3f; }
@@ -149,8 +152,6 @@ public:
 
 /* Macros to test type */
 #define checktag(o,t)		      (rttype(o) == (t))
-#define ttisnil(o)		        checktag((o), LUA_TNIL)
-#define ttisboolean(o)		    checktag((o), LUA_TBOOLEAN)
 #define ttislightuserdata(o)	checktag((o), LUA_TLIGHTUSERDATA)
 #define ttisstring(o)		      checktag((o), ctb(LUA_TSTRING))
 #define ttistable(o)		      checktag((o), ctb(LUA_TTABLE))
@@ -167,20 +168,18 @@ public:
 
 /* Macros to access values */
 #define pvalue(o)	            check_exp(ttislightuserdata(o), (o)->p)
-#define tsvalue(o)	          check_exp(ttisstring(o), reinterpret_cast<TString*>((o)->gc))
 #define uvalue(o)	            check_exp(ttisuserdata(o), reinterpret_cast<Udata*>((o)->gc))
 #define clvalue(o)	          check_exp(ttisclosure(o), reinterpret_cast<Closure*>((o)->gc))
 #define clLvalue(o)	          check_exp(ttisLclosure(o), reinterpret_cast<Closure*>((o)->gc))
 #define clCvalue(o)	          check_exp(ttisCclosure(o), reinterpret_cast<Closure*>((o)->gc))
 #define fvalue(o)	            check_exp(ttislcf(o), (o)->f)
 #define hvalue(o)	            check_exp(ttistable(o), reinterpret_cast<Table*>((o)->gc))
-#define bvalue(o)	            check_exp(ttisboolean(o), (o)->b)
 #define thvalue(o)	          check_exp(ttisthread(o), reinterpret_cast<lua_State*>((o)->gc))
 
 /* a dead value may get the 'gc' field, but cannot access its contents */
 #define deadvalue(o)	        check_exp(ttisdeadkey(o), cast(void *, (o)->gc))
 
-#define l_isfalse(o)	((o)->isNil() || (ttisboolean(o) && bvalue(o) == 0))
+#define l_isfalse(o)	((o)->isNil() || ((o)->isBool() && !(o)->getBool()))
 
 /* Macros to set values */
 #define settt_(o,t)	((o)->tt_=(t))

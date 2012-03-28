@@ -39,7 +39,7 @@
 const TValue *luaV_tonumber (const TValue *obj, TValue *n) {
   lua_Number num;
   if (obj->isNumber()) return obj;
-  if (ttisstring(obj) && luaO_str2d(tsvalue(obj)->c_str(), tsvalue(obj)->getLen(), &num)) {
+  if (obj->isString() && luaO_str2d(obj->getString()->c_str(), obj->getString()->getLen(), &num)) {
     n[0] = num;
     return n;
   }
@@ -268,8 +268,8 @@ int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
   int res;
   if (l->isNumber() && r->isNumber())
     return luai_numlt(L, l->getNumber(), r->getNumber());
-  else if (ttisstring(l) && ttisstring(r))
-    return l_strcmp(tsvalue(l), tsvalue(r)) < 0;
+  else if (l->isString() && r->isString())
+    return l_strcmp(l->getString(), r->getString()) < 0;
   else if ((res = call_orderTM(L, l, r, TM_LT)) < 0)
     luaG_ordererror(l, r);
   return res;
@@ -282,7 +282,7 @@ int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
   if (l->isNumber() && r->isNumber())
     return luai_numle(L, l->getNumber(), r->getNumber());
   else if (ttisstring(l) && ttisstring(r))
-    return l_strcmp(tsvalue(l), tsvalue(r)) <= 0;
+    return l_strcmp(l->getString(), r->getString()) <= 0;
   else if ((res = call_orderTM(L, l, r, TM_LE)) >= 0)  /* first try `le' */
     return res;
   else if ((res = call_orderTM(L, r, l, TM_LT)) < 0)  /* else try `lt' */
@@ -306,10 +306,10 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
       // negative zero.
       return t1->getNumber() == t2->getNumber();
     }
-    case LUA_TBOOLEAN: return bvalue(t1) == bvalue(t2);  /* true must be 1 !! */
+    case LUA_TBOOLEAN: return t1->getBool() == t2->getBool();  /* true must be 1 !! */
     case LUA_TLIGHTUSERDATA: return pvalue(t1) == pvalue(t2);
     case LUA_TLCF: return fvalue(t1) == fvalue(t2);
-    case LUA_TSTRING: return tsvalue(t1) == tsvalue(t2);
+    case LUA_TSTRING: return t1->getString() == t2->getString();
 
     case LUA_TUSERDATA: {
       if (uvalue(t1) == uvalue(t2)) return 1;
@@ -345,23 +345,23 @@ void luaV_concat (lua_State *L, int total) {
   do {
     StkId top = L->top;
     int n = 2;  /* number of elements handled in this pass (at least 2) */
-    if (!(ttisstring(top-2) || top[-2].isNumber()) || !tostring(L, top-1)) {
+    if (!(top[-2].isString() || top[-2].isNumber()) || !tostring(L, top-1)) {
       if (!call_binTM(L, top-2, top-1, top-2, TM_CONCAT))
         luaG_concaterror(top-2, top-1);
     }
-    else if (tsvalue(top-1)->getLen() == 0)  /* second operand is empty? */
+    else if (top[-1].getString()->getLen() == 0)  /* second operand is empty? */
       (void)tostring(L, top - 2);  /* result is first operand */
-    else if (ttisstring(top-2) && tsvalue(top-2)->getLen() == 0) {
-      top[-2] = tsvalue(top-1);
+    else if (top[-2].isString() && top[-2].getString()->getLen() == 0) {
+      top[-2] = top[-1].getString();
     }
     else {
       /* at least two non-empty string values; get as many as possible */
-      size_t tl = tsvalue(top-1)->getLen();
+      size_t tl = top[-1].getString()->getLen();
       char *buffer;
       int i;
       /* collect total length */
       for (i = 1; i < total && tostring(L, top-i-1); i++) {
-        size_t l = tsvalue(top-i-1)->getLen();
+        size_t l = top[-i-1].getString()->getLen();
         if (l >= (MAX_SIZET/sizeof(char)) - tl)
           luaG_runerror("string length overflow");
         tl += l;
@@ -370,8 +370,8 @@ void luaV_concat (lua_State *L, int total) {
       tl = 0;
       n = i;
       do {  /* concat all strings */
-        size_t l = tsvalue(top-i)->getLen();
-        memcpy(buffer+tl, tsvalue(top-i)->c_str(), l * sizeof(char));
+        size_t l = top[-i].getString()->getLen();
+        memcpy(buffer+tl, top[-i].getString()->c_str(), l * sizeof(char));
         tl += l;
       } while (--i > 0);
       top[-n] = luaS_newlstr(buffer, tl);
@@ -394,7 +394,7 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
       return;
     }
     case LUA_TSTRING: {
-      ra[0] = tsvalue(rb)->getLen();
+      ra[0] = rb->getString()->getLen();
       return;
     }
     default: {  /* try metamethod */
