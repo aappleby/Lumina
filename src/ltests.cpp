@@ -153,22 +153,22 @@ static void checkproto (global_State *g, Proto *f) {
 }
 
 
-
-static void checkclosure (global_State *g, Closure *cl) {
-  if (cl->isC) {
-    int i;
-    for (i=0; i<cl->nupvalues; i++)
-      checkvalref(g, cl, &cl->pupvals_[i]);
+static void checkCClosure (global_State *g, Closure *cl) {
+  int i;
+  for (i=0; i<cl->nupvalues; i++) {
+    checkvalref(g, cl, &cl->pupvals_[i]);
   }
-  else {
-    int i;
-    assert(cl->nupvalues == cl->p->upvalues.size());
-    checkobjref(g, cl, cl->p);
-    for (i=0; i<cl->nupvalues; i++) {
-      if (cl->ppupvals_[i]) {
-        assert(cl->ppupvals_[i]->tt == LUA_TUPVAL);
-        checkobjref(g, cl, cl->ppupvals_[i]);
-      }
+}
+
+
+static void checkLClosure (global_State *g, Closure *cl) {
+  int i;
+  assert(cl->nupvalues == cl->p->upvalues.size());
+  checkobjref(g, cl, cl->p);
+  for (i=0; i<cl->nupvalues; i++) {
+    if (cl->ppupvals_[i]) {
+      assert(cl->ppupvals_[i]->tt == LUA_TUPVAL);
+      checkobjref(g, cl, cl->ppupvals_[i]);
     }
   }
 }
@@ -236,7 +236,12 @@ static void checkobject (global_State *g, LuaObject *o) {
         break;
       }
       case LUA_TFUNCTION: {
-        checkclosure(g, gco2cl(o));
+        Closure* c = dynamic_cast<Closure*>(o);
+        if(c->isC) {
+          checkCClosure(g, c);
+        } else {
+          checkLClosure(g, c);
+        }
         break;
       }
       case LUA_TPROTO: {
@@ -627,7 +632,6 @@ static int unref (lua_State *L) {
 static int upvalue (lua_State *L) {
   THREAD_CHECK(L);
   int n = luaL_checkint(L, 2);
-  //luaL_checktype(L, 1, LUA_TFUNCTION);
   luaL_checkIsFunction(L, 1);
   if (lua_isnone(L, 3)) {
     const char *name = lua_getupvalue(L, 1, n);

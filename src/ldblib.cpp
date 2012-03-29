@@ -259,7 +259,6 @@ static int auxupvalue (lua_State *L, int get) {
   THREAD_CHECK(L);
   const char *name;
   int n = luaL_checkint(L, 2);
-  //luaL_checktype(L, 1, LUA_TFUNCTION);
   luaL_checkIsFunction(L, 1);
   name = get ? lua_getupvalue(L, 1, n) : lua_setupvalue(L, 1, n);
   if (name == NULL) return 0;
@@ -286,7 +285,6 @@ static int checkupval (lua_State *L, int argf, int argnup) {
   THREAD_CHECK(L);
   lua_Debug ar;
   int nup = luaL_checkint(L, argnup);
-  //luaL_checktype(L, argf, LUA_TFUNCTION);
   luaL_checkIsFunction(L, argf);
   lua_pushvalue(L, argf);
   lua_getinfo(L, ">u", &ar);
@@ -365,7 +363,6 @@ static int db_sethook (lua_State *L) {
   }
   else {
     const char *smask = luaL_checkstring(L, arg+2);
-    //luaL_checktype(L, arg+1, LUA_TFUNCTION);
     luaL_checkIsFunction(L, arg+1);
     count = luaL_optint(L, arg+3, 0);
     func = hookf; mask = makemask(smask, count);

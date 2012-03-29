@@ -54,34 +54,6 @@ void TValue::sanityCheck() const {
     assert((tt_ & 0xF) == LUA_TFUNCTION);
   }
 
-  if(tt_ & BIT_ISCOLLECTABLE) {
-    bool isObject = false;
-    if((tt_ & 0xF) == LUA_TSTRING) isObject = true;
-    if((tt_ & 0xF) == LUA_TTABLE) isObject = true;
-    if((tt_ & 0xF) == LUA_TUSERDATA) isObject = true;
-    if((tt_ & 0xF) == LUA_TTHREAD) isObject = true;
-    if((tt_ & 0xF) == LUA_TPROTO) isObject = true;
-    if((tt_ & 0xF) == LUA_TUPVAL) isObject = true;
-    if((tt_ & 0xF) == LUA_TFUNCTION) {
-      if((tt_ & 0x3F) == LUA_TLCL) isObject = true;
-      if((tt_ & 0x3F) == LUA_TCCL) isObject = true;
-    }
-    assert(isObject);
-  } else {
-    bool isObject = false;
-    if((tt_ & 0xF) == LUA_TSTRING) isObject = true;
-    if((tt_ & 0xF) == LUA_TTABLE) isObject = true;
-    if((tt_ & 0xF) == LUA_TUSERDATA) isObject = true;
-    if((tt_ & 0xF) == LUA_TTHREAD) isObject = true;
-    if((tt_ & 0xF) == LUA_TPROTO) isObject = true;
-    if((tt_ & 0xF) == LUA_TUPVAL) isObject = true;
-    if((tt_ & 0xF) == LUA_TFUNCTION) {
-      if((tt_ & 0x3F) == LUA_TLCL) isObject = true;
-      if((tt_ & 0x3F) == LUA_TCCL) isObject = true;
-    }
-    assert(!isObject);
-  }
-
   if(isCollectable()) {
     assert((gc->tt <= LUA_TUPVAL) || (((gc->tt & 0xF) == LUA_TFUNCTION) && (gc->tt < 0x3f)));
     gc->sanityCheck();
@@ -109,12 +81,20 @@ bool TValue::isWhite() const {
 }
 
 bool TValue::isCollectable() const {
-  return (tt_ & BIT_ISCOLLECTABLE) != 0;
+  if((tt_ & 0x3F) == LUA_TSTRING) return true;
+  if((tt_ & 0x3F) == LUA_TTABLE) return true;
+  if((tt_ & 0x3F) == LUA_TUSERDATA) return true;
+  if((tt_ & 0x3F) == LUA_TTHREAD) return true;
+  if((tt_ & 0x3F) == LUA_TPROTO) return true;
+  if((tt_ & 0x3F) == LUA_TUPVAL) return true;
+  if((tt_ & 0x3F) == LUA_TLCL) return true;
+  if((tt_ & 0x3F) == LUA_TCCL) return true;
+  return false;
 }
 
 bool TValue::isFunction() const {
-  if(tt_ == (LUA_TLCL | BIT_ISCOLLECTABLE)) return true;
-  if(tt_ == (LUA_TCCL | BIT_ISCOLLECTABLE)) return true;
-  if(tt_ == (LUA_TLCF)) return true;
+  if(tt_ == LUA_TLCL) return true;
+  if(tt_ == LUA_TCCL) return true;
+  if(tt_ == LUA_TLCF) return true;
   return false;
 }

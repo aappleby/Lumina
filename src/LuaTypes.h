@@ -105,13 +105,6 @@ enum LuaTag {
 ** 2 - regular C function (closure)
 */
 
-
-/* Bit mark for collectable types */
-#define BIT_ISCOLLECTABLE	(1 << 6)
-
-/* mark a tag as collectable */
-#define ctb(t)			((t) | BIT_ISCOLLECTABLE)
-
 /*
 ** number of all possible tags (including LUA_TNONE but excluding DEADKEY)
 */

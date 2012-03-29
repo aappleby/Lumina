@@ -35,14 +35,14 @@ public:
   void operator = (TString* v ) {
     bytes = 0;
     gc = (LuaObject*)v;
-    tt_ = LUA_TSTRING | BIT_ISCOLLECTABLE;
+    tt_ = LUA_TSTRING;
     sanityCheck();
   }
 
   void operator = (Proto* p) {
     bytes = 0;
     gc = (LuaObject*)p;
-    tt_ = LUA_TPROTO | BIT_ISCOLLECTABLE;
+    tt_ = LUA_TPROTO;
     sanityCheck();
   }
 
@@ -70,22 +70,23 @@ public:
   bool isNotNil() const        { return rawtype() != LUA_TNIL; }
 
   bool isBool() const          { return rawtype() == LUA_TBOOLEAN; }
-  bool isInteger() const { return isNumber() && (n == (int)n); }
   bool isNumber() const        { return rawtype() == LUA_TNUMBER; }
+
+  bool isInteger() const       { return isNumber() && (n == (int)n); }
 
   bool isLightUserdata() const { return rawtype() == LUA_TLIGHTUSERDATA; }
 
   bool isString() const        { return tagtype() == LUA_TSTRING; }
   bool isTable() const         { return tagtype() == LUA_TTABLE; }
   bool isUserdata() const      { return tagtype() == LUA_TUSERDATA; }
-  bool isThread() const        { return rawtype() == (LUA_TTHREAD | BIT_ISCOLLECTABLE); }
+  bool isThread() const        { return rawtype() == LUA_TTHREAD; }
   bool isUpval() const         { return tagtype() == LUA_TUPVAL; }
   bool isDeadKey() const       { return rawtype() == LUA_TDEADKEY; }
-  bool isProto() const         { return rawtype() == (LUA_TPROTO | BIT_ISCOLLECTABLE); }
+  bool isProto() const         { return rawtype() == LUA_TPROTO; }
 
   bool isClosure() const       { return (rawtype() & 0x1F) == LUA_TFUNCTION; }
-  bool isCClosure() const      { return rawtype() == (LUA_TCCL | BIT_ISCOLLECTABLE); }
-  bool isLClosure() const      { return rawtype() == (LUA_TLCL | BIT_ISCOLLECTABLE); }
+  bool isCClosure() const      { return rawtype() == LUA_TCCL; }
+  bool isLClosure() const      { return rawtype() == LUA_TLCL; }
   bool isLightFunction() const { return rawtype() == LUA_TLCF; }
 
   void setDeadKey() { tt_ = LUA_TDEADKEY; }

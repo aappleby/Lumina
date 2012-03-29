@@ -21,6 +21,7 @@
 
 #include "LuaTypes.h"
 
+TValue *index2addr (lua_State *L, int idx);
 /*
 ** pseudo-indices
 */
@@ -255,7 +256,11 @@ void  (lua_len)    (lua_State *L, int idx);
 
 #define lua_pushcfunction(L,f)	lua_pushcclosure(L, (f), 0)
 
-#define lua_isfunction(L,n)	(lua_type(L, (n)) == LUA_TFUNCTION)
+inline bool lua_isfunction(lua_State* L, int n) {
+  TValue* o = index2addr(L,n);
+  return o->isFunction();
+}
+
 #define lua_istable(L,n)	(lua_type(L, (n)) == LUA_TTABLE)
 #define lua_islightuserdata(L,n)	(lua_type(L, (n)) == LUA_TLIGHTUSERDATA)
 #define lua_isnil(L,n)		(lua_type(L, (n)) == LUA_TNIL)
