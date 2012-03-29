@@ -27,7 +27,7 @@ Closure *luaF_newCclosure (int n) {
   TValue* b = (TValue*)luaM_alloc(n * sizeof(TValue));
   if(b == NULL) return NULL;
 
-  Closure *c = new Closure();
+  Closure *c = new Closure(LUA_TFUNCTION);
   if(c == NULL) {
     luaM_free(b);
     return NULL;
@@ -49,7 +49,7 @@ Closure *luaF_newLclosure (Proto *p) {
   UpVal** b = (UpVal**)luaM_alloc(n * sizeof(TValue*));
   if(b == NULL) return NULL;
 
-  Closure* c = new Closure();
+  Closure* c = new Closure(LUA_TFUNCTION);
   if(c == NULL) {
     luaM_free(b);
     return NULL;

@@ -1,6 +1,6 @@
 #include "LuaClosure.h"
 
-Closure::Closure() : LuaObject(LUA_TFUNCTION) {
+Closure::Closure(int type) : LuaObject(type) {
 }
 
 Closure::~Closure() {
