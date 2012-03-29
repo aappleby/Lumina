@@ -50,6 +50,35 @@ void TValue::operator = (LuaObject* o) {
 }
 
 void TValue::sanityCheck() const {
+
+  if(tt_ & BIT_ISCOLLECTABLE) {
+    bool isObject = false;
+    if((tt_ & 0xF) == LUA_TSTRING) isObject = true;
+    if((tt_ & 0xF) == LUA_TTABLE) isObject = true;
+    if((tt_ & 0xF) == LUA_TUSERDATA) isObject = true;
+    if((tt_ & 0xF) == LUA_TTHREAD) isObject = true;
+    if((tt_ & 0xF) == LUA_TPROTO) isObject = true;
+    if((tt_ & 0xF) == LUA_TUPVAL) isObject = true;
+    if((tt_ & 0xF) == LUA_TFUNCTION) {
+      if((tt_ & 0x3F) == LUA_TLCL) isObject = true;
+      if((tt_ & 0x3F) == LUA_TCCL) isObject = true;
+    }
+    assert(isObject);
+  } else {
+    bool isObject = false;
+    if((tt_ & 0xF) == LUA_TSTRING) isObject = true;
+    if((tt_ & 0xF) == LUA_TTABLE) isObject = true;
+    if((tt_ & 0xF) == LUA_TUSERDATA) isObject = true;
+    if((tt_ & 0xF) == LUA_TTHREAD) isObject = true;
+    if((tt_ & 0xF) == LUA_TPROTO) isObject = true;
+    if((tt_ & 0xF) == LUA_TUPVAL) isObject = true;
+    if((tt_ & 0xF) == LUA_TFUNCTION) {
+      if((tt_ & 0x3F) == LUA_TLCL) isObject = true;
+      if((tt_ & 0x3F) == LUA_TCCL) isObject = true;
+    }
+    assert(!isObject);
+  }
+
   if(isCollectable()) {
     gc->sanityCheck();
     assert(basetype() == gc->tt);

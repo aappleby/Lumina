@@ -97,7 +97,9 @@ static void removeentry (TValue* key, TValue* val) {
 ** being finalized, keep them in keys, but not in values
 */
 static int iscleared (const TValue *o) {
-  if (!o->isCollectable()) return 0;
+  if (!o->isCollectable()) {
+    return 0;
+  }
   
   if (o->isString()) {
     o->getString()->stringmark();  /* strings are `values', so are never weak */
