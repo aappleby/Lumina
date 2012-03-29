@@ -27,6 +27,7 @@
 
 #include "lstate.h" // for THREAD_CHECK
 
+TValue *index2addr (lua_State *L, int idx);
 
 /*
 ** {======================================================
@@ -352,6 +353,18 @@ void luaL_checkstack (lua_State *L, int space, const char *msg) {
   }
 }
 
+void luaL_checkIsFunction (lua_State *L, int narg) {
+  THREAD_CHECK(L);
+  StkId o = index2addr(L, narg);
+
+  if(o->tagtype() == LUA_TLCL) return;
+  if(o->tagtype() == LUA_TLCF) return;
+  if(o->tagtype() == LUA_TCCL) return;
+
+  const char* actualType = ttypename(o->tagtype());
+  const char *msg = lua_pushfstring(L, "Expected a function, got a %s", actualType);
+  luaL_argerror(L, narg, msg);
+}
 
 void luaL_checktype (lua_State *L, int narg, int t) {
   THREAD_CHECK(L);

@@ -107,3 +107,14 @@ bool TValue::isWhite() const {
   if(!isCollectable()) return false;
   return gc->isWhite();
 }
+
+bool TValue::isCollectable() const {
+  return (tt_ & BIT_ISCOLLECTABLE) != 0;
+}
+
+bool TValue::isFunction() const {
+  if(tt_ == (LUA_TLCL | BIT_ISCOLLECTABLE)) return true;
+  if(tt_ == (LUA_TCCL | BIT_ISCOLLECTABLE)) return true;
+  if(tt_ == (LUA_TLCF)) return true;
+  return false;
+}

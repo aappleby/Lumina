@@ -241,8 +241,11 @@ static int sort (lua_State *L) {
   THREAD_CHECK(L);
   int n = aux_getn(L, 1);
   luaL_checkstack(L, 40, "");  /* assume array is smaller than 2^40 */
-  if (!lua_isnoneornil(L, 2))  /* is there a 2nd argument? */
-    luaL_checktype(L, 2, LUA_TFUNCTION);
+  if (!lua_isnoneornil(L, 2)) {
+    /* is there a 2nd argument? */
+    //luaL_checktype(L, 2, LUA_TFUNCTION);
+    luaL_checkIsFunction(L, 2);
+  }
   lua_settop(L, 2);  /* make sure there is two arguments */
   auxsort(L, 1, n);
   return 0;

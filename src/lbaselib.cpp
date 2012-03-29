@@ -337,7 +337,8 @@ static int luaB_load (lua_State *L) {
   }
   else {  /* loading from a reader function */
     const char *chunkname = luaL_optstring(L, 2, "=(load)");
-    luaL_checktype(L, 1, LUA_TFUNCTION);
+    //luaL_checktype(L, 1, LUA_TFUNCTION);
+    luaL_checkIsFunction(L, 1);
     lua_settop(L, RESERVEDSLOT);  /* create reserved slot */
     status = lua_load(L, generic_reader, NULL, chunkname, mode);
   }

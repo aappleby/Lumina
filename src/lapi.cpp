@@ -53,7 +53,7 @@ void api_checknelems(lua_State* L, int n) {
 // Negative stack indices are indexed from the stack top.
 // Negative indices less than or equal to LUA_REGISTRYINDEX are special.
 
-static TValue *index2addr (lua_State *L, int idx) {
+TValue *index2addr (lua_State *L, int idx) {
   THREAD_CHECK(L);
   CallInfo *ci = L->ci_;
   if (idx > 0) {

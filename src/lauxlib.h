@@ -51,6 +51,8 @@ void (luaL_checkstack) (lua_State *L, int sz, const char *msg);
 void (luaL_checktype) (lua_State *L, int narg, int t);
 void (luaL_checkany) (lua_State *L, int narg);
 
+void luaL_checkIsFunction (lua_State *L, int narg);
+
 int   (luaL_newmetatable) (lua_State *L, const char *tname);
 void  (luaL_setmetatable) (lua_State *L, const char *tname);
 void *(luaL_testudata) (lua_State *L, int ud, const char *tname);

@@ -63,14 +63,15 @@ public:
 
   // stuff
 
+  bool isCollectable() const;
+  bool isFunction() const;
+
   bool isNil() const           { return rawtype() == LUA_TNIL; }
   bool isNotNil() const        { return rawtype() != LUA_TNIL; }
 
   bool isBool() const          { return rawtype() == LUA_TBOOLEAN; }
   bool isInteger() const { return isNumber() && (n == (int)n); }
   bool isNumber() const        { return rawtype() == LUA_TNUMBER; }
-
-  bool isCollectable() const   { return (rawtype() & BIT_ISCOLLECTABLE) != 0; }
 
   bool isLightUserdata() const { return rawtype() == LUA_TLIGHTUSERDATA; }
 
@@ -82,7 +83,6 @@ public:
   bool isDeadKey() const       { return rawtype() == LUA_TDEADKEY; }
   bool isProto() const         { return rawtype() == (LUA_TPROTO | BIT_ISCOLLECTABLE); }
 
-  bool isFunction() const      { return basetype() == LUA_TFUNCTION; }
   bool isClosure() const       { return (rawtype() & 0x1F) == LUA_TFUNCTION; }
   bool isCClosure() const      { return rawtype() == (LUA_TCCL | BIT_ISCOLLECTABLE); }
   bool isLClosure() const      { return rawtype() == (LUA_TLCL | BIT_ISCOLLECTABLE); }

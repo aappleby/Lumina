@@ -627,7 +627,8 @@ static int unref (lua_State *L) {
 static int upvalue (lua_State *L) {
   THREAD_CHECK(L);
   int n = luaL_checkint(L, 2);
-  luaL_checktype(L, 1, LUA_TFUNCTION);
+  //luaL_checktype(L, 1, LUA_TFUNCTION);
+  luaL_checkIsFunction(L, 1);
   if (lua_isnone(L, 3)) {
     const char *name = lua_getupvalue(L, 1, n);
     if (name == NULL) return 0;

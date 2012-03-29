@@ -183,7 +183,8 @@ static int writer (lua_State *L, const void* b, size_t size, void* B) {
 static int str_dump (lua_State *L) {
   THREAD_CHECK(L);
   luaL_Buffer b;
-  luaL_checktype(L, 1, LUA_TFUNCTION);
+  //luaL_checktype(L, 1, LUA_TFUNCTION);
+  luaL_checkIsFunction(L, 1);
   lua_settop(L, 1);
   luaL_buffinit(L,&b);
   if (lua_dump(L, writer, &b) != 0)
