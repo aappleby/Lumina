@@ -672,25 +672,19 @@ static void add_s (MatchState *ms, luaL_Buffer *b, const char *s,
 
 
 static void add_value (MatchState *ms, luaL_Buffer *b, const char *s,
-                                       const char *e, int tr) {
+                                       const char *e, TValue v) {
   lua_State *L = ms->L;
-  switch (tr) {
-    case LUA_TFUNCTION: {
-      int n;
-      lua_pushvalue(L, 3);
-      n = push_captures(ms, s, e);
-      lua_call(L, n, 1);
-      break;
-    }
-    case LUA_TTABLE: {
-      push_onecapture(ms, 0, s, e);
-      lua_gettable(L, 3);
-      break;
-    }
-    default: {  /* LUA_TNUMBER or LUA_TSTRING */
-      add_s(ms, b, s, e);
-      return;
-    }
+  if(v.isFunction()) {
+    int n;
+    lua_pushvalue(L, 3);
+    n = push_captures(ms, s, e);
+    lua_call(L, n, 1);
+  } else if(v.isTable()) {
+    push_onecapture(ms, 0, s, e);
+    lua_gettable(L, 3);
+  } else {
+    add_s(ms, b, s, e);
+    return;
   }
   if (!lua_toboolean(L, -1)) {  /* nil or false? */
     lua_pop(L, 1);
@@ -701,21 +695,27 @@ static void add_value (MatchState *ms, luaL_Buffer *b, const char *s,
   luaL_addvalue(b);  /* add result to accumulator */
 }
 
+// can't hold on to inde2addr(L,3) here, as the stack might get reallocated
+// out from under us during the while loop
 
 static int str_gsub (lua_State *L) {
   THREAD_CHECK(L);
   size_t srcl, lp;
   const char *src = luaL_checklstring(L, 1, &srcl);
   const char *p = luaL_checklstring(L, 2, &lp);
-  int tr = lua_type(L, 3);
+  TValue v = *index2addr(L, 3);
   size_t max_s = luaL_optinteger(L, 4, srcl+1);
   int anchor = (*p == '^');
   size_t n = 0;
   MatchState ms;
   luaL_Buffer b;
-  luaL_argcheck(L, tr == LUA_TNUMBER || tr == LUA_TSTRING ||
-                   tr == LUA_TFUNCTION || tr == LUA_TTABLE, 3,
-                      "string/function/table expected");
+  luaL_argcheck(L,
+                v.isNumber() ||
+                v.isString() ||
+                v.isFunction() ||
+                v.isTable(),
+                3,
+                "string/function/table expected");
   luaL_buffinit(L, &b);
   if (anchor) {
     p++; lp--;  /* skip anchor character */
@@ -730,7 +730,7 @@ static int str_gsub (lua_State *L) {
     e = match(&ms, src, p);
     if (e) {
       n++;
-      add_value(&ms, &b, src, e, tr);
+      add_value(&ms, &b, src, e, v);
     }
     if (e && e>src) /* non empty match? */
       src = e;  /* skip it */
