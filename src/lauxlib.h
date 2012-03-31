@@ -52,6 +52,7 @@ void (luaL_checktype) (lua_State *L, int narg, int t);
 void (luaL_checkany) (lua_State *L, int narg);
 
 void luaL_checkIsFunction (lua_State *L, int narg);
+void luaL_checkIsTable    (lua_State *L, int narg);
 
 int   (luaL_newmetatable) (lua_State *L, const char *tname);
 void  (luaL_setmetatable) (lua_State *L, const char *tname);

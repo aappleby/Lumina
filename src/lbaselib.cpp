@@ -117,11 +117,13 @@ static int luaB_getmetatable (lua_State *L) {
 
 static int luaB_setmetatable (lua_State *L) {
   THREAD_CHECK(L);
-  TValue v = *index2addr(L, 2);
-  int t = lua_type(L, 2);
-  luaL_checktype(L, 1, LUA_TTABLE);
-  luaL_argcheck(L, t == LUA_TNIL || t == LUA_TTABLE, 2,
-                    "nil or table expected");
+  TValue v2 = *index2addr(L, 2);
+  luaL_checkIsTable(L, 1);
+  luaL_argcheck(L,
+                v2.isNil() ||
+                v2.isTable(),
+                2,
+                "nil or table expected");
   if (luaL_getmetafield(L, 1, "__metatable"))
     return luaL_error(L, "cannot change a protected metatable");
   lua_settop(L, 2);

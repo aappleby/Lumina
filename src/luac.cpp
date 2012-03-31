@@ -250,25 +250,28 @@ static void PrintString(const TString* ts)
 
 static void PrintConstant(const Proto* f, int i)
 {
- const TValue* o=&f->constants[i];
- switch (o->tagtype())
- {
-  case LUA_TNIL:
-	printf("nil");
-	break;
-  case LUA_TBOOLEAN:
-	printf(o->getBool() ? "true" : "false");
-	break;
-  case LUA_TNUMBER:
-	printf(LUA_NUMBER_FMT,o->getNumber());
-	break;
-  case LUA_TSTRING:
-	PrintString(o->getString());
-	break;
-  default:				/* cannot happen */
-	printf("? type=%d",o->tagtype());
-	break;
- }
+  TValue v = f->constants[i];
+  if(v.isNil()) {
+    printf("nil");
+    return;
+  }
+
+  if(v.isBool()) {
+    printf(v.getBool() ? "true" : "false");
+    return;
+  }
+
+  if(v.isNumber()) {
+    printf(LUA_NUMBER_FMT,v.getNumber());
+    return;
+  }
+
+  if(v.isString()) {
+    PrintString(v.getString());
+    return;
+  }
+
+  printf("? type=%d",v.tagtype());
 }
 
 #define UPVALNAME(x) ((f->upvalues[x].name) ? f->upvalues[x].name->c_str() : "-")
