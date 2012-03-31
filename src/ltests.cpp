@@ -209,49 +209,59 @@ static void checkstack (global_State *g, lua_State *L1) {
 
 
 static void checkobject (global_State *g, LuaObject *o) {
-  if (o->isDead())
+  if (o->isDead()) {
     assert(issweepphase(g));
-  else {
-    if (g->gcstate == GCSpause && !isgenerational(g))
-      assert(o->isWhite());
-    switch (o->tt) {
-      case LUA_TUPVAL: {
-        UpVal *uv = dynamic_cast<UpVal*>(o);
-        assert(uv->v == &uv->value);  /* must be closed */
-        assert(!o->isGray());  /* closed upvalues are never gray */
-        checkvalref(g, o, uv->v);
-        break;
-      }
-      case LUA_TUSERDATA: {
-        Table *mt = dynamic_cast<Udata*>(o)->metatable_;
-        if (mt) checkobjref(g, o, mt);
-        break;
-      }
-      case LUA_TTABLE: {
-        checktable(g, dynamic_cast<Table*>(o));
-        break;
-      }
-      case LUA_TTHREAD: {
-        checkstack(g, dynamic_cast<lua_State*>(o));
-        break;
-      }
-      case LUA_TFUNCTION: {
-        Closure* c = dynamic_cast<Closure*>(o);
-        if(c->isC) {
-          checkCClosure(g, c);
-        } else {
-          checkLClosure(g, c);
-        }
-        break;
-      }
-      case LUA_TPROTO: {
-        checkproto(g, dynamic_cast<Proto*>(o));
-        break;
-      }
-      case LUA_TSTRING: break;
-      default: assert(0);
-    }
+    return;
   }
+
+  if (g->gcstate == GCSpause && !isgenerational(g)) {
+    assert(o->isWhite());
+  }
+
+  if(o->isUpval()) {
+    UpVal *uv = dynamic_cast<UpVal*>(o);
+    assert(uv->v == &uv->value);  /* must be closed */
+    assert(!o->isGray());  /* closed upvalues are never gray */
+    checkvalref(g, o, uv->v);
+    return;
+  }
+
+  if(o->isUserdata()) {
+    Table *mt = dynamic_cast<Udata*>(o)->metatable_;
+    if (mt) checkobjref(g, o, mt);
+    return;
+  }
+
+  if(o->isTable()) {
+    checktable(g, dynamic_cast<Table*>(o));
+    return;
+  }
+
+  if(o->isThread()) {
+    checkstack(g, dynamic_cast<lua_State*>(o));
+    return;
+  }
+
+  if(o->isClosure()) {
+    Closure* c = dynamic_cast<Closure*>(o);
+    if(c->isC) {
+      checkCClosure(g, c);
+    } else {
+      checkLClosure(g, c);
+    }
+    return;
+  }
+
+  if(o->isProto()) {
+    checkproto(g, dynamic_cast<Proto*>(o));
+    return;
+  }
+
+  if(o->isString()) {
+    return;
+  }
+
+  assert(0);
 }
 
 

@@ -549,28 +549,29 @@ static int propagatemark (global_State *g) {
   o->grayToBlack();
 
   // traverse its children and add them to the gray list(s)
-  switch (o->tt) {
-    case LUA_TTABLE: {
-      return traversetable(g, dynamic_cast<Table*>(o));
-    }
-    case LUA_TFUNCTION: {
-      return traverseclosure(g, dynamic_cast<Closure*>(o));
-    }
-    case LUA_TTHREAD: {
-      // why do threads go on the 'grayagain' list?
-      o->next_gray_ = g->grayagain;
-      g->grayagain = o;
-      o->blackToGray();
-      return traversestack(g, dynamic_cast<lua_State*>(o));
-    }
-    case LUA_TPROTO: {
-      return traverseproto(g, dynamic_cast<Proto*>(o));
-    }
-    default: {
-      assert(0);
-      return 0;
-    }
+
+  if(o->isTable()) {
+    return traversetable(g, dynamic_cast<Table*>(o));
   }
+
+  if(o->isClosure()) {
+    return traverseclosure(g, dynamic_cast<Closure*>(o));
+  }
+
+  if(o->isThread()) {
+    // why do threads go on the 'grayagain' list?
+    o->next_gray_ = g->grayagain;
+    g->grayagain = o;
+    o->blackToGray();
+    return traversestack(g, dynamic_cast<lua_State*>(o));
+  }
+
+  if(o->isProto()) {
+    return traverseproto(g, dynamic_cast<Proto*>(o));
+  }
+
+  assert(false);
+  return 0;
 }
 
 /*
