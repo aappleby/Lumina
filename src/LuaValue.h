@@ -6,8 +6,13 @@ class TValue {
 public:
 
   TValue() { tt_ = LUA_TNIL; bytes = 0; }
+  TValue(int type, uint64_t data) {
+    tt_ = type;
+    bytes = data;
+  }
 
   static TValue nil;
+  static TValue none;
 
   explicit TValue(int v)    { tt_ = LUA_TNUMBER; n = v; }
   explicit TValue(double v) { tt_ = LUA_TNUMBER; n = v; }

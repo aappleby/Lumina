@@ -3,6 +3,7 @@
 #include "LuaObject.h"
 
 TValue TValue::nil;
+TValue TValue::none(LUA_TNONE,0);
 
 TValue::TValue(LuaObject* o) {
   bytes = 0;
