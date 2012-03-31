@@ -27,15 +27,12 @@ struct lua_longjmp;  /* defined in ldo.c */
 #include "LuaObject.h"
 
 /* macros to convert a LuaObject into a specific value */
-#define gco2ts(o)	check_exp((o)->tt == LUA_TSTRING, reinterpret_cast<TString*>(o))
-#define rawgco2u(o)	check_exp((o)->tt == LUA_TUSERDATA, reinterpret_cast<Udata*>(o))
-
-#define gco2u(o)	(rawgco2u(o))
-
-#define gco2cl(o)	check_exp((o)->tt == LUA_TFUNCTION, reinterpret_cast<Closure*>(o))
-#define gco2t(o)	check_exp((o)->tt == LUA_TTABLE, reinterpret_cast<Table*>(o))
-#define gco2p(o)	check_exp((o)->tt == LUA_TPROTO, reinterpret_cast<Proto*>(o))
-#define gco2th(o)	check_exp((o)->tt == LUA_TTHREAD, reinterpret_cast<lua_State*>(o))
+#define gco2ts(o)	check_exp((o)->isString(), dynamic_cast<TString*>(o))
+#define gco2u(o)	check_exp((o)->isUserdata(), dynamic_cast<Udata*>(o))
+#define gco2cl(o)	check_exp((o)->isClosure(), dynamic_cast<Closure*>(o))
+#define gco2t(o)	check_exp((o)->isTable(), dynamic_cast<Table*>(o))
+#define gco2p(o)	check_exp((o)->isProto(), dynamic_cast<Proto*>(o))
+#define gco2th(o)	check_exp((o)->isThread(), dynamic_cast<lua_State*>(o))
 
 /* actual number of total bytes allocated */
 #define gettotalbytes(g)	((g)->totalbytes + (g)->GCdebt)
