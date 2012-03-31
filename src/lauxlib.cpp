@@ -371,8 +371,10 @@ void luaL_checktype (lua_State *L, int narg, int t) {
 
 void luaL_checkany (lua_State *L, int narg) {
   THREAD_CHECK(L);
-  if (lua_type(L, narg) == LUA_TNONE)
+  TValue* v = index2addr2(L, narg);
+  if(v == NULL) {
     luaL_argerror(L, narg, "value expected");
+  }
 }
 
 

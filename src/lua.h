@@ -22,6 +22,7 @@
 #include "LuaTypes.h"
 
 TValue *index2addr (lua_State *L, int idx);
+TValue* index2addr2 (lua_State *L, int idx);
 /*
 ** pseudo-indices
 */
@@ -266,8 +267,19 @@ inline bool lua_isfunction(lua_State* L, int n) {
 #define lua_isnil(L,n)		(lua_type(L, (n)) == LUA_TNIL)
 #define lua_isboolean(L,n)	(lua_type(L, (n)) == LUA_TBOOLEAN)
 #define lua_isthread(L,n)	(lua_type(L, (n)) == LUA_TTHREAD)
-#define lua_isnone(L,n)		(lua_type(L, (n)) == LUA_TNONE)
-#define lua_isnoneornil(L, n)	(lua_type(L, (n)) <= 0)
+
+inline bool lua_isnone(lua_State* L, int n) {
+  TValue* v = index2addr2(L, n);
+  return (v == NULL);
+}
+
+inline bool lua_isnoneornil(lua_State* L, int n) {
+  TValue* v = index2addr2(L, n);
+
+  if(v == NULL) return true;
+  if(v->isNil()) return true;
+  return false;
+}
 
 #define lua_pushliteral(L, s)	\
 	lua_pushlstring(L, "" s, (sizeof(s)/sizeof(char))-1)
