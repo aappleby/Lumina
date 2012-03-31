@@ -210,35 +210,34 @@ static void reallymarkobject (LuaObject *o) {
   global_State* g = thread_G;
   assert(o->isWhite() && !o->isDead());
   o->whiteToGray();
-  switch (o->tt) {
-    case LUA_TSTRING: {
-      return;  /* for strings, gray is as good as black */
-    }
-    case LUA_TUSERDATA: {
-      Table *mt = dynamic_cast<Udata*>(o)->metatable_;
-      markobject(mt);
-      markobject(dynamic_cast<Udata*>(o)->env_);
-      /* all pointers marked */
-      o->grayToBlack();
-      return;
-    }
-    case LUA_TUPVAL: {
-      UpVal *uv = gco2uv(o);
-      markvalue(uv->v);
-      if (uv->v == &uv->value)  /* closed? (open upvalues remain gray) */
-        o->grayToBlack();  /* make it black */
-      return;
-    }
-    case LUA_TFUNCTION:
-    case LUA_TTABLE:
-    case LUA_TTHREAD:
-    case LUA_TPROTO: {
-      o->next_gray_  = g->grayhead_;
-      g->grayhead_ = o;
-      break;
-    }
-    default: assert(0);
+
+  if(o->isString()) return;
+
+  if(o->isUserdata()) {
+    Udata* u = dynamic_cast<Udata*>(o);
+    Table *mt = u->metatable_;
+    markobject(mt);
+    markobject(u->env_);
+    // all pointers marked
+    o->grayToBlack();
+    return;
   }
+
+  if(o->isUpval()) {
+    UpVal *uv = dynamic_cast<UpVal*>(o);
+    markvalue(uv->v);
+    if (uv->v == &uv->value)  // closed? (open upvalues remain gray)
+      uv->grayToBlack();  // make it black
+    return;
+  }
+
+  if(o->isClosure() || o->isTable() || o->isThread() || o->isProto()) {
+    o->next_gray_  = g->grayhead_;
+    g->grayhead_ = o;
+    return;
+  }
+
+  assert(0);
 }
 
 

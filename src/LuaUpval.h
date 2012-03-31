@@ -19,6 +19,3 @@ public:
   UpVal *uprev;
   UpVal *unext;
 };
-
-
-#define gco2uv(o)	check_exp((o)->tt == LUA_TUPVAL, reinterpret_cast<UpVal*>(o))

@@ -68,7 +68,7 @@ UpVal *luaF_findupval (StkId level) {
   LuaObject **pp = &thread_L->openupval;
   UpVal *p;
   UpVal *uv;
-  while (*pp != NULL && (p = gco2uv(*pp))->v >= level) {
+  while (*pp != NULL && (p = dynamic_cast<UpVal*>(*pp))->v >= level) {
     assert(p->v != &p->value);
     if (p->v == level) {  /* found a corresponding upvalue? */
       if (p->isDead())  /* is it dead? */
@@ -96,7 +96,7 @@ void luaF_close (StkId level) {
   lua_State* L = thread_L;
 
   while (L->openupval != NULL) {
-    uv = gco2uv(L->openupval);
+    uv = dynamic_cast<UpVal*>(L->openupval);
     if(uv->v < level) break;
 
     assert(!uv->isBlack() && uv->v != &uv->value);

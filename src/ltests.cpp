@@ -192,7 +192,7 @@ static void checkstack (global_State *g, lua_State *L1) {
   LuaObject *uvo;
   assert(!L1->isDead());
   for (uvo = L1->openupval; uvo != NULL; uvo = uvo->next) {
-    UpVal *uv = gco2uv(uvo);
+    UpVal *uv = dynamic_cast<UpVal*>(uvo);
     assert(uv->v != &uv->value);  /* must be open */
     assert(!uvo->isBlack());  /* open upvalues cannot be black */
   }
@@ -216,7 +216,7 @@ static void checkobject (global_State *g, LuaObject *o) {
       assert(o->isWhite());
     switch (o->tt) {
       case LUA_TUPVAL: {
-        UpVal *uv = gco2uv(o);
+        UpVal *uv = dynamic_cast<UpVal*>(o);
         assert(uv->v == &uv->value);  /* must be closed */
         assert(!o->isGray());  /* closed upvalues are never gray */
         checkvalref(g, o, uv->v);
