@@ -171,31 +171,31 @@ public:
 
 #define setgcovalue(obj,x) \
   { TValue *io=(obj); io->bytes = 0; LuaObject *i_g=(x); \
-    io->gc=i_g; settt_(io, ctb(i_g->tt)); }
+    io->gc=i_g; settt_(io, i_g->tt); }
 
 #define setuvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
-    io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TUSERDATA)); \
+    io->gc=cast(LuaObject *, (x)); settt_(io, LUA_TUSERDATA); \
     io->sanityCheck(); }
 
 #define setthvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
-    io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TTHREAD)); \
+    io->gc=cast(LuaObject *, (x)); settt_(io, LUA_TTHREAD); \
     io->sanityCheck(); }
 
 #define setclLvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
-    io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TLCL)); \
+    io->gc=cast(LuaObject *, (x)); settt_(io, LUA_TLCL); \
     io->sanityCheck(); }
 
 #define setclCvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
-    io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TCCL)); \
+    io->gc=cast(LuaObject *, (x)); settt_(io, LUA_TCCL); \
     io->sanityCheck(); }
 
 #define sethvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
-    io->gc=cast(LuaObject *, (x)); settt_(io, ctb(LUA_TTABLE)); \
+    io->gc=cast(LuaObject *, (x)); settt_(io, LUA_TTABLE); \
     io->sanityCheck(); }
 
 void setobj(TValue* obj1, const TValue* obj2);

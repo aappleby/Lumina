@@ -6,14 +6,14 @@ TValue TValue::nil;
 
 TValue::TValue(LuaObject* o) {
   bytes = 0;
-  tt_ = ctb(o->tt);
+  tt_ = o->tt;
   gc = o;
   sanityCheck();
 }
 
 TValue::TValue(TString* v) {
   bytes = 0;
-  tt_ = ctb(LUA_TSTRING);
+  tt_ = LUA_TSTRING;
   gc = (LuaObject*)v;
   sanityCheck();
 }
@@ -44,7 +44,7 @@ void TValue::operator = ( TValue * v )
 void TValue::operator = (LuaObject* o) {
   assert(o);
   bytes = 0;
-  tt_ = ctb(o->tt);
+  tt_ = o->tt;
   gc = o;
   sanityCheck();
 }
