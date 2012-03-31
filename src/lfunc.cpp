@@ -27,18 +27,12 @@ Closure *luaF_newCclosure (int n) {
   TValue* b = (TValue*)luaM_alloc(n * sizeof(TValue));
   if(b == NULL) return NULL;
 
-  Closure *c = new Closure(LUA_TFUNCTION);
+  Closure *c = new Closure(b, n);
   if(c == NULL) {
     luaM_free(b);
     return NULL;
   }
 
-  c->linkGC(getGlobalGCHead());
-
-  c->isC = 1;
-  c->nupvalues = cast_byte(n);
-  c->pupvals_ = b;
-  c->ppupvals_ = NULL;
   return c;
 }
 
@@ -49,20 +43,12 @@ Closure *luaF_newLclosure (Proto *p) {
   UpVal** b = (UpVal**)luaM_alloc(n * sizeof(TValue*));
   if(b == NULL) return NULL;
 
-  Closure* c = new Closure(LUA_TFUNCTION);
+  Closure* c = new Closure(p, b, n);
   if(c == NULL) {
     luaM_free(b);
     return NULL;
   }
 
-  c->linkGC(getGlobalGCHead());
-
-  c->isC = 0;
-  c->p = p;
-  c->nupvalues = cast_byte(n);
-  c->pupvals_ = NULL;
-  c->ppupvals_ = b;
-  while (n--) c->ppupvals_[n] = NULL;
   return c;
 }
 

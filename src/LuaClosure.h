@@ -5,7 +5,8 @@
 class Closure : public LuaObject {
 public:
 
-  Closure(int type);
+  Closure(TValue* buf, int n);
+  Closure(Proto* proto, UpVal** buf, int n);
   ~Closure();
 
   uint8_t isC;
