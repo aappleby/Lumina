@@ -355,9 +355,9 @@ void luaL_checkstack (lua_State *L, int space, const char *msg) {
 
 void luaL_checkIsFunction (lua_State *L, int narg) {
   THREAD_CHECK(L);
-  StkId o = index2addr(L, narg);
-  if(o->isFunction()) return;
-  const char* actualType = ttypename(o->tagtype());
+  TValue v = *index2addr(L, narg);
+  if(v.isFunction()) return;
+  const char* actualType = ttypename(v.tagtype());
   const char *msg = lua_pushfstring(L, "Expected a function, got a %s", actualType);
   luaL_argerror(L, narg, msg);
 }
@@ -776,21 +776,17 @@ int luaL_len (lua_State *L, int idx) {
 const char *luaL_tolstring (lua_State *L, int idx, size_t *len) {
   THREAD_CHECK(L);
   if (!luaL_callmeta(L, idx, "__tostring")) {  /* no metafield? */
-    switch (lua_type(L, idx)) {
-      case LUA_TNUMBER:
-      case LUA_TSTRING:
-        lua_pushvalue(L, idx);
-        break;
-      case LUA_TBOOLEAN:
-        lua_pushstring(L, (lua_toboolean(L, idx) ? "true" : "false"));
-        break;
-      case LUA_TNIL:
-        lua_pushliteral(L, "nil");
-        break;
-      default:
-        lua_pushfstring(L, "%s: %p", luaL_typename(L, idx),
-                                            lua_topointer(L, idx));
-        break;
+    TValue v = *index2addr(L, idx);
+
+    if(v.isNumber() || v.isString()) {
+      lua_pushvalue(L, idx);
+    } else if(v.isBool()) {
+      lua_pushstring(L, (lua_toboolean(L, idx) ? "true" : "false"));
+    } else if(v.isNil()) {
+      lua_pushliteral(L, "nil");
+    } else {
+      lua_pushfstring(L, "%s: %p", luaL_typename(L, idx),
+                                          lua_topointer(L, idx));
     }
   }
   return lua_tolstring(L, -1, len);

@@ -695,9 +695,6 @@ static void add_value (MatchState *ms, luaL_Buffer *b, const char *s,
   luaL_addvalue(b);  /* add result to accumulator */
 }
 
-// can't hold on to inde2addr(L,3) here, as the stack might get reallocated
-// out from under us during the while loop
-
 static int str_gsub (lua_State *L) {
   THREAD_CHECK(L);
   size_t srcl, lp;
