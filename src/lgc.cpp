@@ -678,8 +678,8 @@ static void freeobj (LuaObject *o) {
     case LUA_TUPVAL: delete o; break;
     case LUA_TTABLE: delete o; break;
     case LUA_TTHREAD: luaE_freethread(L, dynamic_cast<lua_State*>(o)); break;
-    case LUA_TUSERDATA: luaS_deludata(dynamic_cast<Udata*>(o)); break;
-    case LUA_TSTRING: luaS_freestr(dynamic_cast<TString*>(o)); break;
+    case LUA_TUSERDATA: delete o; break;
+    case LUA_TSTRING: delete o; break;
     default: assert(0);
   }
 }

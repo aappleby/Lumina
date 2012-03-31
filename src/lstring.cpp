@@ -125,16 +125,6 @@ Udata *luaS_newudata (size_t s, Table *e) {
   return u;
 }
 
-void luaS_deludata(Udata* ud) {
-  delete ud;
-  LuaObject::instanceCounts[LUA_TUSERDATA]--;
-}
-
-void luaS_freestr (TString* ts) {
-  thread_G->strt->nuse--;
-  delete ts;
-}
-
 void luaS_initstrt() {
   global_State* g = thread_G;
   g->strt = new stringtable();
