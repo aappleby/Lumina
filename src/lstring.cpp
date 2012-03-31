@@ -35,7 +35,7 @@ void luaS_resize (int newsize) {
     tb->hash[i] = NULL;
     while (p) {  /* for each node in the list */
       LuaObject *next = p->next;  /* save next */
-      unsigned int h = lmod(gco2ts(p)->getHash(), newsize);  /* new position */
+      unsigned int h = lmod(dynamic_cast<TString*>(p)->getHash(), newsize);  /* new position */
       p->next = tb->hash[h];  /* chain it */
       tb->hash[h] = p;
       p->clearOld();  /* see MOVE OLD rule */
@@ -90,7 +90,7 @@ TString *luaS_newlstr (const char *str, size_t l) {
   stringtable* strings = thread_G->strt;
 
   for (o = strings->hash[lmod(h, strings->size)]; o != NULL; o = o->next) {
-    TString *ts = gco2ts(o);
+    TString *ts = dynamic_cast<TString*>(o);
     if (h == ts->getHash() &&
         ts->getLen() == l &&
         (memcmp(str, ts->c_str(), l * sizeof(char)) == 0)) {

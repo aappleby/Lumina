@@ -215,9 +215,9 @@ static void reallymarkobject (LuaObject *o) {
       return;  /* for strings, gray is as good as black */
     }
     case LUA_TUSERDATA: {
-      Table *mt = gco2u(o)->metatable_;
+      Table *mt = dynamic_cast<Udata*>(o)->metatable_;
       markobject(mt);
-      markobject(gco2u(o)->env_);
+      markobject(dynamic_cast<Udata*>(o)->env_);
       /* all pointers marked */
       o->grayToBlack();
       return;
@@ -552,20 +552,20 @@ static int propagatemark (global_State *g) {
   // traverse its children and add them to the gray list(s)
   switch (o->tt) {
     case LUA_TTABLE: {
-      return traversetable(g, gco2t(o));
+      return traversetable(g, dynamic_cast<Table*>(o));
     }
     case LUA_TFUNCTION: {
-      return traverseclosure(g, gco2cl(o));
+      return traverseclosure(g, dynamic_cast<Closure*>(o));
     }
     case LUA_TTHREAD: {
       // why do threads go on the 'grayagain' list?
       o->next_gray_ = g->grayagain;
       g->grayagain = o;
       o->blackToGray();
-      return traversestack(g, gco2th(o));
+      return traversestack(g, dynamic_cast<lua_State*>(o));
     }
     case LUA_TPROTO: {
-      return traverseproto(g, gco2p(o));
+      return traverseproto(g, dynamic_cast<Proto*>(o));
     }
     default: {
       assert(0);
@@ -609,7 +609,7 @@ static void convergeephemerons (global_State *g) {
     changed = 0;
     while ((w = next) != NULL) {
       next = w->next_gray_;
-      if (traverseephemeron(gco2t(w))) {  /* traverse marked some value? */
+      if (traverseephemeron(dynamic_cast<Table*>(w))) {  /* traverse marked some value? */
         /* propagate changes */
         while (g->grayhead_) propagatemark(g);
         changed = 1;  /* will have to revisit all ephemeron tables */
@@ -634,7 +634,7 @@ static void convergeephemerons (global_State *g) {
 */
 static void clearkeys (LuaObject *l) {
   for (; l != NULL; l = l->next_gray_) {
-    Table *h = gco2t(l);
+    Table *h = dynamic_cast<Table*>(l);
 
     for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
@@ -653,7 +653,7 @@ static void clearkeys (LuaObject *l) {
 */
 static void clearvalues (LuaObject *l, LuaObject *f) {
   for (; l != f; l = l->next_gray_) {
-    Table *h = gco2t(l);
+    Table *h = dynamic_cast<Table*>(l);
     for (int i = 0; i < (int)h->array.size(); i++) {
       TValue *o = &h->array[i];
       if (iscleared(o)) {  /* value was collected? */
@@ -677,9 +677,9 @@ static void freeobj (LuaObject *o) {
     case LUA_TFUNCTION: delete o; break;
     case LUA_TUPVAL: delete o; break;
     case LUA_TTABLE: delete o; break;
-    case LUA_TTHREAD: luaE_freethread(L, gco2th(o)); break;
-    case LUA_TUSERDATA: luaS_deludata(gco2u(o)); break;
-    case LUA_TSTRING: luaS_freestr(gco2ts(o)); break;
+    case LUA_TTHREAD: luaE_freethread(L, dynamic_cast<lua_State*>(o)); break;
+    case LUA_TUSERDATA: luaS_deludata(dynamic_cast<Udata*>(o)); break;
+    case LUA_TSTRING: luaS_freestr(dynamic_cast<TString*>(o)); break;
     default: assert(0);
   }
 }
@@ -741,7 +741,7 @@ static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
     else {
       if (curr->isThread()) {
         /* sweep thread's upvalues */
-        sweepthread(gco2th(curr));
+        sweepthread(dynamic_cast<lua_State*>(curr));
       }
       /* update marks */
       curr->setWhite();
@@ -763,7 +763,7 @@ static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
     }
     else {
       if (curr->tt == LUA_TTHREAD) {
-        sweepthread(gco2th(curr));  /* sweep thread's upvalues */
+        sweepthread(dynamic_cast<lua_State*>(curr));  /* sweep thread's upvalues */
       }
       if (curr->isOld()) {
         static LuaObject *nullp = NULL;

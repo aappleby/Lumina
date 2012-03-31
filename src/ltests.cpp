@@ -223,16 +223,16 @@ static void checkobject (global_State *g, LuaObject *o) {
         break;
       }
       case LUA_TUSERDATA: {
-        Table *mt = gco2u(o)->metatable_;
+        Table *mt = dynamic_cast<Udata*>(o)->metatable_;
         if (mt) checkobjref(g, o, mt);
         break;
       }
       case LUA_TTABLE: {
-        checktable(g, gco2t(o));
+        checktable(g, dynamic_cast<Table*>(o));
         break;
       }
       case LUA_TTHREAD: {
-        checkstack(g, gco2th(o));
+        checkstack(g, dynamic_cast<lua_State*>(o));
         break;
       }
       case LUA_TFUNCTION: {
@@ -245,7 +245,7 @@ static void checkobject (global_State *g, LuaObject *o) {
         break;
       }
       case LUA_TPROTO: {
-        checkproto(g, gco2p(o));
+        checkproto(g, dynamic_cast<Proto*>(o));
         break;
       }
       case LUA_TSTRING: break;
@@ -592,7 +592,7 @@ static int string_query (lua_State *L) {
     LuaObject *ts;
     int n = 0;
     for (ts = tb->hash[s]; ts; ts = ts->next) {
-      L->top[0] = gco2ts(ts);
+      L->top[0] = dynamic_cast<TString*>(ts);
       incr_top(L);
       n++;
     }
