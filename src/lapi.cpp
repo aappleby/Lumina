@@ -53,13 +53,13 @@ void api_checknelems(lua_State* L, int n) {
 // Negative stack indices are indexed from the stack top.
 // Negative indices less than or equal to LUA_REGISTRYINDEX are special.
 
-TValue *index2addr (lua_State *L, int idx) {
+TValue* index2addr2 (lua_State *L, int idx) {
   THREAD_CHECK(L);
   CallInfo *ci = L->ci_;
   if (idx > 0) {
     TValue *o = ci->func + idx;
     if (o >= L->top) {
-      return NONVALIDVALUE;
+      return NULL;
     }
     else return o;
   }
@@ -75,7 +75,7 @@ TValue *index2addr (lua_State *L, int idx) {
 
   // Light C functions have no upvals
   if (ci->func->isLightFunction()) {
-    return NONVALIDVALUE;
+    return NULL;
   }
 
   idx = LUA_REGISTRYINDEX - idx - 1;
@@ -86,7 +86,13 @@ TValue *index2addr (lua_State *L, int idx) {
   }
 
   // Invalid stack index.
-  return NONVALIDVALUE;
+  return NULL;
+}
+
+TValue *index2addr (lua_State *L, int idx) {
+  THREAD_CHECK(L);
+  TValue* result = index2addr2(L,idx);
+  return result ? result : NONVALIDVALUE;
 }
 
 
