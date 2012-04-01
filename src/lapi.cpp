@@ -350,9 +350,11 @@ int lua_isuserdata (lua_State *L, int idx) {
 
 int lua_rawequal (lua_State *L, int index1, int index2) {
   THREAD_CHECK(L);
-  StkId o1 = index2addr(L, index1);
-  StkId o2 = index2addr(L, index2);
-  return (isvalid(o1) && isvalid(o2)) ? (*o1 == *o2) : 0;
+  TValue v1 = index2addr3(L, index1);
+  TValue v2 = index2addr3(L, index2);
+  if(v1.isNone()) return 0;
+  if(v2.isNone()) return 0;
+  return (v1 == v2);
 }
 
 
@@ -377,24 +379,20 @@ void  lua_arith (lua_State *L, int op) {
   L->top--;
 }
 
-
 int lua_compare (lua_State *L, int index1, int index2, int op) {
   THREAD_CHECK(L);
-  StkId o1, o2;
-  int i = 0;
-  o1 = index2addr(L, index1);
-  o2 = index2addr(L, index2);
-  if (isvalid(o1) && isvalid(o2)) {
-    switch (op) {
-      case LUA_OPEQ: i = luaV_equalobj_(L, o1, o2); break;
-      case LUA_OPLT: i = luaV_lessthan(L, o1, o2); break;
-      case LUA_OPLE: i = luaV_lessequal(L, o1, o2); break;
-      default: api_check(0, "invalid option");
-    }
-  }
-  return i;
-}
+  TValue v1 = index2addr3(L, index1);
+  TValue v2 = index2addr3(L, index2);
+  if(v1.isNone()) return 0;
+  if(v2.isNone()) return 0;
 
+  switch (op) {
+    case LUA_OPEQ: return luaV_equalobj_(L, &v1, &v2); break;
+    case LUA_OPLT: return luaV_lessthan(L, &v1, &v2); break;
+    case LUA_OPLE: return luaV_lessequal(L, &v1, &v2); break;
+    default: api_check(0, "invalid option"); return 0;
+  }
+}
 
 lua_Number lua_tonumberx (lua_State *L, int idx, int *isnum) {
   THREAD_CHECK(L);
