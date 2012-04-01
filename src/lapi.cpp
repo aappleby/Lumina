@@ -612,7 +612,8 @@ const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
 void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
   THREAD_CHECK(L);
   if (n == 0) {
-    setfvalue(L->top, fn);
+    L->top[0] = TValue::LightFunction(fn);
+    api_incr_top(L);
   }
   else {
     Closure *cl;
@@ -626,8 +627,8 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
     while (n--)
       setobj(&cl->pupvals_[n], L->top + n);
     setclCvalue(L, L->top, cl);
+    api_incr_top(L);
   }
-  api_incr_top(L);
 }
 
 
@@ -640,7 +641,7 @@ void lua_pushboolean (lua_State *L, int b) {
 
 void lua_pushlightuserdata (lua_State *L, void *p) {
   THREAD_CHECK(L);
-  setpvalue(L->top, p);
+  L->top[0] = TValue::LightUserdata((void*)p);
   api_incr_top(L);
 }
 
@@ -714,7 +715,7 @@ void lua_rawgetp (lua_State *L, int idx, const void *p) {
   TValue k;
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  setpvalue(&k, cast(void *, p));
+  k = TValue::LightUserdata((void*)p);
   setobj(L->top, luaH_get(t->getTable(), &k));
   api_incr_top(L);
 }
@@ -849,7 +850,7 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
   api_checknelems(L, 1);
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  setpvalue(&k, cast(void *, p));
+  k = TValue::LightUserdata((void*)p);
   setobj(luaH_set(t->getTable(), &k), L->top - 1);
   luaC_barrierback(t->getObject(), L->top - 1);
   L->top--;

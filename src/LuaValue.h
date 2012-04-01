@@ -173,12 +173,6 @@ public:
 /* Macros to set values */
 #define settt_(o,t)	((o)->tt_=(t))
 
-#define setfvalue(obj,x) \
-  { TValue *io=(obj); io->bytes = 0; io->f=(x); settt_(io, LUA_TLCF); }
-
-#define setpvalue(obj,x) \
-  { TValue *io=(obj); io->bytes = 0; io->p=(x); settt_(io, LUA_TLIGHTUSERDATA); }
-
 #define setgcovalue(obj,x) \
   { TValue *io=(obj); io->bytes = 0; LuaObject *i_g=(x); \
     io->gc=i_g; settt_(io, i_g->tt); }
