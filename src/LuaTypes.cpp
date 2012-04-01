@@ -9,7 +9,6 @@ __declspec(thread) lua_State* thread_L = NULL;
 __declspec(thread) global_State* thread_G = NULL;
 
 char* luaT_typenames_[] = {
-  "no value",
   "nil",
   "boolean",
   "userdata",
@@ -24,15 +23,16 @@ char* luaT_typenames_[] = {
   "proto",
   "upval",
   "deadkey",
+  "no value",
   "<invalid>",
 };
 
 const char* ttypename(int tag) {
-  return luaT_typenames_[tag + 1];
+  return luaT_typenames_[tag];
 }
 
 const char* objtypename(const TValue* v) {
-  return luaT_typenames_[v->type() + 1];
+  return luaT_typenames_[v->type()];
 }
 
 char** luaT_typenames = &luaT_typenames_[0];

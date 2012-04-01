@@ -65,7 +65,6 @@ public:
 ** basic types
 */
 enum LuaTag {
-  LUA_TNONE          = -1,  // None - invalid value, what you get if you read past the end of an array.
   LUA_TNIL           = 0,   // Nil - valid value, but contains nothing.
   LUA_TBOOLEAN       = 1,   // Boolean
   LUA_TLIGHTUSERDATA = 2,   // User-supplied void*
@@ -80,7 +79,8 @@ enum LuaTag {
   LUA_TPROTO         = 11,  // Function prototype, contains VM opcodes
   LUA_TUPVAL         = 12,  // Persistent state object for C and Lua closuers
   LUA_TDEADKEY       = 13,  // Table tombstone, used during garbage collection.
-  LUA_NUMTAGS        = 14,
+  LUA_TNONE          = 14,  // None - invalid value, what you get if you read past the end of an array.
+  LUA_NUMTAGS        = 15,
 };
 
 /*
