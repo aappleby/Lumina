@@ -45,7 +45,7 @@ static void setnameval (lua_State *L, const char *name, int val) {
 
 static void pushobject (lua_State *L, const TValue *o) {
   THREAD_CHECK(L);
-  setobj(L->top, o);
+  L->top[0] = *o;
   api_incr_top(L);
 }
 

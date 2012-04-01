@@ -171,7 +171,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
       TValue* key = &old->i_key;
       TValue* val = &old->i_val;
       TValue* n = luaH_set(t, key);
-      setobj(n, val);
+      *n = old->i_val;
     }
   }
 }
@@ -336,7 +336,7 @@ void luaH_setint (Table *t, int key, TValue *value) {
     TValue k = TValue(key);
     cell = luaH_newkey(t, &k);
   }
-  setobj(cell, value);
+  *cell = *value;
 }
 
 static int unbound_search (Table *t, unsigned int j) {

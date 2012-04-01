@@ -346,7 +346,7 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   while (oldsize < (int)f->constants.size()) {
     f->constants[oldsize++] = TValue::nil;
   }
-  setobj(&f->constants[k], v);
+  f->constants[k] = *v;
   fs->nk++;
   luaC_barrier(f, v);
   return k;
