@@ -364,7 +364,7 @@ void  lua_arith (lua_State *L, int op) {
     api_checknelems(L, 2);
   else {  /* for unary minus, add fake 2nd operand */
     api_checknelems(L, 1);
-    setobj(L->top, L->top - 1);
+    L->top[0] = L->top[-1];
     L->top++;
   }
   o1 = L->top - 2;
@@ -628,8 +628,9 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
     if(cl == NULL) luaD_throw(LUA_ERRMEM);
     cl->f = fn;
     L->top -= n;
-    while (n--)
-      setobj(&cl->pupvals_[n], L->top + n);
+    while (n--) {
+      cl->pupvals_[n] = L->top[n];
+    }
     L->top[0] = TValue::CClosure(cl);
     api_incr_top(L);
   }
@@ -699,7 +700,7 @@ void lua_rawget (lua_State *L, int idx) {
   StkId t;
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  setobj(L->top - 1, luaH_get(t->getTable(), L->top - 1));
+  L->top[-1] = *luaH_get(t->getTable(), L->top-1);
 }
 
 
@@ -708,7 +709,7 @@ void lua_rawgeti (lua_State *L, int idx, int n) {
   StkId t;
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  setobj(L->top, luaH_getint(t->getTable(), n));
+  L->top[0] = *luaH_getint(t->getTable(), n);
   api_incr_top(L);
 }
 
@@ -720,7 +721,7 @@ void lua_rawgetp (lua_State *L, int idx, const void *p) {
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
   k = TValue::LightUserdata((void*)p);
-  setobj(L->top, luaH_get(t->getTable(), &k));
+  L->top[0] = *luaH_get(t->getTable(), &k);
   api_incr_top(L);
 }
 
@@ -827,7 +828,8 @@ void lua_rawset (lua_State *L, int idx) {
   api_checknelems(L, 2);
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  setobj(luaH_set(t->getTable(), L->top-2), L->top-1);
+  // TODO(aappleby): wtf, using the result of set as an assignment target?
+  *luaH_set(t->getTable(), L->top-2) = L->top[-1];
   // invalidate TM cache
   t->getTable()->flags = 0;
   luaC_barrierback(t->getObject(), L->top-1);
@@ -855,7 +857,7 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
   k = TValue::LightUserdata((void*)p);
-  setobj(luaH_set(t->getTable(), &k), L->top - 1);
+  *luaH_set(t->getTable(), &k) = L->top[-1];
   luaC_barrierback(t->getObject(), L->top - 1);
   L->top--;
 }
@@ -1035,7 +1037,7 @@ int lua_load (lua_State *L, lua_Reader reader, void *data,
       Table *reg = thread_G->l_registry.getTable();
       const TValue *gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
       /* set global table as 1st upvalue of 'f' (may be LUA_ENV) */
-      setobj(f->ppupvals_[0]->v, gt);
+      *f->ppupvals_[0]->v = *gt;
       luaC_barrier(f->ppupvals_[0], gt);
     }
   }
@@ -1251,7 +1253,7 @@ const char *lua_getupvalue (lua_State *L, int funcindex, int n) {
   TValue *val = NULL;  /* to avoid warnings */
   name = aux_upvalue(index2addr(L, funcindex), n, &val, NULL);
   if (name) {
-    setobj(L->top, val);
+    L->top[0] = *val;
     api_incr_top(L);
   }
   return name;
@@ -1269,7 +1271,7 @@ const char *lua_setupvalue (lua_State *L, int funcindex, int n) {
   name = aux_upvalue(fi, n, &val, &owner);
   if (name) {
     L->top--;
-    setobj(val, L->top);
+    *val = L->top[0];
     luaC_barrier(owner, L->top);
   }
   return name;
