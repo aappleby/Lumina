@@ -616,17 +616,15 @@ void luaV_execute (lua_State *L) {
     assert(base <= L->top && L->top < L->stack.end());
     switch(GET_OPCODE(i)) {
       vmcase(OP_MOVE,
-        setobj(ra, RB(i));
+        *ra = *RB(i);
       )
       vmcase(OP_LOADK,
-        TValue *rb = k + GETARG_Bx(i);
-        setobj(ra, rb);
+        *ra = k[GETARG_Bx(i)];
       )
       vmcase(OP_LOADKX,
-        TValue *rb;
         assert(GET_OPCODE(*ci->savedpc) == OP_EXTRAARG);
-        rb = k + GETARG_Ax(*ci->savedpc++);
-        setobj(ra, rb);
+        *ra = k[GETARG_Ax(*ci->savedpc)];
+        ci->savedpc++;
       )
       vmcase(OP_LOADBOOL,
         ra[0] = GETARG_B(i) ? true : false;
@@ -641,7 +639,7 @@ void luaV_execute (lua_State *L) {
       )
       vmcase(OP_GETUPVAL,
         int b = GETARG_B(i);
-        setobj(ra, cl->ppupvals_[b]->v);
+        *ra = *cl->ppupvals_[b]->v;
       )
       vmcase(OP_GETTABUP,
         int b = GETARG_B(i);
@@ -656,7 +654,7 @@ void luaV_execute (lua_State *L) {
       )
       vmcase(OP_SETUPVAL,
         UpVal *uv = cl->ppupvals_[GETARG_B(i)];
-        setobj(uv->v, ra);
+        *uv->v = *ra;
         luaC_barrier(uv, ra);
       )
       vmcase(OP_SETTABLE,
@@ -679,7 +677,7 @@ void luaV_execute (lua_State *L) {
       )
       vmcase(OP_SELF,
         StkId rb = RB(i);
-        setobj(ra+1, rb);
+        ra[1] = *rb;
         Protect(luaV_gettable(L, rb, RKC(i), ra));
       )
       case OP_ADD: { arith_op(luai_numadd, TM_ADD) }; break;
@@ -724,7 +722,7 @@ void luaV_execute (lua_State *L) {
         Protect(luaV_concat(L, c - b + 1));
         ra = RA(i);  /* 'luav_concat' may invoke TMs and move the stack */
         rb = b + base;
-        setobj(ra, rb);
+        *ra = b[base];
         checkGC(L,
           L->top = (ra >= rb ? ra + 1 : rb);  /* limit of live values */
           luaC_step();
@@ -771,7 +769,7 @@ void luaV_execute (lua_State *L) {
         if (GETARG_C(i) ? l_isfalse(rb) : !l_isfalse(rb))
           ci->savedpc++;
         else {
-          setobj(ra, rb);
+          *ra = *rb;
           donextjump(ci);
         }
       )
@@ -807,8 +805,9 @@ void luaV_execute (lua_State *L) {
           /* close all upvalues from previous call */
           if (cl->p->p.size() > 0) luaF_close(oci->base);
           /* move new frame into old one */
-          for (aux = 0; nfunc + aux < lim; aux++)
-            setobj(ofunc + aux, nfunc + aux);
+          for (aux = 0; nfunc + aux < lim; aux++) {
+            ofunc[aux] = nfunc[aux];
+          }
           oci->base = ofunc + (nci->base - nfunc);  /* correct base */
           oci->top = L->top = ofunc + (L->top - nfunc);  /* correct top */
           oci->savedpc = nci->savedpc;
@@ -859,9 +858,9 @@ void luaV_execute (lua_State *L) {
       )
       vmcasenb(OP_TFORCALL,
         StkId cb = ra + 3;  /* call base */
-        setobj(cb+2, ra+2);
-        setobj(cb+1, ra+1);
-        setobj(cb, ra);
+        cb[2] = ra[2];
+        cb[1] = ra[1];
+        cb[0] = ra[0];
         L->top = cb + 3;  /* func. + 2 args (state and index) */
         Protect(luaD_call(L, cb, GETARG_C(i), 1));
         L->top = ci->top;
@@ -873,8 +872,8 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_TFORLOOP,
         l_tforloop:
         if (ra[1].isNotNil()) {  /* continue loop? */
-          setobj(ra, ra + 1);  /* save control variable */
-           ci->savedpc += GETARG_sBx(i);  /* jump back */
+          ra[0] = ra[1];  /* save control variable */
+          ci->savedpc += GETARG_sBx(i);  /* jump back */
         }
       )
       vmcase(OP_SETLIST,
@@ -925,7 +924,7 @@ void luaV_execute (lua_State *L) {
         }
         for (j = 0; j < b; j++) {
           if (j < n) {
-            setobj(ra + j, base - n + j);
+            ra[j] = base[j-n];
           }
           else {
             ra[j] = TValue::nil;

@@ -139,8 +139,9 @@ static void close_state (lua_State *L) {
 
   L->freestack();
   assert(gettotalbytes(g) == (sizeof(lua_State) + sizeof(global_State)));
-  delete g;
+  thread_G = NULL;
   L->l_G = NULL;
+  delete g;
   delete L;
 }
 
