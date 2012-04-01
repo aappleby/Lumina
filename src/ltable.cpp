@@ -326,18 +326,22 @@ const TValue *luaH_get (Table *t, const TValue *key) {
 ** barrier and invalidate the TM cache.
 */
 TValue *luaH_set (Table *t, const TValue *key) {
-  const TValue *p = luaH_get(t, key);
-  if (p != luaO_nilobject)
+  const TValue *p = luaH_get2(t, key);
+  if (p) {
     return cast(TValue *, p);
-  else return luaH_newkey(t, key);
+  }
+  else {
+    return luaH_newkey(t, key);
+  }
 }
 
 
 void luaH_setint (Table *t, int key, TValue *value) {
-  const TValue *p = luaH_getint(t, key);
+  const TValue *p = luaH_getint2(t, key);
   TValue *cell;
-  if (p != luaO_nilobject)
+  if (p) {
     cell = cast(TValue *, p);
+  }
   else {
     TValue k = TValue(key);
     cell = luaH_newkey(t, &k);
