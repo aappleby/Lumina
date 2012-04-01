@@ -122,7 +122,7 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId resul
 
     if (source->isTable()) {
       Table* table = source->getTable();
-      const TValue* value = luaH_get(table, key);
+      const TValue* value = luaH_get2(table, key);
 
       if (value && !value->isNil()) {
         *result = *value;
@@ -165,6 +165,8 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId resul
   luaG_runerror("loop in gettable");
 }
 
+// TODO(aappleby): The original version of luaV_settable needs to be enshrined
+// as an example of baaaaaad code.
 
 void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
   THREAD_CHECK(L);

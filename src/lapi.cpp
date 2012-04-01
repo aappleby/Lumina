@@ -710,7 +710,8 @@ void lua_rawget (lua_State *L, int idx) {
   StkId t;
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  L->top[-1] = *luaH_get(t->getTable(), L->top-1);
+  const TValue* result = luaH_get2(t->getTable(), L->top-1);
+  L->top[-1] = result ? *result : TValue::nil;
 }
 
 
@@ -732,7 +733,8 @@ void lua_rawgetp (lua_State *L, int idx, const void *p) {
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
   k = TValue::LightUserdata((void*)p);
-  L->top[0] = *luaH_get(t->getTable(), &k);
+  const TValue* result = luaH_get(t->getTable(), &k);
+  L->top[0] = result ? *result : TValue::nil;
   api_incr_top(L);
 }
 

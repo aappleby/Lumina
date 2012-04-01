@@ -55,9 +55,9 @@ void luaT_init() {
 */
 const TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
   TValue temp(ename);
-  const TValue *tm = luaH_get(events, &temp);
+  const TValue *tm = luaH_get2(events, &temp);
   assert(event <= TM_EQ);
-  if (tm->isNil()) {  /* no tag method? */
+  if ((tm == NULL) || tm->isNil()) {  /* no tag method? */
     events->flags |= cast_byte(1u<<event);  /* cache this fact */
     return NULL;
   }
