@@ -19,26 +19,6 @@
 
 Table* lua_getmetatable (const TValue* o);
 
-char* luaT_typenames_[LUA_TOTALTAGS] = {
-  "no value",
-  "nil",
-  "boolean",
-  "userdata",
-  "number",
-  "string",
-  "table",
-  "function",
-  "userdata",
-  "thread",
-  "function",
-  "function",
-  /* these last two cases are used for tests only */
-  "proto",
-  "upval"
-};
-
-char** luaT_typenames = &luaT_typenames_[0];
-
 /* ORDER TM */
 static const char *const luaT_eventname[] = {
   "__index",
@@ -59,16 +39,6 @@ static const char *const luaT_eventname[] = {
   "__concat",
   "__call"
 };
-
-const char* ttypename(int tag) {
-  return luaT_typenames_[tag + 1];
-}
-
-const char* objtypename(const TValue* v) {
-  return luaT_typenames_[v->type() + 1];
-}
-
-
 
 void luaT_init() {
   int i;

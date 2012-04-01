@@ -8,6 +8,33 @@
 __declspec(thread) lua_State* thread_L = NULL;
 __declspec(thread) global_State* thread_G = NULL;
 
+char* luaT_typenames_[] = {
+  "no value",
+  "nil",
+  "boolean",
+  "userdata",
+  "number",
+  "string",
+  "table",
+  "function",
+  "userdata",
+  "thread",
+  "function",
+  "function",
+  "proto",
+  "upval"
+};
+
+const char* ttypename(int tag) {
+  return luaT_typenames_[tag + 1];
+}
+
+const char* objtypename(const TValue* v) {
+  return luaT_typenames_[v->type() + 1];
+}
+
+char** luaT_typenames = &luaT_typenames_[0];
+
 stringtable* getGlobalStringtable() {
   return thread_G->strt;
 }

@@ -84,23 +84,7 @@ enum LuaTag {
   LUA_TPROTO = 12,
   LUA_TUPVAL = 13,
   LUA_TDEADKEY = 14,
-
-
-  LUA_ALLTAGS = LUA_TDEADKEY+1,
 };
-
-
-/*
-** tags for Tagged Values have the following use of bits:
-** bits 0-3: actual tag (a LUA_T* value)
-** bits 4-5: variant bits
-** bit 6: whether value is collectable
-*/
-
-/*
-** number of all possible tags (including LUA_TNONE but excluding DEADKEY)
-*/
-#define LUA_TOTALTAGS	(LUA_TUPVAL+2)
 
 /*
 * WARNING: if you change the order of this enumeration,
