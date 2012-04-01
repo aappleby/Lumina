@@ -187,16 +187,6 @@ public:
     io->gc=cast(LuaObject *, (x)); settt_(io, LUA_TTHREAD); \
     io->sanityCheck(); }
 
-#define setclLvalue(L,obj,x) \
-  { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
-    io->gc=cast(LuaObject *, (x)); settt_(io, LUA_TLCL); \
-    io->sanityCheck(); }
-
-#define setclCvalue(L,obj,x) \
-  { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
-    io->gc=cast(LuaObject *, (x)); settt_(io, LUA_TCCL); \
-    io->sanityCheck(); }
-
 #define sethvalue(L,obj,x) \
   { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
     io->gc=cast(LuaObject *, (x)); settt_(io, LUA_TTABLE); \
