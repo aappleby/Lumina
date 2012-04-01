@@ -23,6 +23,7 @@ TValue::TValue(TString* v) {
 TValue TValue::LightUserdata(void * p) {
   TValue v;
   v.tt_ = LUA_TLIGHTUSERDATA;
+  v.bytes = 0;
   v.p = p;
   return v;
 }
@@ -30,6 +31,7 @@ TValue TValue::LightUserdata(void * p) {
 TValue TValue::LightFunction(lua_CFunction f) {
   TValue v;
   v.tt_ = LUA_TLCF;
+  v.bytes = 0;
   v.f = f;
   return v;
 }
@@ -37,6 +39,7 @@ TValue TValue::LightFunction(lua_CFunction f) {
 TValue TValue::CClosure(Closure* c) {
   TValue v;
   v.tt_ = LUA_TCCL;
+  v.bytes = 0;
   v.gc = c;
   return v;
 }
@@ -44,6 +47,7 @@ TValue TValue::CClosure(Closure* c) {
 TValue TValue::LClosure(Closure* c) {
   TValue v;
   v.tt_ = LUA_TLCL;
+  v.bytes = 0;
   v.gc = c;
   return v;
 }

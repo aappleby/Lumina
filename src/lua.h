@@ -260,15 +260,19 @@ void  (lua_len)    (lua_State *L, int idx);
 #define lua_pushcfunction(L,f)	lua_pushcclosure(L, (f), 0)
 
 inline bool lua_isfunction(lua_State* L, int n) {
-  TValue* o = index2addr(L,n);
-  return o->isFunction();
+  TValue* v = index2addr2(L,n);
+  return v && v->isFunction();
 }
 
 #define lua_istable(L,n)	(lua_type(L, (n)) == LUA_TTABLE)
 #define lua_islightuserdata(L,n)	(lua_type(L, (n)) == LUA_TLIGHTUSERDATA)
-#define lua_isnil(L,n)		(lua_type(L, (n)) == LUA_TNIL)
 #define lua_isboolean(L,n)	(lua_type(L, (n)) == LUA_TBOOLEAN)
 #define lua_isthread(L,n)	(lua_type(L, (n)) == LUA_TTHREAD)
+
+inline bool lua_isnil(lua_State* L, int n) {
+  TValue* v = index2addr2(L, n);
+  return v && v->isNil();
+}
 
 inline bool lua_isnone(lua_State* L, int n) {
   TValue* v = index2addr2(L, n);

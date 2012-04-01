@@ -79,30 +79,26 @@ static void DumpFunction(const Proto* f, DumpState* D);
 
 static void DumpConstants(const Proto* f, DumpState* D)
 {
- int i,n=(int)f->constants.size();
- DumpInt(n,D);
- for (i=0; i<n; i++)
- {
-  const TValue* o=&f->constants[i];
-  DumpChar(o->tagtype(),D);
-  switch (o->tagtype())
+  int n = (int)f->constants.size();
+  DumpInt(n,D);
+  for(int i=0; i < n; i++)
   {
-   case LUA_TNIL:
-	break;
-   case LUA_TBOOLEAN:
-   DumpChar(o->getBool() ? 1 : 0,D);
-	break;
-   case LUA_TNUMBER:
-	DumpNumber(o->getNumber(),D);
-	break;
-   case LUA_TSTRING:
-	DumpString(o->getString(),D);
-	break;
+    TValue v = f->constants[i];
+    DumpChar(v.tagtype(),D);
+
+    if(v.isBool()) {
+      DumpChar(v.getBool() ? 1 : 0,D);
+    } else if(v.isNumber()) {
+      DumpNumber(v.getNumber(),D);
+    } else if(v.isString()) {
+      DumpString(v.getString(),D);
+    }
   }
- }
- n=(int)f->p.size();
- DumpInt(n,D);
- for (i=0; i<n; i++) DumpFunction(f->p[i],D);
+  n = (int)f->p.size();
+  DumpInt(n,D);
+  for (int i=0; i < n; i++) {
+    DumpFunction(f->p[i],D);
+  }
 }
 
 static void DumpUpvalues(const Proto* f, DumpState* D)
