@@ -21,8 +21,11 @@ char* luaT_typenames_[] = {
   "thread",
   "function",
   "function",
+  "dummy",
   "proto",
-  "upval"
+  "upval",
+  "deadkey",
+  "<invalid>",
 };
 
 const char* ttypename(int tag) {

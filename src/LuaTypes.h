@@ -78,12 +78,14 @@ enum LuaTag {
   LUA_TLCF           = 9,  /* light C function */
   LUA_TCCL           = 10,  /* C closure */
 
-  LUA_NUMTAGS        = 11,
+  LUA_TDUMMY = 11,
 
   // non-values
   LUA_TPROTO = 12,
   LUA_TUPVAL = 13,
   LUA_TDEADKEY = 14,
+
+  LUA_NUMTAGS        = 15,
 };
 
 /*
