@@ -10,7 +10,7 @@ TValue TValue::none(LUA_TNONE,0);
 
 TValue::TValue(LuaObject* o) {
   bytes_ = 0;
-  type_ = o->tt;
+  type_ = o->type();
   object_ = o;
   sanityCheck();
 }
@@ -81,7 +81,7 @@ void TValue::operator = ( TValue * v )
 void TValue::operator = (LuaObject* o) {
   assert(o);
   bytes_ = 0;
-  type_ = o->tt;
+  type_ = o->type();
   object_ = o;
   sanityCheck();
 }
@@ -89,14 +89,14 @@ void TValue::operator = (LuaObject* o) {
 void TValue::sanityCheck() const {
   if(isCollectable()) {
     object_->sanityCheck();
-    assert(type_ == object_->tt);
+    assert(type_ == object_->type());
     assert(!object_->isDead());
   }
 }
 
 void TValue::typeCheck() const {
   if(isCollectable()) {
-    assert(type_ == object_->tt);
+    assert(type_ == object_->type());
   }
 }
 
@@ -132,4 +132,9 @@ bool TValue::isFunction() const {
 
 uint32_t TValue::hashValue() const {
   return hash64(lowbytes_, highbytes_);
+}
+
+extern char** luaT_typenames;
+const char * TValue::typeName() const {
+  return luaT_typenames[type_+1];
 }

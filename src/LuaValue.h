@@ -128,6 +128,7 @@ public:
   //----------
 
   int32_t type() const  { return type_; }
+  const char* typeName() const;
 
   void clear() { bytes_ = 0; type_ = 0; }
 

@@ -105,3 +105,7 @@ bool LuaObject::isTestGray()     { return marked & (1 << TESTGRAYBIT) ? true : f
 void LuaObject::setTestGray()    { marked |= (1 << TESTGRAYBIT); }
 void LuaObject::clearTestGray()  { marked &= ~(1 << TESTGRAYBIT); }
 
+extern char** luaT_typenames;
+const char * LuaObject::typeName() const {
+  return luaT_typenames[tt+1];
+}

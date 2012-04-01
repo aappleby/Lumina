@@ -118,7 +118,7 @@ void luaC_barrier_ (LuaObject *o, LuaObject *v) {
   global_State *g = thread_G;
   assert(o->isBlack() && v->isWhite() && !v->isDead() && !o->isDead());
   assert(isgenerational(g) || g->gcstate != GCSpause);
-  assert(o->tt != LUA_TTABLE);
+  assert(o->type() != LUA_TTABLE);
   if (keepinvariant(g))  /* must keep invariant? */
     reallymarkobject(v);  /* restore invariant */
   else {  /* sweep phase */
@@ -137,7 +137,7 @@ void luaC_barrier_ (LuaObject *o, LuaObject *v) {
 void luaC_barrierback_ (LuaObject *o) {
   global_State *g = thread_G;
 
-  assert(o->isBlack() && !o->isDead() && o->tt == LUA_TTABLE);
+  assert(o->isBlack() && !o->isDead() && o->isTable());
   o->blackToGray();  /* make object gray (again) */
 
   o->next_gray_ = g->grayagain;
@@ -757,7 +757,7 @@ static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
       freeobj(curr);  /* erase 'curr' */
     }
     else {
-      if (curr->tt == LUA_TTHREAD) {
+      if (curr->isThread()) {
         sweepthread(dynamic_cast<lua_State*>(curr));  /* sweep thread's upvalues */
       }
       if (curr->isOld()) {

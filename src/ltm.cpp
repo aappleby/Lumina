@@ -19,7 +19,7 @@
 
 Table* lua_getmetatable (const TValue* o);
 
-const char *const luaT_typenames_[LUA_TOTALTAGS] = {
+char* luaT_typenames_[LUA_TOTALTAGS] = {
   "no value",
   "nil",
   "boolean",
@@ -36,6 +36,8 @@ const char *const luaT_typenames_[LUA_TOTALTAGS] = {
   "proto",
   "upval"
 };
+
+char** luaT_typenames = &luaT_typenames_[0];
 
 /* ORDER TM */
 static const char *const luaT_eventname[] = {

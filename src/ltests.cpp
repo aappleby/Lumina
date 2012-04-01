@@ -84,7 +84,7 @@ static void printobj (global_State *g, LuaObject *o) {
   if(o->isBlack()) c = 'b';
   if(o->isWhite()) c = 'w';
 
-  printf("%d:%s(%p)-%c(%02X)", i, ttypename(o->tt), (void *)o, c, o->getFlags());
+  printf("%d:%s(%p)-%c(%02X)", i, o->typeName(), (void *)o, c, o->getFlags());
 }
 
 
@@ -167,7 +167,7 @@ static void checkLClosure (global_State *g, Closure *cl) {
   checkobjref(g, cl, cl->p);
   for (i=0; i<cl->nupvalues; i++) {
     if (cl->ppupvals_[i]) {
-      assert(cl->ppupvals_[i]->tt == LUA_TUPVAL);
+      assert(cl->ppupvals_[i]->isUpval());
       checkobjref(g, cl, cl->ppupvals_[i]);
     }
   }
@@ -330,7 +330,7 @@ int lua_checkmemory (lua_State *L) {
   checkold(g, g->finobj);
   for (o = g->finobj; o != NULL; o = o->next) {
     assert(!o->isDead() && o->isSeparated());
-    assert(o->tt == LUA_TUSERDATA || o->tt == LUA_TTABLE);
+    assert(o->isUserdata() || o->isTable());
     checkobject(g, o);
   }
   /* check 'tobefnz' list */
@@ -338,7 +338,7 @@ int lua_checkmemory (lua_State *L) {
   for (o = g->tobefnz; o != NULL; o = o->next) {
     assert(!o->isWhite());
     assert(!o->isDead() && o->isSeparated());
-    assert(o->tt == LUA_TUSERDATA || o->tt == LUA_TTABLE);
+    assert(o->isUserdata() || o->isTable());
   }
   /* check 'uvhead' list */
   for (uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {

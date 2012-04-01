@@ -31,6 +31,9 @@ public:
 
   //----------
 
+  int type() const { return tt; }
+  const char* typeName() const; 
+
   bool isString()   { return tt == LUA_TSTRING; }
   bool isTable()    { return tt == LUA_TTABLE; }
   bool isLClosure() { return tt == LUA_TLCL; }
@@ -71,10 +74,10 @@ public:
 
   LuaObject *next;
   LuaObject *next_gray_;
-  uint8_t tt;
 
   static int instanceCounts[256];
 
 private:
+  uint8_t tt;
   uint8_t marked;
 };
