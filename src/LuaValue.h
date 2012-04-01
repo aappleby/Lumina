@@ -9,10 +9,10 @@ void setobj(TValue* obj1, const TValue* obj2);
 class TValue {
 public:
 
-  TValue() { type_ = LUA_TNIL; bytes = 0; }
+  TValue() { type_ = LUA_TNIL; bytes_ = 0; }
   TValue(int type, uint64_t data) {
     type_ = type;
-    bytes = data;
+    bytes_ = data;
   }
 
   static TValue nil;
@@ -23,8 +23,8 @@ public:
   static TValue LClosure(Closure* c);
   static TValue CClosure(Closure* c);
 
-  explicit TValue(int v)    { type_ = LUA_TNUMBER; n = v; }
-  explicit TValue(double v) { type_ = LUA_TNUMBER; n = v; }
+  explicit TValue(int v)    { type_ = LUA_TNUMBER; number_ = v; }
+  explicit TValue(double v) { type_ = LUA_TNUMBER; number_ = v; }
 
   explicit TValue(TString* v);
   explicit TValue(LuaObject* o);
@@ -40,22 +40,22 @@ public:
 
   void operator = (LuaObject* o);
 
-  void operator = (double v)  { type_ = LUA_TNUMBER; n = v; }
-  void operator = (int v)     { type_ = LUA_TNUMBER; n = (double)v; }
-  void operator = (size_t v)  { type_ = LUA_TNUMBER; n = (double)v; }
-  void operator = (int64_t v) { type_ = LUA_TNUMBER; n = (double)v; }
-  void operator = (bool v)    { type_ = LUA_TBOOLEAN; bytes = v ? 1 : 0; }
+  void operator = (double v)  { type_ = LUA_TNUMBER; number_ = v; }
+  void operator = (int v)     { type_ = LUA_TNUMBER; number_ = (double)v; }
+  void operator = (size_t v)  { type_ = LUA_TNUMBER; number_ = (double)v; }
+  void operator = (int64_t v) { type_ = LUA_TNUMBER; number_ = (double)v; }
+  void operator = (bool v)    { type_ = LUA_TBOOLEAN; bytes_ = v ? 1 : 0; }
 
   void operator = (TString* v ) {
-    bytes = 0;
-    gc = (LuaObject*)v;
+    bytes_ = 0;
+    object_ = (LuaObject*)v;
     type_ = LUA_TSTRING;
     sanityCheck();
   }
 
   void operator = (Proto* p) {
-    bytes = 0;
-    gc = (LuaObject*)p;
+    bytes_ = 0;
+    object_ = (LuaObject*)p;
     type_ = LUA_TPROTO;
     sanityCheck();
   }
@@ -64,7 +64,7 @@ public:
 
   // This will return false for positive and negative zero, that's a known issue.
   bool operator == (TValue const& v) const {
-    return (type_ == v.type_) && (bytes == v.bytes);
+    return (type_ == v.type_) && (bytes_ == v.bytes_);
   }
 
   bool operator != (TValue const& v) const {
@@ -73,7 +73,7 @@ public:
 
   bool operator == (int v) const {
     if(!isNumber()) return false;
-    return n == v;
+    return number_ == v;
   }
 
   // stuff
@@ -87,7 +87,7 @@ public:
   bool isBool() const          { return type() == LUA_TBOOLEAN; }
   bool isNumber() const        { return type() == LUA_TNUMBER; }
 
-  bool isInteger() const       { return isNumber() && (n == (int)n); }
+  bool isInteger() const       { return isNumber() && (number_ == (int)number_); }
 
   bool isLightUserdata() const { return type() == LUA_TLIGHTUSERDATA; }
 
@@ -111,53 +111,45 @@ public:
 
   //----------
 
-  bool getBool() const { assert(isBool()); return b ? true : false; }
-  int getInteger() const { return (int)getNumber(); }
-
-  double getNumber() const { assert(isNumber()); return n; }
-
-  LuaObject* getObject() const { assert(isCollectable()); return gc; }
-  LuaObject* getDeadKey() { assert(isDeadKey());     return gc; }
-
-  Closure* getCClosure() { assert(isCClosure()); return reinterpret_cast<Closure*>(gc); }
-  Closure* getLClosure() { assert(isLClosure()); return reinterpret_cast<Closure*>(gc); }
-
-  TString* getString() const { assert(isString()); return reinterpret_cast<TString*>(gc); }
-  Table*   getTable()  { assert(isTable()); return reinterpret_cast<Table*>(gc); }
-
-  Table* getTable() const { assert(isTable()); return reinterpret_cast<Table*>(gc); }
-
-  Udata* getUserdata() const { assert(isUserdata()); return reinterpret_cast<Udata*>(gc); }
-  void* getLightUserdata() const { assert(isLightUserdata()); return p; }
-
-  lua_State* getThread() const { assert(isThread()); return reinterpret_cast<lua_State*>(gc); }
-
-  lua_CFunction getLightFunction() const { assert(isLightFunction()); return f; }
+  bool       getBool() const          { assert(isBool()); return bytes_ ? true : false; }
+  int        getInteger() const       { return (int)number_; }
+  double     getNumber() const        { assert(isNumber()); return number_; }
+  LuaObject* getObject() const        { assert(isCollectable()); return object_; }
+  LuaObject* getDeadKey()             { assert(isDeadKey()); return object_; }
+  Closure*   getCClosure()            { assert(isCClosure()); return reinterpret_cast<Closure*>(object_); }
+  Closure*   getLClosure()            { assert(isLClosure()); return reinterpret_cast<Closure*>(object_); }
+  TString*   getString() const        { assert(isString()); return reinterpret_cast<TString*>(object_); }
+  Table*     getTable() const         { assert(isTable()); return reinterpret_cast<Table*>(object_); }
+  Udata*     getUserdata() const      { assert(isUserdata()); return reinterpret_cast<Udata*>(object_); }
+  void*      getLightUserdata() const { assert(isLightUserdata()); return pointer_; }
+  lua_State* getThread() const        { assert(isThread()); return reinterpret_cast<lua_State*>(object_); }
+  lua_CFunction getLightFunction() const { assert(isLightFunction()); return callback_; }
 
   //----------
 
   int32_t type() const  { return type_; }
 
-  void clear() { bytes = 0; type_ = 0; }
+  void clear() { bytes_ = 0; type_ = 0; }
 
-  void setBool  (int x)     { bytes = x ? 1 : 0; type_ = LUA_TBOOLEAN; }
-  void setValue (TValue* x) { bytes = x->bytes; type_ = x->type_; }
+  void setBool  (int x)     { bytes_ = x ? 1 : 0; type_ = LUA_TBOOLEAN; }
+  void setValue (TValue* x) { bytes_ = x->bytes_; type_ = x->type_; }
 
   void sanityCheck() const;
   void typeCheck() const;
 
+  uint32_t hashValue() const;
+
 private:
 
   union {
-    LuaObject *gc;    /* collectable objects */
-    void *p;         /* light userdata */
-    int32_t b;           /* booleans */
-    lua_CFunction f; /* light C functions */
-    lua_Number n;
-    uint64_t bytes;
+    LuaObject* object_;
+    void* pointer_;
+    lua_CFunction callback_;
+    double number_;
+    uint64_t bytes_;
     struct {
-      uint32_t low;
-      uint32_t high;
+      uint32_t lowbytes_;
+      uint32_t highbytes_;
     };
   };
 

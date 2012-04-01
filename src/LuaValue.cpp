@@ -3,59 +3,61 @@
 #include "LuaClosure.h"
 #include "LuaObject.h"
 
+uint32_t hash64 (uint32_t a, uint32_t b);
+
 TValue TValue::nil;
 TValue TValue::none(LUA_TNONE,0);
 
 TValue::TValue(LuaObject* o) {
-  bytes = 0;
+  bytes_ = 0;
   type_ = o->tt;
-  gc = o;
+  object_ = o;
   sanityCheck();
 }
 
 TValue::TValue(TString* v) {
-  bytes = 0;
+  bytes_ = 0;
   type_ = LUA_TSTRING;
-  gc = (LuaObject*)v;
+  object_ = (LuaObject*)v;
   sanityCheck();
 }
 
 TValue TValue::LightUserdata(void * p) {
   TValue v;
   v.type_ = LUA_TLIGHTUSERDATA;
-  v.bytes = 0;
-  v.p = p;
+  v.bytes_ = 0;
+  v.pointer_ = p;
   return v;
 }
 
 TValue TValue::LightFunction(lua_CFunction f) {
   TValue v;
   v.type_ = LUA_TLCF;
-  v.bytes = 0;
-  v.f = f;
+  v.bytes_ = 0;
+  v.callback_ = f;
   return v;
 }
 
 TValue TValue::CClosure(Closure* c) {
   TValue v;
   v.type_ = LUA_TCCL;
-  v.bytes = 0;
-  v.gc = c;
+  v.bytes_ = 0;
+  v.object_ = c;
   return v;
 }
 
 TValue TValue::LClosure(Closure* c) {
   TValue v;
   v.type_ = LUA_TLCL;
-  v.bytes = 0;
-  v.gc = c;
+  v.bytes_ = 0;
+  v.object_ = c;
   return v;
 }
 
 
 void TValue::operator = ( TValue v )
 {
-  bytes = v.bytes;
+  bytes_ = v.bytes_;
   type_ = v.type_;
   sanityCheck();
 }
@@ -63,13 +65,13 @@ void TValue::operator = ( TValue v )
 void TValue::operator = ( TValue * v )
 {
   if(this == v) return;
-  bytes = 0; 
+  bytes_ = 0; 
   if(v) {
-    bytes = v->bytes;
+    bytes_ = v->bytes_;
     type_ = v->type_;
   } else {
     assert(false);
-    bytes = 0;
+    bytes_ = 0;
     type_ = LUA_TNIL;
   }
 
@@ -78,23 +80,23 @@ void TValue::operator = ( TValue * v )
 
 void TValue::operator = (LuaObject* o) {
   assert(o);
-  bytes = 0;
+  bytes_ = 0;
   type_ = o->tt;
-  gc = o;
+  object_ = o;
   sanityCheck();
 }
 
 void TValue::sanityCheck() const {
   if(isCollectable()) {
-    gc->sanityCheck();
-    assert(type_ == gc->tt);
-    assert(!gc->isDead());
+    object_->sanityCheck();
+    assert(type_ == object_->tt);
+    assert(!object_->isDead());
   }
 }
 
 void TValue::typeCheck() const {
   if(isCollectable()) {
-    assert(type_ == gc->tt);
+    assert(type_ == object_->tt);
   }
 }
 
@@ -106,7 +108,7 @@ void setobj(TValue* obj1, const TValue* obj2) {
 
 bool TValue::isWhite() const {
   if(!isCollectable()) return false;
-  return gc->isWhite();
+  return object_->isWhite();
 }
 
 bool TValue::isCollectable() const {
@@ -126,4 +128,8 @@ bool TValue::isFunction() const {
   if(type_ == LUA_TCCL) return true;
   if(type_ == LUA_TLCF) return true;
   return false;
+}
+
+uint32_t TValue::hashValue() const {
+  return hash64(lowbytes_, highbytes_);
 }

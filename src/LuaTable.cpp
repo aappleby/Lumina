@@ -52,7 +52,7 @@ Node* Table::findNode(int key) {
 Node* Table::findBin(TValue key) {
   if(hashtable.empty()) return NULL;
 
-  uint32_t hash = hash64(key.low, key.high);
+  uint32_t hash = key.hashValue();
   uint32_t mask = (uint32_t)hashtable.size() - 1;
 
   return &hashtable[hash & mask];
