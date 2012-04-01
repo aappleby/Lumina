@@ -648,7 +648,7 @@ void lua_pushlightuserdata (lua_State *L, void *p) {
 
 int lua_pushthread (lua_State *L) {
   THREAD_CHECK(L);
-  setthvalue(L, L->top, L);
+  L->top[0] = L;
   api_incr_top(L);
   return (G(L)->mainthread == L);
 }
