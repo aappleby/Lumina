@@ -64,7 +64,7 @@ public:
 /*
 ** basic types
 */
-enum LuaTag {
+enum LuaType {
   LUA_TNIL           = 0,   // Nil - valid value, but contains nothing.
   LUA_TBOOLEAN       = 1,   // Boolean
   LUA_TLIGHTUSERDATA = 2,   // User-supplied void*

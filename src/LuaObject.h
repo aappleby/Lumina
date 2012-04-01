@@ -5,7 +5,7 @@
 class LuaObject : public LuaBase {
 public:
 
-  LuaObject(int type);
+  LuaObject(LuaType type);
   ~LuaObject();
 
   void linkGC(LuaObject*& gcHead);
@@ -31,7 +31,7 @@ public:
 
   //----------
 
-  int type() const { return tt; }
+  LuaType type() const { return tt; }
   const char* typeName() const; 
 
   bool isString()   { return tt == LUA_TSTRING; }
@@ -78,6 +78,6 @@ public:
   static int instanceCounts[256];
 
 private:
-  uint8_t tt;
+  LuaType tt;
   uint8_t marked;
 };

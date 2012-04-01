@@ -10,7 +10,7 @@ class TValue {
 public:
 
   TValue() { type_ = LUA_TNIL; bytes_ = 0; }
-  TValue(int type, uint64_t data) {
+  TValue(LuaType type, uint64_t data) {
     type_ = type;
     bytes_ = data;
   }
@@ -127,10 +127,10 @@ public:
 
   //----------
 
-  int32_t type() const  { return type_; }
+  LuaType type() const  { return type_; }
   const char* typeName() const;
 
-  void clear() { bytes_ = 0; type_ = 0; }
+  void clear() { bytes_ = 0; type_ = LUA_TNIL; }
 
   void setBool  (int x)     { bytes_ = x ? 1 : 0; type_ = LUA_TBOOLEAN; }
   void setValue (TValue* x) { bytes_ = x->bytes_; type_ = x->type_; }
@@ -154,5 +154,5 @@ private:
     };
   };
 
-  int32_t type_;
+  LuaType type_;
 };
