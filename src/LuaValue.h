@@ -187,11 +187,6 @@ public:
     io->gc=cast(LuaObject *, (x)); settt_(io, LUA_TTHREAD); \
     io->sanityCheck(); }
 
-#define sethvalue(L,obj,x) \
-  { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
-    io->gc=cast(LuaObject *, (x)); settt_(io, LUA_TTABLE); \
-    io->sanityCheck(); }
-
 void setobj(TValue* obj1, const TValue* obj2);
 
 

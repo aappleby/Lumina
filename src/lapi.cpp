@@ -728,7 +728,7 @@ void lua_createtable (lua_State *L, int narray, int nrec) {
   t = new Table();
   if(t == NULL) luaD_throw(LUA_ERRMEM);
   t->linkGC(getGlobalGCHead());
-  sethvalue(L, L->top, t);
+  L->top[0] = t;
   api_incr_top(L);
   if (narray > 0 || nrec > 0)
     luaH_resize(t, narray, nrec);
@@ -752,7 +752,7 @@ int lua_getmetatable (lua_State *L, int objindex) {
   if (mt == NULL)
     res = 0;
   else {
-    sethvalue(L, L->top, mt);
+    L->top[0] = mt;
     api_incr_top(L);
     res = 1;
   }
@@ -767,7 +767,7 @@ void lua_getuservalue (lua_State *L, int idx) {
   api_checkvalidindex(o);
   api_check(o->isUserdata(), "userdata expected");
   if (o->getUserdata()->env_) {
-    sethvalue(L, L->top, o->getUserdata()->env_);
+    L->top[0] = o->getUserdata()->env_;
   } else {
     L->top[0] = TValue::nil;
   }

@@ -549,7 +549,7 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   if(fs->h == NULL) luaD_throw(LUA_ERRMEM);
   fs->h->linkGC(getGlobalGCHead());
   /* anchor table of constants (to avoid being collected) */
-  sethvalue(L, L->top, fs->h);
+  L->top[0] = fs->h;
   incr_top(L);
   enterblock(fs, bl, 0);
 }

@@ -391,7 +391,7 @@ static int nilK (FuncState *fs) {
   THREAD_CHECK(fs->ls->L);
   TValue k, v;
   /* cannot use nil as key; instead use table itself to represent nil */
-  sethvalue(fs->ls->L, &k, fs->h);
+  k = fs->h;
   return addk(fs, &k, &v);
 }
 
