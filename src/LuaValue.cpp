@@ -1,5 +1,6 @@
 #include "LuaValue.h"
 
+#include "LuaClosure.h"
 #include "LuaObject.h"
 
 TValue TValue::nil;
@@ -19,6 +20,33 @@ TValue::TValue(TString* v) {
   sanityCheck();
 }
 
+TValue TValue::LightUserdata(void * p) {
+  TValue v;
+  v.tt_ = LUA_TLIGHTUSERDATA;
+  v.p = p;
+  return v;
+}
+
+TValue TValue::LightFunction(lua_CFunction f) {
+  TValue v;
+  v.tt_ = LUA_TLCF;
+  v.f = f;
+  return v;
+}
+
+TValue TValue::CClosure(Closure* c) {
+  TValue v;
+  v.tt_ = LUA_TCCL;
+  v.gc = c;
+  return v;
+}
+
+TValue TValue::LClosure(Closure* c) {
+  TValue v;
+  v.tt_ = LUA_TLCL;
+  v.gc = c;
+  return v;
+}
 
 
 void TValue::operator = ( TValue const & v )

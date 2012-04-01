@@ -14,6 +14,11 @@ public:
   static TValue nil;
   static TValue none;
 
+  static TValue LightUserdata(void* p);
+  static TValue LightFunction(lua_CFunction f);
+  static TValue LClosure(Closure* c);
+  static TValue CClosure(Closure* c);
+
   explicit TValue(int v)    { tt_ = LUA_TNUMBER; n = v; }
   explicit TValue(double v) { tt_ = LUA_TNUMBER; n = v; }
 
