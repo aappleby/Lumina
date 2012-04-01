@@ -91,17 +91,23 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
                     const TValue *p2, TValue *p3, int hasres) {
   THREAD_CHECK(L);
   ptrdiff_t result = savestack(L, p3);
-  setobj(L->top++, f);  /* push function */
-  setobj(L->top++, p1);  /* 1st argument */
-  setobj(L->top++, p2);  /* 2nd argument */
-  if (!hasres)  /* no result? 'p3' is third argument */
-    setobj(L->top++, p3);  /* 3rd argument */
+  L->top[0] = *f; // push function
+  L->top++;
+  L->top[0] = *p1; // 1st argument
+  L->top++;
+  L->top[0] = *p2; // 2nd argument
+  L->top++;
+  if (!hasres) { // no result? 'p3' is third argument
+    L->top[0] = *p3;  // 3rd argument
+    L->top++;
+  }
   L->checkstack(0);
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->top - (4 - hasres), hasres, isLua(L->ci_));
   if (hasres) {  /* if has result, move it to its place */
     p3 = restorestack(L, result);
-    setobj(p3, --L->top);
+    L->top--;
+    *p3 = L->top[0];
   }
 }
 
