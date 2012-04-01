@@ -185,7 +185,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
             always true; we only need the assignment.) */
          (oldval = luaH_newkey(h, key), 1)))) {
         /* no metamethod and (now) there is an entry with given key */
-        setobj(oldval, val);  /* assign new value to that entry */
+        *oldval = *val;  /* assign new value to that entry */
         // invalidate TM cache
         h->flags = 0;
         luaC_barrierback(h, val);
@@ -488,7 +488,8 @@ void luaV_finishOp (lua_State *L) {
     case OP_ADD: case OP_SUB: case OP_MUL: case OP_DIV:
     case OP_MOD: case OP_POW: case OP_UNM: case OP_LEN:
     case OP_GETTABUP: case OP_GETTABLE: case OP_SELF: {
-      setobj(base + GETARG_A(inst), --L->top);
+      L->top--;
+      base[GETARG_A(inst)] = L->top[0];
       break;
     }
     case OP_LE: case OP_LT: case OP_EQ: {
@@ -512,13 +513,13 @@ void luaV_finishOp (lua_State *L) {
       StkId top = L->top - 1;  /* top when 'call_binTM' was called */
       int b = GETARG_B(inst);      /* first element to concatenate */
       int total = cast_int(top - 1 - (base + b));  /* yet to concatenate */
-      setobj(top - 2, top);  /* put TM result in proper position */
+      top[-2] = top[0];  /* put TM result in proper position */
       if (total > 1) {  /* are there elements to concat? */
         L->top = top - 1;  /* top is one after last element (at top-2) */
         luaV_concat(L, total);  /* concat them (may yield again) */
       }
       /* move final result to final position */
-      setobj(ci->base + GETARG_A(inst), L->top - 1);
+      ci->base[GETARG_A(inst)] = L->top[-1];
       L->top = ci->top;  /* restore top */
       break;
     }
