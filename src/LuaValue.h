@@ -4,8 +4,6 @@
 
 #define l_isfalse(o)	((o)->isNil() || ((o)->isBool() && !(o)->getBool()))
 
-void setobj(TValue* obj1, const TValue* obj2);
-
 class TValue {
 public:
 

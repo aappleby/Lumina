@@ -100,12 +100,6 @@ void TValue::typeCheck() const {
   }
 }
 
-void setobj(TValue* obj1, const TValue* obj2) {
-  if(obj1 == obj2) return;
-  (*obj1) = (*obj2);
-	obj1->sanityCheck(); 
-}
-
 bool TValue::isWhite() const {
   if(!isCollectable()) return false;
   return object_->isWhite();
