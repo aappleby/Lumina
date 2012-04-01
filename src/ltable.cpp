@@ -284,8 +284,12 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
 /*
 ** search function for integers
 */
-const TValue *luaH_getint (Table *t, int key) {
-  const TValue* result = t->findValue(key);
+const TValue *luaH_getint2 (Table *t, int key) {
+  return t->findValue(key);
+}
+
+const TValue* luaH_getint(Table* t, int key) {
+  const TValue* result = luaH_getint2(t,key);
   return result ? result : luaO_nilobject;
 }
 
@@ -293,25 +297,27 @@ const TValue *luaH_getint (Table *t, int key) {
 ** main search function
 */
 
-const TValue *luaH_get (Table *t, const TValue *key) {
-  if(key->isNil()) {
-    return luaO_nilobject;
-  }
-
+const TValue *luaH_get2 (Table *t, const TValue *key) {
+  if(key->isNil()) return NULL;
+  
   if(key->isInteger()) {
-    const TValue* result = t->findValue(key->getInteger());
-    return result ? result : luaO_nilobject;
+    return t->findValue(key->getInteger());
   }
 
   if(key->isString()) {
-    const TValue* result = t->findValueInHash(*key);
-    return result ? result : luaO_nilobject;
+    return t->findValueInHash(*key);
   }
 
   for(Node* n = t->findBin(*key); n; n = n->next) {
     if(n->i_key == *key) return &n->i_val;
   }
-  return luaO_nilobject;
+
+  return NULL;
+}
+
+const TValue *luaH_get (Table *t, const TValue *key) {
+  const TValue* result = luaH_get2(t, key);
+  return result ? result : luaO_nilobject;
 }
 
 
