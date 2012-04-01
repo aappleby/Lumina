@@ -834,21 +834,21 @@ static void GCTM (int propagateerrors) {
   int status;
   uint8_t oldah = L->allowhook;
   int running  = g->gcrunning;
-  L->allowhook = 0;  /* stop debug hooks during GC metamethod */
-  g->gcrunning = 0;  /* avoid GC steps */
-  setobj(L->top, tm);  /* push finalizer... */
-  setobj(L->top + 1, &v);  /* ... and its argument */
-  L->top += 2;  /* and (next line) call the finalizer */
+  L->allowhook = 0;  // stop debug hooks during GC metamethod
+  g->gcrunning = 0;  // avoid GC steps
+  L->top[0] = *tm;  // push finalizer...
+  L->top[1] = v; // ... and its argument
+  L->top += 2;  // and (next line) call the finalizer
   status = luaD_pcall(L, dothecall, NULL, savestack(L, L->top - 2), 0);
-  L->allowhook = oldah;  /* restore hooks */
-  g->gcrunning = running;  /* restore state */
+  L->allowhook = oldah;  // restore hooks
+  g->gcrunning = running;  // restore state
 
-  if (status != LUA_OK && propagateerrors) {  /* error while running __gc? */
-    if (status == LUA_ERRRUN) {  /* is there an error msg.? */
+  if (status != LUA_OK && propagateerrors) {  // error while running __gc?
+    if (status == LUA_ERRRUN) {  // is there an error msg.?
       luaO_pushfstring(L, "error in __gc metamethod (%s)", lua_tostring(L, -1));
-      status = LUA_ERRGCMM;  /* error in __gc metamethod */
+      status = LUA_ERRGCMM;  // error in __gc metamethod
     }
-    luaD_throw(status);  /* re-send error */
+    luaD_throw(status);  // re-send error
   }
 }
 
