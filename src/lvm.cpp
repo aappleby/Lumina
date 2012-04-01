@@ -188,43 +188,52 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       }
 
       /* previous value is nil; must check the metamethod */
-         /* no metamethod; is there a previous entry in the table? */
-         /* no previous entry; must create one. (The next test is
-            always true; we only need the assignment.) */
-        /* no metamethod and (now) there is an entry with given key */
-
       tm = fasttm(h->metatable, TM_NEWINDEX);
       if (tm == NULL) {
 
+         /* no metamethod; is there a previous entry in the table? */
         if(oldval != luaO_nilobject) {
-          *oldval = *val;  /* assign new value to that entry */
+          *oldval = *val;
           // invalidate TM cache
           h->flags = 0;
           luaC_barrierback(h, val);
           return;
         }
 
+        // no previous entry; must create one.
         oldval = luaH_newkey(h, key);
-        *oldval = *val;  /* assign new value to that entry */
+        *oldval = *val;
         // invalidate TM cache
         h->flags = 0;
         luaC_barrierback(h, val);
         return;
       }
-      /* else will try the metamethod */
+      else {
+        if (tm->isFunction()) {
+          callTM(L, tm, t, key, val, 0);
+          return;
+        }
+        else {
+          t = tm;
+          continue;
+        }
+      }
     }
     else {
       /* not a table; check metamethod */
       tm = luaT_gettmbyobj(t, TM_NEWINDEX);
-      if (tm->isNil())
+      if (tm->isNil()) {
         luaG_typeerror(t, "index");
+      }
+      else if (tm->isFunction()) {
+        callTM(L, tm, t, key, val, 0);
+        return;
+      }
+      else {
+        t = tm;  /* else repeat with 'tm' */
+        continue;
+      }
     }
-    /* there is a metamethod */
-    if (tm->isFunction()) {
-      callTM(L, tm, t, key, val, 0);
-      return;
-    }
-    t = tm;  /* else repeat with 'tm' */
   }
   luaG_runerror("loop in settable");
 }
