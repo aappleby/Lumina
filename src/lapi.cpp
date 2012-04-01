@@ -173,7 +173,8 @@ void lua_xmove (lua_State *from, lua_State *to, int n) {
   {
     THREAD_CHANGE(to);
     for (i = 0; i < n; i++) {
-      setobj(to->top++, from->top + i);
+      to->top[0] = from->top[i];
+      to->top++;
     }
   }
 }
@@ -241,7 +242,9 @@ void lua_remove (lua_State *L, int idx) {
   StkId p;
   p = index2addr(L, idx);
   api_checkvalidindex(p);
-  while (++p < L->top) setobj(p-1, p);
+  while (++p < L->top) {
+    p[-1] = p[0];
+  }
   L->top--;
 }
 
@@ -252,8 +255,10 @@ void lua_insert (lua_State *L, int idx) {
   StkId q;
   p = index2addr(L, idx);
   api_checkvalidindex(p);
-  for (q = L->top; q>p; q--) setobj(q, q-1);
-  setobj(p, L->top);
+  for (q = L->top; q>p; q--) {
+    q[0] = q[-1];
+  }
+  p[0] = L->top[0];
 }
 
 
@@ -261,7 +266,7 @@ static void moveto (lua_State *L, TValue *fr, int idx) {
   THREAD_CHECK(L);
   TValue *to = index2addr(L, idx);
   api_checkvalidindex(to);
-  setobj(to, fr);
+  *to = *fr;
   if (idx < LUA_REGISTRYINDEX)  /* function upvalue? */
     luaC_barrier(L->ci_->func->getCClosure(), fr);
   /* LUA_REGISTRYINDEX does not need gc barrier
@@ -288,7 +293,8 @@ void lua_copy (lua_State *L, int fromidx, int toidx) {
 
 void lua_pushvalue (lua_State *L, int idx) {
   THREAD_CHECK(L);
-  setobj(L->top, index2addr(L, idx));
+  TValue v = index2addr3(L, idx);
+  L->top[0] = v.isNone() ? TValue::nil : v;
   api_incr_top(L);
 }
 

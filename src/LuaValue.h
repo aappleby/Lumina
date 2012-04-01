@@ -81,27 +81,28 @@ public:
   bool isCollectable() const;
   bool isFunction() const;
 
-  bool isNil() const           { return type() == LUA_TNIL; }
-  bool isNotNil() const        { return type() != LUA_TNIL; }
+  bool isNil() const           { return type_ == LUA_TNIL; }
+  bool isNotNil() const        { return type_ != LUA_TNIL; }
+  bool isNone() const          { return type_ == LUA_TNONE; }
 
-  bool isBool() const          { return type() == LUA_TBOOLEAN; }
-  bool isNumber() const        { return type() == LUA_TNUMBER; }
+  bool isBool() const          { return type_ == LUA_TBOOLEAN; }
+  bool isNumber() const        { return type_ == LUA_TNUMBER; }
 
   bool isInteger() const       { return isNumber() && (number_ == (int)number_); }
 
-  bool isLightUserdata() const { return type() == LUA_TLIGHTUSERDATA; }
+  bool isLightUserdata() const { return type_ == LUA_TLIGHTUSERDATA; }
 
-  bool isString() const        { return type() == LUA_TSTRING; }
-  bool isTable() const         { return type() == LUA_TTABLE; }
-  bool isUserdata() const      { return type() == LUA_TUSERDATA; }
-  bool isThread() const        { return type() == LUA_TTHREAD; }
-  bool isUpval() const         { return type() == LUA_TUPVAL; }
-  bool isDeadKey() const       { return type() == LUA_TDEADKEY; }
-  bool isProto() const         { return type() == LUA_TPROTO; }
+  bool isString() const        { return type_ == LUA_TSTRING; }
+  bool isTable() const         { return type_ == LUA_TTABLE; }
+  bool isUserdata() const      { return type_ == LUA_TUSERDATA; }
+  bool isThread() const        { return type_ == LUA_TTHREAD; }
+  bool isUpval() const         { return type_ == LUA_TUPVAL; }
+  bool isDeadKey() const       { return type_ == LUA_TDEADKEY; }
+  bool isProto() const         { return type_ == LUA_TPROTO; }
 
-  bool isCClosure() const      { return type() == LUA_TCCL; }
-  bool isLClosure() const      { return type() == LUA_TLCL; }
-  bool isLightFunction() const { return type() == LUA_TLCF; }
+  bool isCClosure() const      { return type_ == LUA_TCCL; }
+  bool isLClosure() const      { return type_ == LUA_TLCL; }
+  bool isLightFunction() const { return type_ == LUA_TLCF; }
 
   void setDeadKey() { type_ = LUA_TDEADKEY; }
 
