@@ -719,7 +719,8 @@ void lua_rawgeti (lua_State *L, int idx, int n) {
   StkId t;
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  L->top[0] = *luaH_getint(t->getTable(), n);
+  const TValue* result = luaH_getint2(t->getTable(), n);
+  L->top[0] = result ? *result : TValue::nil;
   api_incr_top(L);
 }
 
@@ -799,7 +800,8 @@ void lua_setglobal (lua_State *L, const char *var) {
   Table *reg = thread_G->l_registry.getTable();
   const TValue *gt;  /* global table */
   api_checknelems(L, 1);
-  gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
+  gt = luaH_getint2(reg, LUA_RIDX_GLOBALS);
+  assert(gt);
   L->top[0] = luaS_new(var);
   L->top++;
   luaV_settable(L, gt, L->top - 1, L->top - 2);
@@ -1039,7 +1041,8 @@ int lua_load (lua_State *L, lua_Reader reader, void *data,
     if (f->nupvalues == 1) {  /* does it have one upvalue? */
       /* get global table from registry */
       Table *reg = thread_G->l_registry.getTable();
-      const TValue *gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
+      const TValue *gt = luaH_getint2(reg, LUA_RIDX_GLOBALS);
+      assert(gt);
       /* set global table as 1st upvalue of 'f' (may be LUA_ENV) */
       *f->ppupvals_[0]->v = *gt;
       luaC_barrier(f->ppupvals_[0], gt);

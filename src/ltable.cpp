@@ -288,11 +288,6 @@ const TValue *luaH_getint2 (Table *t, int key) {
   return t->findValue(key);
 }
 
-const TValue* luaH_getint(Table* t, int key) {
-  const TValue* result = luaH_getint2(t,key);
-  return result ? result : luaO_nilobject;
-}
-
 /*
 ** main search function
 */
