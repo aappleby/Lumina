@@ -8,21 +8,21 @@ TValue TValue::none(LUA_TNONE,0);
 
 TValue::TValue(LuaObject* o) {
   bytes = 0;
-  tt_ = o->tt;
+  type_ = o->tt;
   gc = o;
   sanityCheck();
 }
 
 TValue::TValue(TString* v) {
   bytes = 0;
-  tt_ = LUA_TSTRING;
+  type_ = LUA_TSTRING;
   gc = (LuaObject*)v;
   sanityCheck();
 }
 
 TValue TValue::LightUserdata(void * p) {
   TValue v;
-  v.tt_ = LUA_TLIGHTUSERDATA;
+  v.type_ = LUA_TLIGHTUSERDATA;
   v.bytes = 0;
   v.p = p;
   return v;
@@ -30,7 +30,7 @@ TValue TValue::LightUserdata(void * p) {
 
 TValue TValue::LightFunction(lua_CFunction f) {
   TValue v;
-  v.tt_ = LUA_TLCF;
+  v.type_ = LUA_TLCF;
   v.bytes = 0;
   v.f = f;
   return v;
@@ -38,7 +38,7 @@ TValue TValue::LightFunction(lua_CFunction f) {
 
 TValue TValue::CClosure(Closure* c) {
   TValue v;
-  v.tt_ = LUA_TCCL;
+  v.type_ = LUA_TCCL;
   v.bytes = 0;
   v.gc = c;
   return v;
@@ -46,7 +46,7 @@ TValue TValue::CClosure(Closure* c) {
 
 TValue TValue::LClosure(Closure* c) {
   TValue v;
-  v.tt_ = LUA_TLCL;
+  v.type_ = LUA_TLCL;
   v.bytes = 0;
   v.gc = c;
   return v;
@@ -56,7 +56,7 @@ TValue TValue::LClosure(Closure* c) {
 void TValue::operator = ( TValue v )
 {
   bytes = v.bytes;
-  tt_ = v.tt_;
+  type_ = v.type_;
   sanityCheck();
 }
 
@@ -66,11 +66,11 @@ void TValue::operator = ( TValue * v )
   bytes = 0; 
   if(v) {
     bytes = v->bytes;
-    tt_ = v->tt_;
+    type_ = v->type_;
   } else {
     assert(false);
     bytes = 0;
-    tt_ = LUA_TNIL;
+    type_ = LUA_TNIL;
   }
 
   sanityCheck();
@@ -79,7 +79,7 @@ void TValue::operator = ( TValue * v )
 void TValue::operator = (LuaObject* o) {
   assert(o);
   bytes = 0;
-  tt_ = o->tt;
+  type_ = o->tt;
   gc = o;
   sanityCheck();
 }
@@ -87,14 +87,14 @@ void TValue::operator = (LuaObject* o) {
 void TValue::sanityCheck() const {
   if(isCollectable()) {
     gc->sanityCheck();
-    assert(tt_ == gc->tt);
+    assert(type_ == gc->tt);
     assert(!gc->isDead());
   }
 }
 
 void TValue::typeCheck() const {
   if(isCollectable()) {
-    assert(tt_ == gc->tt);
+    assert(type_ == gc->tt);
   }
 }
 
@@ -110,20 +110,20 @@ bool TValue::isWhite() const {
 }
 
 bool TValue::isCollectable() const {
-  if((tt_ & 0x3F) == LUA_TSTRING) return true;
-  if((tt_ & 0x3F) == LUA_TTABLE) return true;
-  if((tt_ & 0x3F) == LUA_TUSERDATA) return true;
-  if((tt_ & 0x3F) == LUA_TTHREAD) return true;
-  if((tt_ & 0x3F) == LUA_TPROTO) return true;
-  if((tt_ & 0x3F) == LUA_TUPVAL) return true;
-  if((tt_ & 0x3F) == LUA_TLCL) return true;
-  if((tt_ & 0x3F) == LUA_TCCL) return true;
+  if((type_ & 0x3F) == LUA_TSTRING) return true;
+  if((type_ & 0x3F) == LUA_TTABLE) return true;
+  if((type_ & 0x3F) == LUA_TUSERDATA) return true;
+  if((type_ & 0x3F) == LUA_TTHREAD) return true;
+  if((type_ & 0x3F) == LUA_TPROTO) return true;
+  if((type_ & 0x3F) == LUA_TUPVAL) return true;
+  if((type_ & 0x3F) == LUA_TLCL) return true;
+  if((type_ & 0x3F) == LUA_TCCL) return true;
   return false;
 }
 
 bool TValue::isFunction() const {
-  if(tt_ == LUA_TLCL) return true;
-  if(tt_ == LUA_TCCL) return true;
-  if(tt_ == LUA_TLCF) return true;
+  if(type_ == LUA_TLCL) return true;
+  if(type_ == LUA_TCCL) return true;
+  if(type_ == LUA_TLCF) return true;
   return false;
 }

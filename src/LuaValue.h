@@ -9,9 +9,9 @@ void setobj(TValue* obj1, const TValue* obj2);
 class TValue {
 public:
 
-  TValue() { tt_ = LUA_TNIL; bytes = 0; }
+  TValue() { type_ = LUA_TNIL; bytes = 0; }
   TValue(int type, uint64_t data) {
-    tt_ = type;
+    type_ = type;
     bytes = data;
   }
 
@@ -23,8 +23,8 @@ public:
   static TValue LClosure(Closure* c);
   static TValue CClosure(Closure* c);
 
-  explicit TValue(int v)    { tt_ = LUA_TNUMBER; n = v; }
-  explicit TValue(double v) { tt_ = LUA_TNUMBER; n = v; }
+  explicit TValue(int v)    { type_ = LUA_TNUMBER; n = v; }
+  explicit TValue(double v) { type_ = LUA_TNUMBER; n = v; }
 
   explicit TValue(TString* v);
   explicit TValue(LuaObject* o);
@@ -40,23 +40,23 @@ public:
 
   void operator = (LuaObject* o);
 
-  void operator = (double v)  { tt_ = LUA_TNUMBER; n = v; }
-  void operator = (int v)     { tt_ = LUA_TNUMBER; n = (double)v; }
-  void operator = (size_t v)  { tt_ = LUA_TNUMBER; n = (double)v; }
-  void operator = (int64_t v) { tt_ = LUA_TNUMBER; n = (double)v; }
-  void operator = (bool v)    { tt_ = LUA_TBOOLEAN; bytes = v ? 1 : 0; }
+  void operator = (double v)  { type_ = LUA_TNUMBER; n = v; }
+  void operator = (int v)     { type_ = LUA_TNUMBER; n = (double)v; }
+  void operator = (size_t v)  { type_ = LUA_TNUMBER; n = (double)v; }
+  void operator = (int64_t v) { type_ = LUA_TNUMBER; n = (double)v; }
+  void operator = (bool v)    { type_ = LUA_TBOOLEAN; bytes = v ? 1 : 0; }
 
   void operator = (TString* v ) {
     bytes = 0;
     gc = (LuaObject*)v;
-    tt_ = LUA_TSTRING;
+    type_ = LUA_TSTRING;
     sanityCheck();
   }
 
   void operator = (Proto* p) {
     bytes = 0;
     gc = (LuaObject*)p;
-    tt_ = LUA_TPROTO;
+    type_ = LUA_TPROTO;
     sanityCheck();
   }
 
@@ -64,7 +64,7 @@ public:
 
   // This will return false for positive and negative zero, that's a known issue.
   bool operator == (TValue const& v) const {
-    return (tt_ == v.tt_) && (bytes == v.bytes);
+    return (type_ == v.type_) && (bytes == v.bytes);
   }
 
   bool operator != (TValue const& v) const {
@@ -103,7 +103,7 @@ public:
   bool isLClosure() const      { return type() == LUA_TLCL; }
   bool isLightFunction() const { return type() == LUA_TLCF; }
 
-  void setDeadKey() { tt_ = LUA_TDEADKEY; }
+  void setDeadKey() { type_ = LUA_TDEADKEY; }
 
   //----------
 
@@ -136,15 +136,17 @@ public:
 
   //----------
 
-  int32_t type() const  { return tt_; }
+  int32_t type() const  { return type_; }
 
-  void clear() { bytes = 0; tt_ = 0; }
+  void clear() { bytes = 0; type_ = 0; }
 
-  void setBool  (int x)     { bytes = x ? 1 : 0; tt_ = LUA_TBOOLEAN; }
-  void setValue (TValue* x) { bytes = x->bytes; tt_ = x->tt_; }
+  void setBool  (int x)     { bytes = x ? 1 : 0; type_ = LUA_TBOOLEAN; }
+  void setValue (TValue* x) { bytes = x->bytes; type_ = x->type_; }
 
   void sanityCheck() const;
   void typeCheck() const;
+
+private:
 
   union {
     LuaObject *gc;    /* collectable objects */
@@ -159,7 +161,5 @@ public:
     };
   };
 
-private:
-
-  int32_t tt_;
+  int32_t type_;
 };
