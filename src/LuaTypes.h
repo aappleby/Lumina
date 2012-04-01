@@ -72,19 +72,18 @@ enum LuaTag {
   LUA_TNUMBER        = 3,
   LUA_TSTRING        = 4,
   LUA_TTABLE         = 5,
-  LUA_TFUNCTION      = 6,
+  LUA_TLCL           = 6,   /* Lua closure */
   LUA_TUSERDATA      = 7,
   LUA_TTHREAD        = 8,
-  LUA_NUMTAGS        = 9,
+  LUA_TLCF           = 9,  /* light C function */
+  LUA_TCCL           = 10,  /* C closure */
+
+  LUA_NUMTAGS        = 11,
 
   // non-values
-  LUA_TPROTO = 9,
-  LUA_TUPVAL = 10,
-  LUA_TDEADKEY = 11,
-
-  LUA_TLCL = (LUA_TFUNCTION | (0 << 4)),  /* Lua closure */
-  LUA_TLCF = (LUA_TFUNCTION | (1 << 4)),  /* light C function */
-  LUA_TCCL = (LUA_TFUNCTION | (2 << 4)),  /* C closure */
+  LUA_TPROTO = 12,
+  LUA_TUPVAL = 13,
+  LUA_TDEADKEY = 14,
 
 
   LUA_ALLTAGS = LUA_TDEADKEY+1,
@@ -96,13 +95,6 @@ enum LuaTag {
 ** bits 0-3: actual tag (a LUA_T* value)
 ** bits 4-5: variant bits
 ** bit 6: whether value is collectable
-*/
-
-/*
-** LUA_TFUNCTION variants:
-** 0 - Lua function
-** 1 - light C function
-** 2 - regular C function (closure)
 */
 
 /*

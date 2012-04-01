@@ -1,6 +1,6 @@
 #include "LuaClosure.h"
 
-Closure::Closure(TValue* buf, int n) : LuaObject(LUA_TFUNCTION) {
+Closure::Closure(TValue* buf, int n) : LuaObject(LUA_TCCL) {
   linkGC(getGlobalGCHead());
   isC = 1;
   nupvalues = n;
@@ -8,7 +8,7 @@ Closure::Closure(TValue* buf, int n) : LuaObject(LUA_TFUNCTION) {
   ppupvals_ = NULL;
 }
 
-Closure::Closure(Proto* proto, UpVal** buf, int n) : LuaObject(LUA_TFUNCTION) {
+Closure::Closure(Proto* proto, UpVal** buf, int n) : LuaObject(LUA_TLCL) {
   linkGC(getGlobalGCHead());
   isC = 0;
   nupvalues = n;

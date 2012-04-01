@@ -83,14 +83,9 @@ void TValue::operator = (LuaObject* o) {
 }
 
 void TValue::sanityCheck() const {
-  if(tt_ & 0x30) {
-    assert((tt_ & 0xF) == LUA_TFUNCTION);
-  }
-
   if(isCollectable()) {
-    assert((gc->tt <= LUA_TUPVAL) || (((gc->tt & 0xF) == LUA_TFUNCTION) && (gc->tt < 0x3f)));
     gc->sanityCheck();
-    assert(basetype() == gc->tt);
+    assert(rawtype() == gc->tt);
     assert(!gc->isDead());
   }
 }

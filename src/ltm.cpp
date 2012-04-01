@@ -30,6 +30,8 @@ const char *const luaT_typenames_[LUA_TOTALTAGS] = {
   "function",
   "userdata",
   "thread",
+  "function",
+  "function",
   /* these last two cases are used for tests only */
   "proto",
   "upval"
