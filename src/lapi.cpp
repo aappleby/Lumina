@@ -346,7 +346,7 @@ int lua_rawequal (lua_State *L, int index1, int index2) {
   THREAD_CHECK(L);
   StkId o1 = index2addr(L, index1);
   StkId o2 = index2addr(L, index2);
-  return (isvalid(o1) && isvalid(o2)) ? luaV_rawequalobj(o1, o2) : 0;
+  return (isvalid(o1) && isvalid(o2)) ? (*o1 == *o2) : 0;
 }
 
 
@@ -380,7 +380,7 @@ int lua_compare (lua_State *L, int index1, int index2, int op) {
   o2 = index2addr(L, index2);
   if (isvalid(o1) && isvalid(o2)) {
     switch (op) {
-      case LUA_OPEQ: i = equalobj(L, o1, o2); break;
+      case LUA_OPEQ: i = luaV_equalobj_(L, o1, o2); break;
       case LUA_OPLT: i = luaV_lessthan(L, o1, o2); break;
       case LUA_OPLE: i = luaV_lessequal(L, o1, o2); break;
       default: api_check(0, "invalid option");

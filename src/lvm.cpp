@@ -225,7 +225,7 @@ static const TValue *get_equalTM (lua_State *L, Table *mt1, Table *mt2,
   if (mt1 == mt2) return tm1;  /* same metatables => same metamethods */
   tm2 = fasttm(mt2, event);
   if (tm2 == NULL) return NULL;  /* no metamethod */
-  if (luaV_rawequalobj(tm1, tm2))  /* same metamethods? */
+  if (*tm1 == *tm2)  /* same metamethods? */
     return tm1;
   return NULL;
 }
@@ -296,8 +296,7 @@ int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
 */
 int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
   THREAD_CHECK(L);
-  
-  assert(t1->rawtype() == t2->rawtype());
+  if(t1->rawtype() != t2->rawtype()) return false;
 
   switch (t1->tagtype()) {
     case LUA_TNIL: return 1;
@@ -732,7 +731,7 @@ void luaV_execute (lua_State *L) {
         TValue *rb = RKB(i);
         TValue *rc = RKC(i);
         Protect(
-          if (cast_int(equalobj(L, rb, rc)) != GETARG_A(i))
+          if (cast_int(luaV_equalobj_(L, rb, rc)) != GETARG_A(i))
             ci->savedpc++;
           else
             donextjump(ci);

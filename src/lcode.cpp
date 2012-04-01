@@ -327,7 +327,7 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   if (idx->isNumber()) {
     lua_Number n = idx->getNumber();
     lua_number2int(k, n);
-    if (luaV_rawequalobj(&f->constants[k], v))
+    if (f->constants[k] == *v)
       return k;
     /* else may be a collision (e.g., between 0.0 and "\0\0\0\0\0\0\0\0");
        go through and create a new entry for this value */

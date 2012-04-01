@@ -60,17 +60,18 @@ public:
     sanityCheck();
   }
 
-  // Comparison operators
+  // Comparison operators.
 
-  bool operator == (TValue const& v) {
+  // This will return false for positive and negative zero, that's a known issue.
+  bool operator == (TValue const& v) const {
     return (tt_ == v.tt_) && (bytes == v.bytes);
   }
 
-  bool operator != (TValue const& v) {
+  bool operator != (TValue const& v) const {
     return !(*this == v);
   }
 
-  bool operator == (int v) {
+  bool operator == (int v) const {
     if(!isNumber()) return false;
     return n == v;
   }
