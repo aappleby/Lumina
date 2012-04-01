@@ -537,8 +537,6 @@ void lua_pushnil (lua_State *L) {
 void lua_pushnumber (lua_State *L, lua_Number n) {
   THREAD_CHECK(L);
   L->top[0] = n;
-  luai_checknum(L, L->top,
-    luaG_runerror("C API - attempt to push a signaling NaN"));
   api_incr_top(L);
 }
 
@@ -1209,7 +1207,7 @@ void *lua_newuserdata (lua_State *L, size_t size) {
   luaC_checkGC();
   u = luaS_newudata(size, NULL);
   if(u == NULL) luaD_throw(LUA_ERRMEM);
-  setuvalue(L, L->top, u);
+  L->top[0] = u;
   api_incr_top(L);
   return u->buf_;
 }

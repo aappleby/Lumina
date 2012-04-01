@@ -2,6 +2,10 @@
 #include "LuaTypes.h"
 #include <assert.h>
 
+#define l_isfalse(o)	((o)->isNil() || ((o)->isBool() && !(o)->getBool()))
+
+void setobj(TValue* obj1, const TValue* obj2);
+
 class TValue {
 public:
 
@@ -159,31 +163,3 @@ public:
   };
   int32_t tt_;
 };
-
-
-
-
-/*
-** Tagged Values. This is the basic representation of values in Lua,
-** an actual value plus a tag with its type.
-*/
-
-#define l_isfalse(o)	((o)->isNil() || ((o)->isBool() && !(o)->getBool()))
-
-/* Macros to set values */
-#define settt_(o,t)	((o)->tt_=(t))
-
-#define setgcovalue(obj,x) \
-  { TValue *io=(obj); io->bytes = 0; LuaObject *i_g=(x); \
-    io->gc=i_g; settt_(io, i_g->tt); }
-
-#define setuvalue(L,obj,x) \
-  { THREAD_CHECK(L); TValue *io=(obj); io->bytes = 0; \
-    io->gc=cast(LuaObject *, (x)); settt_(io, LUA_TUSERDATA); \
-    io->sanityCheck(); }
-
-void setobj(TValue* obj1, const TValue* obj2);
-
-
-#define luai_checknum(L,o,c)	{ /* empty */ }
-

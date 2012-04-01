@@ -21,8 +21,10 @@
 
 #include "LuaTypes.h"
 
-TValue *index2addr (lua_State *L, int idx);
+TValue* index2addr (lua_State *L, int idx);
 TValue* index2addr2 (lua_State *L, int idx);
+TValue  index2addr3 (lua_State *L, int idx);
+
 /*
 ** pseudo-indices
 */
