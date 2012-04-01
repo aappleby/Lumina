@@ -42,7 +42,20 @@ const char lua_ident[] =
 /* corresponding test */
 #define isvalid(o)	((o) != luaO_nilobject)
 
-#define api_checkvalidindex(i)  api_check(isvalid(i), "invalid index")
+bool isValidIndex(lua_State* L, int idx);
+
+//#define api_checkvalidindex(i)  api_check(isvalid(i), "invalid index")
+
+inline void api_checkvalidindex(lua_State* L, int idx, TValue* v) {
+  bool result1 = (v != luaO_nilobject);
+  bool result2 = isValidIndex(L, idx);
+
+  if(result1 != result2) {
+    printf("xxx");
+  }
+
+  api_check(result1, "invalid index");
+}
 
 void api_checknelems(lua_State* L, int n) {
   api_check((n) < (L->top - L->ci_->func), "not enough elements in the stack");
@@ -258,7 +271,7 @@ void lua_remove (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId p;
   p = index2addr(L, idx);
-  api_checkvalidindex(p);
+  api_checkvalidindex(L, idx, p);
   while (++p < L->top) {
     p[-1] = p[0];
   }
@@ -271,7 +284,7 @@ void lua_insert (lua_State *L, int idx) {
   StkId p;
   StkId q;
   p = index2addr(L, idx);
-  api_checkvalidindex(p);
+  api_checkvalidindex(L, idx, p);
   for (q = L->top; q>p; q--) {
     q[0] = q[-1];
   }
@@ -282,7 +295,7 @@ void lua_insert (lua_State *L, int idx) {
 static void moveto (lua_State *L, TValue *fr, int idx) {
   THREAD_CHECK(L);
   TValue *to = index2addr(L, idx);
-  api_checkvalidindex(to);
+  api_checkvalidindex(L, idx, to);
   *to = *fr;
   if (idx < LUA_REGISTRYINDEX)  /* function upvalue? */
     luaC_barrier(L->ci_->func->getCClosure(), fr);
@@ -303,7 +316,7 @@ void lua_copy (lua_State *L, int fromidx, int toidx) {
   THREAD_CHECK(L);
   TValue *fr;
   fr = index2addr(L, fromidx);
-  api_checkvalidindex(fr);
+  api_checkvalidindex(L, fromidx, fr);
   moveto(L, fr, toidx);
 }
 
@@ -694,7 +707,7 @@ void lua_gettable (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId t;
   t = index2addr(L, idx);
-  api_checkvalidindex(t);
+  api_checkvalidindex(L, idx, t);
   luaV_gettable(L, t, L->top - 1, L->top - 1);
 }
 
@@ -703,7 +716,7 @@ void lua_getfield (lua_State *L, int idx, const char *k) {
   THREAD_CHECK(L);
   StkId t;
   t = index2addr(L, idx);
-  api_checkvalidindex(t);
+  api_checkvalidindex(L, idx, t);
   L->top[0] = luaS_new(k);
   api_incr_top(L);
   luaV_gettable(L, t, L->top - 1, L->top - 1);
@@ -784,7 +797,7 @@ void lua_getuservalue (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o;
   o = index2addr(L, idx);
-  api_checkvalidindex(o);
+  api_checkvalidindex(L, idx, o);
   api_check(o->isUserdata(), "userdata expected");
   if (o->getUserdata()->env_) {
     L->top[0] = o->getUserdata()->env_;
@@ -818,7 +831,7 @@ void lua_settable (lua_State *L, int idx) {
   StkId t;
   api_checknelems(L, 2);
   t = index2addr(L, idx);
-  api_checkvalidindex(t);
+  api_checkvalidindex(L, idx, t);
   luaV_settable(L, t, L->top - 2, L->top - 1);
   L->top -= 2;  /* pop index and value */
 }
@@ -829,7 +842,7 @@ void lua_setfield (lua_State *L, int idx, const char *k) {
   StkId t;
   api_checknelems(L, 1);
   t = index2addr(L, idx);
-  api_checkvalidindex(t);
+  api_checkvalidindex(L, idx, t);
   L->top[0] = luaS_new(k);
   L->top++;
   luaV_settable(L, t, L->top - 1, L->top - 2);
@@ -884,7 +897,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
   Table *mt;
   api_checknelems(L, 1);
   obj = index2addr(L, objindex);
-  api_checkvalidindex(obj);
+  api_checkvalidindex(L, objindex, obj);
   if (L->top[-1].isNil())
     mt = NULL;
   else {
@@ -922,7 +935,7 @@ void lua_setuservalue (lua_State *L, int idx) {
   StkId o;
   api_checknelems(L, 1);
   o = index2addr(L, idx);
-  api_checkvalidindex(o);
+  api_checkvalidindex(L, idx, o);
   api_check(o->isUserdata(), "userdata expected");
   if (L->top[-1].isNil())
     o->getUserdata()->env_ = NULL;
@@ -1007,7 +1020,7 @@ int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
     func = 0;
   else {
     StkId o = index2addr(L, errfunc);
-    api_checkvalidindex(o);
+    api_checkvalidindex(L, errfunc, o);
     func = savestack(L, o);
   }
   c.func = L->top - (nargs+1);  /* function to be called */
