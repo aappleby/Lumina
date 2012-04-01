@@ -175,18 +175,36 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
     const TValue *tm;
     if (t->isTable()) {  /* `t' is a table? */
       Table *h = t->getTable();
-      TValue *oldval = cast(TValue *, luaH_get(h, key));
+      TValue *oldval = (TValue *)luaH_get(h, key);
+
       /* if previous value is not nil, there must be a previous entry
          in the table; moreover, a metamethod has no relevance */
-      if (oldval->isNotNil() ||
-         /* previous value is nil; must check the metamethod */
-         ((tm = fasttm(h->metatable, TM_NEWINDEX)) == NULL &&
+      if (oldval && oldval->isNotNil()) {
+        *oldval = *val;
+        // invalidate TM cache
+        h->flags = 0;
+        luaC_barrierback(h, val);
+        return;
+      }
+
+      /* previous value is nil; must check the metamethod */
          /* no metamethod; is there a previous entry in the table? */
-         (oldval != luaO_nilobject ||
          /* no previous entry; must create one. (The next test is
             always true; we only need the assignment.) */
-         (oldval = luaH_newkey(h, key), 1)))) {
         /* no metamethod and (now) there is an entry with given key */
+
+      tm = fasttm(h->metatable, TM_NEWINDEX);
+      if (tm == NULL) {
+
+        if(oldval != luaO_nilobject) {
+          *oldval = *val;  /* assign new value to that entry */
+          // invalidate TM cache
+          h->flags = 0;
+          luaC_barrierback(h, val);
+          return;
+        }
+
+        oldval = luaH_newkey(h, key);
         *oldval = *val;  /* assign new value to that entry */
         // invalidate TM cache
         h->flags = 0;
