@@ -296,9 +296,9 @@ int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
 */
 int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
   THREAD_CHECK(L);
-  if(t1->rawtype() != t2->rawtype()) return false;
+  if(t1->type() != t2->type()) return false;
 
-  switch (t1->tagtype()) {
+  switch (t1->type()) {
     case LUA_TNIL: return 1;
     case LUA_TNUMBER: {
       // note - if you compare raw bytes, this comparison fails for positive and
@@ -384,7 +384,7 @@ void luaV_concat (lua_State *L, int total) {
 void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
   THREAD_CHECK(L);
   const TValue *tm;
-  switch (rb->basetype()) {
+  switch (rb->type()) {
     case LUA_TTABLE: {
       Table *h = rb->getTable();
       tm = fasttm(h->metatable, TM_LEN);

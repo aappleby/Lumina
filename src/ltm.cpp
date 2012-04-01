@@ -63,7 +63,7 @@ const char* ttypename(int tag) {
 }
 
 const char* objtypename(const TValue* v) {
-  return luaT_typenames_[v->basetype() + 1];
+  return luaT_typenames_[v->type() + 1];
 }
 
 

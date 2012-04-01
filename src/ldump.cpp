@@ -84,7 +84,7 @@ static void DumpConstants(const Proto* f, DumpState* D)
   for(int i=0; i < n; i++)
   {
     TValue v = f->constants[i];
-    DumpChar(v.tagtype(),D);
+    DumpChar(v.type(),D);
 
     if(v.isBool()) {
       DumpChar(v.getBool() ? 1 : 0,D);

@@ -302,7 +302,7 @@ void lua_pushvalue (lua_State *L, int idx) {
 int lua_type (lua_State *L, int idx) {
   THREAD_CHECK(L);
   TValue v = index2addr3(L, idx);
-  return v.basetype();
+  return v.type();
 }
 
 
@@ -467,7 +467,7 @@ const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
 size_t lua_rawlen (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
-  switch (o->basetype()) {
+  switch (o->type()) {
     case LUA_TSTRING: return o->getString()->getLen();
     case LUA_TUSERDATA: return o->getUserdata()->len_;
     case LUA_TTABLE: return luaH_getn(o->getTable());
@@ -489,7 +489,7 @@ lua_CFunction lua_tocfunction (lua_State *L, int idx) {
 void *lua_touserdata (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
-  switch (o->basetype()) {
+  switch (o->type()) {
     case LUA_TUSERDATA: return (o->getUserdata()->buf_);
     case LUA_TLIGHTUSERDATA: return o->getLightUserdata();
     default: return NULL;
@@ -507,7 +507,7 @@ lua_State *lua_tothread (lua_State *L, int idx) {
 const void *lua_topointer (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
-  switch (o->tagtype()) {
+  switch (o->type()) {
     case LUA_TTABLE: return o->getTable();
     case LUA_TLCL: return o->getLClosure();
     case LUA_TCCL: return o->getCClosure();
@@ -733,7 +733,7 @@ void lua_createtable (lua_State *L, int narray, int nrec) {
 }
 
 Table* lua_getmetatable( const TValue* o ) {
-  int type = o->basetype();
+  int type = o->type();
   switch (type) {
     case LUA_TTABLE:    return o->getTable()->metatable;
     case LUA_TUSERDATA: return o->getUserdata()->metatable_;
@@ -868,7 +868,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
     api_check(L->top[-1].isTable(), "table expected");
     mt = L->top[-1].getTable();
   }
-  switch (obj->basetype()) {
+  switch (obj->type()) {
     case LUA_TTABLE: {
       obj->getTable()->metatable = mt;
       if (mt)
@@ -885,7 +885,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
       break;
     }
     default: {
-      G(L)->mt[obj->basetype()] = mt;
+      G(L)->mt[obj->type()] = mt;
       break;
     }
   }
@@ -1216,7 +1216,7 @@ void *lua_newuserdata (lua_State *L, size_t size) {
 
 static const char *aux_upvalue (StkId fi, int n, TValue **val,
                                 LuaObject **owner) {
-  switch (fi->tagtype()) {
+  switch (fi->type()) {
     case LUA_TCCL: {  /* C closure */
       Closure *f = fi->getCClosure();
       if (!(1 <= n && n <= f->nupvalues)) return NULL;
@@ -1285,7 +1285,7 @@ static UpVal **getupvalref (lua_State *L, int fidx, int n, Closure **pf) {
 void *lua_upvalueid (lua_State *L, int fidx, int n) {
   THREAD_CHECK(L);
   StkId fi = index2addr(L, fidx);
-  switch (fi->tagtype()) {
+  switch (fi->type()) {
     case LUA_TLCL: {  /* lua closure */
       return *getupvalref(L, fidx, n, NULL);
     }

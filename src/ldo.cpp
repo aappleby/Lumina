@@ -274,7 +274,7 @@ int luaD_precallLua(lua_State* L, StkId func, int nresults) {
 */
 int luaD_precall (lua_State *L, StkId func, int nresults) {
   THREAD_CHECK(L);
-  switch (func->tagtype()) {
+  switch (func->type()) {
     case LUA_TLCF: return luaD_precallLightC(L,func,nresults);
     case LUA_TCCL: return luaD_precallC(L,func,nresults);
     case LUA_TLCL: return luaD_precallLua(L,func,nresults);

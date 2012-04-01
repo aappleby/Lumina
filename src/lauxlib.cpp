@@ -357,7 +357,7 @@ void luaL_checkIsFunction(lua_State *L, int narg) {
   THREAD_CHECK(L);
   TValue v = *index2addr(L, narg);
   if(v.isFunction()) return;
-  const char* actualType = ttypename(v.tagtype());
+  const char* actualType = ttypename(v.type());
   const char *msg = lua_pushfstring(L, "Expected a function, got a %s", actualType);
   luaL_argerror(L, narg, msg);
 }
@@ -366,7 +366,7 @@ void luaL_checkIsTable(lua_State* L, int narg) {
   THREAD_CHECK(L);
   TValue v = *index2addr(L, narg);
   if(v.isTable()) return;
-  const char* actualType = ttypename(v.tagtype());
+  const char* actualType = ttypename(v.type());
   const char *msg = lua_pushfstring(L, "Expected a table, got a %s", actualType);
   luaL_argerror(L, narg, msg);
 }

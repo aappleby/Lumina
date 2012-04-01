@@ -35,7 +35,7 @@ public:
 
   // Assignment operators
 
-  void operator = (TValue const & V);
+  void operator = (TValue V);
   void operator = (TValue * pV);
 
   void operator = (LuaObject* o);
@@ -81,27 +81,27 @@ public:
   bool isCollectable() const;
   bool isFunction() const;
 
-  bool isNil() const           { return rawtype() == LUA_TNIL; }
-  bool isNotNil() const        { return rawtype() != LUA_TNIL; }
+  bool isNil() const           { return type() == LUA_TNIL; }
+  bool isNotNil() const        { return type() != LUA_TNIL; }
 
-  bool isBool() const          { return rawtype() == LUA_TBOOLEAN; }
-  bool isNumber() const        { return rawtype() == LUA_TNUMBER; }
+  bool isBool() const          { return type() == LUA_TBOOLEAN; }
+  bool isNumber() const        { return type() == LUA_TNUMBER; }
 
   bool isInteger() const       { return isNumber() && (n == (int)n); }
 
-  bool isLightUserdata() const { return rawtype() == LUA_TLIGHTUSERDATA; }
+  bool isLightUserdata() const { return type() == LUA_TLIGHTUSERDATA; }
 
-  bool isString() const        { return tagtype() == LUA_TSTRING; }
-  bool isTable() const         { return tagtype() == LUA_TTABLE; }
-  bool isUserdata() const      { return tagtype() == LUA_TUSERDATA; }
-  bool isThread() const        { return rawtype() == LUA_TTHREAD; }
-  bool isUpval() const         { return tagtype() == LUA_TUPVAL; }
-  bool isDeadKey() const       { return rawtype() == LUA_TDEADKEY; }
-  bool isProto() const         { return rawtype() == LUA_TPROTO; }
+  bool isString() const        { return type() == LUA_TSTRING; }
+  bool isTable() const         { return type() == LUA_TTABLE; }
+  bool isUserdata() const      { return type() == LUA_TUSERDATA; }
+  bool isThread() const        { return type() == LUA_TTHREAD; }
+  bool isUpval() const         { return type() == LUA_TUPVAL; }
+  bool isDeadKey() const       { return type() == LUA_TDEADKEY; }
+  bool isProto() const         { return type() == LUA_TPROTO; }
 
-  bool isCClosure() const      { return rawtype() == LUA_TCCL; }
-  bool isLClosure() const      { return rawtype() == LUA_TLCL; }
-  bool isLightFunction() const { return rawtype() == LUA_TLCF; }
+  bool isCClosure() const      { return type() == LUA_TCCL; }
+  bool isLClosure() const      { return type() == LUA_TLCL; }
+  bool isLightFunction() const { return type() == LUA_TLCF; }
 
   void setDeadKey() { tt_ = LUA_TDEADKEY; }
 
@@ -136,9 +136,7 @@ public:
 
   //----------
 
-  int32_t rawtype() const  { return tt_; }
-  int32_t tagtype() const  { return tt_; }
-  int32_t basetype() const { return tt_; }
+  int32_t type() const  { return tt_; }
 
   void clear() { bytes = 0; tt_ = 0; }
 
@@ -160,5 +158,8 @@ public:
       uint32_t high;
     };
   };
+
+private:
+
   int32_t tt_;
 };

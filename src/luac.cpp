@@ -271,7 +271,7 @@ static void PrintConstant(const Proto* f, int i)
     return;
   }
 
-  printf("? type=%d",v.tagtype());
+  printf("? type=%d",v.type());
 }
 
 #define UPVALNAME(x) ((f->upvalues[x].name) ? f->upvalues[x].name->c_str() : "-")

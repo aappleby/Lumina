@@ -53,7 +53,7 @@ TValue TValue::LClosure(Closure* c) {
 }
 
 
-void TValue::operator = ( TValue const & v )
+void TValue::operator = ( TValue v )
 {
   bytes = v.bytes;
   tt_ = v.tt_;
@@ -62,11 +62,13 @@ void TValue::operator = ( TValue const & v )
 
 void TValue::operator = ( TValue * v )
 {
+  if(this == v) return;
   bytes = 0; 
   if(v) {
     bytes = v->bytes;
     tt_ = v->tt_;
   } else {
+    assert(false);
     bytes = 0;
     tt_ = LUA_TNIL;
   }
@@ -85,21 +87,20 @@ void TValue::operator = (LuaObject* o) {
 void TValue::sanityCheck() const {
   if(isCollectable()) {
     gc->sanityCheck();
-    assert(rawtype() == gc->tt);
+    assert(tt_ == gc->tt);
     assert(!gc->isDead());
   }
 }
 
 void TValue::typeCheck() const {
   if(isCollectable()) {
-    assert(basetype() == gc->tt);
+    assert(tt_ == gc->tt);
   }
 }
 
 void setobj(TValue* obj1, const TValue* obj2) {
   if(obj1 == obj2) return;
-	obj1->bytes = obj2->bytes;
-  obj1->tt_ = obj2->tt_;
+  (*obj1) = (*obj2);
 	obj1->sanityCheck(); 
 }
 
