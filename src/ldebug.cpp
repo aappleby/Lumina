@@ -267,6 +267,7 @@ static int auxgetinfo (lua_State *L, const char *what, lua_Debug *ar,
   return status;
 }
 
+// what does this do?
 
 int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
   THREAD_CHECK(L);
@@ -286,7 +287,11 @@ int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
     func = ci->func;
     assert(ci->func->isFunction());
   }
-  cl = func->isClosure() ? func->getClosure() : NULL;
+  cl = NULL;
+
+  if(func->isCClosure()) cl = func->getCClosure();
+  if(func->isLClosure()) cl = func->getLClosure();
+
   status = auxgetinfo(L, what, ar, cl, ci);
   if (strchr(what, 'f')) {
     setobj(L->top, func);

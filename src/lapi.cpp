@@ -301,8 +301,14 @@ void lua_pushvalue (lua_State *L, int idx) {
 
 int lua_type (lua_State *L, int idx) {
   THREAD_CHECK(L);
+  TValue v = index2addr3(L, idx);
   StkId o = index2addr(L, idx);
-  return (isvalid(o) ? o->basetype() : LUA_TNONE);
+  int result1 = (isvalid(o) ? o->basetype() : LUA_TNONE);
+  int result2 = v.basetype();
+  if(result1 != result2) {
+    printf("xxx");
+  }
+  return result1;
 }
 
 

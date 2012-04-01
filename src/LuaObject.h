@@ -33,7 +33,8 @@ public:
 
   bool isString()   { return tt == LUA_TSTRING; }
   bool isTable()    { return tt == LUA_TTABLE; }
-  bool isClosure()  { return tt == LUA_TFUNCTION; }
+  bool isLClosure() { return tt == LUA_TFUNCTION; }
+  bool isCClosure() { return tt == LUA_TFUNCTION; }
   bool isUserdata() { return tt == LUA_TUSERDATA; }
   bool isThread()   { return tt == LUA_TTHREAD; }
   bool isProto()    { return tt == LUA_TPROTO; }

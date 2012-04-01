@@ -231,7 +231,7 @@ static void reallymarkobject (LuaObject *o) {
     return;
   }
 
-  if(o->isClosure() || o->isTable() || o->isThread() || o->isProto()) {
+  if(o->isLClosure() || o->isCClosure() || o->isTable() || o->isThread() || o->isProto()) {
     o->next_gray_  = g->grayhead_;
     g->grayhead_ = o;
     return;
@@ -554,7 +554,7 @@ static int propagatemark (global_State *g) {
     return traversetable(g, dynamic_cast<Table*>(o));
   }
 
-  if(o->isClosure()) {
+  if(o->isLClosure() || o->isCClosure()) {
     return traverseclosure(g, dynamic_cast<Closure*>(o));
   }
 

@@ -98,7 +98,7 @@ public:
   bool isDeadKey() const       { return rawtype() == LUA_TDEADKEY; }
   bool isProto() const         { return rawtype() == LUA_TPROTO; }
 
-  bool isClosure() const       { return (rawtype() & 0x1F) == LUA_TFUNCTION; }
+  //bool isClosure() const       { return (rawtype() & 0x1F) == LUA_TFUNCTION; }
   bool isCClosure() const      { return rawtype() == LUA_TCCL; }
   bool isLClosure() const      { return rawtype() == LUA_TLCL; }
   bool isLightFunction() const { return rawtype() == LUA_TLCF; }
@@ -119,7 +119,7 @@ public:
   LuaObject* getObject() const { assert(isCollectable()); return gc; }
   LuaObject* getDeadKey() { assert(isDeadKey());     return gc; }
 
-  Closure* getClosure()  { assert(isClosure()); return reinterpret_cast<Closure*>(gc); }
+  //Closure* getClosure()  { assert(isClosure()); return reinterpret_cast<Closure*>(gc); }
   Closure* getCClosure() { assert(isCClosure()); return reinterpret_cast<Closure*>(gc); }
   Closure* getLClosure() { assert(isLClosure()); return reinterpret_cast<Closure*>(gc); }
 
@@ -138,8 +138,8 @@ public:
   //----------
 
   int32_t rawtype() const  { return tt_; }
-  int32_t tagtype() const  { return tt_ & 0x3f; }
-  int32_t basetype() const { return tt_ & 0x0f; }
+  int32_t tagtype() const  { return (tt_ == LUA_TNONE) ? tt_ : tt_ & 0x3f; }
+  int32_t basetype() const { return (tt_ == LUA_TNONE) ? tt_ : tt_ & 0x0f; }
 
   void clear() { bytes = 0; tt_ = 0; }
 

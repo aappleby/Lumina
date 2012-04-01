@@ -242,7 +242,7 @@ static void checkobject (global_State *g, LuaObject *o) {
     return;
   }
 
-  if(o->isClosure()) {
+  if(o->isLClosure() || o->isCClosure()) {
     Closure* c = dynamic_cast<Closure*>(o);
     if(c->isC) {
       checkCClosure(g, c);
