@@ -58,14 +58,12 @@ const TValue *luaT_gettmbyobj (const TValue *o, TMS event) {
 
 const TValue* fasttm ( Table* table, TMS tag) {
   if(table == NULL) return NULL;
-  if(table->flags & (1<<tag)) return NULL;
 
   TValue temp(thread_G->tmname[tag]);
   const TValue *tm = luaH_get2(table, &temp);
 
   assert(tag <= TM_EQ);
   if ((tm == NULL) || tm->isNil()) {  /* no tag method? */
-    table->flags |= cast_byte(1u << tag);  /* cache this fact */
     return NULL;
   }
   else return tm;

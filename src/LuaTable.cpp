@@ -22,7 +22,6 @@ uint32_t hash64 (uint32_t a, uint32_t b) {
 
 Table::Table() : LuaObject(LUA_TTABLE) {
   metatable = NULL;
-  flags = 0xFF;
 }
 
 //-----------------------------------------------------------------------------

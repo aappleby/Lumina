@@ -182,7 +182,6 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       if (oldval && oldval->isNotNil()) {
         *oldval = *val;
         // invalidate TM cache
-        h->flags = 0;
         luaC_barrierback(h, val);
         return;
       }
@@ -195,7 +194,6 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
         if(oldval != luaO_nilobject) {
           *oldval = *val;
           // invalidate TM cache
-          h->flags = 0;
           luaC_barrierback(h, val);
           return;
         }
@@ -204,7 +202,6 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
         oldval = luaH_newkey(h, key);
         *oldval = *val;
         // invalidate TM cache
-        h->flags = 0;
         luaC_barrierback(h, val);
         return;
       }

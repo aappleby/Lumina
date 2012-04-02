@@ -841,8 +841,6 @@ void lua_rawset (lua_State *L, int idx) {
   api_check(t->isTable(), "table expected");
   // TODO(aappleby): wtf, using the result of set as an assignment target?
   *luaH_set(t->getTable(), L->top-2) = L->top[-1];
-  // invalidate TM cache
-  t->getTable()->flags = 0;
   luaC_barrierback(t->getObject(), L->top-1);
   L->top -= 2;
 }
