@@ -258,7 +258,7 @@ static void reallymarkobject (LuaObject *o) {
 */
 static void markmt (global_State *g) {
   for (int i=0; i < LUA_NUMTAGS; i++) {
-    markobject(g->mt[i]);
+    markobject(g->base_metatables_[i]);
   }
 }
 
@@ -806,8 +806,8 @@ static LuaObject** sweeplist (LuaObject **p, size_t count) {
 static void checkSizes () {
   global_State *g = thread_G;
   if (g->gckind != KGC_EMERGENCY) {  /* do not change sizes in emergency */
-    int hs = g->strt->size / 2;  /* half the size of the string table */
-    if (g->strt->nuse < cast(uint32_t, hs))  /* using less than that half? */
+    int hs = g->strings_->size / 2;  /* half the size of the string table */
+    if (g->strings_->nuse < cast(uint32_t, hs))  /* using less than that half? */
       luaS_resize(hs);  /* halve its size */
     g->buff.buffer.clear();
   }
@@ -976,9 +976,9 @@ void luaC_freeallobjects () {
   g->gckind = KGC_NORMAL;
   sweepwholelist(&g->finobj);  /* finalizers can create objs. in 'finobj' */
   sweepwholelist(&g->allgc);
-  for (i = 0; i < g->strt->size; i++)  /* free all string lists */
-    sweepwholelist(&g->strt->hash[i]);
-  assert(g->strt->nuse == 0);
+  for (i = 0; i < g->strings_->size; i++)  /* free all string lists */
+    sweepwholelist(&g->strings_->hash[i]);
+  assert(g->strings_->nuse == 0);
 }
 
 
@@ -1038,8 +1038,8 @@ static l_mem singlestep () {
       }
     }
     case GCSsweepstring: {
-      if (g->sweepstrgc < g->strt->size) {
-        sweepwholelist(&g->strt->hash[g->sweepstrgc++]);
+      if (g->sweepstrgc < g->strings_->size) {
+        sweepwholelist(&g->strings_->hash[g->sweepstrgc++]);
         return GCSWEEPCOST;
       }
       else {  /* no more strings to sweep */

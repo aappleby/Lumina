@@ -134,22 +134,20 @@ static const char* reader(lua_State *L, void *ud, size_t *size)
  }
 }
 
-#define toproto(L,i) getproto(L->top+(i))
-
 static const Proto* combine(lua_State* L, int n)
 {
  if (n==1)
-  return toproto(L,-1);
+  return L->top[-1].getLClosure()->proto_;
  else
  {
   Proto* f;
   int i=n;
   if (lua_load(L,reader,&i,"=(" PROGNAME ")",NULL)!=LUA_OK) fatal(lua_tostring(L,-1));
-  f=toproto(L,-1);
+  f = L->top[-1].getLClosure()->proto_;
   for (i=0; i<n; i++)
   {
-   f->p[i]=toproto(L,i-n-1);
-   if (f->p[i]->upvalues.size()>0) f->p[i]->upvalues[0].instack=0;
+   f->p[i] = L->top[i-n-1].getLClosure()->proto_;
+   if (f->p[i]->upvalues.size()>0) f->p[i]->upvalues[0].instack = 0;
   }
   f->lineinfo.clear();
   return f;

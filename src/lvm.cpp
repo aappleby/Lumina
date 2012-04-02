@@ -833,7 +833,7 @@ void luaV_execute (lua_State *L) {
           StkId nfunc = nci->func;  /* called function */
           StkId ofunc = oci->func;  /* caller function */
           /* last stack slot filled by 'precall' */
-          StkId lim = nci->base + getproto(nfunc)->numparams;
+          StkId lim = nci->base + nfunc->getLClosure()->proto_->numparams;
           int aux;
           /* close all upvalues from previous call */
           if (cl->proto_->p.size() > 0) luaF_close(oci->base);
@@ -846,7 +846,7 @@ void luaV_execute (lua_State *L) {
           oci->savedpc = nci->savedpc;
           oci->callstatus |= CIST_TAIL;  /* function was tail called */
           ci = L->ci_ = oci;  /* remove new frame */
-          assert(L->top == oci->base + getproto(ofunc)->maxstacksize);
+          assert(L->top == oci->base + ofunc->getLClosure()->proto_->maxstacksize);
           goto newframe;  /* restart luaV_execute over new Lua function */
         }
       )

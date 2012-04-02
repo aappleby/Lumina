@@ -38,7 +38,7 @@ const char* objtypename(const TValue* v) {
 char** luaT_typenames = &luaT_typenames_[0];
 
 stringtable* getGlobalStringtable() {
-  return thread_G->strt;
+  return thread_G->strings_;
 }
 
 LuaScope::LuaScope(lua_State* L) {

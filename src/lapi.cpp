@@ -500,7 +500,7 @@ lua_CFunction lua_tocfunction (lua_State *L, int idx) {
   StkId o = index2addr(L, idx);
   if (o->isLightFunction()) return o->getLightFunction();
   else if (o->isCClosure())
-    return o->getCClosure()->f;
+    return o->getCClosure()->cfunction_;
   else return NULL;  /* not a C function */
 }
 
@@ -639,7 +639,7 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
     luaC_checkGC();
     cl = luaF_newCclosure(n);
     if(cl == NULL) luaD_throw(LUA_ERRMEM);
-    cl->f = fn;
+    cl->cfunction_ = fn;
     L->top -= n;
     while (n--) {
       cl->pupvals_[n] = L->top[n];
@@ -758,7 +758,7 @@ Table* lua_getmetatable( const TValue* o ) {
   switch (type) {
     case LUA_TTABLE:    return o->getTable()->metatable;
     case LUA_TUSERDATA: return o->getUserdata()->metatable_;
-    default:            return thread_G->mt[type];
+    default:            return thread_G->base_metatables_[type];
   }
 }
 
@@ -902,7 +902,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
       break;
     }
     default: {
-      G(L)->mt[obj->type()] = mt;
+      G(L)->base_metatables_[obj->type()] = mt;
       break;
     }
   }
@@ -959,7 +959,7 @@ void lua_callk (lua_State *L, int nargs, int nresults, int ctx,
   checkresults(L, nargs, nresults);
   func = L->top - (nargs+1);
   if (k != NULL && L->nny == 0) {  /* need to prepare continuation? */
-    L->ci_->k = k;  /* save continuation */
+    L->ci_->continuation_ = k;  /* save continuation */
     L->ci_->ctx = ctx;  /* save context */
     luaD_call(L, func, nresults, 1);  /* do the call */
   }
@@ -1009,7 +1009,7 @@ int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
   }
   else {  /* prepare continuation (call is already protected by 'resume') */
     CallInfo *ci = L->ci_;
-    ci->k = k;  /* save continuation */
+    ci->continuation_ = k;  /* save continuation */
     ci->ctx = ctx;  /* save context */
     /* save information for error recovery */
     ci->extra = savestack(L, c.func);
@@ -1060,7 +1060,7 @@ int lua_dump (lua_State *L, lua_Writer writer, void *data) {
   api_checknelems(L, 1);
   o = L->top - 1;
   if (o->isLClosure())
-    status = luaU_dump(L, getproto(o), writer, data, 0);
+    status = luaU_dump(L, o->getLClosure()->proto_, writer, data, 0);
   else
     status = 1;
   return status;

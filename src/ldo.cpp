@@ -227,7 +227,7 @@ int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
 
 int luaD_precallC(lua_State* L, StkId func, int nresults) {
   ptrdiff_t funcr = savestack(L, func);
-  lua_CFunction f = func->getCClosure()->f;
+  lua_CFunction f = func->getCClosure()->cfunction_;
   L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
   CallInfo* ci = next_ci(L);  /* now 'enter' new function */
   ci->nresults = nresults;
@@ -349,7 +349,7 @@ static void finishCcall (lua_State *L) {
   THREAD_CHECK(L);
   CallInfo *ci = L->ci_;
   int n;
-  assert(ci->k != NULL);  /* must have a continuation */
+  assert(ci->continuation_ != NULL);  /* must have a continuation */
   assert(L->nny == 0);
   /* finish 'luaD_call' */
   L->nCcalls--;
@@ -360,7 +360,7 @@ static void finishCcall (lua_State *L) {
     ci->status = LUA_YIELD;  /* 'default' status */
   assert(ci->status != LUA_OK);
   ci->callstatus = (ci->callstatus & ~(CIST_YPCALL | CIST_STAT)) | CIST_YIELDED;
-  n = (*ci->k)(L);
+  n = (*ci->continuation_)(L);
   api_checknelems(L, n);
   /* finish 'luaD_precall' */
   luaD_poscall(L, L->top - n);
@@ -455,11 +455,11 @@ static void resume (lua_State *L, void *ud) {
       luaV_execute(L);  /* just continue running Lua code */
     else {  /* 'common' yield */
       ci->func = restorestack(L, ci->extra);
-      if (ci->k != NULL) {  /* does it have a continuation? */
+      if (ci->continuation_ != NULL) {  /* does it have a continuation? */
         int n;
         ci->status = LUA_YIELD;  /* 'default' status */
         ci->callstatus |= CIST_YIELDED;
-        n = (*ci->k)(L);  /* call continuation */
+        n = (*ci->continuation_)(L);  /* call continuation */
         api_checknelems(L, n);
         firstArg = L->top - n;  /* yield results come from continuation */
       }
@@ -515,7 +515,7 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
     api_check(k == NULL, "hooks cannot continue after yielding");
   }
   else {
-    if ((ci->k = k) != NULL)  /* is there a continuation? */
+    if ((ci->continuation_ = k) != NULL)  /* is there a continuation? */
       ci->ctx = ctx;  /* save context */
     ci->extra = savestack(L, ci->func);  /* save current 'func' */
     ci->func = L->top - nresults - 1;  /* protect stack below results */

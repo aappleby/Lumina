@@ -14,7 +14,7 @@ public:
 
   uint8_t getFlags();
 
-  bool isDeadKey() { return tt == LUA_TDEADKEY; }
+  bool isDeadKey() { return type_ == LUA_TDEADKEY; }
 
   bool isDead();
   bool isWhite();
@@ -31,17 +31,17 @@ public:
 
   //----------
 
-  LuaType type() const { return tt; }
+  LuaType type() const { return type_; }
   const char* typeName() const; 
 
-  bool isString()   { return tt == LUA_TSTRING; }
-  bool isTable()    { return tt == LUA_TTABLE; }
-  bool isLClosure() { return tt == LUA_TLCL; }
-  bool isCClosure() { return tt == LUA_TCCL; }
-  bool isUserdata() { return tt == LUA_TUSERDATA; }
-  bool isThread()   { return tt == LUA_TTHREAD; }
-  bool isProto()    { return tt == LUA_TPROTO; }
-  bool isUpval()    { return tt == LUA_TUPVAL; }
+  bool isString()   { return type_ == LUA_TSTRING; }
+  bool isTable()    { return type_ == LUA_TTABLE; }
+  bool isLClosure() { return type_ == LUA_TLCL; }
+  bool isCClosure() { return type_ == LUA_TCCL; }
+  bool isUserdata() { return type_ == LUA_TUSERDATA; }
+  bool isThread()   { return type_ == LUA_TTHREAD; }
+  bool isProto()    { return type_ == LUA_TPROTO; }
+  bool isUpval()    { return type_ == LUA_TUPVAL; }
 
   //----------
   // Flag read/write
@@ -78,6 +78,6 @@ public:
   static int instanceCounts[256];
 
 private:
-  LuaType tt;
-  uint8_t marked;
+  LuaType type_;
+  uint8_t flags_;
 };

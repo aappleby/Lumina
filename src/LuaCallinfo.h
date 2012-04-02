@@ -24,7 +24,8 @@ public:
 
   // only for C functions
   int ctx;  /* context info. in case of yields */
-  lua_CFunction k;  /* continuation in case of yields */
+  lua_CFunction continuation_;  /* continuation in case of yields */
+
   ptrdiff_t old_errfunc;
   ptrdiff_t extra;
   uint8_t old_allowhook;

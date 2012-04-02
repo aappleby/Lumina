@@ -23,7 +23,7 @@
 
 void luaS_resize (int newsize) {
   int i;
-  stringtable *tb = thread_G->strt;
+  stringtable *tb = thread_G->strings_;
   /* cannot resize while GC is traversing strings */
   luaC_runtilstate(~(1 << GCSsweepstring));
   if (newsize > tb->size) {
@@ -53,7 +53,7 @@ void luaS_resize (int newsize) {
 
 static TString *newlstr (const char *str, size_t l, unsigned int h) {
 
-  stringtable *tb = thread_G->strt;
+  stringtable *tb = thread_G->strings_;
   if (tb->nuse >= cast(uint32_t, tb->size) && tb->size <= MAX_INT/2)
     luaS_resize(tb->size*2);  /* too crowded */
   
@@ -87,7 +87,7 @@ TString *luaS_newlstr (const char *str, size_t l) {
   for (l1=l; l1>=step; l1-=step)  // compute hash
     h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
 
-  stringtable* strings = thread_G->strt;
+  stringtable* strings = thread_G->strings_;
 
   for (o = strings->hash[lmod(h, strings->size)]; o != NULL; o = o->next) {
     TString *ts = dynamic_cast<TString*>(o);
@@ -127,14 +127,14 @@ Udata *luaS_newudata (size_t s, Table *e) {
 
 void luaS_initstrt() {
   global_State* g = thread_G;
-  g->strt = new stringtable();
-  g->strt->size = 0;
-  g->strt->nuse = 0;
+  g->strings_ = new stringtable();
+  g->strings_->size = 0;
+  g->strings_->nuse = 0;
 }
 
 void luaS_freestrt () {
   global_State* g = thread_G;
-  g->strt->hash.clear();
-  delete g->strt;
-  g->strt = NULL;
+  g->strings_->hash.clear();
+  delete g->strings_;
+  g->strings_ = NULL;
 }

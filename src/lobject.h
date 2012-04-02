@@ -17,34 +17,11 @@
 
 #include "LuaObject.h"
 #include "LuaVector.h"
-class Table;
-
-
-
 #include "LuaValue.h"
-
-
 #include "LuaString.h"
-
-
-
-
-
-
-
-#define getproto(o)	((o)->getLClosure()->proto_)
-
-
-/*
-** Tables
-*/
-
 #include "LuaTable.h"
 
 
-/*
-** (address of) a fixed nil value
-*/
 #define luaO_nilobject		(&luaO_nilobject_)
 
 

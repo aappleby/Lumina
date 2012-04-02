@@ -395,7 +395,7 @@ static int listcode (lua_State *L) {
   Proto *p;
   luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1),
                  1, "Lua function expected");
-  p = getproto(obj_at(L, 1));
+  p = obj_at(L, 1)->getLClosure()->proto_;
   lua_newtable(L);
   setnameval(L, "maxstack", p->maxstacksize);
   setnameval(L, "numparams", p->numparams);
@@ -415,7 +415,7 @@ static int listk (lua_State *L) {
   int i;
   luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1),
                  1, "Lua function expected");
-  p = getproto(obj_at(L, 1));
+  p = obj_at(L, 1)->getLClosure()->proto_;
   lua_createtable(L, (int)p->constants.size(), 0);
   for (i=0; i < (int)p->constants.size(); i++) {
     pushobject(L, &p->constants[i]);
@@ -433,7 +433,7 @@ static int listlocals (lua_State *L) {
   const char *name;
   luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1),
                  1, "Lua function expected");
-  p = getproto(obj_at(L, 1));
+  p = obj_at(L, 1)->getLClosure()->proto_;
   while ((name = luaF_getlocalname(p, ++i, pc)) != NULL)
     lua_pushstring(L, name);
   return i-1;
@@ -597,7 +597,7 @@ static int table_query (lua_State *L) {
 
 static int string_query (lua_State *L) {
   THREAD_CHECK(L);
-  stringtable *tb = G(L)->strt;
+  stringtable *tb = G(L)->strings_;
   int s = luaL_optint(L, 2, 0) - 1;
   if (s==-1) {
     lua_pushinteger(L ,tb->nuse);

@@ -222,13 +222,12 @@ lua_State *lua_newstate () {
     g->gcpause = LUAI_GCPAUSE;
     g->gcmajorinc = LUAI_GCMAJOR;
     g->gcstepmul = LUAI_GCMUL;
-    for (i=0; i < LUA_NUMTAGS; i++) g->mt[i] = NULL;
-    {
-      if (luaD_rawrunprotected(L, f_luaopen, NULL) != LUA_OK) {
-        /* memory allocation error: free partial state */
-        close_state(L);
-        L = NULL;
-      }
+    for (i=0; i < LUA_NUMTAGS; i++) g->base_metatables_[i] = NULL;
+
+    if (luaD_rawrunprotected(L, f_luaopen, NULL) != LUA_OK) {
+      /* memory allocation error: free partial state */
+      close_state(L);
+      L = NULL;
     }
   }
   return L;

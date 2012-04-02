@@ -474,7 +474,7 @@ static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name) {
     default:
       return NULL;  /* else no useful name can be found */
   }
-  *name = G(L)->tmname[tm]->c_str();
+  *name = G(L)->tagmethod_names_[tm]->c_str();
   return "metamethod";
 }
 

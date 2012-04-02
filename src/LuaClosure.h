@@ -15,7 +15,7 @@ public:
   TValue* pupvals_;
   UpVal** ppupvals_;
 
-  lua_CFunction f;
+  lua_CFunction cfunction_;
 
   Proto *proto_;
 };

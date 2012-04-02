@@ -26,11 +26,6 @@ TValue* index2addr2 (lua_State *L, int idx);
 TValue  index2addr3 (lua_State *L, int idx);
 
 /*
-** pseudo-indices
-*/
-
-
-/*
 ** functions that read/write blocks when loading/dumping Lua chunks
 */
 typedef const char * (*lua_Reader) (lua_State *L, void *ud, size_t *sz);

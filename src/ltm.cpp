@@ -43,8 +43,8 @@ static const char *const luaT_eventname[] = {
 void luaT_init() {
   int i;
   for (i=0; i<TM_N; i++) {
-    thread_G->tmname[i] = luaS_new(luaT_eventname[i]);
-    thread_G->tmname[i]->setFixed();  /* never collect these names */
+    thread_G->tagmethod_names_[i] = luaS_new(luaT_eventname[i]);
+    thread_G->tagmethod_names_[i]->setFixed();  /* never collect these names */
   }
 }
 
@@ -52,14 +52,14 @@ void luaT_init() {
 const TValue *luaT_gettmbyobj (const TValue *o, TMS event) {
   Table* mt = lua_getmetatable(o);
   if(mt == NULL) return luaO_nilobject;
-  TValue temp(thread_G->tmname[event]);
+  TValue temp(thread_G->tagmethod_names_[event]);
   return luaH_get(mt, &temp);
 }
 
 const TValue* fasttm ( Table* table, TMS tag) {
   if(table == NULL) return NULL;
 
-  TValue temp(thread_G->tmname[tag]);
+  TValue temp(thread_G->tagmethod_names_[tag]);
   const TValue *tm = luaH_get2(table, &temp);
 
   assert(tag <= TM_EQ);

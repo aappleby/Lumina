@@ -14,5 +14,5 @@ TString::~TString() {
   buf_ = NULL;
   len_ = NULL;
 
-  thread_G->strt->nuse--;
+  thread_G->strings_->nuse--;
 }

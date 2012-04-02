@@ -3,6 +3,6 @@
 
 struct Mbuffer {
   LuaVector<char> buffer;
-  size_t n;
+  size_t size_;
 };
 

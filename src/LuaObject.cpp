@@ -5,6 +5,12 @@
 
 #include "LuaGlobals.h"
 
+#define BLACKBIT	2  /* object is black */
+#define FINALIZEDBIT	3  /* object has been separated for finalization */
+#define SEPARATED	4  /* object is in 'finobj' list or in 'tobefnz' */
+#define OLDBIT		6  /* object is old (only in generational mode) */
+#define TESTGRAYBIT		7 // bit 7 is currently used by tests (luaL_checkmemory)
+
 void *luaM_alloc_ (size_t size, int type, int pool);
 
 int LuaObject::instanceCounts[256];
@@ -12,15 +18,15 @@ int LuaObject::instanceCounts[256];
 LuaObject::LuaObject(LuaType type) {
 
   next = NULL;
-  marked = 0;
-  if(thread_G) marked = thread_G->currentwhite & WHITEBITS;
-  tt = type;
+  flags_ = 0;
+  if(thread_G) flags_ = thread_G->currentwhite & WHITEBITS;
+  type_ = type;
 
-  LuaObject::instanceCounts[tt]++;
+  LuaObject::instanceCounts[type_]++;
 }
 
 LuaObject::~LuaObject() {
-  LuaObject::instanceCounts[tt]--;
+  LuaObject::instanceCounts[type_]--;
 }
 
 void LuaObject::linkGC(LuaObject*& gcHead) {
@@ -31,20 +37,20 @@ void LuaObject::linkGC(LuaObject*& gcHead) {
 
 // Sanity check object state
 void LuaObject::sanityCheck() {
-  assert((marked & WHITEBITS) != WHITEBITS);
+  assert((flags_ & WHITEBITS) != WHITEBITS);
 }
 
 uint8_t LuaObject::getFlags() {
-  return marked;
+  return flags_;
 }
 
-bool LuaObject::isDead() {
-  uint8_t live = (marked ^ WHITEBITS) & (thread_G->currentwhite ^ WHITEBITS);
+bool LuaObject::isDead() {  
+  uint8_t live = (flags_ ^ WHITEBITS) & (thread_G->currentwhite ^ WHITEBITS);
   return !live;
 }
 
 bool LuaObject::isWhite() {
-  return marked & ((1 << WHITE0BIT) | (1 << WHITE1BIT)) ? true : false;
+  return flags_ & ((1 << WHITE0BIT) | (1 << WHITE1BIT)) ? true : false;
 }
 
 bool LuaObject::isGray() {
@@ -54,16 +60,16 @@ bool LuaObject::isGray() {
 // Clear existing color + old bits, set color to current white.
 void LuaObject::setWhite() {
   uint8_t mask = (1 << OLDBIT) | (1 << BLACKBIT) | (1 << WHITE0BIT) | (1 << WHITE1BIT);
-  marked &= ~mask;
-  marked |= (thread_G->currentwhite & WHITEBITS);
+  flags_ &= ~mask;
+  flags_ |= (thread_G->currentwhite & WHITEBITS);
 }
 
 void LuaObject::changeWhite() {
-  marked ^= WHITEBITS;
+  flags_ ^= WHITEBITS;
 }
 
 void LuaObject::whiteToGray() {
-  marked &= ~WHITEBITS;
+  flags_ &= ~WHITEBITS;
 }
 
 void LuaObject::blackToGray() {
@@ -71,41 +77,41 @@ void LuaObject::blackToGray() {
 }
 
 void LuaObject::stringmark() {
-  marked &= ~WHITEBITS;
+  flags_ &= ~WHITEBITS;
 }
 
 void LuaObject::grayToBlack() {
-  marked |= (1 << BLACKBIT);
+  flags_ |= (1 << BLACKBIT);
 }
 
-bool LuaObject::isBlack()        { return marked & (1 << BLACKBIT) ? true : false; }
-void LuaObject::setBlack()       { marked |= (1 << BLACKBIT); }
-void LuaObject::clearBlack()     { marked &= ~(1 << BLACKBIT); }
+bool LuaObject::isBlack()        { return flags_ & (1 << BLACKBIT) ? true : false; }
+void LuaObject::setBlack()       { flags_ |= (1 << BLACKBIT); }
+void LuaObject::clearBlack()     { flags_ &= ~(1 << BLACKBIT); }
 
-bool LuaObject::isFinalized()    { return marked & (1 << FINALIZEDBIT) ? true : false; }
-void LuaObject::setFinalized()   { marked |= (1 << FINALIZEDBIT); }
-void LuaObject::clearFinalized() { marked &= ~(1 << FINALIZEDBIT); }
+bool LuaObject::isFinalized()    { return flags_ & (1 << FINALIZEDBIT) ? true : false; }
+void LuaObject::setFinalized()   { flags_ |= (1 << FINALIZEDBIT); }
+void LuaObject::clearFinalized() { flags_ &= ~(1 << FINALIZEDBIT); }
 
 // TODO(aappleby): change to SEPARATEDBIT
-bool LuaObject::isSeparated()    { return marked & (1 << SEPARATED) ? true : false; }
-void LuaObject::setSeparated()   { marked |= (1 << SEPARATED); }
-void LuaObject::clearSeparated() { marked &= ~(1 << SEPARATED); }
+bool LuaObject::isSeparated()    { return flags_ & (1 << SEPARATED) ? true : false; }
+void LuaObject::setSeparated()   { flags_ |= (1 << SEPARATED); }
+void LuaObject::clearSeparated() { flags_ &= ~(1 << SEPARATED); }
 
-bool LuaObject::isFixed()        { return marked & (1 << FIXEDBIT) ? true : false; }
-void LuaObject::setFixed()       { marked |= (1 << FIXEDBIT); }
-void LuaObject::clearFixed()     { marked &= ~(1 << FIXEDBIT); }
+bool LuaObject::isFixed()        { return flags_ & (1 << FIXEDBIT) ? true : false; }
+void LuaObject::setFixed()       { flags_ |= (1 << FIXEDBIT); }
+void LuaObject::clearFixed()     { flags_ &= ~(1 << FIXEDBIT); }
 
 /* MOVE OLD rule: whenever an object is moved to the beginning of
    a GC list, its old bit must be cleared */
-bool LuaObject::isOld()          { return marked & (1 << OLDBIT) ? true : false; }
-void LuaObject::setOld()         { marked |= (1 << OLDBIT); }
-void LuaObject::clearOld()       { marked &= ~(1 << OLDBIT); }
+bool LuaObject::isOld()          { return flags_ & (1 << OLDBIT) ? true : false; }
+void LuaObject::setOld()         { flags_ |= (1 << OLDBIT); }
+void LuaObject::clearOld()       { flags_ &= ~(1 << OLDBIT); }
 
-bool LuaObject::isTestGray()     { return marked & (1 << TESTGRAYBIT) ? true : false; }
-void LuaObject::setTestGray()    { marked |= (1 << TESTGRAYBIT); }
-void LuaObject::clearTestGray()  { marked &= ~(1 << TESTGRAYBIT); }
+bool LuaObject::isTestGray()     { return flags_ & (1 << TESTGRAYBIT) ? true : false; }
+void LuaObject::setTestGray()    { flags_ |= (1 << TESTGRAYBIT); }
+void LuaObject::clearTestGray()  { flags_ &= ~(1 << TESTGRAYBIT); }
 
 extern char** luaT_typenames;
 const char * LuaObject::typeName() const {
-  return luaT_typenames[tt+1];
+  return luaT_typenames[type_+1];
 }

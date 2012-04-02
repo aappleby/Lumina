@@ -13,7 +13,7 @@ public:
   global_State() {}
   ~global_State() {}
 
-  stringtable* strt;  /* hash table for strings */
+  stringtable* strings_;  /* hash table for strings */
 
   TValue l_registry;
   Table* getRegistry() { return l_registry.getTable(); }
@@ -50,8 +50,8 @@ public:
   const lua_Number *version;  /* pointer to version number */
 
   TString *memerrmsg;  /* memory-error message */
-  TString *tmname[TM_N];  /* array with tag-method names */
-  Table *mt[LUA_NUMTAGS];  /* metatables for basic types */
+  TString *tagmethod_names_[TM_N];  /* array with tag-method names */
+  Table *base_metatables_[LUA_NUMTAGS];  /* metatables for basic types */
 };
 
 

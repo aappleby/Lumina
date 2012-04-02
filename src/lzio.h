@@ -22,9 +22,9 @@ typedef struct Zio ZIO;
 
 #define luaZ_buffer(buff)	(&(buff)->buffer[0])
 #define luaZ_sizebuffer(buff)	((buff)->buffer.size())
-#define luaZ_bufflen(buff)	((buff)->n)
+#define luaZ_bufflen(buff)	((buff)->size_)
 
-#define luaZ_resetbuffer(buff) ((buff)->n = 0)
+#define luaZ_resetbuffer(buff) ((buff)->size_ = 0)
 
 
 
