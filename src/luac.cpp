@@ -146,8 +146,8 @@ static const Proto* combine(lua_State* L, int n)
   f = L->top[-1].getLClosure()->proto_;
   for (i=0; i<n; i++)
   {
-   f->p[i] = L->top[i-n-1].getLClosure()->proto_;
-   if (f->p[i]->upvalues.size()>0) f->p[i]->upvalues[0].instack = 0;
+   f->subprotos_[i] = L->top[i-n-1].getLClosure()->proto_;
+   if (f->subprotos_[i]->upvalues.size()>0) f->subprotos_[i]->upvalues[0].instack = 0;
   }
   f->lineinfo.clear();
   return f;
@@ -358,7 +358,7 @@ static void PrintCode(const Proto* f)
     printf("\t; to %d",sbx+pc+2);
     break;
    case OP_CLOSURE:
-    printf("\t; %p",VOID(f->p[bx]));
+    printf("\t; %p",VOID(f->subprotos_[bx]));
     break;
    case OP_SETLIST:
     if (c==0) printf("\t; %d",(int)code[++pc]); else printf("\t; %d",c);
@@ -393,7 +393,7 @@ static void PrintHeader(const Proto* f)
 	(int)(f->numparams),f->is_vararg?"+":"",SS(f->numparams),
 	S(f->maxstacksize),S(f->upvalues.size()));
  printf("%d local%s, %d constant%s, %d function%s\n",
-	S(f->locvars.size()),S(f->constants.size()),S(f->p.size()));
+	S(f->locvars.size()),S(f->constants.size()),S(f->subprotos_.size()));
 }
 
 static void PrintDebug(const Proto* f)
@@ -425,9 +425,9 @@ static void PrintDebug(const Proto* f)
 
 static void PrintFunction(const Proto* f, int full)
 {
- int i,n=(int)f->p.size();
+ int i,n=(int)f->subprotos_.size();
  PrintHeader(f);
  PrintCode(f);
  if (full) PrintDebug(f);
- for (i=0; i<n; i++) PrintFunction(f->p[i],full);
+ for (i=0; i<n; i++) PrintFunction(f->subprotos_[i],full);
 }

@@ -836,7 +836,7 @@ void luaV_execute (lua_State *L) {
           StkId lim = nci->base + nfunc->getLClosure()->proto_->numparams;
           int aux;
           /* close all upvalues from previous call */
-          if (cl->proto_->p.size() > 0) luaF_close(oci->base);
+          if (cl->proto_->subprotos_.size() > 0) luaF_close(oci->base);
           /* move new frame into old one */
           for (aux = 0; nfunc + aux < lim; aux++) {
             ofunc[aux] = nfunc[aux];
@@ -853,7 +853,7 @@ void luaV_execute (lua_State *L) {
       vmcasenb(OP_RETURN,
         int b = GETARG_B(i);
         if (b != 0) L->top = ra+b-1;
-        if (cl->proto_->p.size() > 0) luaF_close(base);
+        if (cl->proto_->subprotos_.size() > 0) luaF_close(base);
         b = luaD_poscall(L, ra);
         if (!(ci->callstatus & CIST_REENTRY))  /* 'ci' still the called one */
           return;  /* external invocation: return */
@@ -932,7 +932,7 @@ void luaV_execute (lua_State *L) {
         L->top = ci->top;  /* correct top (in case of previous open call) */
       )
       vmcase(OP_CLOSURE,
-        Proto *p = cl->proto_->p[GETARG_Bx(i)];
+        Proto *p = cl->proto_->subprotos_[GETARG_Bx(i)];
         Closure *ncl = getcached(p, cl->ppupvals_, base);  /* cached closure */
         if (ncl == NULL)  /* no match? */
           pushclosure(L, p, cl->ppupvals_, base, ra);  /* create a new one */

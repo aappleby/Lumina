@@ -11,10 +11,16 @@
 #include "llimits.h"
 #include "lstate.h"
 
-#define api_incr_top(L)   {L->top++; api_check(L->top <= L->ci_->top, "stack overflow");}
+inline void api_incr_top(lua_State* L) {
+  L->top++;
+  api_check(L->top <= L->ci_->top, "stack overflow");
+}
 
-#define adjustresults(L,nres) \
-    { if ((nres) == LUA_MULTRET && L->ci_->top < L->top) L->ci_->top = L->top; }
+inline void adjustresults(lua_State* L, int nres) {
+  if ((nres == LUA_MULTRET) && (L->ci_->top < L->top)) {
+    L->ci_->top = L->top;
+  }
+}
 
 void api_checknelems(lua_State* L, int n);
 

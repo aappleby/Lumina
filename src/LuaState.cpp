@@ -34,7 +34,7 @@ void lua_State::initstack() {
   stack_last = stack.end() - EXTRA_STACK;
 
   /* initialize first ci */
-  CallInfo* ci = &base_ci;
+  CallInfo* ci = &callinfo_head_;
   ci->next = ci->previous = NULL;
   ci->callstatus = 0;
   ci->func = top;
@@ -49,7 +49,7 @@ void lua_State::freestack() {
     // Stack not completely built yet - we probably ran out of memory while trying to create a thread.
     return;  
   }
-  ci_ = &base_ci;  /* free the entire 'ci' list */
+  ci_ = &callinfo_head_;  /* free the entire 'ci' list */
   freeCI();
   stack.clear();
 }

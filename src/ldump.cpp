@@ -94,10 +94,10 @@ static void DumpConstants(const Proto* f, DumpState* D)
       DumpString(v.getString(),D);
     }
   }
-  n = (int)f->p.size();
+  n = (int)f->subprotos_.size();
   DumpInt(n,D);
   for (int i=0; i < n; i++) {
-    DumpFunction(f->p[i],D);
+    DumpFunction(f->subprotos_[i],D);
   }
 }
 

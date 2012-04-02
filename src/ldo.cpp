@@ -336,10 +336,10 @@ void luaD_call (lua_State *L, StkId func, int nResults, int allowyield) {
     else if (L->nCcalls >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3)))
       luaD_throw(LUA_ERRERR);  /* error while handing stack error */
   }
-  if (!allowyield) L->nny++;
+  if (!allowyield) L->nonyieldable_count_++;
   if (!luaD_precall(L, func, nResults))  /* is a Lua function? */
     luaV_execute(L);  /* call it */
-  if (!allowyield) L->nny--;
+  if (!allowyield) L->nonyieldable_count_--;
   L->nCcalls--;
   luaC_checkGC();
 }
@@ -350,7 +350,7 @@ static void finishCcall (lua_State *L) {
   CallInfo *ci = L->ci_;
   int n;
   assert(ci->continuation_ != NULL);  /* must have a continuation */
-  assert(L->nny == 0);
+  assert(L->nonyieldable_count_ == 0);
   /* finish 'luaD_call' */
   L->nCcalls--;
   /* finish 'lua_callk' */
@@ -371,7 +371,7 @@ static void unroll (lua_State *L, void *ud) {
   THREAD_CHECK(L);
   UNUSED(ud);
   for (;;) {
-    if (L->ci_ == &L->base_ci)  /* stack is empty? */
+    if (L->ci_ == &L->callinfo_head_)  /* stack is empty? */
       return;  /* coroutine finished normally */
     if (!isLua(L->ci_))  /* C function? */
       finishCcall(L);
@@ -408,7 +408,7 @@ static int recover (lua_State *L, int status) {
   seterrorobj(L, status, oldtop);
   L->ci_ = ci;
   L->allowhook = ci->old_allowhook;
-  L->nny = 0;  /* should be zero to be yieldable */
+  L->nonyieldable_count_ = 0;  /* should be zero to be yieldable */
   L->shrinkstack();
   L->errfunc = ci->old_errfunc;
   ci->callstatus |= CIST_STAT;  /* call has error status */
@@ -441,7 +441,7 @@ static void resume (lua_State *L, void *ud) {
   if (L->nCcalls >= LUAI_MAXCCALLS)
     resume_error(L, "C stack overflow", firstArg);
   if (L->status == LUA_OK) {  /* may be starting a coroutine */
-    if (ci != &L->base_ci)  /* not in base level? */
+    if (ci != &L->callinfo_head_)  /* not in base level? */
       resume_error(L, "cannot resume non-suspended coroutine", firstArg);
     /* coroutine is in base level; start running it */
     if (!luaD_precall(L, firstArg - 1, LUA_MULTRET))  /* Lua function? */
@@ -475,7 +475,7 @@ int lua_resume (lua_State *L, lua_State *from, int nargs) {
   THREAD_CHECK(L);
   int status;
   L->nCcalls = (from) ? from->nCcalls + 1 : 1;
-  L->nny = 0;  /* allow yields */
+  L->nonyieldable_count_ = 0;  /* allow yields */
   api_checknelems(L, (L->status == LUA_OK) ? nargs + 1 : nargs);
   status = luaD_rawrunprotected(L, resume, L->top - nargs);
   if (status == -1)  /* error calling 'lua_resume'? */
@@ -493,7 +493,7 @@ int lua_resume (lua_State *L, lua_State *from, int nargs) {
     }
     assert(status == L->status);
   }
-  L->nny = 1;  /* do not allow yields */
+  L->nonyieldable_count_ = 1;  /* do not allow yields */
   L->nCcalls--;
   assert(L->nCcalls == ((from) ? from->nCcalls : 0));
   return status;
@@ -504,7 +504,7 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   THREAD_CHECK(L);
   CallInfo *ci = L->ci_;
   api_checknelems(L, nresults);
-  if (L->nny > 0) {
+  if (L->nonyieldable_count_ > 0) {
     if (L != G(L)->mainthread)
       luaG_runerror("attempt to yield across metamethod/C-call boundary");
     else
@@ -532,7 +532,7 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
   int status;
   CallInfo *old_ci = L->ci_;
   uint8_t old_allowhooks = L->allowhook;
-  unsigned short old_nny = L->nny;
+  unsigned short old_nny = L->nonyieldable_count_;
   ptrdiff_t old_errfunc = L->errfunc;
   L->errfunc = ef;
   status = luaD_rawrunprotected(L, func, u);
@@ -546,7 +546,7 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
     seterrorobj(L, status, oldtop);
     L->ci_ = old_ci;
     L->allowhook = old_allowhooks;
-    L->nny = old_nny;
+    L->nonyieldable_count_ = old_nny;
     L->shrinkstack();
 
     l_memcontrol.enableLimit();
@@ -607,7 +607,7 @@ static void f_parser (lua_State *L, void *ud) {
 int luaD_protectedparser (lua_State *L, ZIO *z, const char *name,
                                         const char *mode) {
   THREAD_CHECK(L);
-  L->nny++;  /* cannot yield during parsing */
+  L->nonyieldable_count_++;  /* cannot yield during parsing */
 
   SParser p;
   p.z = z;
@@ -616,7 +616,7 @@ int luaD_protectedparser (lua_State *L, ZIO *z, const char *name,
 
   int status = luaD_pcall(L, f_parser, &p, savestack(L, L->top), L->errfunc);
 
-  L->nny--;
+  L->nonyieldable_count_--;
   return status;
 }
 

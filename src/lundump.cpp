@@ -118,9 +118,9 @@ static void LoadConstants(LoadState* S, Proto* f)
     }
   }
   n=LoadInt(S);
-  f->p.resize(n);
-  for (i=0; i<n; i++) f->p[i]=NULL;
-  for (i=0; i<n; i++) f->p[i]=LoadFunction(S);
+  f->subprotos_.resize(n);
+  for (i=0; i<n; i++) f->subprotos_[i]=NULL;
+  for (i=0; i<n; i++) f->subprotos_[i]=LoadFunction(S);
 }
 
 static void LoadUpvalues(LoadState* S, Proto* f)

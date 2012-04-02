@@ -505,14 +505,14 @@ static void leaveblock (FuncState *fs) {
 static void codeclosure (LexState *ls, Proto *clp, expdesc *v) {
   FuncState *fs = ls->fs->prev;
   Proto *f = fs->f;  /* prototype of function creating new closure */
-  if (fs->np >= (int)f->p.size()) {
-    int oldsize = (int)f->p.size();
-    if(fs->np >= (int)f->p.size()) {
-      f->p.grow();
+  if (fs->np >= (int)f->subprotos_.size()) {
+    int oldsize = (int)f->subprotos_.size();
+    if(fs->np >= (int)f->subprotos_.size()) {
+      f->subprotos_.grow();
     }
-    while (oldsize < (int)f->p.size()) f->p[oldsize++] = NULL;
+    while (oldsize < (int)f->subprotos_.size()) f->subprotos_[oldsize++] = NULL;
   }
-  f->p[fs->np++] = clp;
+  f->subprotos_[fs->np++] = clp;
   luaC_barrier(f, TValue(clp));
   init_exp(v, VRELOCABLE, luaK_codeABx(fs, OP_CLOSURE, 0, fs->np-1));
   luaK_exp2nextreg(fs, v);  /* fix it at stack top (for GC) */
@@ -564,7 +564,7 @@ static void close_func (LexState *ls) {
   f->code.resize(fs->pc);
   f->lineinfo.resize(fs->pc);
   f->constants.resize(fs->nk);
-  f->p.resize(fs->np);
+  f->subprotos_.resize(fs->np);
   f->locvars.resize(fs->nlocvars);
   f->upvalues.resize(fs->nups);
   assert(fs->bl == NULL);

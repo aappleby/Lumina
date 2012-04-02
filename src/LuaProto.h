@@ -33,7 +33,7 @@ public:
   LuaVector<TValue> constants;
   LuaVector<Instruction> code;
   LuaVector<int> lineinfo;
-  LuaVector<Proto*> p; // functions defined inside the function
+  LuaVector<Proto*> subprotos_; // functions defined inside the function
   LuaVector<LocVar> locvars; // information about local variables (debug information)
   LuaVector<Upvaldesc> upvalues; // upvalue information
   

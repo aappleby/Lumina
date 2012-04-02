@@ -122,7 +122,7 @@ static void preinit_state (lua_State *L, global_State *g) {
   L->allowhook = 1;
   L->hookcount = L->basehookcount;
   L->openupval = NULL;
-  L->nny = 1;
+  L->nonyieldable_count_ = 1;
   L->status = LUA_OK;
   L->errfunc = 0;
 }
@@ -156,7 +156,7 @@ lua_State *lua_newthread (lua_State *L) {
   L1->linkGC(getGlobalGCHead());
 
   L->top[0] = L1;
-  api_incr_top(L);
+  L->top++;
   preinit_state(L1, thread_G);
   
   L1->hookmask = L->hookmask;

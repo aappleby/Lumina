@@ -89,9 +89,9 @@ int lua_getstack (lua_State *L, int level, lua_Debug *ar) {
   int status;
   CallInfo *ci;
   if (level < 0) return 0;  /* invalid (negative) level */
-  for (ci = L->ci_; level > 0 && ci != &L->base_ci; ci = ci->previous)
+  for (ci = L->ci_; level > 0 && ci != &L->callinfo_head_; ci = ci->previous)
     level--;
-  if (level == 0 && ci != &L->base_ci) {  /* level found? */
+  if (level == 0 && ci != &L->callinfo_head_) {  /* level found? */
     status = 1;
     ar->i_ci = ci;
   }
@@ -159,7 +159,7 @@ const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n) {
     name = findlocal(L, ar->i_ci, n, &pos);
     if (name) {
       L->top[0] = pos[0];
-      api_incr_top(L);
+      L->top++;
     }
   }
   return name;

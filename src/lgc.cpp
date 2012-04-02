@@ -499,8 +499,8 @@ static int traverseproto (global_State *g, Proto *f) {
     /* mark upvalue names */
     if(f->upvalues[i].name) f->upvalues[i].name->stringmark();
   }
-  for (size_t i = 0; i < f->p.size(); i++)  /* mark nested protos */
-    markobject(f->p[i]);
+  for (size_t i = 0; i < f->subprotos_.size(); i++)  /* mark nested protos */
+    markobject(f->subprotos_[i]);
   for (size_t i = 0; i < f->locvars.size(); i++) {
     /* mark local-variable names */
     if(f->locvars[i].varname) f->locvars[i].varname->stringmark();
@@ -508,7 +508,7 @@ static int traverseproto (global_State *g, Proto *f) {
   return TRAVCOST +
          (int)f->constants.size() +
          (int)f->upvalues.size() +
-         (int)f->p.size() +
+         (int)f->subprotos_.size() +
          (int)f->locvars.size();
 }
 

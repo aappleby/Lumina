@@ -142,9 +142,10 @@ static void checkproto (global_State *g, Proto *f) {
     if (f->upvalues[i].name)
       checkobjref(g, f, f->upvalues[i].name);
   }
-  for (i=0; i < (int)f->p.size(); i++) {
-    if (f->p[i])
-      checkobjref(g, f, f->p[i]);
+  for (i=0; i < (int)f->subprotos_.size(); i++) {
+    if (f->subprotos_[i]) {
+      checkobjref(g, f, f->subprotos_[i]);
+    }
   }
   for (i=0; i < (int)f->locvars.size(); i++) {
     if (f->locvars[i].varname)
