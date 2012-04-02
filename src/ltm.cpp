@@ -49,21 +49,6 @@ void luaT_init() {
 }
 
 
-/*
-** function to be used with macro "fasttm": optimized for absence of
-** tag methods
-*/
-const TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
-  TValue temp(ename);
-  const TValue *tm = luaH_get2(events, &temp);
-  assert(event <= TM_EQ);
-  if ((tm == NULL) || tm->isNil()) {  /* no tag method? */
-    events->flags |= cast_byte(1u<<event);  /* cache this fact */
-    return NULL;
-  }
-  else return tm;
-}
-
 const TValue *luaT_gettmbyobj (const TValue *o, TMS event) {
   Table* mt = lua_getmetatable(o);
   if(mt == NULL) return luaO_nilobject;
@@ -74,5 +59,14 @@ const TValue *luaT_gettmbyobj (const TValue *o, TMS event) {
 const TValue* fasttm ( Table* table, TMS tag) {
   if(table == NULL) return NULL;
   if(table->flags & (1<<tag)) return NULL;
-  return luaT_gettm(table, tag, thread_G->tmname[tag]);
+
+  TValue temp(thread_G->tmname[tag]);
+  const TValue *tm = luaH_get2(table, &temp);
+
+  assert(tag <= TM_EQ);
+  if ((tm == NULL) || tm->isNil()) {  /* no tag method? */
+    table->flags |= cast_byte(1u << tag);  /* cache this fact */
+    return NULL;
+  }
+  else return tm;
 }
