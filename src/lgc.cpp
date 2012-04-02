@@ -114,7 +114,11 @@ static int iscleared (const TValue *o) {
 ** barrier that moves collector forward, that is, mark the white object
 ** being pointed by a black object.
 */
-void luaC_barrier_ (LuaObject *o, LuaObject *v) {
+void luaC_barrier (LuaObject *o, TValue value) {
+  if(!o->isBlack()) return;
+  if(!value.isWhite()) return;
+  LuaObject* v = value.getObject();
+
   global_State *g = thread_G;
   assert(o->isBlack() && v->isWhite() && !v->isDead() && !o->isDead());
   assert(isgenerational(g) || (g->gcstate != GCSpause));
@@ -165,7 +169,7 @@ void luaC_barrierproto (Proto *p, Closure *c) {
   if(!p->isBlack()) return;
 
   if (p->cache == NULL) {  /* first time? */
-    luaC_objbarrier(L, p, c);
+    luaC_barrier(p, TValue(c));
   }
   else {  /* use a backward barrier */
     p->blackToGray();  /* make prototype gray (again) */

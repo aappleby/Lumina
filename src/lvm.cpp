@@ -688,7 +688,7 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_SETUPVAL,
         UpVal *uv = cl->ppupvals_[GETARG_B(i)];
         *uv->v = *ra;
-        luaC_barrier(uv, ra);
+        luaC_barrier(uv, *ra);
       )
       vmcase(OP_SETTABLE,
         Protect(luaV_settable(L, ra, RKB(i), RKC(i)));

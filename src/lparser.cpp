@@ -173,7 +173,7 @@ static int registerlocalvar (LexState *ls, TString *varname) {
   
   while (oldsize < (int)f->locvars.size()) f->locvars[oldsize++].varname = NULL;
   f->locvars[fs->nlocvars].varname = varname;
-  luaC_objbarrier(ls->L, f, varname);
+  luaC_barrier(f, TValue(varname));
   return fs->nlocvars++;
 }
 
@@ -243,7 +243,7 @@ static int newupvalue (FuncState *fs, TString *name, expdesc *v) {
   f->upvalues[fs->nups].instack = (v->k == VLOCAL);
   f->upvalues[fs->nups].idx = cast_byte(v->info);
   f->upvalues[fs->nups].name = name;
-  luaC_objbarrier(fs->ls->L, f, name);
+  luaC_barrier(f, TValue(name));
   return fs->nups++;
 }
 
@@ -513,7 +513,7 @@ static void codeclosure (LexState *ls, Proto *clp, expdesc *v) {
     while (oldsize < (int)f->p.size()) f->p[oldsize++] = NULL;
   }
   f->p[fs->np++] = clp;
-  luaC_objbarrier(ls->L, f, clp);
+  luaC_barrier(f, TValue(clp));
   init_exp(v, VRELOCABLE, luaK_codeABx(fs, OP_CLOSURE, 0, fs->np-1));
   luaK_exp2nextreg(fs, v);  /* fix it at stack top (for GC) */
 }

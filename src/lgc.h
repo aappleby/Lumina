@@ -84,21 +84,16 @@ void luaC_step();
 
 void luaC_checkGC();
 
-// Force GC traversal of 'v' so we dont' have a black object referring to a white object.
-#define luaC_barrier(p,v) { if ((v)->isWhite() && (p)->isBlack())	luaC_barrier_(p,v->getObject()); }
-
-// Put 'p' back on the grey list so we don't have a black object referring to a white object.
-//#define luaC_barrierback(p,v) { if ((v)->isWhite() && (p)->isBlack()) luaC_barrierback_(p); }
-
-#define luaC_objbarrier(L,p,o)  { if ((o)->isWhite() && (p)->isBlack()) luaC_barrier_(p,o); }
-
 void luaC_freeallobjects ();
 void luaC_step ();
 void luaC_forcestep ();
 void luaC_runtilstate (int statesmask);
 void luaC_fullgc (int isemergency);
-void luaC_barrier_ (LuaObject *o, LuaObject *v);
 
+// Force GC traversal of 'v' so we dont' have a black object referring to a white object.
+void luaC_barrier (LuaObject *o, TValue v);
+
+// Put 'o' back on the grey list so we don't have a black object referring to a white object.
 void luaC_barrierback(LuaObject *o, TValue v);
 
 void luaC_barrierproto (Proto *p, Closure *c);

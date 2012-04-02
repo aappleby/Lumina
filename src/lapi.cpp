@@ -283,7 +283,7 @@ static void moveto (lua_State *L, TValue *fr, int idx) {
   TValue *to = index2addr_checked(L, idx);
   *to = *fr;
   if (idx < LUA_REGISTRYINDEX) {  /* function upvalue? */
-    luaC_barrier(L->ci_->func->getCClosure(), fr);
+    luaC_barrier(L->ci_->func->getCClosure(), *fr);
   }
   /* LUA_REGISTRYINDEX does not need gc barrier
      (collector revisits it before finishing collection) */
@@ -896,7 +896,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
     case LUA_TUSERDATA: {
       obj->getUserdata()->metatable_ = mt;
       if (mt) {
-        luaC_objbarrier(L, obj->getUserdata(), mt);
+        luaC_barrier(obj->getUserdata(), TValue(mt));
         luaC_checkfinalizer(obj->getObject(), mt);
       }
       break;
@@ -922,7 +922,7 @@ void lua_setuservalue (lua_State *L, int idx) {
   else {
     api_check(L->top[-1].isTable(), "table expected");
     o->getUserdata()->env_ = L->top[-1].getTable();
-    luaC_objbarrier(L, o->getObject(), L->top[-1].getTable());
+    luaC_barrier(o->getObject(), L->top[-1]);
   }
   L->top--;
 }
@@ -1046,7 +1046,7 @@ int lua_load (lua_State *L, lua_Reader reader, void *data,
       assert(gt);
       /* set global table as 1st upvalue of 'f' (may be LUA_ENV) */
       *f->ppupvals_[0]->v = *gt;
-      luaC_barrier(f->ppupvals_[0], gt);
+      luaC_barrier(f->ppupvals_[0], *gt);
     }
   }
   return status;
@@ -1280,7 +1280,7 @@ const char *lua_setupvalue (lua_State *L, int funcindex, int n) {
   if (name) {
     L->top--;
     *val = L->top[0];
-    luaC_barrier(owner, L->top);
+    luaC_barrier(owner, L->top[0]);
   }
   return name;
 }
@@ -1325,6 +1325,6 @@ void lua_upvaluejoin (lua_State *L, int fidx1, int n1,
   UpVal **up1 = getupvalref(L, fidx1, n1, &f1);
   UpVal **up2 = getupvalref(L, fidx2, n2, NULL);
   *up1 = *up2;
-  luaC_objbarrier(L, f1, *up2);
+  luaC_barrier(f1, TValue(*up2));
 }
 

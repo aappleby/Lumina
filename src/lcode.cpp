@@ -348,7 +348,7 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   }
   f->constants[k] = *v;
   fs->nk++;
-  luaC_barrier(f, v);
+  luaC_barrier(f, *v);
   return k;
 }
 
