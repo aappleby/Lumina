@@ -8,6 +8,7 @@
 #define lgc_h
 
 #include "LuaGlobals.h"
+#include "LuaValue.h"
 
 #include "lobject.h"
 #include "lstate.h"
@@ -83,12 +84,13 @@ void luaC_step();
 
 void luaC_checkGC();
 
-
+// Force GC traversal of 'v' so we dont' have a black object referring to a white object.
 #define luaC_barrier(p,v) { if ((v)->isWhite() && (p)->isBlack())	luaC_barrier_(p,v->getObject()); }
-#define luaC_barrierback(p,v) { if ((v)->isWhite() && (p)->isBlack()) luaC_barrierback_(p); }
+
+// Put 'p' back on the grey list so we don't have a black object referring to a white object.
+//#define luaC_barrierback(p,v) { if ((v)->isWhite() && (p)->isBlack()) luaC_barrierback_(p); }
+
 #define luaC_objbarrier(L,p,o)  { if ((o)->isWhite() && (p)->isBlack()) luaC_barrier_(p,o); }
-#define luaC_objbarrierback(L,p,o)  { if ((o)->isWhite() && (p)->isBlack()) luaC_barrierback_(p); }
-#define luaC_barrierproto(p,c) { if ((p)->isBlack()) luaC_barrierproto_(p,c); }
 
 void luaC_freeallobjects ();
 void luaC_step ();
@@ -96,8 +98,10 @@ void luaC_forcestep ();
 void luaC_runtilstate (int statesmask);
 void luaC_fullgc (int isemergency);
 void luaC_barrier_ (LuaObject *o, LuaObject *v);
-void luaC_barrierback_ (LuaObject *o);
-void luaC_barrierproto_ (Proto *p, Closure *c);
+
+void luaC_barrierback(LuaObject *o, TValue v);
+
+void luaC_barrierproto (Proto *p, Closure *c);
 void luaC_checkfinalizer (LuaObject *o, Table *mt);
 void luaC_checkupvalcolor (global_State *g, UpVal *uv);
 void luaC_changemode (lua_State *L, int mode);

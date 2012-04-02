@@ -244,7 +244,7 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
 
   if(mp && mp->i_val.isNil()) {
     mp->i_key = *key;
-    luaC_barrierback(t, key);
+    luaC_barrierback(t, *key);
     assert(mp->i_val.isNil());
     return &mp->i_val;
   }
@@ -275,7 +275,7 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
     }
   }
   mp->i_key = *key;
-  luaC_barrierback(t, key);
+  luaC_barrierback(t, *key);
   assert(mp->i_val.isNil());
   return &mp->i_val;
 }

@@ -117,7 +117,7 @@ static int iscleared (const TValue *o) {
 void luaC_barrier_ (LuaObject *o, LuaObject *v) {
   global_State *g = thread_G;
   assert(o->isBlack() && v->isWhite() && !v->isDead() && !o->isDead());
-  assert(isgenerational(g) || g->gcstate != GCSpause);
+  assert(isgenerational(g) || (g->gcstate != GCSpause));
   assert(o->type() != LUA_TTABLE);
   if (keepinvariant(g))  /* must keep invariant? */
     reallymarkobject(v);  /* restore invariant */
@@ -134,7 +134,14 @@ void luaC_barrier_ (LuaObject *o, LuaObject *v) {
 ** only works for tables; access to 'gclist' is not uniform across
 ** different types.)
 */
-void luaC_barrierback_ (LuaObject *o) {
+
+// If we add a white object to a black table, we need to force the garbage
+// collector to re-traverse the table by putting it back on a gray list.
+
+void luaC_barrierback (LuaObject *o, TValue v) {
+  if(!o->isBlack()) return;
+  if(!v.isWhite()) return;
+
   global_State *g = thread_G;
 
   assert(o->isBlack() && !o->isDead() && o->isTable());
@@ -153,9 +160,10 @@ void luaC_barrierback_ (LuaObject *o) {
 ** it again. Otherwise, use a backward barrier, to avoid marking all
 ** possible instances.
 */
-void luaC_barrierproto_ (Proto *p, Closure *c) {
+void luaC_barrierproto (Proto *p, Closure *c) {
   global_State *g = thread_G;
-  assert(p->isBlack());
+  if(!p->isBlack()) return;
+
   if (p->cache == NULL) {  /* first time? */
     luaC_objbarrier(L, p, c);
   }

@@ -282,8 +282,9 @@ static void moveto (lua_State *L, TValue *fr, int idx) {
   THREAD_CHECK(L);
   TValue *to = index2addr_checked(L, idx);
   *to = *fr;
-  if (idx < LUA_REGISTRYINDEX)  /* function upvalue? */
+  if (idx < LUA_REGISTRYINDEX) {  /* function upvalue? */
     luaC_barrier(L->ci_->func->getCClosure(), fr);
+  }
   /* LUA_REGISTRYINDEX does not need gc barrier
      (collector revisits it before finishing collection) */
 }
@@ -841,7 +842,7 @@ void lua_rawset (lua_State *L, int idx) {
   api_check(t->isTable(), "table expected");
   // TODO(aappleby): wtf, using the result of set as an assignment target?
   *luaH_set(t->getTable(), L->top-2) = L->top[-1];
-  luaC_barrierback(t->getObject(), L->top-1);
+  luaC_barrierback(t->getObject(), L->top[-1]);
   L->top -= 2;
 }
 
@@ -853,7 +854,7 @@ void lua_rawseti (lua_State *L, int idx, int n) {
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
   luaH_setint(t->getTable(), n, L->top - 1);
-  luaC_barrierback(t->getObject(), L->top-1);
+  luaC_barrierback(t->getObject(), L->top[-1]);
   L->top--;
 }
 
@@ -867,7 +868,7 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
   api_check(t->isTable(), "table expected");
   k = TValue::LightUserdata((void*)p);
   *luaH_set(t->getTable(), &k) = L->top[-1];
-  luaC_barrierback(t->getObject(), L->top - 1);
+  luaC_barrierback(t->getObject(), L->top[-1]);
   L->top--;
 }
 
@@ -888,7 +889,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
     case LUA_TTABLE: {
       obj->getTable()->metatable = mt;
       if (mt)
-        luaC_objbarrierback(L, obj->getObject(), mt);
+        luaC_barrierback(obj->getObject(), TValue(mt));
         luaC_checkfinalizer(obj->getObject(), mt);
       break;
     }

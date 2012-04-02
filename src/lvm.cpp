@@ -182,7 +182,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       if (oldval && oldval->isNotNil()) {
         *oldval = *val;
         // invalidate TM cache
-        luaC_barrierback(h, val);
+        luaC_barrierback(h, *val);
         return;
       }
 
@@ -194,7 +194,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
         if(oldval != luaO_nilobject) {
           *oldval = *val;
           // invalidate TM cache
-          luaC_barrierback(h, val);
+          luaC_barrierback(h, *val);
           return;
         }
 
@@ -202,7 +202,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
         oldval = luaH_newkey(h, key);
         *oldval = *val;
         // invalidate TM cache
-        luaC_barrierback(h, val);
+        luaC_barrierback(h, *val);
         return;
       }
       else {
@@ -481,21 +481,28 @@ static Closure *getcached (Proto *p, UpVal **encup, StkId base) {
 ** before the assignment to 'p->cache', as the function needs the
 ** original value of that field.
 */
-static void pushclosure (lua_State *L, Proto *p, UpVal **encup, StkId base,
+static void pushclosure (lua_State *L,
+                         Proto *p,
+                         UpVal **encup,
+                         StkId base,
                          StkId ra) {
   THREAD_CHECK(L);
-  int nup = (int)p->upvalues.size();
-  Upvaldesc *uv = p->upvalues.begin();
-  int i;
+
   Closure *ncl = luaF_newLclosure(p);
   if(ncl == NULL) luaD_throw(LUA_ERRMEM);
+
   *ra = TValue::LClosure(ncl);  /* anchor new closure in stack */
-  for (i = 0; i < nup; i++) {  /* fill in its upvalues */
-    if (uv[i].instack)  /* upvalue refers to local variable? */
-      ncl->ppupvals_[i] = luaF_findupval(base + uv[i].idx);
-    else  /* get upvalue from enclosing function */
-      ncl->ppupvals_[i] = encup[uv[i].idx];
+  for (int i = 0; i < (int)p->upvalues.size(); i++) {  /* fill in its upvalues */
+    if (p->upvalues[i].instack) {
+      /* upvalue refers to local variable? */
+      ncl->ppupvals_[i] = luaF_findupval(base + p->upvalues[i].idx);
+    }
+    else {
+      /* get upvalue from enclosing function */
+      ncl->ppupvals_[i] = encup[p->upvalues[i].idx];
+    }
   }
+
   luaC_barrierproto(p, ncl);
   p->cache = ncl;  /* save it on cache for reuse */
 }
@@ -920,7 +927,7 @@ void luaV_execute (lua_State *L) {
         for (; n > 0; n--) {
           TValue *val = ra+n;
           luaH_setint(h, last--, val);
-          luaC_barrierback(h, val);
+          luaC_barrierback(h, *val);
         }
         L->top = ci->top;  /* correct top (in case of previous open call) */
       )
