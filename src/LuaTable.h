@@ -37,6 +37,9 @@ public:
   bool keyToTableIndex    (TValue key, int& outIndex);
   bool tableIndexToKeyVal (int index, TValue& outKey, TValue& outValue);
 
+  int getArraySize() const { return (int)array.size(); }
+  int getHashSize() const { return (int)hashtable.size(); }
+
   // Returns the value associated with the key
   // can't turn this to value return until the rest of the code doesn't fetch by pointer...
   const TValue* findValue(TValue key);

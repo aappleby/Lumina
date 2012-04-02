@@ -102,6 +102,8 @@ public:
   bool isLClosure() const      { return type_ == LUA_TLCL; }
   bool isLightFunction() const { return type_ == LUA_TLCF; }
 
+  // Note that some code still looks at the (un-dereferencable) pointer
+  // contained in a dead key.
   void setDeadKey() { type_ = LUA_TDEADKEY; }
 
   //----------

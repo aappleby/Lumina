@@ -78,17 +78,6 @@ inline void markobject(LuaObject* o) {
 */
 
 
-// The key for this node is about to be garbage collected. Mark the
-// keyvalue as dead so we don't try and dereference it later.
-static void removeentry (TValue* key, TValue* val) {
-  assert(val->isNil());
-  
-  if (key->isWhite()) {
-    key->setDeadKey();  /* unused and unmarked key; remove it */
-  }
-}
-
-
 /*
 ** tells whether a key or value can be cleared from a weak
 ** table. Non-collectable objects are never removed from weak
@@ -96,7 +85,10 @@ static void removeentry (TValue* key, TValue* val) {
 ** other objects: if really collected, cannot keep them; for objects
 ** being finalized, keep them in keys, but not in values
 */
-static int iscleared (const TValue *o) {
+
+// Strings behave as value types _when used as table keys_.
+
+static int isWeakTableRef (const TValue *o) {
   if (!o->isCollectable()) {
     return 0;
   }
@@ -329,7 +321,9 @@ void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
   assert(!key->isDeadKey() || val->isNil());
 
   if (val->isNil()) {
-    removeentry(key,val);
+    if (key->isWhite()) {
+      key->setDeadKey();  /* unused and unmarked key; remove it */
+    }
     return;
   }
 
@@ -338,7 +332,7 @@ void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
   markvalue(key);  // mark key
 
   // is there a white value? table will have to be cleared
-  if (iscleared(val)) {
+  if (isWeakTableRef(val)) {
     info.hasclears = 1;
   }
 }
@@ -349,11 +343,13 @@ void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
 
   // If the node's value is nil, mark the key as dead.
   if (val->isNil()) {
-    removeentry(key,val);
+    if (key->isWhite()) {
+      key->setDeadKey();  /* unused and unmarked key; remove it */
+    }
     return;
   }
 
-  if (iscleared(key)) {  /* key is not marked (yet)? */
+  if (isWeakTableRef(key)) {  /* key is not marked (yet)? */
     info.hasclears = 1;  /* table must be cleared */
    
     if (val->isWhite()) { /* value not marked yet? */
@@ -373,7 +369,9 @@ void traverseStrongNode(TValue* key, TValue* val, void* blob) {
   assert(!key->isDeadKey() || val->isNil());
 
   if (val->isNil()) {
-    removeentry(key, val);  /* remove it */
+    if (key->isWhite()) {
+      key->setDeadKey();  /* unused and unmarked key; remove it */
+    }
     return;
   }
 
@@ -650,9 +648,11 @@ static void clearkeys (LuaObject *l) {
 
     for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
-      if (n->i_val.isNotNil() && (iscleared(&n->i_key))) {
+      if (n->i_val.isNotNil() && (isWeakTableRef(&n->i_key))) {
         n->i_val = TValue::nil;  /* remove value ... */
-        removeentry(&n->i_key, &n->i_val);  /* and remove entry from table */
+        if (n->i_key.isWhite()) {
+          n->i_key.setDeadKey();  /* unused and unmarked key; remove it */
+        }
       }
     }
   }
@@ -668,15 +668,17 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
     Table *h = dynamic_cast<Table*>(l);
     for (int i = 0; i < (int)h->array.size(); i++) {
       TValue *o = &h->array[i];
-      if (iscleared(o)) {  /* value was collected? */
+      if (isWeakTableRef(o)) {  /* value was collected? */
         *o = TValue::nil;  /* remove value */
       }
     }
     for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
-      if (n->i_val.isNotNil() && iscleared(&n->i_val)) {
-        n->i_val = TValue::nil;  /* remove value ... */
-        removeentry(&n->i_key, &n->i_val);  /* and remove entry from table */
+      if (n->i_val.isNotNil() && isWeakTableRef(&n->i_val)) {
+        n->i_val = TValue::nil;
+        if (n->i_key.isWhite()) {
+          n->i_key.setDeadKey();
+        }
       }
     }
   }
