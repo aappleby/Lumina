@@ -1243,7 +1243,7 @@ static const char *aux_upvalue (StkId fi, int n, TValue **val,
     case LUA_TLCL: {  /* Lua closure */
       Closure *f = fi->getLClosure();
       TString *name;
-      Proto *p = f->p;
+      Proto *p = f->proto_;
       if (!(1 <= n && n <= (int)p->upvalues.size())) return NULL;
       *val = f->ppupvals_[n-1]->v;
       if (owner) *owner = f->ppupvals_[n - 1];
@@ -1292,7 +1292,7 @@ static UpVal **getupvalref (lua_State *L, int fidx, int n, Closure **pf) {
   StkId fi = index2addr(L, fidx);
   api_check(fi->isLClosure(), "Lua function expected");
   f = fi->getLClosure();
-  api_check((1 <= n && n <= (int)f->p->upvalues.size()), "invalid upvalue index");
+  api_check((1 <= n && n <= (int)f->proto_->upvalues.size()), "invalid upvalue index");
   if (pf) *pf = f;
   return &f->ppupvals_[n - 1];  /* get its upvalue pointer */
 }

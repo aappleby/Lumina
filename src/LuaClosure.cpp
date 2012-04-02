@@ -12,7 +12,7 @@ Closure::Closure(Proto* proto, UpVal** buf, int n) : LuaObject(LUA_TLCL) {
   linkGC(getGlobalGCHead());
   isC = 0;
   nupvalues = n;
-  p = proto;
+  proto_ = proto;
   pupvals_ = NULL;
   ppupvals_ = buf;
   while (n--) ppupvals_[n] = NULL;

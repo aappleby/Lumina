@@ -521,8 +521,8 @@ static int traverseclosure (global_State *g, Closure *cl) {
   }
   else {
     int i;
-    assert(cl->nupvalues == cl->p->upvalues.size());
-    markobject(cl->p);  /* mark its prototype */
+    assert(cl->nupvalues == cl->proto_->upvalues.size());
+    markobject(cl->proto_);  /* mark its prototype */
     for (i=0; i<cl->nupvalues; i++)  /* mark its upvalues */
       markobject(cl->ppupvals_[i]);
   }

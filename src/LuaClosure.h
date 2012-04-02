@@ -17,7 +17,7 @@ public:
 
   lua_CFunction f;
 
-  Proto *p;
+  Proto *proto_;
 };
 
 

@@ -36,7 +36,15 @@ public:
   LuaVector<Proto*> p; // functions defined inside the function
   LuaVector<LocVar> locvars; // information about local variables (debug information)
   LuaVector<Upvaldesc> upvalues; // upvalue information
+  
+  // Creating a separate closure every time we want to invoke a function is
+  // wasteful, so Lua stores the most recently used closure and re-uses it
+  // when possible.
+
+  // TODO(aappleby): see if this actually makes a difference in performance
+
   Closure *cache;  /* last created closure with this prototype */
+
   TString  *source;  /* used for debug information */
   int linedefined;
   int lastlinedefined;

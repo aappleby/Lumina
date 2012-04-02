@@ -38,12 +38,12 @@ static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name);
 
 static int currentpc (CallInfo *ci) {
   assert(isLua(ci));
-  return pcRel(ci->savedpc, ci_func(ci)->p);
+  return pcRel(ci->savedpc, ci_func(ci)->proto_);
 }
 
 
 static int currentline (CallInfo *ci) {
-  return getfuncline(ci_func(ci)->p, currentpc(ci));
+  return getfuncline(ci_func(ci)->proto_, currentpc(ci));
 }
 
 
@@ -108,7 +108,7 @@ static const char *upvalname (Proto *p, int uv) {
 
 
 static const char *findvararg (CallInfo *ci, int n, StkId *pos) {
-  int nparams = ci->func->getLClosure()->p->numparams;
+  int nparams = ci->func->getLClosure()->proto_->numparams;
   if (n >= ci->base - ci->func - nparams)
     return NULL;  /* no such vararg */
   else {
@@ -128,7 +128,7 @@ static const char *findlocal (lua_State *L, CallInfo *ci, int n,
       return findvararg(ci, -n, pos);
     else {
       base = ci->base;
-      name = luaF_getlocalname(ci_func(ci)->p, n, currentpc(ci));
+      name = luaF_getlocalname(ci_func(ci)->proto_, n, currentpc(ci));
     }
   }
   else
@@ -152,7 +152,7 @@ const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n) {
     if (!L->top[-1].isLClosure())  /* not a Lua function? */
       name = NULL;
     else  /* consider live variables at function start (parameters) */
-      name = luaF_getlocalname(L->top[-1].getLClosure()->p, n, 0);
+      name = luaF_getlocalname(L->top[-1].getLClosure()->proto_, n, 0);
   }
   else {  /* active function; get information through 'ar' */
     StkId pos = 0;  /* to avoid warnings */
@@ -186,7 +186,7 @@ static void funcinfo (lua_Debug *ar, Closure *cl) {
     ar->what = "C";
   }
   else {
-    Proto *p = cl->p;
+    Proto *p = cl->proto_;
     ar->source = p->source ? p->source->c_str() : "=?";
     ar->linedefined = p->linedefined;
     ar->lastlinedefined = p->lastlinedefined;
@@ -211,8 +211,8 @@ static void collectvalidlines (lua_State *L, Closure *f) {
     L->top[0] = t;  /* push it on stack */
     incr_top(L);
     v = true;
-    for (i = 0; i < (int)f->p->lineinfo.size(); i++)  /* for all lines with code */
-      luaH_setint(t, f->p->lineinfo[i], &v);  /* table[line] = true */
+    for (i = 0; i < (int)f->proto_->lineinfo.size(); i++)  /* for all lines with code */
+      luaH_setint(t, f->proto_->lineinfo[i], &v);  /* table[line] = true */
   }
 }
 
@@ -238,8 +238,8 @@ static int auxgetinfo (lua_State *L, const char *what, lua_Debug *ar,
           ar->nparams = 0;
         }
         else {
-          ar->isvararg = f->p->is_vararg;
-          ar->nparams = f->p->numparams;
+          ar->isvararg = f->proto_->is_vararg;
+          ar->nparams = f->proto_->numparams;
         }
         break;
       }
@@ -442,7 +442,7 @@ static const char *getobjname (Proto *p, int lastpc, int reg,
 static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name) {
   THREAD_CHECK(L);
   TMS tm;
-  Proto *p = ci_func(ci)->p;  /* calling function */
+  Proto *p = ci_func(ci)->proto_;  /* calling function */
   int pc = currentpc(ci);  /* calling instruction index */
   Instruction i = p->code[pc];  /* calling instruction */
   switch (GET_OPCODE(i)) {
@@ -500,7 +500,7 @@ static const char *getupvalname (CallInfo *ci, const TValue *o,
   int i;
   for (i = 0; i < c->nupvalues; i++) {
     if (c->ppupvals_[i]->v == o) {
-      *name = upvalname(c->p, i);
+      *name = upvalname(c->proto_, i);
       return "upvalue";
     }
   }
@@ -517,7 +517,7 @@ l_noret luaG_typeerror (const TValue *o, const char *op) {
   if (isLua(ci)) {
     kind = getupvalname(ci, o, &name);  /* check whether 'o' is an upvalue */
     if (!kind && isinstack(ci, o))  /* no? try a register */
-      kind = getobjname(ci_func(ci)->p, currentpc(ci),
+      kind = getobjname(ci_func(ci)->proto_, currentpc(ci),
                         cast_int(o - ci->base), &name);
   }
   if (kind)
@@ -559,7 +559,7 @@ static void addinfo (const char *msg) {
   if (isLua(ci)) {  /* is Lua code? */
     char buff[LUA_IDSIZE];  /* add file:line information */
     int line = currentline(ci);
-    TString *src = ci_func(ci)->p->source;
+    TString *src = ci_func(ci)->proto_->source;
     if (src)
       luaO_chunkid(buff, src->c_str(), LUA_IDSIZE);
     else {  /* no source available; use "?" instead */

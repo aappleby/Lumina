@@ -32,7 +32,7 @@ class Table;
 
 
 
-#define getproto(o)	((o)->getLClosure()->p)
+#define getproto(o)	((o)->getLClosure()->proto_)
 
 
 /*

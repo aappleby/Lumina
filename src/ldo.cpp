@@ -246,7 +246,7 @@ int luaD_precallC(lua_State* L, StkId func, int nresults) {
 int luaD_precallLua(lua_State* L, StkId func, int nresults) {
   ptrdiff_t funcr = savestack(L, func);
   StkId base;
-  Proto *p = func->getLClosure()->p;
+  Proto *p = func->getLClosure()->proto_;
   L->checkstack(p->maxstacksize);
   func = restorestack(L, funcr);
   int n = cast_int(L->top - func) - 1;  /* number of real arguments */

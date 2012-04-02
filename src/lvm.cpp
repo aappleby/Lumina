@@ -71,7 +71,7 @@ static void traceexec (lua_State *L) {
     luaD_hook(L, LUA_HOOKCOUNT, -1);
   }
   if (mask & LUA_MASKLINE) {
-    Proto *p = ci_func(ci)->p;
+    Proto *p = ci_func(ci)->proto_;
     int npc = pcRel(ci->savedpc, p);
     int newline = getfuncline(p, npc);
     if (npc == 0 ||  /* call linehook when enter a new function, */
@@ -633,7 +633,7 @@ void luaV_execute (lua_State *L) {
  newframe:  /* reentry point when frame changes (call/return) */
   assert(ci == L->ci_);
   cl = ci->func->getLClosure();
-  k = cl->p->constants.begin();
+  k = cl->proto_->constants.begin();
   base = ci->base;
   /* main loop of interpreter */
   for (;;) {
@@ -836,7 +836,7 @@ void luaV_execute (lua_State *L) {
           StkId lim = nci->base + getproto(nfunc)->numparams;
           int aux;
           /* close all upvalues from previous call */
-          if (cl->p->p.size() > 0) luaF_close(oci->base);
+          if (cl->proto_->p.size() > 0) luaF_close(oci->base);
           /* move new frame into old one */
           for (aux = 0; nfunc + aux < lim; aux++) {
             ofunc[aux] = nfunc[aux];
@@ -853,7 +853,7 @@ void luaV_execute (lua_State *L) {
       vmcasenb(OP_RETURN,
         int b = GETARG_B(i);
         if (b != 0) L->top = ra+b-1;
-        if (cl->p->p.size() > 0) luaF_close(base);
+        if (cl->proto_->p.size() > 0) luaF_close(base);
         b = luaD_poscall(L, ra);
         if (!(ci->callstatus & CIST_REENTRY))  /* 'ci' still the called one */
           return;  /* external invocation: return */
@@ -932,7 +932,7 @@ void luaV_execute (lua_State *L) {
         L->top = ci->top;  /* correct top (in case of previous open call) */
       )
       vmcase(OP_CLOSURE,
-        Proto *p = cl->p->p[GETARG_Bx(i)];
+        Proto *p = cl->proto_->p[GETARG_Bx(i)];
         Closure *ncl = getcached(p, cl->ppupvals_, base);  /* cached closure */
         if (ncl == NULL)  /* no match? */
           pushclosure(L, p, cl->ppupvals_, base, ra);  /* create a new one */
@@ -947,7 +947,7 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_VARARG,
         int b = GETARG_B(i) - 1;
         int j;
-        int n = cast_int(base - ci->func) - cl->p->numparams - 1;
+        int n = cast_int(base - ci->func) - cl->proto_->numparams - 1;
         if (b < 0) {  /* B == 0? */
           b = n;  /* get all var. arguments */
           L->checkstack(n);

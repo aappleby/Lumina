@@ -163,8 +163,8 @@ static void checkCClosure (global_State *g, Closure *cl) {
 
 static void checkLClosure (global_State *g, Closure *cl) {
   int i;
-  assert(cl->nupvalues == cl->p->upvalues.size());
-  checkobjref(g, cl, cl->p);
+  assert(cl->nupvalues == cl->proto_->upvalues.size());
+  checkobjref(g, cl, cl->proto_);
   for (i=0; i<cl->nupvalues; i++) {
     if (cl->ppupvals_[i]) {
       assert(cl->ppupvals_[i]->isUpval());
@@ -179,7 +179,7 @@ typedef CallInfo* pCallInfo;
 static int lua_checkpc (pCallInfo ci) {
   if (!isLua(ci)) return 1;
   else {
-    Proto *p = ci_func(ci)->p;
+    Proto *p = ci_func(ci)->proto_;
     return &p->code[0] <= ci->savedpc &&
            ci->savedpc <= &p->code[0] + p->code.size();
   }
