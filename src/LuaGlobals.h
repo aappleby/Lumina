@@ -13,6 +13,16 @@ public:
   global_State() {}
   ~global_State() {}
 
+  // actual number of total bytes allocated
+  size_t getTotalBytes() { return totalbytes + GCdebt; }
+
+  // set GCdebt to a new value keeping the value (totalbytes + GCdebt)
+  // invariant
+  void setGCDebt(size_t debt) {
+    totalbytes -= (debt - GCdebt);
+    GCdebt = debt;
+  }
+
   stringtable* strings_;  /* hash table for strings */
 
   TValue l_registry;

@@ -50,7 +50,7 @@
 ** standard negative debt for GC; a reasonable "time" to wait before
 ** starting a new cycle
 */
-#define stddebt(g)	(-cast(l_mem, gettotalbytes(g)/100) * g->gcpause)
+#define stddebt(g)	(-cast(l_mem, g->getTotalBytes()/100) * g->gcpause)
 
 #define checkdeadkey(n)	assert(!n->i_key.isDeadKey() || n->i_val.isNil())
 
@@ -954,7 +954,7 @@ void luaC_changemode (lua_State *L, int mode) {
   if (mode == KGC_GEN) {  /* change to generational mode */
     /* make sure gray lists are consistent */
     luaC_runtilstate(bitmask(GCSpropagate));
-    g->lastmajormem = gettotalbytes(g);
+    g->lastmajormem = g->getTotalBytes();
     g->gckind = KGC_GEN;
   }
   else {  /* change to incremental mode */
@@ -988,12 +988,6 @@ void luaC_freeallobjects () {
   // finalize everything
   callallpendingfinalizers(0);
 
-  /*
-  // this "white" makes all objects look dead
-  thread_G->currentwhite = WHITEBITS; 
-  thread_G->gckind = KGC_NORMAL;
-  */
-  
   // finalizers can create objs. in 'finobj'
   deletelist(thread_G->finobj);
   deletelist(thread_G->allgc);
@@ -1118,12 +1112,12 @@ static void generationalcollection () {
   global_State *g = thread_G;
   if (g->lastmajormem == 0) {  /* signal for another major collection? */
     luaC_fullgc(0);  /* perform a full regular collection */
-    g->lastmajormem = gettotalbytes(g);  /* update control */
+    g->lastmajormem = g->getTotalBytes();  /* update control */
   }
   else {
     luaC_runtilstate(~bitmask(GCSpause));  /* run complete cycle */
     luaC_runtilstate(bitmask(GCSpause));
-    if (gettotalbytes(g) > g->lastmajormem/100 * g->gcmajorinc)
+    if (g->getTotalBytes() > g->lastmajormem/100 * g->gcmajorinc)
       g->lastmajormem = 0;  /* signal for a major collection */
   }
   luaE_setdebt(g, stddebt(g));

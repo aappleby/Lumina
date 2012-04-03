@@ -26,9 +26,6 @@ struct lua_longjmp;  /* defined in ldo.c */
 
 #include "LuaObject.h"
 
-/* actual number of total bytes allocated */
-#define gettotalbytes(g)	((g)->totalbytes + (g)->GCdebt)
-
 void luaE_setdebt (global_State *g, l_mem debt);
 void luaE_freethread (lua_State *L, lua_State *L1);
 CallInfo *luaE_extendCI (lua_State *L);
