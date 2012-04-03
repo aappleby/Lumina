@@ -45,6 +45,9 @@ protected:
 
 class stringtable {
 public:
+
+  TString* find(uint32_t hash, const char* str, size_t len);
+
   LuaVector<LuaObject*> hash_;
   uint32_t nuse_;
   int size_;

@@ -77,22 +77,13 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
   return ts;
 }
 
-uint32_t hashString(const char* str, size_t len) {
-  uint32_t hash = (uint32_t)len;
-
-  size_t step = (len>>5)+1;  // if string is too long, don't hash all its chars
-  size_t l1;
-  for (l1 = len; l1 >= step; l1 -= step) {
-    hash = hash ^ ((hash<<5)+(hash>>2)+cast(unsigned char, str[l1-1]));
-  }
-
-  return hash;
-}
+uint32_t hashString(const char* str, size_t len);
 
 TString *luaS_newlstr (const char *str, size_t l) {
 
   unsigned int h = hashString(str,l);
 
+  /*
   stringtable* strings = thread_G->strings_;
 
   LuaObject* o = thread_G->strings_->hash_[lmod(h, strings->size_)];
@@ -106,6 +97,14 @@ TString *luaS_newlstr (const char *str, size_t l) {
     if (ts->isDead()) ts->changeWhite();
     return ts;
   }
+  */
+
+  TString* ts = thread_G->strings_->find(h, str, l);
+  if(ts) {
+    if(ts->isDead()) ts->changeWhite();
+    return ts;
+  }
+
   TString* s = newlstr(str, l, h);  /* not found; create a new string */
   if(s == NULL) luaD_throw(LUA_ERRMEM);
   return s;
