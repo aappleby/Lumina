@@ -77,27 +77,34 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
   return ts;
 }
 
+uint32_t hashString(const char* str, size_t len) {
+  uint32_t hash = (uint32_t)len;
+
+  size_t step = (len>>5)+1;  // if string is too long, don't hash all its chars
+  size_t l1;
+  for (l1 = len; l1 >= step; l1 -= step) {
+    hash = hash ^ ((hash<<5)+(hash>>2)+cast(unsigned char, str[l1-1]));
+  }
+
+  return hash;
+}
 
 TString *luaS_newlstr (const char *str, size_t l) {
-  LuaObject *o;
 
-  unsigned int h = cast(unsigned int, l);  // seed
-  size_t step = (l>>5)+1;  // if string is too long, don't hash all its chars
-  size_t l1;
-  for (l1=l; l1>=step; l1-=step)  // compute hash
-    h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
+  unsigned int h = hashString(str,l);
 
   stringtable* strings = thread_G->strings_;
 
-  for (o = strings->hash_[lmod(h, strings->size_)]; o != NULL; o = o->next) {
+  LuaObject* o = thread_G->strings_->hash_[lmod(h, strings->size_)];
+  for (; o != NULL; o = o->next) {
     TString *ts = dynamic_cast<TString*>(o);
-    if (h == ts->getHash() &&
-        ts->getLen() == l &&
-        (memcmp(str, ts->c_str(), l * sizeof(char)) == 0)) {
-      if (o->isDead())  /* string is dead (but was not collected yet)? */
-        o->changeWhite();  /* resurrect it */
-      return ts;
-    }
+    if(ts->getHash() != h) continue;
+    if(ts->getLen() != l) continue;
+    if (memcmp(str, ts->c_str(), l * sizeof(char)) != 0) continue;
+
+    // Found a matching TString. Resurrect it and return it.
+    if (ts->isDead()) ts->changeWhite();
+    return ts;
   }
   TString* s = newlstr(str, l, h);  /* not found; create a new string */
   if(s == NULL) luaD_throw(LUA_ERRMEM);
