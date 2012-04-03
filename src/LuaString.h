@@ -45,8 +45,7 @@ protected:
 
 class stringtable {
 public:
-  //LuaObject **hash;
-  LuaVector<LuaObject*> hash;
-  uint32_t nuse;  /* number of elements */
-  int size;
+  LuaVector<LuaObject*> hash_;
+  uint32_t nuse_;
+  int size_;
 };

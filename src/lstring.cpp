@@ -26,41 +26,41 @@ void luaS_resize (int newsize) {
   stringtable *tb = thread_G->strings_;
   /* cannot resize while GC is traversing strings */
   luaC_runtilstate(~(1 << GCSsweepstring));
-  if (newsize > tb->size) {
-    tb->hash.resize(newsize);
+  if (newsize > tb->size_) {
+    tb->hash_.resize(newsize);
   }
   /* rehash */
-  for (i=0; i<tb->size; i++) {
-    LuaObject *p = tb->hash[i];
-    tb->hash[i] = NULL;
+  for (i=0; i<tb->size_; i++) {
+    LuaObject *p = tb->hash_[i];
+    tb->hash_[i] = NULL;
     while (p) {  /* for each node in the list */
       LuaObject *next = p->next;  /* save next */
       unsigned int h = lmod(dynamic_cast<TString*>(p)->getHash(), newsize);  /* new position */
-      p->next = tb->hash[h];  /* chain it */
-      tb->hash[h] = p;
+      p->next = tb->hash_[h];  /* chain it */
+      tb->hash_[h] = p;
       p->clearOld();  /* see MOVE OLD rule */
       p = next;
     }
   }
-  if (newsize < tb->size) {
+  if (newsize < tb->size_) {
     /* shrinking slice must be empty */
-    assert(tb->hash[newsize] == NULL && tb->hash[tb->size - 1] == NULL);
-    tb->hash.resize(newsize);
+    assert(tb->hash_[newsize] == NULL && tb->hash_[tb->size_ - 1] == NULL);
+    tb->hash_.resize(newsize);
   }
-  tb->size = newsize;
+  tb->size_ = newsize;
 }
 
 
 static TString *newlstr (const char *str, size_t l, unsigned int h) {
 
   stringtable *tb = thread_G->strings_;
-  if (tb->nuse >= cast(uint32_t, tb->size) && tb->size <= MAX_INT/2)
-    luaS_resize(tb->size*2);  /* too crowded */
+  if (tb->nuse_ >= cast(uint32_t, tb->size_) && tb->size_ <= MAX_INT/2)
+    luaS_resize(tb->size_ * 2);  /* too crowded */
   
   char* buf = (char*)luaM_alloc(l+1);
   if(buf == NULL) return NULL;
 
-  LuaObject*& list = tb->hash[lmod(h, tb->size)];
+  LuaObject*& list = tb->hash_[lmod(h, tb->size_)];
   TString* ts = new TString();
   if(ts == NULL) {
     luaM_free(buf);
@@ -73,7 +73,7 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
   ts->setBuf(buf);
   ts->setText(str, l);
 
-  tb->nuse++;
+  tb->nuse_++;
   return ts;
 }
 
@@ -89,7 +89,7 @@ TString *luaS_newlstr (const char *str, size_t l) {
 
   stringtable* strings = thread_G->strings_;
 
-  for (o = strings->hash[lmod(h, strings->size)]; o != NULL; o = o->next) {
+  for (o = strings->hash_[lmod(h, strings->size_)]; o != NULL; o = o->next) {
     TString *ts = dynamic_cast<TString*>(o);
     if (h == ts->getHash() &&
         ts->getLen() == l &&
@@ -128,13 +128,13 @@ Udata *luaS_newudata (size_t s, Table *e) {
 void luaS_initstrt() {
   global_State* g = thread_G;
   g->strings_ = new stringtable();
-  g->strings_->size = 0;
-  g->strings_->nuse = 0;
+  g->strings_->size_ = 0;
+  g->strings_->nuse_ = 0;
 }
 
 void luaS_freestrt () {
   global_State* g = thread_G;
-  g->strings_->hash.clear();
+  g->strings_->hash_.clear();
   delete g->strings_;
   g->strings_ = NULL;
 }

@@ -601,14 +601,14 @@ static int string_query (lua_State *L) {
   stringtable *tb = G(L)->strings_;
   int s = luaL_optint(L, 2, 0) - 1;
   if (s==-1) {
-    lua_pushinteger(L ,tb->nuse);
-    lua_pushinteger(L ,tb->size);
+    lua_pushinteger(L ,tb->nuse_);
+    lua_pushinteger(L ,tb->size_);
     return 2;
   }
-  else if (s < tb->size) {
+  else if (s < tb->size_) {
     LuaObject *ts;
     int n = 0;
-    for (ts = tb->hash[s]; ts; ts = ts->next) {
+    for (ts = tb->hash_[s]; ts; ts = ts->next) {
       L->top[0] = dynamic_cast<TString*>(ts);
       incr_top(L);
       n++;
