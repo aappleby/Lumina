@@ -53,6 +53,7 @@ public:
 
   void resize(int newsize);
 
+//private:
   LuaVector<LuaObject*> hash_;
   uint32_t nuse_;
   int size_;

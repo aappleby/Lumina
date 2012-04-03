@@ -705,7 +705,7 @@ static LuaObject **sweeplist (LuaObject **p, size_t count);
 
 static void sweepthread (lua_State *L1) {
   if (L1->stack.empty()) return;  /* stack not completely built yet */
-  sweepwholelist(&L1->openupval);  /* sweep open upvalues */
+  sweeplist(&L1->openupval, MAX_LUMEM);  /* sweep open upvalues */
   {
     THREAD_CHANGE(L1);
     CallInfo *ci = L1->ci_;
@@ -794,6 +794,18 @@ static LuaObject** sweeplist (LuaObject **p, size_t count) {
   } else {
     return sweepListNormal(p,count);
   }
+}
+
+void deletelist (LuaObject*& head) {
+  l_mem debt = thread_G->GCdebt;
+
+  while (head != NULL) {
+    LuaObject *curr = head;
+    head = curr->next;
+    freeobj(curr);
+  }
+
+  luaE_setdebt(thread_G, debt);  /* sweeping should not change debt */
 }
 
 /* }====================================================== */
@@ -969,18 +981,29 @@ static void callallpendingfinalizers (int propagateerrors) {
 
 
 void luaC_freeallobjects () {
-  global_State *g = thread_G;
-  int i;
-  separatetobefnz(1);  /* separate all objects with finalizers */
-  assert(g->finobj == NULL);
+  // separate all objects with finalizers
+  separatetobefnz(1);
+  assert(thread_G->finobj == NULL);
+
+  // finalize everything
   callallpendingfinalizers(0);
-  g->currentwhite = WHITEBITS; /* this "white" makes all objects look dead */
-  g->gckind = KGC_NORMAL;
-  sweepwholelist(&g->finobj);  /* finalizers can create objs. in 'finobj' */
-  sweepwholelist(&g->allgc);
-  for (i = 0; i < g->strings_->size_; i++)  /* free all string lists */
-    sweepwholelist(&g->strings_->hash_[i]);
-  assert(g->strings_->nuse_ == 0);
+
+  /*
+  // this "white" makes all objects look dead
+  thread_G->currentwhite = WHITEBITS; 
+  thread_G->gckind = KGC_NORMAL;
+  */
+  
+  // finalizers can create objs. in 'finobj'
+  deletelist(thread_G->finobj);
+  deletelist(thread_G->allgc);
+
+  // free all string lists
+  for (int i = 0; i < thread_G->strings_->size_; i++) {
+    deletelist(thread_G->strings_->hash_[i]);
+  }
+
+  assert(thread_G->strings_->nuse_ == 0);
 }
 
 
@@ -1041,7 +1064,7 @@ static l_mem singlestep () {
     }
     case GCSsweepstring: {
       if (g->sweepstrgc < g->strings_->size_) {
-        sweepwholelist(&g->strings_->hash_[g->sweepstrgc++]);
+        sweeplist(&g->strings_->hash_[g->sweepstrgc++], MAX_LUMEM);
         return GCSWEEPCOST;
       }
       else {  /* no more strings to sweep */
