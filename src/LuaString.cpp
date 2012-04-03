@@ -2,6 +2,21 @@
 
 #include "LuaGlobals.h"
 
+uint32_t hashString(const char* str, size_t len) {
+  uint32_t hash = (uint32_t)len;
+
+  size_t step = (len>>5)+1;  // if string is too long, don't hash all its chars
+  size_t l1;
+  for (l1 = len; l1 >= step; l1 -= step) {
+    hash = hash ^ ((hash<<5)+(hash>>2) + (unsigned char)str[l1-1]);
+  }
+
+  return hash;
+}
+
+//-----------------------------------------------------------------------------
+// TString
+
 TString::TString() : LuaObject(LUA_TSTRING) {
   buf_ = NULL;
   reserved_ = 0;
@@ -20,16 +35,12 @@ TString::~TString() {
 //-----------------------------------------------------------------------------
 // Stringtable
 
-uint32_t hashString(const char* str, size_t len) {
-  uint32_t hash = (uint32_t)len;
+stringtable::stringtable() {
+  size_ = 0;
+  nuse_ = 0;
+}
 
-  size_t step = (len>>5)+1;  // if string is too long, don't hash all its chars
-  size_t l1;
-  for (l1 = len; l1 >= step; l1 -= step) {
-    hash = hash ^ ((hash<<5)+(hash>>2) + (unsigned char)str[l1-1]);
-  }
-
-  return hash;
+stringtable::~stringtable() {
 }
 
 TString* stringtable::find(uint32_t hash, const char *str, size_t len) {

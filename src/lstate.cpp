@@ -133,7 +133,9 @@ static void close_state (lua_State *L) {
   global_State *g = G(L);
   luaF_close(L->stack.begin());  /* close all upvalues for this thread */
   luaC_freeallobjects();  /* collect all objects */
-  luaS_freestrt();
+
+  delete g->strings_;
+  g->strings_ = NULL;
 
   g->buff.buffer.clear();
 
@@ -207,7 +209,7 @@ lua_State *lua_newstate () {
     g->uvhead.unext = &g->uvhead;
     g->gcrunning = 0;  /* no GC while building state */
     g->lastmajormem = 0;
-    luaS_initstrt();
+    g->strings_ = new stringtable();
     g->panic = NULL;
     g->version = lua_version(NULL);
     g->gcstate = GCSpause;

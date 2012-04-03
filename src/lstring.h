@@ -22,8 +22,5 @@ TString* luaS_new      (const char *str);
 
 Udata*   luaS_newudata (size_t s, Table *e);
 
-void luaS_initstrt();
-void luaS_freestrt();
-
 
 #endif

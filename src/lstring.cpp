@@ -60,13 +60,13 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
   char* buf = (char*)luaM_alloc(l+1);
   if(buf == NULL) return NULL;
 
-  LuaObject*& list = tb->hash_[lmod(h, tb->size_)];
   TString* ts = new TString();
   if(ts == NULL) {
     luaM_free(buf);
     return NULL;
   }
 
+  LuaObject*& list = tb->hash_[lmod(h, tb->size_)];
   ts->linkGC(list);
   ts->setHash(h);
   ts->setReserved(0);
@@ -82,22 +82,6 @@ uint32_t hashString(const char* str, size_t len);
 TString *luaS_newlstr (const char *str, size_t l) {
 
   unsigned int h = hashString(str,l);
-
-  /*
-  stringtable* strings = thread_G->strings_;
-
-  LuaObject* o = thread_G->strings_->hash_[lmod(h, strings->size_)];
-  for (; o != NULL; o = o->next) {
-    TString *ts = dynamic_cast<TString*>(o);
-    if(ts->getHash() != h) continue;
-    if(ts->getLen() != l) continue;
-    if (memcmp(str, ts->c_str(), l * sizeof(char)) != 0) continue;
-
-    // Found a matching TString. Resurrect it and return it.
-    if (ts->isDead()) ts->changeWhite();
-    return ts;
-  }
-  */
 
   TString* ts = thread_G->strings_->find(h, str, l);
   if(ts) {
@@ -129,18 +113,4 @@ Udata *luaS_newudata (size_t s, Table *e) {
 
   u->linkGC(getGlobalGCHead());
   return u;
-}
-
-void luaS_initstrt() {
-  global_State* g = thread_G;
-  g->strings_ = new stringtable();
-  g->strings_->size_ = 0;
-  g->strings_->nuse_ = 0;
-}
-
-void luaS_freestrt () {
-  global_State* g = thread_G;
-  g->strings_->hash_.clear();
-  delete g->strings_;
-  g->strings_ = NULL;
 }
