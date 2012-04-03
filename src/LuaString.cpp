@@ -59,3 +59,28 @@ TString* stringtable::find(uint32_t hash, const char *str, size_t len) {
   }
   return NULL;
 }
+
+void stringtable::resize(int newsize) {
+  if (newsize > size_) {
+    hash_.resize(newsize);
+  }
+  /* rehash */
+  for (int i=0; i<size_; i++) {
+    LuaObject *p = hash_[i];
+    hash_[i] = NULL;
+    while (p) {  /* for each node in the list */
+      LuaObject *next = p->next;  /* save next */
+      unsigned int hash = dynamic_cast<TString*>(p)->getHash();
+      p->next = hash_[hash & (newsize-1)];  /* chain it */
+      hash_[hash & (newsize-1)] = p;
+      p->clearOld();  /* see MOVE OLD rule */
+      p = next;
+    }
+  }
+  if (newsize < size_) {
+    /* shrinking slice must be empty */
+    assert(hash_[newsize] == NULL && hash_[size_ - 1] == NULL);
+    hash_.resize(newsize);
+  }
+  size_ = newsize;
+}

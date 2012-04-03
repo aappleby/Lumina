@@ -51,6 +51,8 @@ public:
 
   TString* find(uint32_t hash, const char* str, size_t len);
 
+  void resize(int newsize);
+
   LuaVector<LuaObject*> hash_;
   uint32_t nuse_;
   int size_;

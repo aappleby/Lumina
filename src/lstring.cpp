@@ -21,33 +21,42 @@
 
 #define lmod(s,size) cast(int, (s) & ((size)-1))
 
+/*
 void luaS_resize (int newsize) {
   int i;
   stringtable *tb = thread_G->strings_;
-  /* cannot resize while GC is traversing strings */
+  // cannot resize while GC is traversing strings
   luaC_runtilstate(~(1 << GCSsweepstring));
   if (newsize > tb->size_) {
     tb->hash_.resize(newsize);
   }
-  /* rehash */
+  // rehash
   for (i=0; i<tb->size_; i++) {
     LuaObject *p = tb->hash_[i];
     tb->hash_[i] = NULL;
-    while (p) {  /* for each node in the list */
-      LuaObject *next = p->next;  /* save next */
-      unsigned int h = lmod(dynamic_cast<TString*>(p)->getHash(), newsize);  /* new position */
-      p->next = tb->hash_[h];  /* chain it */
+    while (p) {  // for each node in the list
+      LuaObject *next = p->next;  // save next
+      unsigned int h = lmod(dynamic_cast<TString*>(p)->getHash(), newsize);  // new position
+      p->next = tb->hash_[h];  // chain it
       tb->hash_[h] = p;
-      p->clearOld();  /* see MOVE OLD rule */
+      p->clearOld();  // see MOVE OLD rule
       p = next;
     }
   }
   if (newsize < tb->size_) {
-    /* shrinking slice must be empty */
+    // shrinking slice must be empty
     assert(tb->hash_[newsize] == NULL && tb->hash_[tb->size_ - 1] == NULL);
     tb->hash_.resize(newsize);
   }
   tb->size_ = newsize;
+}
+*/
+
+void luaS_resize(int newsize) {
+  // cannot resize while GC is traversing strings
+  luaC_runtilstate(~(1 << GCSsweepstring));
+
+  thread_G->strings_->resize(newsize);
 }
 
 
