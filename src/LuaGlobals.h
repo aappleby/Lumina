@@ -14,18 +14,21 @@ public:
   ~global_State();
 
   // actual number of total bytes allocated
-  size_t getTotalBytes() { return totalbytes_ + GCdebt_; }
+  size_t getTotalBytes() {
+    return totalbytes_;// + GCdebt_;
+  }
 
   // set GCdebt to a new value keeping the value (totalbytes + GCdebt)
   // invariant
   void setGCDebt(size_t debt) {
-    totalbytes_ -= (debt - GCdebt_);
+    //totalbytes_ -= (debt - GCdebt_);
     GCdebt_ = debt;
   }
 
   int getGCDebt() { return GCdebt_; }
 
   void incGCDebt(int debt) { 
+    totalbytes_ += debt;
     GCdebt_ += debt;
   }
 
