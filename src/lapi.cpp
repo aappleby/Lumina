@@ -421,18 +421,6 @@ lua_Number lua_tonumberx (lua_State *L, int idx, int *isnum) {
     if(isnum) *isnum = 0;
     return 0;
   }
-  /*
-  TValue n;
-  const TValue *o = index2addr(L, idx);
-  if (tonumber(o, &n)) {
-    if (isnum) *isnum = 1;
-    return o->getNumber();
-  }
-  else {
-    if (isnum) *isnum = 0;
-    return 0;
-  }
-  */
 }
 
 

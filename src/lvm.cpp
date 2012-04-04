@@ -920,12 +920,9 @@ void luaV_execute (lua_State *L) {
         const TValue *init = ra;
         const TValue *plimit = ra+1;
         const TValue *pstep = ra+2;
-        if (!tonumber(init, ra))
-          luaG_runerror(LUA_QL("for") " initial value must be a number");
-        else if (!tonumber(plimit, ra+1))
-          luaG_runerror(LUA_QL("for") " limit must be a number");
-        else if (!tonumber(pstep, ra+2))
-          luaG_runerror(LUA_QL("for") " step must be a number");
+        if (!tonumber(init, ra))     luaG_runerror(LUA_QL("for") " initial value must be a number");
+        if (!tonumber(plimit, ra+1)) luaG_runerror(LUA_QL("for") " limit must be a number");
+        if (!tonumber(pstep, ra+2))  luaG_runerror(LUA_QL("for") " step must be a number");
         ra[0] = ra->getNumber() - pstep->getNumber();
         ci->savedpc += GETARG_sBx(i);
       )
