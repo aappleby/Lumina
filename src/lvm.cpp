@@ -56,7 +56,7 @@ int luaV_tostring (lua_State *L, StkId obj) {
     char s[LUAI_MAXNUMBER2STR];
     lua_Number n = obj->getNumber();
     int l = lua_number2str(s, n);
-    obj[0] = luaS_newlstr(s, l);
+    *obj = luaS_newlstr(s, l);
     return 1;
   }
 }
@@ -370,6 +370,9 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
   }
 }
 
+// TODO(aappleby): Gaaaaah the logic in this is convoluted.
+// Having code with side effects (tostring) in conditionals doesn't help.
+
 void luaV_concat (lua_State *L, int total) {
   THREAD_CHECK(L);
   assert(total >= 2);
@@ -380,8 +383,11 @@ void luaV_concat (lua_State *L, int total) {
       if (!call_binTM(L, top-2, top-1, top-2, TM_CONCAT))
         luaG_concaterror(top-2, top-1);
     }
-    else if (top[-1].getString()->getLen() == 0)  /* second operand is empty? */
-      (void)tostring(L, top - 2);  /* result is first operand */
+    else if (top[-1].getString()->getLen() == 0) { /* second operand is empty? */
+      if(!top[-2].isString()) {
+        luaV_tostring(L,top-2);
+      }
+    }
     else if (top[-2].isString() && top[-2].getString()->getLen() == 0) {
       top[-2] = top[-1].getString();
     }

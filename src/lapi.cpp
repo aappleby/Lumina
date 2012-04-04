@@ -470,17 +470,40 @@ int lua_toboolean (lua_State *L, int idx) {
 const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
-  if (!o->isString()) {
-    if (!luaV_tostring(L, o)) {  /* conversion failed? */
-      if (len != NULL) *len = 0;
-      return NULL;
-    }
-    luaC_checkGC();
-    o = index2addr(L, idx);  /* previous call may reallocate the stack */
+
+  if(o->isString()) {
+    if (len != NULL) *len = o->getString()->getLen();
+    return o->getString()->c_str();
   }
+
+  if (!o->isNumber()) {
+    if (len != NULL) *len = 0;
+    return NULL;
+  }
+
+  char s[LUAI_MAXNUMBER2STR];
+  lua_Number n = o->getNumber();
+  int l = lua_number2str(s, n);
+  *o = luaS_newlstr(s, l);
+
+  luaC_checkGC();
+
+  o = index2addr(L, idx);  /* luaC_checkGC may reallocate the stack */
   if (len != NULL) *len = o->getString()->getLen();
   return o->getString()->c_str();
 }
+
+/*
+TValue lua_tolstring2(lua_State* L, int index) {
+  THREAD_CHECK(L);
+  TValue v = index2addr3(L, index);
+  if(v.isString()) return v;
+
+  TValue v2 = luaV_tostring2(L, v);
+  luaC_checkGC();
+  return v2;
+}
+*/
 
 
 size_t lua_rawlen (lua_State *L, int idx) {

@@ -29,6 +29,12 @@
 
 TValue *index2addr (lua_State *L, int idx);
 
+const char* luaL_typename(lua_State* L, int index) {
+  THREAD_CHECK(L);
+  TValue v = index2addr3(L, index);
+  return v.typeName();
+}
+
 /*
 ** {======================================================
 ** Traceback
@@ -191,10 +197,10 @@ int luaL_argerror (lua_State *L, int narg, const char *extramsg) {
 }
 
 
-static int typeerror (lua_State *L, int narg, const char *tname) {
+static int typeerror (lua_State *L, int narg, const char* type1) {
   THREAD_CHECK(L);
-  const char *msg = lua_pushfstring(L, "%s expected, got %s",
-                                    tname, luaL_typename(L, narg));
+  const char* type2 = luaL_typename(L, narg);
+  const char *msg = lua_pushfstring(L, "%s expected, got %s", type1, type2);
   return luaL_argerror(L, narg, msg);
 }
 
@@ -327,8 +333,10 @@ void *luaL_checkudata (lua_State *L, int ud, const char *tname) {
 ** =======================================================
 */
 
-int luaL_checkoption (lua_State *L, int narg, const char *def,
-                                 const char *const lst[]) {
+int luaL_checkoption (lua_State *L,
+                      int narg,
+                      const char *def,
+                      const char *const lst[]) {
   THREAD_CHECK(L);
   const char *name = (def) ? luaL_optstring(L, narg, def) :
                              luaL_checkstring(L, narg);
@@ -395,13 +403,15 @@ const char *luaL_checklstring (lua_State *L, int narg, size_t *len) {
 }
 
 
-const char *luaL_optlstring (lua_State *L, int narg,
-                                        const char *def, size_t *len) {
+const char *luaL_optlstring (lua_State *L,
+                             int narg,
+                             const char * default_string,
+                             size_t *len) {
   THREAD_CHECK(L);
   if (lua_isnoneornil(L, narg)) {
     if (len)
-      *len = (def ? strlen(def) : 0);
-    return def;
+      *len = (default_string ? strlen(default_string) : 0);
+    return default_string;
   }
   else return luaL_checklstring(L, narg, len);
 }

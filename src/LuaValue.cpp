@@ -130,5 +130,5 @@ uint32_t TValue::hashValue() const {
 
 extern char** luaT_typenames;
 const char * TValue::typeName() const {
-  return luaT_typenames[type_+1];
+  return luaT_typenames[type_];
 }

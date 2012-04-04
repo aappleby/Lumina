@@ -15,13 +15,10 @@ public:
 
   // actual number of total bytes allocated
   size_t getTotalBytes() {
-    return totalbytes_;// + GCdebt_;
+    return totalbytes_;
   }
 
-  // set GCdebt to a new value keeping the value (totalbytes + GCdebt)
-  // invariant
   void setGCDebt(size_t debt) {
-    //totalbytes_ -= (debt - GCdebt_);
     GCdebt_ = debt;
   }
 
