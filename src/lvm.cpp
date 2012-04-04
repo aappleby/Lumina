@@ -36,29 +36,38 @@
 #define MAXTAGLOOP	100
 
 
+// Converts value to number in-place, returning a pointer to the value if
+// successful.
 const TValue *luaV_tonumber (const TValue *obj, TValue *n) {
-  lua_Number num;
+  
   if (obj->isNumber()) return obj;
-  if (obj->isString() && luaO_str2d(obj->getString()->c_str(), obj->getString()->getLen(), &num)) {
-    n[0] = num;
-    return n;
+  
+  if (obj->isString()) {
+    TString* s = obj->getString();
+    lua_Number num;
+    if(luaO_str2d(s->c_str(), s->getLen(), &num)) {
+      *n = num;
+      return n;
+    }
   }
-  else
-    return NULL;
+
+  return NULL;
 }
 
+// Converts value to string in-place, returning 1 if successful.
+int luaV_tostring (TValue* v) {
 
-int luaV_tostring (lua_State *L, StkId obj) {
-  THREAD_CHECK(L);
-  if (!obj->isNumber())
-    return 0;
-  else {
+  if(v->isString()) return 1;
+
+  if (v->isNumber()) {
+    lua_Number n = v->getNumber();
     char s[LUAI_MAXNUMBER2STR];
-    lua_Number n = obj->getNumber();
     int l = lua_number2str(s, n);
-    *obj = luaS_newlstr(s, l);
+    *v = luaS_newlstr(s, l);
     return 1;
   }
+
+  return 0;
 }
 
 
@@ -379,14 +388,12 @@ void luaV_concat (lua_State *L, int total) {
   do {
     StkId top = L->top;
     int n = 2;  /* number of elements handled in this pass (at least 2) */
-    if (!(top[-2].isString() || top[-2].isNumber()) || !tostring(L, top-1)) {
+    if (!(top[-2].isString() || top[-2].isNumber()) || !luaV_tostring(top-1)) {
       if (!call_binTM(L, top-2, top-1, top-2, TM_CONCAT))
         luaG_concaterror(top-2, top-1);
     }
     else if (top[-1].getString()->getLen() == 0) { /* second operand is empty? */
-      if(!top[-2].isString()) {
-        luaV_tostring(L,top-2);
-      }
+      luaV_tostring(top-2);
     }
     else if (top[-2].isString() && top[-2].getString()->getLen() == 0) {
       top[-2] = top[-1].getString();
@@ -397,7 +404,7 @@ void luaV_concat (lua_State *L, int total) {
       char *buffer;
       int i;
       /* collect total length */
-      for (i = 1; i < total && tostring(L, top-i-1); i++) {
+      for (i = 1; i < total && luaV_tostring(top-i-1); i++) {
         size_t l = top[-i-1].getString()->getLen();
         if (l >= (MAX_SIZET/sizeof(char)) - tl)
           luaG_runerror("string length overflow");

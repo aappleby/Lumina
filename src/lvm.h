@@ -13,8 +13,6 @@
 #include "ltm.h"
 
 
-#define tostring(L,o) ((o)->isString() || (luaV_tostring(L, o)))
-
 #define tonumber(o,n)	(o->isNumber() || (((o) = luaV_tonumber(o,n)) != NULL))
 
 /* not to called directly */
@@ -25,7 +23,7 @@ int luaV_equalobj2_ (const TValue *t1, const TValue *t2);
 int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r);
 int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r);
 const TValue *luaV_tonumber (const TValue *obj, TValue *n);
-int luaV_tostring (lua_State *L, StkId obj);
+int luaV_tostring (TValue* v);
 void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val);
 void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val);
 void luaV_finishOp (lua_State *L);
