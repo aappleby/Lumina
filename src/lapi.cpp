@@ -487,19 +487,6 @@ const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
   return o->getString()->c_str();
 }
 
-/*
-TValue lua_tolstring2(lua_State* L, int index) {
-  THREAD_CHECK(L);
-  TValue v = index2addr3(L, index);
-  if(v.isString()) return v;
-
-  TValue v2 = luaV_tostring2(L, v);
-  luaC_checkGC();
-  return v2;
-}
-*/
-
-
 size_t lua_rawlen (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);

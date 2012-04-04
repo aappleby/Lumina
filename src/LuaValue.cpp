@@ -6,6 +6,7 @@
 
 uint32_t hash64 (uint32_t a, uint32_t b);
 int luaO_str2d (const char *s, size_t len, lua_Number *result);
+TString *luaS_newlstr (const char *str, size_t l);
 
 TValue TValue::nil;
 TValue TValue::none(LUA_TNONE,0);
@@ -111,10 +112,18 @@ TValue TValue::convertToNumber() const {
   return None();
 }
 
-/*
 TValue TValue::convertToString() const {
+  if(isString()) return *this;
+
+  if (isNumber()) {
+    lua_Number n = getNumber();
+    char s[LUAI_MAXNUMBER2STR];
+    int l = lua_number2str(s, n);
+    return TValue(luaS_newlstr(s, l));
+  }
+
+  return None();
 }
-*/
 
 
 void TValue::sanityCheck() const {

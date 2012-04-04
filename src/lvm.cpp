@@ -36,20 +36,6 @@
 #define MAXTAGLOOP	100
 
 
-TValue luaV_tonumber2(const TValue v) {
-  if(v.isNumber()) return v;
-  
-  if (v.isString()) {
-    TString* s = v.getString();
-    double num;
-    if(luaO_str2d(s->c_str(), s->getLen(), &num)) {
-      return TValue(num);
-    }
-  }
-
-  return TValue::None();
-}
-
 // Converts value to string in-place, returning 1 if successful.
 int luaV_tostring (TValue* v) {
 
@@ -400,7 +386,11 @@ void luaV_concat (lua_State *L, int total) {
       char *buffer;
       int i;
       /* collect total length */
-      for (i = 1; i < total && luaV_tostring(top-i-1); i++) {
+      for (i = 1; i < total; i++) {
+        TValue temp = top[-i-1].convertToString();
+        if(temp.isNone()) break;
+        top[-i-1] = temp;
+
         size_t l = top[-i-1].getString()->getLen();
         if (l >= (MAX_SIZET/sizeof(char)) - tl)
           luaG_runerror("string length overflow");
