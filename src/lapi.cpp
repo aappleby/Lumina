@@ -344,7 +344,7 @@ int lua_iscfunction (lua_State *L, int idx) {
 int lua_isNumberable (lua_State *L, int idx) {
   THREAD_CHECK(L);
   const TValue *v1 = index2addr(L, idx);
-  TValue v2 = luaV_tonumber2(*v1);
+  TValue v2 = v1->convertToNumber();
   return v2.isNone() ? 0 : 1;
 }
 
@@ -426,17 +426,14 @@ lua_Number lua_tonumberx (lua_State *L, int idx, int *isnum) {
 
 lua_Integer lua_tointegerx (lua_State *L, int idx, int *isnum) {
   THREAD_CHECK(L);
-  TValue n;
-  const TValue *o = index2addr(L, idx);
-  if (tonumber(o, &n)) {
-    lua_Integer res;
-    lua_Number num = o->getNumber();
-    lua_number2integer(res, num);
+  TValue v1 = index2addr3(L, idx);
+  TValue v2 = v1.convertToNumber();
+
+  if(v2.isNumber()) {
     if (isnum) *isnum = 1;
-    return res;
-  }
-  else {
-    if (isnum) *isnum = 0;
+    return (lua_Integer)v2.getNumber();
+  } else {
+    if(isnum) *isnum = 0;
     return 0;
   }
 }
@@ -444,17 +441,14 @@ lua_Integer lua_tointegerx (lua_State *L, int idx, int *isnum) {
 
 lua_Unsigned lua_tounsignedx (lua_State *L, int idx, int *isnum) {
   THREAD_CHECK(L);
-  TValue n;
-  const TValue *o = index2addr(L, idx);
-  if (tonumber(o, &n)) {
-    lua_Unsigned res;
-    lua_Number num = o->getNumber();
-    lua_number2unsigned(res, num);
+  TValue v1 = index2addr3(L, idx);
+  TValue v2 = v1.convertToNumber();
+
+  if(v2.isNumber()) {
     if (isnum) *isnum = 1;
-    return res;
-  }
-  else {
-    if (isnum) *isnum = 0;
+    return (lua_Unsigned)v2.getNumber();
+  } else {
+    if(isnum) *isnum = 0;
     return 0;
   }
 }

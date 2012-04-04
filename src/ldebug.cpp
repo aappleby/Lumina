@@ -535,14 +535,6 @@ l_noret luaG_concaterror (StkId p1, StkId p2) {
 }
 
 
-l_noret luaG_aritherror (const TValue *p1, const TValue *p2) {
-  TValue temp;
-  if (luaV_tonumber(p1, &temp) == NULL)
-    p2 = p1;  /* first operand is wrong */
-  luaG_typeerror(p2, "perform arithmetic on");
-}
-
-
 l_noret luaG_ordererror (const TValue *p1, const TValue *p2) {
   const char *t1 = objtypename(p1);
   const char *t2 = objtypename(p2);

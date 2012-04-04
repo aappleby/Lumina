@@ -36,24 +36,6 @@
 #define MAXTAGLOOP	100
 
 
-// Converts value to number in-place, returning a pointer to the value if
-// successful.
-const TValue *luaV_tonumber (const TValue *obj, TValue *n) {
-  
-  if (obj->isNumber()) return obj;
-  
-  if (obj->isString()) {
-    TString* s = obj->getString();
-    lua_Number num;
-    if(luaO_str2d(s->c_str(), s->getLen(), &num)) {
-      *n = num;
-      return n;
-    }
-  }
-
-  return NULL;
-}
-
 TValue luaV_tonumber2(const TValue v) {
   if(v.isNumber()) return v;
   
@@ -470,20 +452,20 @@ void luaV_arith (lua_State *L, StkId ra, const TValue *rb,
                  const TValue *rc, TMS op) {
   THREAD_CHECK(L);
 
-  TValue nb = luaV_tonumber2(*rb);
+  TValue nb = rb->convertToNumber();
 
   if(nb.isNone()) {
     if (!call_binTM(L, rb, rc, ra, op)) {
-      luaG_aritherror(rb, rc);
+      luaG_typeerror(rb, "perform arithmetic on");
     }
     return;
   }
 
-  TValue nc = luaV_tonumber2(*rc);
+  TValue nc = rc->convertToNumber();
 
   if(nc.isNone()) {
     if (!call_binTM(L, rb, rc, ra, op)) {
-      luaG_aritherror(rb, rc);
+      luaG_typeerror(rc, "perform arithmetic on");
     }
     return;
   }
@@ -917,13 +899,18 @@ void luaV_execute (lua_State *L) {
         }
       )
       vmcase(OP_FORPREP,
-        const TValue *init = ra;
-        const TValue *plimit = ra+1;
-        const TValue *pstep = ra+2;
-        if (!tonumber(init, ra))     luaG_runerror(LUA_QL("for") " initial value must be a number");
-        if (!tonumber(plimit, ra+1)) luaG_runerror(LUA_QL("for") " limit must be a number");
-        if (!tonumber(pstep, ra+2))  luaG_runerror(LUA_QL("for") " step must be a number");
-        ra[0] = ra->getNumber() - pstep->getNumber();
+        TValue init = ra[0].convertToNumber();
+        TValue plimit = ra[1].convertToNumber();
+        TValue pstep = ra[2].convertToNumber();
+
+        if (init.isNone())   luaG_runerror(LUA_QL("for") " initial value must be a number");
+        if (plimit.isNone()) luaG_runerror(LUA_QL("for") " limit must be a number");
+        if (pstep.isNone())  luaG_runerror(LUA_QL("for") " step must be a number");
+
+        ra[0] = init.getNumber() - pstep.getNumber();
+        ra[1] = plimit;
+        ra[2] = pstep;
+
         ci->savedpc += GETARG_sBx(i);
       )
       vmcasenb(OP_TFORCALL,
