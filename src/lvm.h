@@ -22,8 +22,12 @@ int luaV_equalobj2_ (const TValue *t1, const TValue *t2);
 
 int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r);
 int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r);
+
 const TValue *luaV_tonumber (const TValue *obj, TValue *n);
+TValue luaV_tonumber2(const TValue v);
+
 int luaV_tostring (TValue* v);
+
 void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val);
 void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val);
 void luaV_finishOp (lua_State *L);

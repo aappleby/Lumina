@@ -419,11 +419,19 @@ const char *luaL_optlstring (lua_State *L,
 
 lua_Number luaL_checknumber (lua_State *L, int narg) {
   THREAD_CHECK(L);
+  /*
   int isnum;
   lua_Number d = lua_tonumberx(L, narg, &isnum);
   if (!isnum)
     tag_error(L, narg, LUA_TNUMBER);
   return d;
+  */
+  TValue* v1 = index2addr(L, narg);
+  TValue v2 = v1->convertToNumber();
+  if(v2.isNone()) {
+    tag_error(L, narg, LUA_TNUMBER);
+  }
+  return v2.getNumber();
 }
 
 

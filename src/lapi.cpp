@@ -340,19 +340,19 @@ int lua_iscfunction (lua_State *L, int idx) {
   return (o->isLightFunction() || o->isCClosure());
 }
 
-
-int lua_isnumber (lua_State *L, int idx) {
+// To determine if a string can be converted to a number, we convert it to a number. :)
+int lua_isNumberable (lua_State *L, int idx) {
   THREAD_CHECK(L);
-  TValue n;
-  const TValue *o = index2addr(L, idx);
-  return tonumber(o, &n);
+  const TValue *v1 = index2addr(L, idx);
+  TValue v2 = luaV_tonumber2(*v1);
+  return v2.isNone() ? 0 : 1;
 }
 
 
-int lua_isstring (lua_State *L, int idx) {
+int lua_isStringable (lua_State *L, int idx) {
   THREAD_CHECK(L);
-  int t = lua_type(L, idx);
-  return (t == LUA_TSTRING || t == LUA_TNUMBER);
+  TValue* v = index2addr(L,idx);
+  return v->isString() || v->isNumber();
 }
 
 

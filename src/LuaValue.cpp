@@ -2,8 +2,10 @@
 
 #include "LuaClosure.h"
 #include "LuaObject.h"
+#include "LuaString.h"
 
 uint32_t hash64 (uint32_t a, uint32_t b);
+int luaO_str2d (const char *s, size_t len, lua_Number *result);
 
 TValue TValue::nil;
 TValue TValue::none(LUA_TNONE,0);
@@ -93,6 +95,27 @@ void TValue::operator = (LuaObject* o) {
   object_ = o;
   sanityCheck();
 }
+
+TValue TValue::convertToNumber() const {
+  if(isNumber()) return *this;
+
+  if(isString()) {
+    TString* s = getString();
+
+    double result;
+    if(luaO_str2d(s->c_str(), s->getLen(), &result)) {
+      return TValue(result);
+    }
+  }
+
+  return None();
+}
+
+/*
+TValue TValue::convertToString() const {
+}
+*/
+
 
 void TValue::sanityCheck() const {
   if(isCollectable()) {

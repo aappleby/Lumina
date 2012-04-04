@@ -491,17 +491,6 @@ void luaV_arith (lua_State *L, StkId ra, const TValue *rb,
   int arithop = op - TM_ADD + LUA_OPADD;
   lua_Number res = luaO_arith(arithop, nb.getNumber(), nc.getNumber());
   *ra = res;
-
-  /*
-  TValue tempb, tempc;
-  const TValue *b, *c;
-  if ((b = luaV_tonumber(rb, &tempb)) != NULL && (c = luaV_tonumber(rc, &tempc)) != NULL) {
-    lua_Number res = luaO_arith(op - TM_ADD + LUA_OPADD, b->getNumber(), c->getNumber());
-    ra[0] = res;
-  }
-  else if (!call_binTM(L, rb, rc, ra, op))
-    luaG_aritherror(rb, rc);
-  */
 }
 
 

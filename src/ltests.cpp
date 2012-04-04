@@ -464,7 +464,7 @@ static int mem_query (lua_State *L) {
     lua_pushinteger(L, l_memcontrol.maxmem);
     return 3;
   }
-  else if (lua_isnumber(L, 1)) {
+  else if (lua_isNumberable(L, 1)) {
     l_memcontrol.memlimit = luaL_checkint(L, 1);
     return 0;
   }
@@ -954,11 +954,11 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("isnumber") {
       { GLOBAL_CHANGE(L); tempindex = getindex; }
-      lua_pushboolean(L1, lua_isnumber(L1, tempindex));
+      lua_pushboolean(L1, lua_isNumberable(L1, tempindex));
     }
     else if EQ("isstring") {
       { GLOBAL_CHANGE(L); tempindex = getindex; }
-      lua_pushboolean(L1, lua_isstring(L1, tempindex));
+      lua_pushboolean(L1, lua_isStringable(L1, tempindex));
     }
     else if EQ("istable") {
       { GLOBAL_CHANGE(L); tempindex = getindex; }

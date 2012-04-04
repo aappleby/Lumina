@@ -110,6 +110,12 @@ public:
   void setDeadKey() { type_ = LUA_TDEADKEY; }
 
   //----------
+  // These conversion operations return None if they fail.
+
+  TValue convertToNumber() const;
+  TValue convertToString() const;
+
+  //----------
 
   bool isWhite() const;
 

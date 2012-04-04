@@ -88,8 +88,9 @@ void  (lua_xmove) (lua_State *from, lua_State *to, int n);
 ** access functions (stack -> C)
 */
 
-int             (lua_isnumber) (lua_State *L, int idx);
-int             (lua_isstring) (lua_State *L, int idx);
+int             (lua_isNumberable) (lua_State *L, int idx);
+int             (lua_isStringable) (lua_State *L, int idx);
+
 int             (lua_iscfunction) (lua_State *L, int idx);
 int             (lua_isuserdata) (lua_State *L, int idx);
 int             (lua_type) (lua_State *L, int idx);
