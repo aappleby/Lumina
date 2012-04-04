@@ -411,6 +411,17 @@ int lua_compare (lua_State *L, int index1, int index2, int op) {
 
 lua_Number lua_tonumberx (lua_State *L, int idx, int *isnum) {
   THREAD_CHECK(L);
+  TValue v1 = index2addr3(L, idx);
+  TValue v2 = v1.convertToNumber();
+
+  if(v2.isNumber()) {
+    if (isnum) *isnum = 1;
+    return v2.getNumber();
+  } else {
+    if(isnum) *isnum = 0;
+    return 0;
+  }
+  /*
   TValue n;
   const TValue *o = index2addr(L, idx);
   if (tonumber(o, &n)) {
@@ -421,6 +432,7 @@ lua_Number lua_tonumberx (lua_State *L, int idx, int *isnum) {
     if (isnum) *isnum = 0;
     return 0;
   }
+  */
 }
 
 
