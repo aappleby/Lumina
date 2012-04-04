@@ -8,6 +8,14 @@ uint32_t hash64 (uint32_t a, uint32_t b);
 TValue TValue::nil;
 TValue TValue::none(LUA_TNONE,0);
 
+TValue TValue::None() {
+  return TValue(LUA_TNONE,0);
+}
+
+TValue TValue::Nil() {
+  return TValue(LUA_TNIL,0);
+}
+
 TValue::TValue(LuaObject* o) {
   bytes_ = 0;
   type_ = o->type();

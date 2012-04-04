@@ -16,6 +16,9 @@ public:
   static TValue nil;
   static TValue none;
 
+  static TValue Nil();
+  static TValue None();
+
   static TValue LightUserdata(void* p);
   static TValue LightFunction(lua_CFunction f);
   static TValue LClosure(Closure* c);

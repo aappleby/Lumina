@@ -54,6 +54,20 @@ const TValue *luaV_tonumber (const TValue *obj, TValue *n) {
   return NULL;
 }
 
+TValue luaV_tonumber2(const TValue v) {
+  if(v.isNumber()) return v;
+  
+  if (v.isString()) {
+    TString* s = v.getString();
+    double num;
+    if(luaO_str2d(s->c_str(), s->getLen(), &num)) {
+      return TValue(num);
+    }
+  }
+
+  return TValue::None();
+}
+
 // Converts value to string in-place, returning 1 if successful.
 int luaV_tostring (TValue* v) {
 
@@ -455,15 +469,39 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
 void luaV_arith (lua_State *L, StkId ra, const TValue *rb,
                  const TValue *rc, TMS op) {
   THREAD_CHECK(L);
+
+  TValue nb = luaV_tonumber2(*rb);
+
+  if(nb.isNone()) {
+    if (!call_binTM(L, rb, rc, ra, op)) {
+      luaG_aritherror(rb, rc);
+    }
+    return;
+  }
+
+  TValue nc = luaV_tonumber2(*rc);
+
+  if(nc.isNone()) {
+    if (!call_binTM(L, rb, rc, ra, op)) {
+      luaG_aritherror(rb, rc);
+    }
+    return;
+  }
+
+  int arithop = op - TM_ADD + LUA_OPADD;
+  lua_Number res = luaO_arith(arithop, nb.getNumber(), nc.getNumber());
+  *ra = res;
+
+  /*
   TValue tempb, tempc;
   const TValue *b, *c;
-  if ((b = luaV_tonumber(rb, &tempb)) != NULL &&
-      (c = luaV_tonumber(rc, &tempc)) != NULL) {
+  if ((b = luaV_tonumber(rb, &tempb)) != NULL && (c = luaV_tonumber(rc, &tempc)) != NULL) {
     lua_Number res = luaO_arith(op - TM_ADD + LUA_OPADD, b->getNumber(), c->getNumber());
     ra[0] = res;
   }
   else if (!call_binTM(L, rb, rc, ra, op))
     luaG_aritherror(rb, rc);
+  */
 }
 
 
