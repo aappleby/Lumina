@@ -10,17 +10,23 @@
 class global_State : public LuaBase {
 public:
 
-  global_State() {}
-  ~global_State() {}
+  global_State();
+  ~global_State();
 
   // actual number of total bytes allocated
-  size_t getTotalBytes() { return totalbytes + GCdebt; }
+  size_t getTotalBytes() { return totalbytes_ + GCdebt_; }
 
   // set GCdebt to a new value keeping the value (totalbytes + GCdebt)
   // invariant
   void setGCDebt(size_t debt) {
-    totalbytes -= (debt - GCdebt);
-    GCdebt = debt;
+    totalbytes_ -= (debt - GCdebt_);
+    GCdebt_ = debt;
+  }
+
+  int getGCDebt() { return GCdebt_; }
+
+  void incGCDebt(int debt) { 
+    GCdebt_ += debt;
   }
 
   stringtable* strings_;  /* hash table for strings */
@@ -28,8 +34,6 @@ public:
   TValue l_registry;
   Table* getRegistry() { return l_registry.getTable(); }
 
-  size_t totalbytes;  /* number of bytes currently allocated - GCdebt */
-  l_mem GCdebt;  /* bytes allocated not yet compensated by the collector */
   size_t lastmajormem;  /* memory in use after last major collection */
   uint8_t currentwhite;
   uint8_t gcstate;  /* state of garbage collector */
@@ -62,6 +66,11 @@ public:
   TString *memerrmsg;  /* memory-error message */
   TString *tagmethod_names_[TM_N];  /* array with tag-method names */
   Table *base_metatables_[LUA_NUMTAGS];  /* metatables for basic types */
+
+private:
+
+  size_t totalbytes_;  /* number of bytes currently allocated - GCdebt */
+  l_mem GCdebt_;  /* bytes allocated not yet compensated by the collector */
 };
 
 

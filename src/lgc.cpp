@@ -739,7 +739,7 @@ static void sweepthread (lua_State *L1) {
 
 static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
   global_State *g = thread_G;
-  l_mem debt = g->GCdebt;
+  l_mem debt = g->getGCDebt();
 
   while (*p != NULL && count-- > 0) {
     LuaObject *curr = *p;
@@ -757,13 +757,13 @@ static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
       p = &curr->next;  /* go to next element */
     }
   }
-  luaE_setdebt(g, debt);  /* sweeping should not change debt */
+  g->setGCDebt(debt);  /* sweeping should not change debt */
   return p;
 }
 
 static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
   global_State *g = thread_G;
-  l_mem debt = g->GCdebt;  /* current debt */
+  l_mem debt = g->getGCDebt();  /* current debt */
   while (*p != NULL && count-- > 0) {
     LuaObject *curr = *p;
     if (curr->isDead()) {  /* is 'curr' dead? */
@@ -784,7 +784,7 @@ static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
       p = &curr->next;  /* go to next element */
     }
   }
-  luaE_setdebt(g, debt);  /* sweeping should not change debt */
+  g->setGCDebt(debt);  /* sweeping should not change debt */
   return p;
 }
 
@@ -797,7 +797,7 @@ static LuaObject** sweeplist (LuaObject **p, size_t count) {
 }
 
 void deletelist (LuaObject*& head) {
-  l_mem debt = thread_G->GCdebt;
+  l_mem debt = thread_G->getGCDebt();
 
   while (head != NULL) {
     LuaObject *curr = head;
@@ -805,7 +805,7 @@ void deletelist (LuaObject*& head) {
     freeobj(curr);
   }
 
-  luaE_setdebt(thread_G, debt);  /* sweeping should not change debt */
+  thread_G->setGCDebt(debt);  /* sweeping should not change debt */
 }
 
 /* }====================================================== */
@@ -1120,7 +1120,7 @@ static void generationalcollection () {
     if (g->getTotalBytes() > g->lastmajormem/100 * g->gcmajorinc)
       g->lastmajormem = 0;  /* signal for a major collection */
   }
-  luaE_setdebt(g, stddebt(g));
+  g->setGCDebt(stddebt(g));
 }
 
 
@@ -1131,9 +1131,9 @@ static void step () {
     lim -= singlestep();
   } while (lim > 0 && g->gcstate != GCSpause);
   if (g->gcstate != GCSpause)
-    luaE_setdebt(g, g->GCdebt - GCSTEPSIZE);
+    g->setGCDebt(g->getGCDebt() - GCSTEPSIZE);
   else
-    luaE_setdebt(g, stddebt(g));
+    g->setGCDebt(stddebt(g));
 }
 
 
@@ -1152,7 +1152,7 @@ void luaC_forcestep () {
 
 
 void luaC_checkGC() {
-  if(thread_G->GCdebt > 0) {
+  if(thread_G->getGCDebt() > 0) {
     luaC_step();
   }
 }
@@ -1193,7 +1193,7 @@ void luaC_fullgc (int isemergency) {
     luaC_runtilstate(bitmask(GCSpropagate));
   }
   g->gckind = origkind;
-  luaE_setdebt(g, stddebt(g));
+  g->setGCDebt(stddebt(g));
   if (!isemergency)   /* do not run finalizers during emergency GC */
     callallpendingfinalizers(1);
 }

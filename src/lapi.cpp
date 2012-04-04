@@ -1087,7 +1087,7 @@ int lua_gc (lua_State *L, int what, int data) {
       break;
     }
     case LUA_GCRESTART: {
-      luaE_setdebt(g, 0);
+      g->setGCDebt(0);
       g->gcrunning = 1;
       break;
     }

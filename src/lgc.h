@@ -78,7 +78,7 @@
 #define keepinvariant(g)  (isgenerational(g) || (g->gcstate <= GCSatomic))
 
 
-#define luaC_condGC(L,c) {if (thread_G->GCdebt > 0) {c;};}
+#define luaC_condGC(L,c) {if (thread_G->getGCDebt() > 0) {c;};}
 
 void luaC_step();
 

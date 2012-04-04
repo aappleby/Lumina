@@ -40,15 +40,6 @@
 
 #define MEMERRMSG       "not enough memory"
 
-/*
-** set GCdebt to a new value keeping the value (totalbytes + GCdebt)
-** invariant
-*/
-void luaE_setdebt (global_State *g, l_mem debt) {
-  g->totalbytes -= (debt - g->GCdebt);
-  g->GCdebt = debt;
-}
-
 
 CallInfo *luaE_extendCI (lua_State *L) {
   THREAD_CHECK(L);
@@ -219,8 +210,6 @@ lua_State *lua_newstate () {
     g->grayhead_ = NULL;
     g->grayagain = NULL;
     g->weak = g->ephemeron = g->allweak = NULL;
-    g->totalbytes = sizeof(lua_State) + sizeof(global_State);
-    g->GCdebt = 0;
     g->gcpause = LUAI_GCPAUSE;
     g->gcmajorinc = LUAI_GCMAJOR;
     g->gcstepmul = LUAI_GCMUL;
