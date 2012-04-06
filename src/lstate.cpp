@@ -191,7 +191,7 @@ lua_State *lua_newstate () {
     L->next = NULL;
     //L->tt = LUA_TTHREAD;
     assert(L->type() == LUA_TTHREAD);
-    g->currentwhite = (1 << WHITE0BIT) | (1 << FIXEDBIT);
+    g->currentwhite = (1 << WHITE0BIT);
     L->setWhite();
     g->gckind = KGC_NORMAL;
     preinit_state(L, g);

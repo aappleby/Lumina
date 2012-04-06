@@ -45,6 +45,7 @@ uint8_t LuaObject::getFlags() {
 }
 
 bool LuaObject::isDead() {  
+  if(isFixed()) return false;
   uint8_t live = (flags_ ^ WHITEBITS) & (thread_G->currentwhite ^ WHITEBITS);
   return !live;
 }
