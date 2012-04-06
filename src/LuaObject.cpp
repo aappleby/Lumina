@@ -10,6 +10,7 @@
 #define SEPARATED	4  /* object is in 'finobj' list or in 'tobefnz' */
 #define OLDBIT		6  /* object is old (only in generational mode) */
 #define TESTGRAYBIT		7 // bit 7 is currently used by tests (luaL_checkmemory)
+#define FIXEDBIT	5  /* object is fixed (should not be collected) */
 
 void *luaM_alloc_ (size_t size, int type, int pool);
 
@@ -46,8 +47,12 @@ uint8_t LuaObject::getFlags() {
 
 bool LuaObject::isDead() {  
   if(isFixed()) return false;
-  uint8_t live = (flags_ ^ WHITEBITS) & (thread_G->currentwhite ^ WHITEBITS);
-  return !live;
+  bool live1 = (flags_ ^ WHITEBITS) & (thread_G->currentwhite ^ WHITEBITS);
+  bool live2 = ((flags_ & WHITEBITS) == 0) || (flags_ & thread_G->currentwhite);
+  if(live1 != live2) {
+    printf("xxx");
+  }
+  return !live1;
 }
 
 bool LuaObject::isWhite() {

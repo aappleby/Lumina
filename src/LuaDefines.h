@@ -41,7 +41,6 @@
 /* Layout for bit use in `marked' field: */
 #define WHITE0BIT	0  /* object is white (type 0) */
 #define WHITE1BIT	1  /* object is white (type 1) */
-#define FIXEDBIT	5  /* object is fixed (should not be collected) */
 
 #define WHITEBITS	((1 << WHITE0BIT) | (1 << WHITE1BIT))
 
