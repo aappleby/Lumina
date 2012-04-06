@@ -47,12 +47,8 @@ uint8_t LuaObject::getFlags() {
 
 bool LuaObject::isDead() {  
   if(isFixed()) return false;
-  bool live1 = (flags_ ^ WHITEBITS) & (thread_G->currentwhite ^ WHITEBITS);
-  bool live2 = ((flags_ & WHITEBITS) == 0) || (flags_ & thread_G->currentwhite);
-  if(live1 != live2) {
-    printf("xxx");
-  }
-  return !live1;
+  if((flags_ & WHITEBITS) == 0) return false;
+  return !(flags_ & thread_G->currentwhite);
 }
 
 bool LuaObject::isWhite() {
