@@ -122,6 +122,9 @@ static void preinit_state (lua_State *L, global_State *g) {
 static void close_state (lua_State *L) {
   THREAD_CHECK(L);
   global_State *g = G(L);
+
+  g->isShuttingDown = true;
+
   luaF_close(L->stack.begin());  /* close all upvalues for this thread */
   luaC_freeallobjects();  /* collect all objects */
 
