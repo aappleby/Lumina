@@ -51,7 +51,6 @@ public:
 
   bool isBlack();
   void setBlack();
-  void clearBlack();
 
   bool isFinalized();
   void setFinalized();

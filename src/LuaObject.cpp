@@ -16,7 +16,7 @@
 /* Layout for bit use in `marked' field: */
 #define WHITE0BIT	0  /* object is white (type 0) */
 #define WHITE1BIT	1  /* object is white (type 1) */
-#define WHITEBITS	((1 << WHITE0BIT) | (1 << WHITE1BIT))
+//#define WHITEBITS	((1 << WHITE0BIT) | (1 << WHITE1BIT))
 
 enum ObjectColors {
   WHITE0 = (1 << WHITE0BIT),
@@ -105,16 +105,26 @@ void LuaObject::blackToGray() {
 }
 
 void LuaObject::stringmark() {
-  color_ &= ~WHITEBITS;
+  if(isWhite() || isGray()) {
+    //color_ &= ~WHITEBITS;
+    color_ = GRAY;
+  } else {
+    printf("xxx");
+  }
 }
 
 void LuaObject::grayToBlack() {
   color_ = BLACK;
 }
 
-bool LuaObject::isBlack()        { return color_ == BLACK; }
-void LuaObject::setBlack()       { assert((color_ == GRAY) || (color_ == BLACK)); color_ = BLACK; }
-void LuaObject::clearBlack()     { color_ &= ~(1 << BLACKBIT); }
+bool LuaObject::isBlack() {
+  return color_ == BLACK; 
+}
+
+void LuaObject::setBlack() {
+  assert((color_ == GRAY) || (color_ == BLACK));
+  color_ = BLACK; 
+}
 
 bool LuaObject::isFinalized()    { return flags_ & (1 << FINALIZEDBIT) ? true : false; }
 void LuaObject::setFinalized()   { flags_ |= (1 << FINALIZEDBIT); }
