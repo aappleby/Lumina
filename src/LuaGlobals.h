@@ -35,7 +35,7 @@ public:
   Table* getRegistry() { return l_registry.getTable(); }
 
   size_t lastmajormem;  /* memory in use after last major collection */
-  uint8_t livecolor;
+  LuaObject::Color livecolor;
   uint8_t gcstate;  /* state of garbage collector */
   uint8_t gckind;  /* kind of GC running */
   uint8_t gcrunning;  /* true if GC is running */

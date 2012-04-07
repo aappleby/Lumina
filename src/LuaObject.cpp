@@ -11,15 +11,8 @@
 #define TESTGRAYBIT		7 // bit 7 is currently used by tests (luaL_checkmemory)
 #define FIXEDBIT	5  /* object is fixed (should not be collected) */
 
-enum ObjectColors {
-  WHITE0 = 1,
-  WHITE1 = 2,
-  GRAY = 3,
-  BLACK = 4,
-};
-
-const int LuaObject::colorA = WHITE0;
-const int LuaObject::colorB = WHITE1;
+const LuaObject::Color LuaObject::colorA = WHITE0;
+const LuaObject::Color LuaObject::colorB = WHITE1;
 
 
 void *luaM_alloc_ (size_t size, int type, int pool);
@@ -30,8 +23,7 @@ LuaObject::LuaObject(LuaType type) {
 
   next = NULL;
   flags_ = 0;
-  color_ = 0;
-  if(thread_G) color_ = thread_G->livecolor;
+  color_ = thread_G ? thread_G->livecolor : GRAY;
   type_ = type;
 
   LuaObject::instanceCounts[type_]++;
@@ -69,8 +61,15 @@ bool LuaObject::isDead() {
 }
 
 bool LuaObject::isWhite() {
-  if(color_ == WHITE0) return true;
-  if(color_ == WHITE1) return true;
+  if(thread_G && (color_ == thread_G->livecolor)) {
+    return true;
+  }
+  if(color_ == WHITE0) {
+    return true;
+  }
+  if(color_ == WHITE1) {
+    return true;
+  }
   return false;
 }
 
@@ -79,14 +78,20 @@ bool LuaObject::isGray() {
 }
 
 // Clear existing color + old bits, set color to current white.
-void LuaObject::setWhite() {
+void LuaObject::makeLive() {
   clearOld();
   color_ = thread_G->livecolor;
 }
 
 void LuaObject::changeWhite() {
   assert(isWhite());
-  color_ = (color_ == WHITE0) ? WHITE1 : WHITE0;
+  assert(thread_G);
+
+  if(color_ == thread_G->livecolor) {
+    color_ = (color_ == WHITE0) ? WHITE1 : WHITE0;
+  } else {
+    color_ = (color_ == WHITE0) ? WHITE1 : WHITE0;
+  }
 }
 
 void LuaObject::whiteToGray() {

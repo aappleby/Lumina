@@ -119,7 +119,7 @@ void luaC_barrier (LuaObject *o, TValue value) {
     reallymarkobject(v);  /* restore invariant */
   else {  /* sweep phase */
     assert(issweepphase(g));
-    o->setWhite();  /* mark main obj. as white to avoid other barriers */
+    o->makeLive();  /* mark main obj. as white to avoid other barriers */
   }
 }
 
@@ -187,7 +187,7 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
     }
     else {
       assert(issweepphase(g));
-      uv->setWhite();
+      uv->makeLive();
     }
   }
 }
@@ -261,7 +261,7 @@ static void markmt (global_State *g) {
 static void markbeingfnz (global_State *g) {
   LuaObject *o;
   for (o = g->tobefnz; o != NULL; o = o->next) {
-    o->setWhite();
+    o->makeLive();
     reallymarkobject(o);
   }
 }
@@ -753,7 +753,7 @@ static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
         sweepthread(dynamic_cast<lua_State*>(curr));
       }
       /* update marks */
-      curr->setWhite();
+      curr->makeLive();
       p = &curr->next;  /* go to next element */
     }
   }
@@ -837,7 +837,7 @@ static LuaObject *udata2finalize (global_State *g) {
   o->clearSeparated();
   assert(!o->isOld());  /* see MOVE OLD rule */
   if (!keepinvariant(g))  /* not keeping invariant? */
-    o->setWhite();  /* "sweep" object */
+    o->makeLive();  /* "sweep" object */
   return o;
 }
 

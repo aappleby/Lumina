@@ -17,10 +17,21 @@ public:
   bool isDeadKey() { return type_ == LUA_TDEADKEY; }
 
   bool isDead();
+
+  enum Color {
+    WHITE0 = 1,
+    WHITE1 = 2,
+    GRAY = 3,
+    BLACK = 4,
+  };
+
+  Color getColor() const { return color_; }
+  void setColor(Color c) { color_  = c; }
+
   bool isWhite();
   bool isGray();
 
-  void setWhite();
+  void makeLive();
 
   void whiteToGray();
   void blackToGray();
@@ -29,8 +40,8 @@ public:
 
   void changeWhite();
 
-  static const int colorA;
-  static const int colorB;
+  static const Color colorA;
+  static const Color colorB;
 
   //----------
 
@@ -81,5 +92,5 @@ public:
 private:
   LuaType type_;
   uint8_t flags_;
-  uint8_t color_;
+  Color color_;
 };
