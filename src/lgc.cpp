@@ -204,38 +204,58 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
 */
 static void markobject(LuaObject *o) {
   if(o == NULL) return;
-  if(!o->isWhite()) return;
-  assert(!o->isDead());
+  if(o->isGray()) {
+    return;
+  }
+  if(o->isBlack()) {
+    return;
+  }
 
-  o->whiteToGray();
+  if(!o->isFixed()) {
+    assert(o->isLiveColor());
+  }
 
-  if(o->isString()) return;
+  //----------
+
+  if(o->isString()) {
+    o->setColor(LuaObject::GRAY);
+    return;
+  }
 
   if(o->isUserdata()) {
-    Udata* u = dynamic_cast<Udata*>(o);
-    Table *mt = u->metatable_;
-    markobject(mt);
-    markobject(u->env_);
-    // all pointers marked
-    o->grayToBlack();
+    GCVisitor v;
+    o->VisitGC(v);
     return;
   }
 
   if(o->isUpval()) {
+    o->setColor(LuaObject::GRAY);
     UpVal *uv = dynamic_cast<UpVal*>(o);
     markvalue(uv->v);
-    if (uv->v == &uv->value)  // closed? (open upvalues remain gray)
+    if (uv->v == &uv->value) {  // closed? (open upvalues remain gray)
       uv->grayToBlack();  // make it black
+    }
     return;
   }
 
   if(o->isLClosure() || o->isCClosure() || o->isTable() || o->isThread() || o->isProto()) {
+    o->setColor(LuaObject::GRAY);
     o->next_gray_  = thread_G->grayhead_;
     thread_G->grayhead_ = o;
     return;
   }
 
   assert(0);
+}
+
+void GCVisitor::MarkValue(TValue v) {
+  if(v.isCollectable()) {
+    ::markobject(v.getObject());
+  }
+}
+
+void GCVisitor::MarkObject(LuaObject* o) {
+  ::markobject(o);
 }
 
 

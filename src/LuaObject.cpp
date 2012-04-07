@@ -110,6 +110,11 @@ bool LuaObject::isBlack() {
   return color_ == BLACK; 
 }
 
+void LuaObject::VisitGC(GCVisitor& visitor) {
+  // Should never be visiting the base class
+  assert(false);
+}
+
 bool LuaObject::isFinalized()    { return flags_ & (1 << FINALIZEDBIT) ? true : false; }
 void LuaObject::setFinalized()   { flags_ |= (1 << FINALIZEDBIT); }
 void LuaObject::clearFinalized() { flags_ &= ~(1 << FINALIZEDBIT); }

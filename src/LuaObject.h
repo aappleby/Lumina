@@ -2,11 +2,17 @@
 #include "LuaBase.h"
 #include "LuaTypes.h"
 
+class GCVisitor {
+public:
+  void MarkValue(TValue v);
+  void MarkObject(LuaObject* o);
+};
+
 class LuaObject : public LuaBase {
 public:
 
   LuaObject(LuaType type);
-  ~LuaObject();
+  virtual ~LuaObject();
 
   void linkGC(LuaObject*& gcHead);
 
@@ -40,6 +46,8 @@ public:
   void blackToGray();
   void grayToBlack();
   void stringmark();
+
+  virtual void VisitGC(GCVisitor& visitor);
 
   static const Color colorA;
   static const Color colorB;

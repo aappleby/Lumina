@@ -10,6 +10,8 @@ public:
   Udata(uint8_t* buf, size_t len, Table* env);
   ~Udata();
 
+  virtual void VisitGC(GCVisitor& visitor);
+
   Table* metatable_;
   Table* env_;
   uint8_t* buf_;
