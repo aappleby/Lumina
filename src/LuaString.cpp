@@ -32,6 +32,10 @@ TString::~TString() {
   thread_G->strings_->nuse_--;
 }
 
+void TString::VisitGC(GCVisitor&) {
+  setColor(GRAY);
+}
+
 //-----------------------------------------------------------------------------
 // Stringtable
 

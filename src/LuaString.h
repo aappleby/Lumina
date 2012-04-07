@@ -34,6 +34,8 @@ public:
   uint8_t getReserved() const { return reserved_; }
   void setReserved(uint8_t r) { reserved_ = r; }
 
+  virtual void VisitGC(GCVisitor& visitor);
+
 protected:
 
   char* buf_;

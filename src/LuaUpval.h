@@ -13,6 +13,8 @@ public:
 
   void unlink();
 
+  virtual void VisitGC(GCVisitor& visitor);
+
   TValue *v;  /* points to stack or to its own value */
 
   TValue value;  // the value (when closed)

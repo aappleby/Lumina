@@ -16,3 +16,13 @@ void UpVal::unlink() {
   unext->uprev = uprev;
   uprev->unext = unext;
 }
+
+void UpVal::VisitGC(GCVisitor& visitor) {
+  setColor(GRAY);
+  visitor.MarkValue(*v);
+  
+  // closed? (open upvalues remain gray)
+  if (v == &value) {
+    setColor(BLACK);
+  }
+}

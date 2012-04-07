@@ -6,6 +6,7 @@ class GCVisitor {
 public:
   void MarkValue(TValue v);
   void MarkObject(LuaObject* o);
+  void PushGray(LuaObject* o);
 };
 
 class LuaObject : public LuaBase {

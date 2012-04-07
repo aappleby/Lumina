@@ -218,7 +218,8 @@ static void markobject(LuaObject *o) {
   //----------
 
   if(o->isString()) {
-    o->setColor(LuaObject::GRAY);
+    GCVisitor v;
+    o->VisitGC(v);
     return;
   }
 
@@ -229,12 +230,8 @@ static void markobject(LuaObject *o) {
   }
 
   if(o->isUpval()) {
-    o->setColor(LuaObject::GRAY);
-    UpVal *uv = dynamic_cast<UpVal*>(o);
-    markvalue(uv->v);
-    if (uv->v == &uv->value) {  // closed? (open upvalues remain gray)
-      uv->grayToBlack();  // make it black
-    }
+    GCVisitor v;
+    o->VisitGC(v);
     return;
   }
 
@@ -250,12 +247,17 @@ static void markobject(LuaObject *o) {
 
 void GCVisitor::MarkValue(TValue v) {
   if(v.isCollectable()) {
-    ::markobject(v.getObject());
+    MarkObject(v.getObject());
   }
 }
 
 void GCVisitor::MarkObject(LuaObject* o) {
   ::markobject(o);
+}
+
+void GCVisitor::PushGray(LuaObject* o) {
+  o->next_gray_  = thread_G->grayhead_;
+  thread_G->grayhead_ = o;
 }
 
 
