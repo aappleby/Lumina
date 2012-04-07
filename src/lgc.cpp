@@ -59,6 +59,22 @@ static void reallymarkobject (LuaObject *o);
 
 inline void markvalue(TValue* v) {
   v->typeCheck();
+
+  if(v->isCollectable()) {
+    LuaObject* o = v->getObject();
+
+    if(o->isLiveColor()) {
+      int b = 1;
+      b++;
+    }
+    
+    if(!o->isFixed() && o->isDeadColor()) {
+      // this case never happened
+      int b = 1;
+      b++;
+    }
+  }
+
   if (v->isWhite()) {
     reallymarkobject(v->getObject());
   }
