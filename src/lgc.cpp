@@ -1034,7 +1034,7 @@ static void atomic () {
   g->sweepstrgc = 0;  /* prepare to sweep strings */
   g->gcstate = GCSsweepstring;
   
-  g->livecolor = (g->livecolor == LuaObject::colorA) ? LuaObject::colorB : LuaObject::colorA;
+  std::swap(g->livecolor, g->deadcolor);
 }
 
 

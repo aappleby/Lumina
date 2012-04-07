@@ -67,9 +67,14 @@ static int tpanic (lua_State *L) {
 
 static int testobjref1 (global_State *g, LuaObject *f, LuaObject *t) {
   if (t->isDead()) return 0;
-  if (isgenerational(g) || !issweepphase(g))
-    return !f->isBlack() || !t->isWhite();
-  else return 1;
+
+  if (isgenerational(g)) {
+    return !(f->isBlack() && t->isWhite());
+  }
+
+  if (issweepphase(g)) return 1;
+
+  return !(f->isBlack() && t->isWhite());
 }
 
 

@@ -94,7 +94,7 @@ TString *luaS_newlstr (const char *str, size_t l) {
 
   TString* ts = thread_G->strings_->find(h, str, l);
   if(ts) {
-    if(ts->isDead()) ts->changeWhite();
+    if(ts->isDead()) ts->makeLive();
     return ts;
   }
 

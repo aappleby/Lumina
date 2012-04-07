@@ -192,6 +192,7 @@ lua_State *lua_newstate () {
     //L->tt = LUA_TTHREAD;
     assert(L->type() == LUA_TTHREAD);
     g->livecolor = LuaObject::colorA;
+    g->deadcolor = LuaObject::colorB;
     L->makeLive();
     g->gckind = KGC_NORMAL;
     preinit_state(L, g);

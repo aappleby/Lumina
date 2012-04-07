@@ -60,6 +60,14 @@ bool LuaObject::isDead() {
   return color_ != thread_G->livecolor;
 }
 
+bool LuaObject::isLiveColor() {
+  return color_ == thread_G->livecolor; 
+}
+
+bool LuaObject::isDeadColor() {
+  return color_ == thread_G->deadcolor;
+}
+
 bool LuaObject::isWhite() {
   if(thread_G && (color_ == thread_G->livecolor)) {
     return true;
@@ -81,10 +89,6 @@ bool LuaObject::isGray() {
 void LuaObject::makeLive() {
   clearOld();
   color_ = thread_G->livecolor;
-}
-
-void LuaObject::changeWhite() {
-  makeLive();
 }
 
 void LuaObject::whiteToGray() {

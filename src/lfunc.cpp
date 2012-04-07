@@ -72,7 +72,7 @@ UpVal *luaF_findupval (StkId level) {
     assert(p->v != &p->value);
     if (p->v == level) {  /* found a corresponding upvalue? */
       if (p->isDead())  /* is it dead? */
-        p->changeWhite();  /* resurrect it */
+        p->makeLive();  /* resurrect it */
       return p;
     }
     p->clearOld();  /* may create a newer upval after this one */

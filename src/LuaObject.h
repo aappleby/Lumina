@@ -18,6 +18,9 @@ public:
 
   bool isDead();
 
+  bool isLiveColor();
+  bool isDeadColor();
+
   enum Color {
     WHITE0 = 1,
     WHITE1 = 2,
@@ -37,8 +40,6 @@ public:
   void blackToGray();
   void grayToBlack();
   void stringmark();
-
-  void changeWhite();
 
   static const Color colorA;
   static const Color colorB;
