@@ -52,39 +52,15 @@
 */
 #define stddebt(g)	(-cast(l_mem, g->getTotalBytes()/100) * g->gcpause)
 
-#define checkdeadkey(n)	assert(!n->i_key.isDeadKey() || n->i_val.isNil())
 
-
-static void reallymarkobject (LuaObject *o);
+static void markobject (LuaObject *o);
 
 inline void markvalue(TValue* v) {
-  v->typeCheck();
-
   if(v->isCollectable()) {
-    LuaObject* o = v->getObject();
-
-    if(o->isLiveColor()) {
-      int b = 1;
-      b++;
-    }
-    
-    if(!o->isFixed() && o->isDeadColor()) {
-      // this case never happened
-      int b = 1;
-      b++;
-    }
-  }
-
-  if (v->isWhite()) {
-    reallymarkobject(v->getObject());
+    markobject(v->getObject());
   }
 }
 
-inline void markobject(LuaObject* o) {
-  if (o && o->isWhite()) {
-    reallymarkobject(o);
-  }
-}
 
 
 /*
@@ -132,7 +108,7 @@ void luaC_barrier (LuaObject *o, TValue value) {
   assert(isgenerational(g) || (g->gcstate != GCSpause));
   assert(o->type() != LUA_TTABLE);
   if (keepinvariant(g))  /* must keep invariant? */
-    reallymarkobject(v);  /* restore invariant */
+    markobject(v);  /* restore invariant */
   else {  /* sweep phase */
     assert(issweepphase(g));
     o->makeLive();  /* mark main obj. as white to avoid other barriers */
@@ -226,9 +202,11 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
 ** to be visited (and turned black) later. (Open upvalues are already
 ** linked in 'headuv' list.)
 */
-static void reallymarkobject (LuaObject *o) {
-  global_State* g = thread_G;
-  assert(o->isWhite() && !o->isDead());
+static void markobject(LuaObject *o) {
+  if(o == NULL) return;
+  if(!o->isWhite()) return;
+  assert(!o->isDead());
+
   o->whiteToGray();
 
   if(o->isString()) return;
@@ -252,8 +230,8 @@ static void reallymarkobject (LuaObject *o) {
   }
 
   if(o->isLClosure() || o->isCClosure() || o->isTable() || o->isThread() || o->isProto()) {
-    o->next_gray_  = g->grayhead_;
-    g->grayhead_ = o;
+    o->next_gray_  = thread_G->grayhead_;
+    thread_G->grayhead_ = o;
     return;
   }
 
@@ -278,7 +256,7 @@ static void markbeingfnz (global_State *g) {
   LuaObject *o;
   for (o = g->tobefnz; o != NULL; o = o->next) {
     o->makeLive();
-    reallymarkobject(o);
+    markobject(o);
   }
 }
 
@@ -376,7 +354,7 @@ void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
 
   if (val->isWhite()) {  /* value not marked yet? */
     info.markedAny = 1;
-    reallymarkobject(val->getObject());  /* mark it now */
+    markobject(val->getObject());  /* mark it now */
   }
 }
 
