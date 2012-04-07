@@ -18,8 +18,16 @@
 #define WHITE1BIT	1  /* object is white (type 1) */
 #define WHITEBITS	((1 << WHITE0BIT) | (1 << WHITE1BIT))
 
-const int LuaObject::colorA = (1 << WHITE0BIT);
-const int LuaObject::colorB = (1 << WHITE1BIT);
+enum ObjectColors {
+  WHITE0 = (1 << WHITE0BIT),
+  WHITE1 = (1 << WHITE1BIT),
+  GRAY = 0,
+  BLACK = (1 << BLACKBIT)
+};
+
+const int LuaObject::colorA = WHITE0;
+const int LuaObject::colorB = WHITE1;
+
 
 void *luaM_alloc_ (size_t size, int type, int pool);
 
@@ -48,7 +56,12 @@ void LuaObject::linkGC(LuaObject*& gcHead) {
 
 // Sanity check object state
 void LuaObject::sanityCheck() {
-  assert((color_ & WHITEBITS) != WHITEBITS);
+  bool colorOK = false;
+  if(color_ == WHITE0) colorOK = true;
+  if(color_ == WHITE1) colorOK = true;
+  if(color_ == GRAY) colorOK = true;
+  if(color_ == BLACK) colorOK = true;
+  assert(colorOK);
 }
 
 uint8_t LuaObject::getFlags() {
@@ -57,12 +70,15 @@ uint8_t LuaObject::getFlags() {
 
 bool LuaObject::isDead() {  
   if(isFixed()) return false;
-  if((color_ & WHITEBITS) == 0) return false;
-  return !(color_ & thread_G->livecolor);
+  if(color_ == BLACK) return false;
+  if(color_ == GRAY) return false;
+  return color_ != thread_G->livecolor;
 }
 
 bool LuaObject::isWhite() {
-  return color_ & ((1 << WHITE0BIT) | (1 << WHITE1BIT)) ? true : false;
+  if(color_ == WHITE0) return true;
+  if(color_ == WHITE1) return true;
+  return false;
 }
 
 bool LuaObject::isGray() {
@@ -77,7 +93,11 @@ void LuaObject::setWhite() {
 }
 
 void LuaObject::changeWhite() {
-  color_ ^= WHITEBITS;
+  if(isWhite()) {
+    color_ ^= WHITEBITS;
+  } else {
+    printf("xxx");
+  }
 }
 
 void LuaObject::whiteToGray() {
