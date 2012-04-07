@@ -50,7 +50,6 @@ public:
   // Flag read/write
 
   bool isBlack();
-  void setBlack();
 
   bool isFinalized();
   void setFinalized();

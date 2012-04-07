@@ -5,24 +5,17 @@
 
 #include "LuaGlobals.h"
 
-#define BLACKBIT	2  /* object is black */
 #define FINALIZEDBIT	3  /* object has been separated for finalization */
 #define SEPARATED	4  /* object is in 'finobj' list or in 'tobefnz' */
 #define OLDBIT		6  /* object is old (only in generational mode) */
 #define TESTGRAYBIT		7 // bit 7 is currently used by tests (luaL_checkmemory)
 #define FIXEDBIT	5  /* object is fixed (should not be collected) */
 
-
-/* Layout for bit use in `marked' field: */
-#define WHITE0BIT	0  /* object is white (type 0) */
-#define WHITE1BIT	1  /* object is white (type 1) */
-//#define WHITEBITS	((1 << WHITE0BIT) | (1 << WHITE1BIT))
-
 enum ObjectColors {
-  WHITE0 = (1 << WHITE0BIT),
-  WHITE1 = (1 << WHITE1BIT),
-  GRAY = 0,
-  BLACK = (1 << BLACKBIT)
+  WHITE0 = 1,
+  WHITE1 = 2,
+  GRAY = 3,
+  BLACK = 4,
 };
 
 const int LuaObject::colorA = WHITE0;
@@ -82,7 +75,7 @@ bool LuaObject::isWhite() {
 }
 
 bool LuaObject::isGray() {
-  return !isBlack() && !isWhite();
+  return color_ == GRAY;
 }
 
 // Clear existing color + old bits, set color to current white.
@@ -105,12 +98,7 @@ void LuaObject::blackToGray() {
 }
 
 void LuaObject::stringmark() {
-  if(isWhite() || isGray()) {
-    //color_ &= ~WHITEBITS;
-    color_ = GRAY;
-  } else {
-    printf("xxx");
-  }
+  color_ = GRAY;
 }
 
 void LuaObject::grayToBlack() {
@@ -119,11 +107,6 @@ void LuaObject::grayToBlack() {
 
 bool LuaObject::isBlack() {
   return color_ == BLACK; 
-}
-
-void LuaObject::setBlack() {
-  assert((color_ == GRAY) || (color_ == BLACK));
-  color_ = BLACK; 
 }
 
 bool LuaObject::isFinalized()    { return flags_ & (1 << FINALIZEDBIT) ? true : false; }
