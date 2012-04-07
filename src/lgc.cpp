@@ -236,39 +236,6 @@ void GCVisitor::PushGray(LuaObject* o) {
 }
 
 
-/*
-** mark metamethods for basic types
-*/
-static void markmt (global_State *g) {
-  for (int i=0; i < LUA_NUMTAGS; i++) {
-    markobject(g->base_metatables_[i]);
-  }
-}
-
-
-/*
-** mark all objects in list of being-finalized
-*/
-static void markbeingfnz (global_State *g) {
-  LuaObject *o;
-  for (o = g->tobefnz; o != NULL; o = o->next) {
-    o->makeLive();
-    markobject(o);
-  }
-}
-
-
-/*
-** mark all values stored in marked open upvalues. (See comment in
-** 'lstate.h'.)
-*/
-static void remarkupvals (global_State *g) {
-  UpVal *uv;
-  for (uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {
-    if (uv->isGray())
-      markvalue(uv->v);
-  }
-}
 
 
 /*
@@ -284,10 +251,16 @@ static void markroot (global_State *g) {
 
   markobject(g->mainthread);
   markvalue(&g->l_registry);
-  markmt(g);
+  
+  for (int i=0; i < LUA_NUMTAGS; i++) {
+    markobject(g->base_metatables_[i]);
+  }
 
   /* mark any finalizing object left from previous cycle */
-  markbeingfnz(g);
+  for (LuaObject* o = g->tobefnz; o != NULL; o = o->next) {
+    o->makeLive();
+    markobject(o);
+  }
 }
 
 /* }====================================================== */
@@ -478,30 +451,6 @@ static int traversetable (global_State *g, Table *h) {
 }
 
 
-static int traverseproto (global_State *g, Proto *f) {
-  if (f->cache && f->cache->isWhite())
-    f->cache = NULL;  /* allow cache to be collected */
-  if(f->source) f->source->stringmark();
-  for (size_t i = 0; i < f->constants.size(); i++)  /* mark literals */
-    markvalue(&f->constants[i]);
-  for (size_t i = 0; i < f->upvalues.size(); i++) {
-    /* mark upvalue names */
-    if(f->upvalues[i].name) f->upvalues[i].name->stringmark();
-  }
-  for (size_t i = 0; i < f->subprotos_.size(); i++)  /* mark nested protos */
-    markobject(f->subprotos_[i]);
-  for (size_t i = 0; i < f->locvars.size(); i++) {
-    /* mark local-variable names */
-    if(f->locvars[i].varname) f->locvars[i].varname->stringmark();
-  }
-  return TRAVCOST +
-         (int)f->constants.size() +
-         (int)f->upvalues.size() +
-         (int)f->subprotos_.size() +
-         (int)f->locvars.size();
-}
-
-
 static int traverseclosure (global_State *g, Closure *cl) {
   if (cl->isC) {
     int i;
@@ -547,19 +496,21 @@ static int propagatemark (global_State *g) {
   // make it black
   // (why do we make it black _before_ we traverse its children?)
   assert(o->isGray());
-  o->grayToBlack();
 
   // traverse its children and add them to the gray list(s)
 
   if(o->isTable()) {
+    o->grayToBlack();
     return traversetable(g, dynamic_cast<Table*>(o));
   }
 
   if(o->isLClosure() || o->isCClosure()) {
+    o->grayToBlack();
     return traverseclosure(g, dynamic_cast<Closure*>(o));
   }
 
   if(o->isThread()) {
+    o->grayToBlack();
     // why do threads go on the 'grayagain' list?
     o->next_gray_ = g->grayagain;
     g->grayagain = o;
@@ -568,7 +519,8 @@ static int propagatemark (global_State *g) {
   }
 
   if(o->isProto()) {
-    return traverseproto(g, dynamic_cast<Proto*>(o));
+    GCVisitor v;
+    return o->PropagateGC(v);
   }
 
   assert(false);
@@ -999,9 +951,20 @@ static void atomic () {
   markobject(thread_L);  /* mark running thread */
   /* registry and global metatables may be changed by API */
   markvalue(&g->l_registry);
-  markmt(g);  /* mark basic metatables */
-  /* remark occasional upvalues of (maybe) dead threads */
-  remarkupvals(g);
+  
+  /* mark basic metatables */
+  for (int i=0; i < LUA_NUMTAGS; i++) {
+    markobject(g->base_metatables_[i]);
+  }
+
+  // remark occasional upvalues of (maybe) dead threads
+  // mark all values stored in marked open upvalues. (See comment in 'lstate.h'.)
+  for (UpVal* uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {
+    if (uv->isGray()) {
+      markvalue(uv->v);
+    }
+  }
+
   /* traverse objects caught by write barrier and by 'remarkupvals' */
   retraversegrays(g);
   convergeephemerons(g);
@@ -1011,7 +974,13 @@ static void atomic () {
   clearvalues(g->allweak, NULL);
   origweak = g->weak; origall = g->allweak;
   separatetobefnz(0);  /* separate objects to be finalized */
-  markbeingfnz(g);  /* mark userdata that will be finalized */
+  
+  /* mark userdata that will be finalized */
+  for (LuaObject* o = g->tobefnz; o != NULL; o = o->next) {
+    o->makeLive();
+    markobject(o);
+  }
+  
   /* remark, to propagate `preserveness' */
   while (g->grayhead_) propagatemark(g);
   convergeephemerons(g);

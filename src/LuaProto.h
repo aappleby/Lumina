@@ -32,6 +32,7 @@ public:
   Proto();
 
   virtual void VisitGC(GCVisitor& visitor);
+  virtual int  PropagateGC(GCVisitor& visitor);
 
   LuaVector<TValue> constants;
   LuaVector<Instruction> code;

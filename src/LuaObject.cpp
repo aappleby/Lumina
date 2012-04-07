@@ -115,6 +115,12 @@ void LuaObject::VisitGC(GCVisitor& visitor) {
   assert(false);
 }
 
+int LuaObject::PropagateGC(GCVisitor& visitor) {
+  // Should never be propagating GC through the base class.
+  assert(false);
+  return 0;
+}
+
 bool LuaObject::isFinalized()    { return flags_ & (1 << FINALIZEDBIT) ? true : false; }
 void LuaObject::setFinalized()   { flags_ |= (1 << FINALIZEDBIT); }
 void LuaObject::clearFinalized() { flags_ &= ~(1 << FINALIZEDBIT); }

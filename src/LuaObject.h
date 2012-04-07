@@ -49,6 +49,7 @@ public:
   void stringmark();
 
   virtual void VisitGC(GCVisitor& visitor) = 0;
+  virtual int PropagateGC(GCVisitor& visitor);
 
   static const Color colorA;
   static const Color colorB;
