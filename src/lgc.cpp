@@ -1033,7 +1033,8 @@ static void atomic () {
   clearvalues(g->allweak, origall);
   g->sweepstrgc = 0;  /* prepare to sweep strings */
   g->gcstate = GCSsweepstring;
-  g->currentwhite ^= WHITEBITS;  /* flip current white */
+  
+  g->livecolor = (g->livecolor == LuaObject::colorA) ? LuaObject::colorB : LuaObject::colorA;
 }
 
 

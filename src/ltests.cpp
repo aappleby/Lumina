@@ -91,7 +91,7 @@ static void printobj (global_State *g, LuaObject *o) {
 static int testobjref (global_State *g, LuaObject *f, LuaObject *t) {
   int r = testobjref1(g,f,t);
   if (!r) {
-    printf("%d(%02X) - ", g->gcstate, g->currentwhite);
+    printf("%d(%02X) - ", g->gcstate, g->livecolor);
     printobj(g, f);
     printf("\t-> ");
     printobj(g, t);

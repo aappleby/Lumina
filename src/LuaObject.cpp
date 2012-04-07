@@ -12,6 +12,15 @@
 #define TESTGRAYBIT		7 // bit 7 is currently used by tests (luaL_checkmemory)
 #define FIXEDBIT	5  /* object is fixed (should not be collected) */
 
+
+/* Layout for bit use in `marked' field: */
+#define WHITE0BIT	0  /* object is white (type 0) */
+#define WHITE1BIT	1  /* object is white (type 1) */
+#define WHITEBITS	((1 << WHITE0BIT) | (1 << WHITE1BIT))
+
+const int LuaObject::colorA = (1 << WHITE0BIT);
+const int LuaObject::colorB = (1 << WHITE1BIT);
+
 void *luaM_alloc_ (size_t size, int type, int pool);
 
 int LuaObject::instanceCounts[256];
@@ -20,7 +29,8 @@ LuaObject::LuaObject(LuaType type) {
 
   next = NULL;
   flags_ = 0;
-  if(thread_G) flags_ = thread_G->currentwhite & WHITEBITS;
+  color_ = 0;
+  if(thread_G) flags_ = thread_G->livecolor;
   type_ = type;
 
   LuaObject::instanceCounts[type_]++;
@@ -48,7 +58,7 @@ uint8_t LuaObject::getFlags() {
 bool LuaObject::isDead() {  
   if(isFixed()) return false;
   if((flags_ & WHITEBITS) == 0) return false;
-  return !(flags_ & thread_G->currentwhite);
+  return !(flags_ & thread_G->livecolor);
 }
 
 bool LuaObject::isWhite() {
@@ -63,7 +73,7 @@ bool LuaObject::isGray() {
 void LuaObject::setWhite() {
   uint8_t mask = (1 << OLDBIT) | (1 << BLACKBIT) | (1 << WHITE0BIT) | (1 << WHITE1BIT);
   flags_ &= ~mask;
-  flags_ |= (thread_G->currentwhite & WHITEBITS);
+  flags_ |= (thread_G->livecolor);
 }
 
 void LuaObject::changeWhite() {

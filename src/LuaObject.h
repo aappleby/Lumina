@@ -29,6 +29,9 @@ public:
 
   void changeWhite();
 
+  static const int colorA;
+  static const int colorB;
+
   //----------
 
   LuaType type() const { return type_; }
@@ -80,4 +83,5 @@ public:
 private:
   LuaType type_;
   uint8_t flags_;
+  uint8_t color_;
 };
