@@ -87,25 +87,21 @@ bool LuaObject::isGray() {
 
 // Clear existing color + old bits, set color to current white.
 void LuaObject::setWhite() {
-  uint8_t mask = (1 << OLDBIT) | (1 << BLACKBIT) | (1 << WHITE0BIT) | (1 << WHITE1BIT);
-  flags_ &= ~mask;
+  clearOld();
   color_ = thread_G->livecolor;
 }
 
 void LuaObject::changeWhite() {
-  if(isWhite()) {
-    color_ ^= WHITEBITS;
-  } else {
-    printf("xxx");
-  }
+  assert(isWhite());
+  color_ = (color_ == WHITE0) ? WHITE1 : WHITE0;
 }
 
 void LuaObject::whiteToGray() {
-  color_ &= ~WHITEBITS;
+  color_ = GRAY;
 }
 
 void LuaObject::blackToGray() {
-  clearBlack();
+  color_ = GRAY;
 }
 
 void LuaObject::stringmark() {
@@ -113,11 +109,11 @@ void LuaObject::stringmark() {
 }
 
 void LuaObject::grayToBlack() {
-  color_ |= (1 << BLACKBIT);
+  color_ = BLACK;
 }
 
-bool LuaObject::isBlack()        { return color_ & (1 << BLACKBIT) ? true : false; }
-void LuaObject::setBlack()       { color_ |= (1 << BLACKBIT); }
+bool LuaObject::isBlack()        { return color_ == BLACK; }
+void LuaObject::setBlack()       { assert((color_ == GRAY) || (color_ == BLACK)); color_ = BLACK; }
 void LuaObject::clearBlack()     { color_ &= ~(1 << BLACKBIT); }
 
 bool LuaObject::isFinalized()    { return flags_ & (1 << FINALIZEDBIT) ? true : false; }
