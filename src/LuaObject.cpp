@@ -84,14 +84,7 @@ void LuaObject::makeLive() {
 }
 
 void LuaObject::changeWhite() {
-  assert(isWhite());
-  assert(thread_G);
-
-  if(color_ == thread_G->livecolor) {
-    color_ = (color_ == WHITE0) ? WHITE1 : WHITE0;
-  } else {
-    color_ = (color_ == WHITE0) ? WHITE1 : WHITE0;
-  }
+  makeLive();
 }
 
 void LuaObject::whiteToGray() {
