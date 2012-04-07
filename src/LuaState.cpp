@@ -221,3 +221,12 @@ void lua_State::push(const TValue* v) {
   top++;
   assert((top <= ci_->top) && "stack overflow");
 }
+
+//-----------------------------------------------------------------------------
+
+void lua_State::VisitGC(GCVisitor& visitor) {
+  setColor(GRAY);
+  visitor.PushGray(this);
+}
+
+//-----------------------------------------------------------------------------

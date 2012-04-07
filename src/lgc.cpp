@@ -217,32 +217,9 @@ static void markobject(LuaObject *o) {
 
   //----------
 
-  if(o->isString()) {
-    GCVisitor v;
-    o->VisitGC(v);
-    return;
-  }
-
-  if(o->isUserdata()) {
-    GCVisitor v;
-    o->VisitGC(v);
-    return;
-  }
-
-  if(o->isUpval()) {
-    GCVisitor v;
-    o->VisitGC(v);
-    return;
-  }
-
-  if(o->isLClosure() || o->isCClosure() || o->isTable() || o->isThread() || o->isProto()) {
-    o->setColor(LuaObject::GRAY);
-    o->next_gray_  = thread_G->grayhead_;
-    thread_G->grayhead_ = o;
-    return;
-  }
-
-  assert(0);
+  GCVisitor v;
+  o->VisitGC(v);
+  return;
 }
 
 void GCVisitor::MarkValue(TValue v) {

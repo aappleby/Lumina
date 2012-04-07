@@ -73,6 +73,9 @@ public:
   int traverseArray(Table::valueCallback c, void* blob);
   int traverse(Table::nodeCallback c, void* blob);
 
+  // another piece of the gc visitor traversal stuff
+  virtual void VisitGC(GCVisitor& visitor);
+
   //----------
 
   Node* nodeAt(uint32_t hash);

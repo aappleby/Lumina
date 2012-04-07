@@ -9,6 +9,8 @@ public:
   Closure(Proto* proto, UpVal** buf, int n);
   ~Closure();
 
+  virtual void VisitGC(GCVisitor& visitor);
+
   uint8_t isC;
   uint8_t nupvalues;
 

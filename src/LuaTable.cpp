@@ -189,3 +189,10 @@ int Table::traverse(Table::nodeCallback c, void* blob) {
 }
 
 //-----------------------------------------------------------------------------
+
+void Table::VisitGC(GCVisitor& visitor) {
+  setColor(GRAY);
+  visitor.PushGray(this);
+}
+
+//-----------------------------------------------------------------------------

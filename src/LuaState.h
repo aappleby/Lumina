@@ -19,6 +19,8 @@ public:
   lua_State();
   ~lua_State();
 
+  virtual void VisitGC(GCVisitor& visitor);
+
   uint8_t status;
   StkId top;  /* first free slot in the stack */
   global_State *l_G;

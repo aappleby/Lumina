@@ -24,3 +24,8 @@ Closure::~Closure() {
   pupvals_ = NULL;
   ppupvals_ = NULL;
 }
+
+void Closure::VisitGC(GCVisitor& visitor) {
+  setColor(GRAY);
+  visitor.PushGray(this);
+}

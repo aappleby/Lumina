@@ -48,7 +48,7 @@ public:
   void grayToBlack();
   void stringmark();
 
-  virtual void VisitGC(GCVisitor& visitor);
+  virtual void VisitGC(GCVisitor& visitor) = 0;
 
   static const Color colorA;
   static const Color colorB;

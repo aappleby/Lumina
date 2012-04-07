@@ -30,6 +30,9 @@ struct LocVar {
 class Proto : public LuaObject {
 public:
   Proto();
+
+  virtual void VisitGC(GCVisitor& visitor);
+
   LuaVector<TValue> constants;
   LuaVector<Instruction> code;
   LuaVector<int> lineinfo;

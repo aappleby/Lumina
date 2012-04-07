@@ -9,3 +9,8 @@ Proto::Proto() : LuaObject(LUA_TPROTO) {
   lastlinedefined = 0;
   source = NULL;
 }
+
+void Proto::VisitGC(GCVisitor& visitor) {
+  setColor(GRAY);
+  visitor.PushGray(this);
+}
