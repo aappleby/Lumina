@@ -55,9 +55,7 @@ uint8_t LuaObject::getFlags() {
 
 bool LuaObject::isDead() {  
   if(isFixed()) return false;
-  if(color_ == BLACK) return false;
-  if(color_ == GRAY) return false;
-  return color_ != thread_G->livecolor;
+  return color_ == thread_G->deadcolor;
 }
 
 bool LuaObject::isLiveColor() {
