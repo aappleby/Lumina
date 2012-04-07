@@ -203,6 +203,17 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
 ** linked in 'headuv' list.)
 */
 static void markobject(LuaObject *o) {
+  GCVisitor v;
+  v.MarkObject(o);
+}
+
+void GCVisitor::MarkValue(TValue v) {
+  if(v.isCollectable()) {
+    MarkObject(v.getObject());
+  }
+}
+
+void GCVisitor::MarkObject(LuaObject* o) {
   if(o == NULL) return;
   if(o->isGray()) {
     return;
@@ -215,21 +226,8 @@ static void markobject(LuaObject *o) {
     assert(o->isLiveColor());
   }
 
-  //----------
-
-  GCVisitor v;
-  o->VisitGC(v);
+  o->VisitGC(*this);
   return;
-}
-
-void GCVisitor::MarkValue(TValue v) {
-  if(v.isCollectable()) {
-    MarkObject(v.getObject());
-  }
-}
-
-void GCVisitor::MarkObject(LuaObject* o) {
-  ::markobject(o);
 }
 
 void GCVisitor::PushGray(LuaObject* o) {
