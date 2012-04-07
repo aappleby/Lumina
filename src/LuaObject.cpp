@@ -30,7 +30,7 @@ LuaObject::LuaObject(LuaType type) {
   next = NULL;
   flags_ = 0;
   color_ = 0;
-  if(thread_G) flags_ = thread_G->livecolor;
+  if(thread_G) color_ = thread_G->livecolor;
   type_ = type;
 
   LuaObject::instanceCounts[type_]++;
@@ -48,7 +48,7 @@ void LuaObject::linkGC(LuaObject*& gcHead) {
 
 // Sanity check object state
 void LuaObject::sanityCheck() {
-  assert((flags_ & WHITEBITS) != WHITEBITS);
+  assert((color_ & WHITEBITS) != WHITEBITS);
 }
 
 uint8_t LuaObject::getFlags() {
@@ -57,12 +57,12 @@ uint8_t LuaObject::getFlags() {
 
 bool LuaObject::isDead() {  
   if(isFixed()) return false;
-  if((flags_ & WHITEBITS) == 0) return false;
-  return !(flags_ & thread_G->livecolor);
+  if((color_ & WHITEBITS) == 0) return false;
+  return !(color_ & thread_G->livecolor);
 }
 
 bool LuaObject::isWhite() {
-  return flags_ & ((1 << WHITE0BIT) | (1 << WHITE1BIT)) ? true : false;
+  return color_ & ((1 << WHITE0BIT) | (1 << WHITE1BIT)) ? true : false;
 }
 
 bool LuaObject::isGray() {
@@ -73,15 +73,15 @@ bool LuaObject::isGray() {
 void LuaObject::setWhite() {
   uint8_t mask = (1 << OLDBIT) | (1 << BLACKBIT) | (1 << WHITE0BIT) | (1 << WHITE1BIT);
   flags_ &= ~mask;
-  flags_ |= (thread_G->livecolor);
+  color_ = thread_G->livecolor;
 }
 
 void LuaObject::changeWhite() {
-  flags_ ^= WHITEBITS;
+  color_ ^= WHITEBITS;
 }
 
 void LuaObject::whiteToGray() {
-  flags_ &= ~WHITEBITS;
+  color_ &= ~WHITEBITS;
 }
 
 void LuaObject::blackToGray() {
@@ -89,16 +89,16 @@ void LuaObject::blackToGray() {
 }
 
 void LuaObject::stringmark() {
-  flags_ &= ~WHITEBITS;
+  color_ &= ~WHITEBITS;
 }
 
 void LuaObject::grayToBlack() {
-  flags_ |= (1 << BLACKBIT);
+  color_ |= (1 << BLACKBIT);
 }
 
-bool LuaObject::isBlack()        { return flags_ & (1 << BLACKBIT) ? true : false; }
-void LuaObject::setBlack()       { flags_ |= (1 << BLACKBIT); }
-void LuaObject::clearBlack()     { flags_ &= ~(1 << BLACKBIT); }
+bool LuaObject::isBlack()        { return color_ & (1 << BLACKBIT) ? true : false; }
+void LuaObject::setBlack()       { color_ |= (1 << BLACKBIT); }
+void LuaObject::clearBlack()     { color_ &= ~(1 << BLACKBIT); }
 
 bool LuaObject::isFinalized()    { return flags_ & (1 << FINALIZEDBIT) ? true : false; }
 void LuaObject::setFinalized()   { flags_ |= (1 << FINALIZEDBIT); }
