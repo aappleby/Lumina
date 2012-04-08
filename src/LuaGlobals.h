@@ -18,18 +18,12 @@ public:
     return totalbytes_;
   }
 
-  void setGCDebt(size_t debt) {
-    GCdebt_ = debt;
-  }
+  void setGCDebt(size_t debt);
 
   int getGCDebt() { return GCdebt_; }
 
-  void incGCDebt(int debt) { 
-    totalbytes_ += debt;
-    if(debt > 0) {
-      GCdebt_ += debt;
-    }
-  }
+  void incTotalBytes(int size);
+  void incGCDebt(int debt);
 
   stringtable* strings_;  /* hash table for strings */
 

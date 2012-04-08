@@ -449,6 +449,7 @@ static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
       p = &curr->next;  /* go to next element */
     }
   }
+  //assert(debt == g->getGCDebt());
   g->setGCDebt(debt);  /* sweeping should not change debt */
   return p;
 }
@@ -476,6 +477,7 @@ static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
       p = &curr->next;  /* go to next element */
     }
   }
+  //assert(debt == g->getGCDebt());
   g->setGCDebt(debt);  /* sweeping should not change debt */
   return p;
 }
@@ -497,6 +499,7 @@ void deletelist (LuaObject*& head) {
     freeobj(curr);
   }
 
+  //assert(debt == thread_G->getGCDebt());
   thread_G->setGCDebt(debt);  /* sweeping should not change debt */
 }
 

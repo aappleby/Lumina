@@ -113,8 +113,8 @@ void *luaM_alloc (size_t size) {
     }
   }
 
+  if(thread_G) thread_G->incTotalBytes(size);
   if(thread_G) thread_G->incGCDebt(size);
-
   return newblock;
 }
 
@@ -123,6 +123,7 @@ void luaM_free(void * blob) {
   Header* block = reinterpret_cast<Header*>(blob) - 1;
   l_memcontrol.free(block->size);
   int size = block->size;
+  if(thread_G) thread_G->incTotalBytes(-size);
   if(thread_G) thread_G->incGCDebt(-size);
   freeblock(block);
 }
