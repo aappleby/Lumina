@@ -119,6 +119,8 @@ public:
 
   bool isWhite() const;
 
+  bool isLiveColor() const;
+
   //----------
 
   bool       getBool() const          { assert(isBool()); return bytes_ ? true : false; }

@@ -71,34 +71,6 @@ inline void markvalue(TValue* v) {
 
 
 /*
-** tells whether a key or value can be cleared from a weak
-** table. Non-collectable objects are never removed from weak
-** tables. Strings behave as `values', so are never removed too. for
-** other objects: if really collected, cannot keep them; for objects
-** being finalized, keep them in keys, but not in values
-*/
-
-// Strings behave as value types _when used as table keys_.
-
-static int isWeakTableRef (const TValue *v) {
-  if (!v->isCollectable()) {
-    return 0;
-  }
-  
-  if (v->isString()) {
-    assert(v->getObject()->isGray());
-    return 0;
-  }
-  
-  LuaObject* o = v->getObject();
-
-  assert(!o->isDeadColor());
-
-  return o->isLiveColor();
-}
-
-
-/*
 ** barrier that moves collector forward, that is, mark the white object
 ** being pointed by a black object.
 */
@@ -304,7 +276,7 @@ void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
   markvalue(key);  // mark key
 
   // is there a white value? table will have to be cleared
-  if (isWeakTableRef(val)) {
+  if (val->isLiveColor()) {
     info.hasclears = 1;
   }
 }
@@ -321,7 +293,7 @@ void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
     return;
   }
 
-  if (isWeakTableRef(key)) {  /* key is not marked (yet)? */
+  if (key->isLiveColor()) {  /* key is not marked (yet)? */
     info.hasclears = 1;  /* table must be cleared */
    
     if (val->isWhite()) { /* value not marked yet? */
@@ -580,10 +552,12 @@ static void clearkeys (LuaObject *l) {
 
     for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
-      if (n->i_val.isNotNil() && (isWeakTableRef(&n->i_key))) {
-        n->i_val = TValue::nil;  /* remove value ... */
-        if (n->i_key.isWhite()) {
-          n->i_key.setDeadKey();  /* unused and unmarked key; remove it */
+      if (n->i_val.isNotNil()) {
+        if(n->i_key.isLiveColor()) {
+          n->i_val = TValue::nil;  /* remove value ... */
+          if (n->i_key.isWhite()) {
+            n->i_key.setDeadKey();  /* unused and unmarked key; remove it */
+          }
         }
       }
     }
@@ -601,7 +575,7 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
     
     for (int i = 0; i < (int)h->array.size(); i++) {
       TValue *o = &h->array[i];
-      if (isWeakTableRef(o)) {  /* value was collected? */
+      if (o->isLiveColor()) {  /* value was collected? */
         *o = TValue::nil;  /* remove value */
       }
     }
@@ -609,7 +583,7 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
     for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
       if (n->i_val.isNotNil()) {
-        if(isWeakTableRef(&n->i_val)) {
+        if(n->i_val.isLiveColor()) {
           n->i_val = TValue::nil;
           if (n->i_key.isWhite()) {
             n->i_key.setDeadKey();

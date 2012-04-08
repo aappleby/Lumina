@@ -145,6 +145,11 @@ bool TValue::isWhite() const {
   return object_->isWhite();
 }
 
+bool TValue::isLiveColor() const {
+  if(!isCollectable()) return false;
+  return object_->isLiveColor();
+}
+
 bool TValue::isCollectable() const {
   if((type_ & 0x3F) == LUA_TSTRING) return true;
   if((type_ & 0x3F) == LUA_TTABLE) return true;
