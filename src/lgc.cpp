@@ -83,8 +83,9 @@ void luaC_barrier (LuaObject *o, TValue value) {
   assert(o->isBlack() && v->isWhite() && !v->isDead() && !o->isDead());
   assert(isgenerational(g) || (g->gcstate != GCSpause));
   assert(o->type() != LUA_TTABLE);
-  if (keepinvariant(g))  /* must keep invariant? */
+  if (keepinvariant(g)) {  /* must keep invariant? */
     markobject(v);  /* restore invariant */
+  }
   else {  /* sweep phase */
     assert(issweepphase(g));
     o->makeLive();  /* mark main obj. as white to avoid other barriers */
@@ -106,13 +107,9 @@ void luaC_barrierback (LuaObject *o, TValue v) {
   if(!o->isBlack()) return;
   if(!v.isWhite()) return;
 
-  global_State *g = thread_G;
+  assert(o->isTable());
 
-  assert(o->isBlack() && !o->isDead() && o->isTable());
-  o->blackToGray();  /* make object gray (again) */
-
-  o->next_gray_ = g->grayagain;
-  g->grayagain = o;
+  thread_G->PushGrayAgain(o);
 }
 
 
@@ -125,16 +122,13 @@ void luaC_barrierback (LuaObject *o, TValue v) {
 ** possible instances.
 */
 void luaC_barrierproto (Proto *p, Closure *c) {
-  global_State *g = thread_G;
   if(!p->isBlack()) return;
 
   if (p->cache == NULL) {  /* first time? */
     luaC_barrier(p, TValue(c));
   }
   else {  /* use a backward barrier */
-    p->blackToGray();  /* make prototype gray (again) */
-    p->next_gray_ = g->grayagain;
-    g->grayagain = p;
+    thread_G->PushGrayAgain(p);
   }
 }
 
@@ -209,28 +203,23 @@ void GCVisitor::MarkObject(LuaObject* o) {
 }
 
 void GCVisitor::PushGray(LuaObject* o) {
-  o->next_gray_  = thread_G->grayhead_;
-  thread_G->grayhead_ = o;
+  thread_G->PushGray(o);
 }
 
 void GCVisitor::PushGrayAgain(LuaObject* o) {
-  o->next_gray_ = thread_G->grayagain;
-  thread_G->grayagain = o;
+  thread_G->PushGrayAgain(o);
 }
 
 void GCVisitor::PushWeak(LuaObject* o) {
-  o->next_gray_ = thread_G->weak;
-  thread_G->weak = o;
+  thread_G->PushWeak(o);
 }
 
 void GCVisitor::PushAllWeak(LuaObject* o) {
-  o->next_gray_ = thread_G->allweak;
-  thread_G->allweak = o;
+  thread_G->PushAllWeak(o);
 }
 
 void GCVisitor::PushEphemeron(LuaObject* o) {
-  o->next_gray_ = thread_G->ephemeron;
-  thread_G->ephemeron = o;
+  thread_G->PushEphemeron(o);
 }
 
 
@@ -241,10 +230,10 @@ void GCVisitor::PushEphemeron(LuaObject* o) {
 */
 static void markroot (global_State *g) {
   g->grayhead_ = NULL;
-  g->grayagain = NULL;
-  g->weak = NULL;
-  g->allweak = NULL;
-  g->ephemeron = NULL;
+  g->grayagain_ = NULL;
+  g->weak_ = NULL;
+  g->allweak_ = NULL;
+  g->ephemeron_ = NULL;
 
   markobject(g->mainthread);
   markvalue(&g->l_registry);
@@ -292,6 +281,7 @@ static int propagatemark (global_State *g) {
   // pop gray object off the list
   LuaObject *o = g->grayhead_;
   g->grayhead_ = o->next_gray_;
+  o->next_gray_ = NULL;
   assert(o->isGray());
 
   GCVisitor visitor;
@@ -304,13 +294,13 @@ static int propagatemark (global_State *g) {
 ** twice the same table (which is not wrong, but inefficient)
 */
 static void retraversegrays (global_State *g) {
-  LuaObject *weak = g->weak;  /* save original lists */
-  LuaObject *grayagain = g->grayagain;
-  LuaObject *ephemeron = g->ephemeron;
+  LuaObject *weak = g->weak_;  /* save original lists */
+  LuaObject *grayagain = g->grayagain_;
+  LuaObject *ephemeron = g->ephemeron_;
   
-  g->weak = NULL;
-  g->grayagain = NULL;
-  g->ephemeron = NULL;
+  g->weak_ = NULL;
+  g->grayagain_ = NULL;
+  g->ephemeron_ = NULL;
 
   while (g->grayhead_) propagatemark(g);
   g->grayhead_ = grayagain;
@@ -328,8 +318,8 @@ static void convergeephemerons (global_State *g) {
   int changed;
   do {
     LuaObject *w;
-    LuaObject *next = g->ephemeron;  /* get ephemeron list */
-    g->ephemeron = NULL;  /* tables will return to this list when traversed */
+    LuaObject *next = g->ephemeron_;  /* get ephemeron list */
+    g->ephemeron_ = NULL;  /* tables will return to this list when traversed */
     changed = 0;
     while ((w = next) != NULL) {
       next = w->next_gray_;
@@ -715,11 +705,11 @@ static void atomic () {
 
   /* at this point, all strongly accessible objects are marked. */
   /* clear values from weak tables, before checking finalizers */
-  clearvalues(g->weak, NULL);
-  clearvalues(g->allweak, NULL);
+  clearvalues(g->weak_, NULL);
+  clearvalues(g->allweak_, NULL);
 
-  LuaObject* origweak = g->weak;
-  LuaObject* origall = g->allweak;
+  LuaObject* origweak = g->weak_;
+  LuaObject* origall = g->allweak_;
   separatetobefnz(0);  /* separate objects to be finalized */
   
   /* mark userdata that will be finalized */
@@ -734,12 +724,12 @@ static void atomic () {
 
   /* at this point, all resurrected objects are marked. */
   /* remove dead objects from weak tables */
-  clearkeys(g->ephemeron);  /* clear keys from all ephemeron tables */
-  clearkeys(g->allweak);  /* clear keys from all allweak tables */
+  clearkeys(g->ephemeron_);  /* clear keys from all ephemeron tables */
+  clearkeys(g->allweak_);  /* clear keys from all allweak tables */
 
   /* clear values from resurrected weak tables */
-  clearvalues(g->weak, origweak);
-  clearvalues(g->allweak, origall);
+  clearvalues(g->weak_, origweak);
+  clearvalues(g->allweak_, origall);
 
   g->strings_->sweepCursor_ = 0;  /* prepare to sweep strings */
   g->gcstate = GCSsweepstring;
@@ -798,7 +788,9 @@ static l_mem singlestep () {
         /* sweep main thread */
         LuaObject *mt = g->mainthread;
         sweeplist(&mt, 1);
+        
         checkSizes();
+        
         g->gcstate = GCSpause;  /* finish collection */
         return GCSWEEPCOST;
       }

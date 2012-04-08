@@ -288,10 +288,10 @@ static void checkgraylist (LuaObject* o) {
 static void markgrays (global_State *g) {
   if (!keepinvariant(g)) return;
   checkgraylist(g->grayhead_);
-  checkgraylist(g->grayagain);
-  checkgraylist(g->weak);
-  checkgraylist(g->ephemeron);
-  checkgraylist(g->allweak);
+  checkgraylist(g->grayagain_);
+  checkgraylist(g->weak_);
+  checkgraylist(g->ephemeron_);
+  checkgraylist(g->allweak_);
 }
 
 

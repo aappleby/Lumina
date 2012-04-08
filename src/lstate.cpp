@@ -211,9 +211,14 @@ lua_State *lua_newstate () {
     g->allgc = NULL;
     g->finobj = NULL;
     g->tobefnz = NULL;
+
+    // Gray lists
     g->grayhead_ = NULL;
-    g->grayagain = NULL;
-    g->weak = g->ephemeron = g->allweak = NULL;
+    g->grayagain_ = NULL;
+    g->weak_ = NULL;
+    g->allweak_ = NULL;
+    g->ephemeron_ = NULL;
+
     g->gcpause = LUAI_GCPAUSE;
     g->gcmajorinc = LUAI_GCMAJOR;
     g->gcstepmul = LUAI_GCMUL;

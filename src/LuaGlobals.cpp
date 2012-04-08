@@ -25,3 +25,38 @@ void global_State::incTotalBytes(int bytes) {
 void global_State::incGCDebt(int debt) { 
   GCdebt_ += debt;
 }
+
+void global_State::PushGray(LuaObject* o) {
+  //assert(o->next_gray_ == NULL);
+  o->setColor(LuaObject::GRAY);
+  o->next_gray_ = grayhead_;
+  grayhead_ = o;
+}
+
+void global_State::PushGrayAgain(LuaObject* o) {
+  //assert(o->next_gray_ == NULL);
+  o->setColor(LuaObject::GRAY);
+  o->next_gray_ = grayagain_;
+  grayagain_ = o;
+}
+
+void global_State::PushWeak(LuaObject* o) {
+  //assert(o->next_gray_ == NULL);
+  o->setColor(LuaObject::GRAY);
+  o->next_gray_ = weak_;
+  weak_ = o;
+}
+
+void global_State::PushAllWeak(LuaObject* o) {
+  //assert(o->next_gray_ == NULL);
+  o->setColor(LuaObject::GRAY);
+  o->next_gray_ = allweak_;
+  allweak_ = o;
+}
+
+void global_State::PushEphemeron(LuaObject* o) {
+  //assert(o->next_gray_ == NULL);
+  o->setColor(LuaObject::GRAY);
+  o->next_gray_ = ephemeron_;
+  ephemeron_ = o;
+}

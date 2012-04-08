@@ -40,12 +40,13 @@ public:
   LuaObject *finobj;  /* list of collectable objects with finalizers */
   LuaObject **sweepgc;  /* current position of sweep */
 
-  LuaObject *grayhead_;  /* list of gray objects */
+  // Gray lists
+  LuaObject *grayhead_;   // list of gray objects
+  LuaObject *grayagain_;  // list of objects to be traversed atomically
+  LuaObject *weak_;       // list of tables with weak values
+  LuaObject *ephemeron_;  // list of ephemeron tables (weak keys)
+  LuaObject *allweak_;    // list of all-weak tables
 
-  LuaObject *grayagain;  /* list of objects to be traversed atomically */
-  LuaObject *weak;  /* list of tables with weak values */
-  LuaObject *ephemeron;  /* list of ephemeron tables (weak keys) */
-  LuaObject *allweak;  /* list of all-weak tables */
   LuaObject *tobefnz;  /* list of userdata to be GC */
   
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
@@ -63,6 +64,12 @@ public:
   Table *base_metatables_[LUA_NUMTAGS];  /* metatables for basic types */
 
   uint8_t isShuttingDown;
+
+  void PushGray(LuaObject* o);
+  void PushGrayAgain(LuaObject* o);
+  void PushWeak(LuaObject* o);
+  void PushAllWeak(LuaObject* o);
+  void PushEphemeron(LuaObject* o);
 
 private:
 
