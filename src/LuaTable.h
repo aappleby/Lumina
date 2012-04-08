@@ -78,6 +78,7 @@ public:
 
   int PropagateGC_Strong(GCVisitor& visitor);
   int PropagateGC_WeakValues(GCVisitor& visitor);
+  int PropagateGC_Ephemeron(GCVisitor& visitor);
 
   //----------
 

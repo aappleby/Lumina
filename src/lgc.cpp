@@ -221,6 +221,16 @@ void GCVisitor::PushWeak(LuaObject* o) {
   thread_G->weak = o;
 }
 
+void GCVisitor::PushAllWeak(LuaObject* o) {
+  o->next_gray_ = thread_G->allweak;
+  thread_G->allweak = o;
+}
+
+void GCVisitor::PushEphemeron(LuaObject* o) {
+  o->next_gray_ = thread_G->ephemeron;
+  thread_G->ephemeron = o;
+}
+
 
 
 /*
@@ -390,22 +400,6 @@ static int traversetable (global_State *g, Table *h) {
 
   // Strong keys, weak values - use weak table traversal.
   if (!weakkey && weakval) {
-    /*
-    h->traverse(traverseweakvalue_callback, &info);
-
-    if (info.hasclears) {
-      h->next_gray_ = thread_G->weak;
-      thread_G->weak = h;
-    }
-    else {
-      // no white values
-      // no need to clean
-      h->next_gray_ = thread_G->grayagain;
-      thread_G->grayagain = h;
-    }
-    return TRAVCOST + (int)h->hashtable.size();
-    */
-
     GCVisitor v;
     return h->PropagateGC_WeakValues(v);
   }

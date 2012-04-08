@@ -264,4 +264,51 @@ int Table::PropagateGC_WeakValues(GCVisitor& visitor) {
   return TRAVCOST + (int)hashtable.size();
 }
 
+// weak keys, strong values
+int Table::PropagateGC_Ephemeron(GCVisitor& visitor) {
+  bool propagate = false;
+  bool hasDeadKeys = false;
+
+  for(int i = 0; i < (int)array.size(); i++) {
+    if (array[i].isWhite()) {
+      visitor.MarkValue(array[i]);
+    }
+  }
+
+  for(int i = 0; i < (int)hashtable.size(); i++) {
+    Node* n = getNode(i);
+
+    // sweep keys for nil values
+    if (n->i_val.isNil()) {
+      if (n->i_key.isWhite()) {
+        n->i_key = TValue::Nil();
+      }
+      continue;
+    }
+
+    if (n->i_key.isLiveColor()) {
+      hasDeadKeys = true;
+     
+      if (n->i_val.isLiveColor()) {
+        propagate = true;
+      }
+    } else {
+      // Key is marked, mark the value if it's white.
+      if (n->i_val.isWhite()) {
+        visitor.MarkValue(n->i_val);
+      }
+    }
+  }
+
+  if (propagate) {
+    visitor.PushEphemeron(this);
+  } else if (hasDeadKeys) {
+    visitor.PushAllWeak(this);
+  } else {
+    visitor.PushGrayAgain(this);
+  }
+
+  return TRAVCOST + (int)array.size() + (int)hashtable.size();
+}
+
 //-----------------------------------------------------------------------------

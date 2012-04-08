@@ -10,6 +10,8 @@ public:
   void PushGray      (LuaObject* o);
   void PushGrayAgain (LuaObject* o);
   void PushWeak      (LuaObject* o);
+  void PushAllWeak   (LuaObject* o);
+  void PushEphemeron (LuaObject* o);
 };
 
 class LuaObject : public LuaBase {
