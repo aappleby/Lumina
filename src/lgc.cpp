@@ -423,7 +423,6 @@ static void clearkeys (LuaObject* graylist) {
   }
 }
 
-
 /*
 ** clear entries with unmarked values from all weaktables in list 'l' up
 ** to element 'f'
@@ -431,26 +430,7 @@ static void clearkeys (LuaObject* graylist) {
 static void clearvalues (LuaObject *l, LuaObject *f) {
   for (; l != f; l = l->next_gray_) {
     Table *h = dynamic_cast<Table*>(l);
-    
-    for (int i = 0; i < (int)h->array.size(); i++) {
-      TValue *o = &h->array[i];
-      if (o->isLiveColor()) {
-        *o = TValue::nil;
-      }
-    }
-
-    for(int i = 0; i < (int)h->hashtable.size(); i++) {
-      Node* n = h->getNode(i);
-      if (n->i_val.isNotNil()) {
-        if(n->i_val.isLiveColor()) {
-          n->i_val = TValue::nil;
-          if (n->i_key.isWhite()) {
-            // Unused and unmarked key, remove it.
-            n->i_key = TValue::Nil();
-          }
-        }
-      }
-    }
+    h->SweepWhiteVals();
   }
 }
 

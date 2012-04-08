@@ -82,6 +82,7 @@ public:
   int PropagateGC_Ephemeron(GCVisitor& visitor);
 
   void SweepWhiteKeys();
+  void SweepWhiteVals();
 
   //----------
 
