@@ -1,6 +1,7 @@
 #pragma once
 #include "LuaTypes.h"
 #include "LuaBuffer.h"
+#include "LuaGraylist.h"
 #include "LuaUpval.h" // for uvhead
 #include "LuaValue.h" // for l_registry
 
@@ -45,7 +46,9 @@ public:
   LuaObject *grayagain_;  // list of objects to be traversed atomically
   LuaObject *weak_;       // list of tables with weak values
   LuaObject *ephemeron_;  // list of ephemeron tables (weak keys)
-  LuaObject *allweak_;    // list of all-weak tables
+
+  //LuaObject *allweak_;    // list of all-weak tables
+  LuaGraylist allweak_;
 
   LuaObject *tobefnz;  /* list of userdata to be GC */
   

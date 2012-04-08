@@ -539,6 +539,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\LuaGraylist.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaGraylist.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\LuaObject.cpp"
 				>
 			</File>

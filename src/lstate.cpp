@@ -216,7 +216,8 @@ lua_State *lua_newstate () {
     g->grayhead_ = NULL;
     g->grayagain_ = NULL;
     g->weak_ = NULL;
-    g->allweak_ = NULL;
+    //g->allweak_ = NULL;
+    assert(g->allweak_.isEmpty());
     g->ephemeron_ = NULL;
 
     g->gcpause = LUAI_GCPAUSE;

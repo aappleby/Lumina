@@ -49,9 +49,12 @@ void global_State::PushWeak(LuaObject* o) {
 
 void global_State::PushAllWeak(LuaObject* o) {
   //assert(o->next_gray_ == NULL);
+  /*
   o->setColor(LuaObject::GRAY);
   o->next_gray_ = allweak_;
   allweak_ = o;
+  */
+  allweak_.Push(o);
 }
 
 void global_State::PushEphemeron(LuaObject* o) {

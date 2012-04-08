@@ -232,7 +232,9 @@ static void markroot (global_State *g) {
   g->grayhead_ = NULL;
   g->grayagain_ = NULL;
   g->weak_ = NULL;
-  g->allweak_ = NULL;
+
+  g->allweak_.Clear();
+
   g->ephemeron_ = NULL;
 
   markobject(g->mainthread);
@@ -706,10 +708,13 @@ static void atomic () {
   /* at this point, all strongly accessible objects are marked. */
   /* clear values from weak tables, before checking finalizers */
   clearvalues(g->weak_, NULL);
-  clearvalues(g->allweak_, NULL);
+  
+  //clearvalues(g->allweak_, NULL);
+  g->allweak_.SweepValues(NULL);
 
   LuaObject* origweak = g->weak_;
-  LuaObject* origall = g->allweak_;
+  LuaObject* origall = g->allweak_.head_;
+
   separatetobefnz(0);  /* separate objects to be finalized */
   
   /* mark userdata that will be finalized */
@@ -725,11 +730,16 @@ static void atomic () {
   /* at this point, all resurrected objects are marked. */
   /* remove dead objects from weak tables */
   clearkeys(g->ephemeron_);  /* clear keys from all ephemeron tables */
-  clearkeys(g->allweak_);  /* clear keys from all allweak tables */
+
+  // clear keys from all allweak tables
+  //clearkeys(g->allweak_);
+  g->allweak_.SweepKeys();
 
   /* clear values from resurrected weak tables */
   clearvalues(g->weak_, origweak);
-  clearvalues(g->allweak_, origall);
+
+  //clearvalues(g->allweak_, origall);
+  g->allweak_.SweepValues(origall);
 
   g->strings_->sweepCursor_ = 0;  /* prepare to sweep strings */
   g->gcstate = GCSsweepstring;
