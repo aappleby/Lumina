@@ -86,7 +86,7 @@ static int isWeakTableRef (const TValue *v) {
   }
   
   if (v->isString()) {
-    v->getString()->stringmark();  /* strings are `values', so are never weak */
+    //v->getString()->stringmark();  /* strings are `values', so are never weak */
     return 0;
   }
   

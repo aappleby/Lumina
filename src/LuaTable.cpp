@@ -193,6 +193,19 @@ int Table::traverse(Table::nodeCallback c, void* blob) {
 void Table::VisitGC(GCVisitor& visitor) {
   setColor(GRAY);
   visitor.PushGray(this);
+
+  for(int i = 0; i < (int)array.size(); i++) {
+    if(array[i].isString()) {
+      array[i].getObject()->setColor(LuaObject::GRAY);
+    }
+  }
+
+  for(int i = 0; i < (int)hashtable.size(); i++) {
+    Node* n = getNode(i);
+
+    if(n->i_key.isString()) n->i_key.getObject()->setColor(LuaObject::GRAY);
+    if(n->i_val.isString()) n->i_val.getObject()->setColor(LuaObject::GRAY);
+  }
 }
 
 //-----------------------------------------------------------------------------
