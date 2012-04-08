@@ -42,9 +42,12 @@ void global_State::PushGrayAgain(LuaObject* o) {
 
 void global_State::PushWeak(LuaObject* o) {
   //assert(o->next_gray_ == NULL);
+  /*
   o->setColor(LuaObject::GRAY);
   o->next_gray_ = weak_;
   weak_ = o;
+  */
+  weak_.Push(o);
 }
 
 void global_State::PushAllWeak(LuaObject* o) {

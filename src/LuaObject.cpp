@@ -22,6 +22,7 @@ int LuaObject::instanceCounts[256];
 LuaObject::LuaObject(LuaType type) {
 
   next = NULL;
+  next_gray_ = NULL;
   flags_ = 0;
   color_ = thread_G ? thread_G->livecolor : GRAY;
   type_ = type;

@@ -215,8 +215,9 @@ lua_State *lua_newstate () {
     // Gray lists
     g->grayhead_ = NULL;
     g->grayagain_ = NULL;
-    g->weak_ = NULL;
+    //g->weak_ = NULL;
     //g->allweak_ = NULL;
+    assert(g->weak_.isEmpty());
     assert(g->allweak_.isEmpty());
     g->ephemeron_ = NULL;
 

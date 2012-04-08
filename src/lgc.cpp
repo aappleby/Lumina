@@ -231,7 +231,9 @@ void GCVisitor::PushEphemeron(LuaObject* o) {
 static void markroot (global_State *g) {
   g->grayhead_ = NULL;
   g->grayagain_ = NULL;
-  g->weak_ = NULL;
+
+  //g->weak_ = NULL;
+  g->weak_.Clear();
 
   g->allweak_.Clear();
 
@@ -285,9 +287,7 @@ static int propagatemark (global_State *g) {
 
 // Propagate marks through all objects on this graylist, removing them
 // from the list as we go.
-void PropagateGC_Graylist(LuaObject*& head) {
-  GCVisitor visitor;
-
+void PropagateGC_Graylist(LuaObject*& head, GCVisitor& visitor) {
   while(head) {
     LuaObject *o = head;
     head = o->next_gray_;
@@ -303,18 +303,23 @@ void PropagateGC_Graylist(LuaObject*& head) {
 ** twice the same table (which is not wrong, but inefficient)
 */
 static void retraversegrays (global_State *g) {
-  LuaObject *weak = g->weak_;  /* save original lists */
+  //LuaObject *weak = g->weak_;  /* save original lists */
+  LuaGraylist weak;
+  weak.Swap(g->weak_);
+
   LuaObject *grayagain = g->grayagain_;
   LuaObject *ephemeron = g->ephemeron_;
   
-  g->weak_ = NULL;
   g->grayagain_ = NULL;
   g->ephemeron_ = NULL;
 
-  PropagateGC_Graylist(g->grayhead_);
-  PropagateGC_Graylist(grayagain);
-  PropagateGC_Graylist(weak);
-  PropagateGC_Graylist(ephemeron);
+  GCVisitor v;
+
+  PropagateGC_Graylist(g->grayhead_, v);
+  PropagateGC_Graylist(grayagain, v);
+  //PropagateGC_Graylist(weak, v);
+  weak.PropagateGC(v);
+  PropagateGC_Graylist(ephemeron, v);
 }
 
 
@@ -338,7 +343,7 @@ static void convergeephemerons (global_State *g) {
       // cause more things in ephemeron tables to turn gray, so we have to repeat.
       // the process until nothing gets turned gray.
       if (v.mark_count_) {
-        PropagateGC_Graylist(g->grayhead_);
+        PropagateGC_Graylist(g->grayhead_, v);
         changed = 1;  /* will have to revisit all ephemeron tables */
       }
     }
@@ -745,12 +750,11 @@ static void atomic () {
 
   /* at this point, all strongly accessible objects are marked. */
   /* clear values from weak tables, before checking finalizers */
-  clearvalues(g->weak_, NULL);
+  //clearvalues(g->weak_, NULL);
+  g->weak_.SweepValues();
   
   //clearvalues(g->allweak_, NULL);
   g->allweak_.SweepValues();
-
-  LuaObject* origweak = g->weak_;
 
   // Userdata that requires finalization has to be separated from the main gc list
   // and kept alive until the finalizers are called.
@@ -761,7 +765,8 @@ static void atomic () {
   }
   
   /* remark, to propagate `preserveness' */
-  PropagateGC_Graylist(g->grayhead_);
+  GCVisitor v;
+  PropagateGC_Graylist(g->grayhead_, v);
   convergeephemerons(g);
 
   /* at this point, all resurrected objects are marked. */
@@ -771,7 +776,7 @@ static void atomic () {
   // clear keys from all allweak tables
 
   /* clear values from resurrected weak tables */
-  clearvalues(g->weak_, origweak);
+  g->weak_.SweepValues();
 
   g->allweak_.Sweep();
 
