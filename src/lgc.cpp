@@ -431,7 +431,6 @@ static void sweepthread (lua_State *L1) {
 
 static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
   global_State *g = thread_G;
-  l_mem debt = g->getGCDebt();
 
   while (*p != NULL && count-- > 0) {
     LuaObject *curr = *p;
@@ -449,14 +448,11 @@ static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
       p = &curr->next;  /* go to next element */
     }
   }
-  //assert(debt == g->getGCDebt());
-  g->setGCDebt(debt);  /* sweeping should not change debt */
   return p;
 }
 
 static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
   global_State *g = thread_G;
-  l_mem debt = g->getGCDebt();  /* current debt */
   while (*p != NULL && count-- > 0) {
     LuaObject *curr = *p;
     if (curr->isDead()) {  /* is 'curr' dead? */
@@ -477,8 +473,6 @@ static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
       p = &curr->next;  /* go to next element */
     }
   }
-  //assert(debt == g->getGCDebt());
-  g->setGCDebt(debt);  /* sweeping should not change debt */
   return p;
 }
 
@@ -491,16 +485,11 @@ static LuaObject** sweeplist (LuaObject **p, size_t count) {
 }
 
 void deletelist (LuaObject*& head) {
-  l_mem debt = thread_G->getGCDebt();
-
   while (head != NULL) {
     LuaObject *curr = head;
     head = curr->next;
     freeobj(curr);
   }
-
-  //assert(debt == thread_G->getGCDebt());
-  thread_G->setGCDebt(debt);  /* sweeping should not change debt */
 }
 
 /* }====================================================== */
