@@ -710,10 +710,9 @@ static void atomic () {
   clearvalues(g->weak_, NULL);
   
   //clearvalues(g->allweak_, NULL);
-  g->allweak_.SweepValues(NULL);
+  g->allweak_.SweepValues();
 
   LuaObject* origweak = g->weak_;
-  LuaObject* origall = g->allweak_.head_;
 
   separatetobefnz(0);  /* separate objects to be finalized */
   
@@ -732,14 +731,11 @@ static void atomic () {
   clearkeys(g->ephemeron_);  /* clear keys from all ephemeron tables */
 
   // clear keys from all allweak tables
-  //clearkeys(g->allweak_);
-  g->allweak_.SweepKeys();
 
   /* clear values from resurrected weak tables */
   clearvalues(g->weak_, origweak);
 
-  //clearvalues(g->allweak_, origall);
-  g->allweak_.SweepValues(origall);
+  g->allweak_.Sweep();
 
   g->strings_->sweepCursor_ = 0;  /* prepare to sweep strings */
   g->gcstate = GCSsweepstring;

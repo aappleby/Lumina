@@ -81,6 +81,7 @@ public:
   int PropagateGC_WeakValues(GCVisitor& visitor);
   int PropagateGC_Ephemeron(GCVisitor& visitor);
 
+  void SweepWhite();
   void SweepWhiteKeys();
   void SweepWhiteVals();
 

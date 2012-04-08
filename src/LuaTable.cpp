@@ -339,6 +339,27 @@ int Table::PropagateGC_Ephemeron(GCVisitor& visitor) {
   return TRAVCOST + (int)array.size() + (int)hashtable.size();
 }
 
+void Table::SweepWhite() {
+  for (int i = 0; i < (int)array.size(); i++) {
+    if (array[i].isLiveColor()) {
+      array[i] = TValue::Nil();
+    }
+  }
+
+  for(int i = 0; i < (int)hashtable.size(); i++) {
+    Node* n = getNode(i);
+
+    if(n->i_key.isLiveColor()) {
+      n->i_key = TValue::Nil();
+      n->i_val = TValue::Nil();
+    }
+
+    if(n->i_val.isLiveColor()) {
+      n->i_val = TValue::Nil();
+    }
+  }
+}
+
 void Table::SweepWhiteKeys() {
   for(int i = 0; i < (int)hashtable.size(); i++) {
     Node* n = getNode(i);
@@ -364,9 +385,6 @@ void Table::SweepWhiteVals() {
     n->i_val = TValue::nil;
     if (n->i_key.isWhite()) {
       n->i_key = TValue::Nil();
-    } else {
-      int b = 1;
-      b++;
     }
   }
 }
