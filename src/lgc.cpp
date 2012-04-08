@@ -390,6 +390,7 @@ static int traversetable (global_State *g, Table *h) {
 
   // Strong keys, weak values - use weak table traversal.
   if (!weakkey && weakval) {
+    /*
     h->traverse(traverseweakvalue_callback, &info);
 
     if (info.hasclears) {
@@ -397,12 +398,16 @@ static int traversetable (global_State *g, Table *h) {
       thread_G->weak = h;
     }
     else {
-      /* no white values */
-      /* no need to clean */
+      // no white values
+      // no need to clean
       h->next_gray_ = thread_G->grayagain;
       thread_G->grayagain = h;
     }
     return TRAVCOST + (int)h->hashtable.size();
+    */
+
+    GCVisitor v;
+    return h->PropagateGC_WeakValues(v);
   }
 
   // Weak keys, strong values - use ephemeron traversal.
