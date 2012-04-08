@@ -229,28 +229,28 @@ void lua_State::VisitGC(GCVisitor& visitor) {
   visitor.PushGray(this);
 }
 
-/*
+// TODO(aappleby): Always clearing the unused part of the stack
+// is safe, never clearing it is _not_ - something in the code
+// is failing to clear the stack when top is moved.
 int lua_State::PropagateGC(GCVisitor& visitor) {
-  StkId o = stack.begin();
-
-  // stack not completely built yet
-  if (o == NULL) return 1;  
-
-  for (; o < L->top; o++) {
-    markvalue(o);
+  if (stack.empty()) {
+    // why do threads go on the 'grayagain' list?
+    visitor.PushGrayAgain(this);
+    return 1;
   }
 
-  // final traversal?
-  if (g->gcstate == GCSatomic) {  
-    // clear not-marked stack slice
-    StkId lim = L->stack.end();
-    for (; o < lim; o++) {
-      *o = TValue::nil;
-    }
+  TValue* v = stack.begin();
+  for (; v < top; v++) {
+    visitor.MarkValue(*v);
   }
 
-  return TRAVCOST + cast_int(o - L->stack.begin());
+  for (; v < stack.end(); v++) {
+    *v = TValue::nil;
+  }
+
+  // why do threads go on the 'grayagain' list?
+  visitor.PushGrayAgain(this);
+  return TRAVCOST + int(top - stack.begin());
 }
-*/
 
 //-----------------------------------------------------------------------------

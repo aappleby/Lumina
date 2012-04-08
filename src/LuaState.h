@@ -20,7 +20,7 @@ public:
   ~lua_State();
 
   virtual void VisitGC(GCVisitor& visitor);
-  //virtual int PropagateGC(GCVisitor& visitor);
+  virtual int PropagateGC(GCVisitor& visitor);
 
   uint8_t status;
   StkId top;  /* first free slot in the stack */

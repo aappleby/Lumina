@@ -471,43 +471,21 @@ static int traverseclosure (global_State *g, Closure *cl) {
   return TRAVCOST + cl->nupvalues;
 }
 
-
-static int traversestack (global_State *g, lua_State *L) {
-  StkId o = L->stack.begin();
-  
-  // stack not completely built yet
-  if (o == NULL) return 1;
-
-  for (; o < L->top; o++) {
-    markvalue(o);
-  }
-
-  if (g->gcstate == GCSatomic) {  /* final traversal? */
-    StkId lim = L->stack.end();  /* real end of stack */
-    for (; o < lim; o++)  /* clear not-marked stack slice */
-      *o = TValue::nil;
-  }
-
-  return TRAVCOST + cast_int(o - L->stack.begin());
-}
-
-
 /*
 ** traverse one gray object, turning it to black (except for threads,
 ** which are always gray).
 ** Returns number of values traversed.
 */
+
+// TODO(aappleby): Why do we mark objects black _before_ we traverse their children?
+
 static int propagatemark (global_State *g) {
   // pop gray object off the list
   LuaObject *o = g->grayhead_;
   g->grayhead_ = o->next_gray_;
-
-  // make it black
-  // (why do we make it black _before_ we traverse its children?)
   assert(o->isGray());
 
   // traverse its children and add them to the gray list(s)
-
   if(o->isTable()) {
     o->grayToBlack();
     return traversetable(g, dynamic_cast<Table*>(o));
@@ -519,17 +497,13 @@ static int propagatemark (global_State *g) {
   }
 
   if(o->isThread()) {
-    o->grayToBlack();
-    // why do threads go on the 'grayagain' list?
-    o->next_gray_ = g->grayagain;
-    g->grayagain = o;
-    o->blackToGray();
-    return traversestack(g, dynamic_cast<lua_State*>(o));
+    GCVisitor visitor;
+    return o->PropagateGC(visitor);
   }
 
   if(o->isProto()) {
-    GCVisitor v;
-    return o->PropagateGC(v);
+    GCVisitor visitor;
+    return o->PropagateGC(visitor);
   }
 
   assert(false);
