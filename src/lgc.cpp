@@ -198,6 +198,8 @@ void GCVisitor::MarkObject(LuaObject* o) {
     return;
   }
 
+  mark_count_++;
+
   if(!o->isFixed()) {
     assert(o->isLiveColor());
   }
@@ -267,69 +269,6 @@ static void markroot (global_State *g) {
 ** =======================================================
 */
 
-struct tableTraverseInfo {
-  int markedAny;
-  int hasclears;
-  int propagate;
-  //bool weakkey;
-  //bool weakval;
-};
-
-void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
-  tableTraverseInfo& info = *(tableTraverseInfo*)blob;
-
-  // If the node's value is nil, mark the key as dead.
-  if (val->isNil()) {
-    if (key->isWhite()) {
-      // unused and unmarked key; remove it
-      *key = TValue::Nil();
-    }
-    return;
-  }
-
-  if (key->isLiveColor()) {  /* key is not marked (yet)? */
-    info.hasclears = 1;  /* table must be cleared */
-   
-    if (val->isWhite()) { /* value not marked yet? */
-      info.propagate = 1;  /* must propagate again */
-    }
-    return;
-  }
-
-  if (val->isWhite()) {  /* value not marked yet? */
-    info.markedAny = 1;
-    markobject(val->getObject());  /* mark it now */
-  }
-}
-
-static int traverseephemeron (Table *h) {
-  tableTraverseInfo info;
-  info.markedAny = 0;
-  info.hasclears = 0;
-  info.propagate = 0;
-
-  h->traverse(traverseephemeronCB, &info);
-
-  if (info.propagate) {
-    /* have to propagate again */
-    h->next_gray_ = thread_G->ephemeron;
-    thread_G->ephemeron = h;
-  }
-  else if (info.hasclears) {
-    /* does table have white keys? */
-    /* may have to clean white keys */
-    h->next_gray_ = thread_G->allweak;
-    thread_G->allweak = h;
-  }
-  else {
-    /* no white keys */
-    /* no need to clean */
-    h->next_gray_ = thread_G->grayagain;
-    thread_G->grayagain = h;
-  }
-  return info.markedAny;
-}
-
 void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal) {
   const TValue *mode = fasttm(t->metatable, TM_MODE);
 
@@ -394,7 +333,11 @@ static void convergeephemerons (global_State *g) {
     changed = 0;
     while ((w = next) != NULL) {
       next = w->next_gray_;
-      if (traverseephemeron(dynamic_cast<Table*>(w))) {  /* traverse marked some value? */
+
+      GCVisitor v;
+      w->PropagateGC(v);
+
+      if (v.mark_count_) {  /* traverse marked some value? */
         /* propagate changes */
         while (g->grayhead_) propagatemark(g);
         changed = 1;  /* will have to revisit all ephemeron tables */
@@ -960,19 +903,26 @@ void luaC_fullgc (int isemergency) {
     g->gcstate = GCSsweepstring;
   }
   g->gckind = isemergency ? KGC_EMERGENCY : KGC_NORMAL;
+
   /* finish any pending sweep phase to start a new cycle */
   luaC_runtilstate(bitmask(GCSpause));
+
   /* run entire collector */
   luaC_runtilstate(~bitmask(GCSpause));
   luaC_runtilstate(bitmask(GCSpause));
+
   if (origkind == KGC_GEN) {  /* generational mode? */
     /* generational mode must always start in propagate phase */
     luaC_runtilstate(bitmask(GCSpropagate));
   }
+
   g->gckind = origkind;
   g->setGCDebt(stddebt(g));
-  if (!isemergency)   /* do not run finalizers during emergency GC */
+
+  // do not run finalizers during emergency GC
+  if (!isemergency) {
     callallpendingfinalizers(1);
+  }
 }
 
 /* }====================================================== */
