@@ -78,9 +78,8 @@ enum LuaType {
   LUA_TCCL           = 10,  // C closure - function pointer with persistent state
   LUA_TPROTO         = 11,  // Function prototype, contains VM opcodes
   LUA_TUPVAL         = 12,  // Persistent state object for C and Lua closuers
-  LUA_TDEADKEY       = 13,  // Table tombstone, used during garbage collection.
-  LUA_TNONE          = 14,  // None - invalid value, what you get if you read past the end of an array.
-  LUA_NUMTAGS        = 15,
+  LUA_TNONE          = 13,  // None - invalid value, what you get if you read past the end of an array.
+  LUA_NUMTAGS        = 14,
 };
 
 /*

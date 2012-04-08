@@ -256,17 +256,17 @@ struct tableTraverseInfo {
   int markedAny;
   int hasclears;
   int propagate;
-  bool weakkey;
-  bool weakval;
+  //bool weakkey;
+  //bool weakval;
 };
 
 void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
   tableTraverseInfo& info = *(tableTraverseInfo*)blob;
-  assert(!key->isDeadKey() || val->isNil());
 
   if (val->isNil()) {
     if (key->isWhite()) {
-      key->setDeadKey();  /* unused and unmarked key; remove it */
+      // unused and unmarked key, remove it
+      *key = TValue::Nil();
     }
     return;
   }
@@ -283,12 +283,12 @@ void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
 
 void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
   tableTraverseInfo& info = *(tableTraverseInfo*)blob;
-  assert(!key->isDeadKey() || val->isNil());
 
   // If the node's value is nil, mark the key as dead.
   if (val->isNil()) {
     if (key->isWhite()) {
-      key->setDeadKey();  /* unused and unmarked key; remove it */
+      // unused and unmarked key; remove it
+      *key = TValue::Nil();
     }
     return;
   }
@@ -310,11 +310,11 @@ void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
 
 void traverseStrongNode(TValue* key, TValue* val, void* blob) {
   tableTraverseInfo& info = *(tableTraverseInfo*)blob;
-  assert(!key->isDeadKey() || val->isNil());
 
   if (val->isNil()) {
     if (key->isWhite()) {
-      key->setDeadKey();  /* unused and unmarked key; remove it */
+      // Unused and unmarked key, remove it.
+      *key = TValue::Nil();
     }
     return;
   }
@@ -374,18 +374,18 @@ static int traversetable (global_State *g, Table *h) {
   info.markedAny = 0;
   info.hasclears = 0;
   info.propagate = 0;
-  info.weakkey = false;
-  info.weakval = false;
+  bool weakkey = false;
+  bool weakval = false;
 
-  getTableMode(h, info.weakkey, info.weakval);
+  getTableMode(h, weakkey, weakval);
 
   // Strong keys, strong values - use strong table traversal.
-  if(!info.weakkey && !info.weakval) {
+  if(!weakkey && !weakval) {
     return h->traverse(traverseStrongNode, &info);
   }
 
   // Strong keys, weak values - use weak table traversal.
-  if (!info.weakkey) {
+  if (!weakkey) {
     h->blackToGray();
     h->traverse(traverseweakvalue_callback, &info);
 
@@ -403,7 +403,7 @@ static int traversetable (global_State *g, Table *h) {
   }
 
   // Weak keys, strong values - use ephemeron traversal.
-  if (!info.weakval) {
+  if (!weakval) {
     h->blackToGray();
     h->traverse(traverseephemeronCB, &info);
 
@@ -556,7 +556,8 @@ static void clearkeys (LuaObject *l) {
         if(n->i_key.isLiveColor()) {
           n->i_val = TValue::nil;  /* remove value ... */
           if (n->i_key.isWhite()) {
-            n->i_key.setDeadKey();  /* unused and unmarked key; remove it */
+            // Unused and unmarked key, remove it.
+            n->i_key = TValue::Nil();
           }
         }
       }
@@ -575,8 +576,8 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
     
     for (int i = 0; i < (int)h->array.size(); i++) {
       TValue *o = &h->array[i];
-      if (o->isLiveColor()) {  /* value was collected? */
-        *o = TValue::nil;  /* remove value */
+      if (o->isLiveColor()) {
+        *o = TValue::nil;
       }
     }
 
@@ -586,7 +587,8 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
         if(n->i_val.isLiveColor()) {
           n->i_val = TValue::nil;
           if (n->i_key.isWhite()) {
-            n->i_key.setDeadKey();
+            // Unused and unmarked key, remove it.
+            n->i_key = TValue::Nil();
           }
         }
       }

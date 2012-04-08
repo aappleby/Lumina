@@ -22,8 +22,6 @@ public:
 
   uint8_t getFlags();
 
-  bool isDeadKey() { return type_ == LUA_TDEADKEY; }
-
   bool isDead();
 
   bool isLiveColor();

@@ -98,16 +98,11 @@ public:
   bool isUserdata() const      { return type_ == LUA_TUSERDATA; }
   bool isThread() const        { return type_ == LUA_TTHREAD; }
   bool isUpval() const         { return type_ == LUA_TUPVAL; }
-  bool isDeadKey() const       { return type_ == LUA_TDEADKEY; }
   bool isProto() const         { return type_ == LUA_TPROTO; }
 
   bool isCClosure() const      { return type_ == LUA_TCCL; }
   bool isLClosure() const      { return type_ == LUA_TLCL; }
   bool isLightFunction() const { return type_ == LUA_TLCF; }
-
-  // Note that some code still looks at the (un-dereferencable) pointer
-  // contained in a dead key.
-  void setDeadKey() { type_ = LUA_TDEADKEY; }
 
   //----------
   // These conversion operations return None if they fail.
@@ -127,7 +122,6 @@ public:
   int        getInteger() const       { return (int)number_; }
   double     getNumber() const        { assert(isNumber()); return number_; }
   LuaObject* getObject() const        { assert(isCollectable()); return object_; }
-  LuaObject* getDeadKey()             { assert(isDeadKey()); return object_; }
   Closure*   getCClosure()            { assert(isCClosure()); return reinterpret_cast<Closure*>(object_); }
   Closure*   getLClosure()            { assert(isLClosure()); return reinterpret_cast<Closure*>(object_); }
   TString*   getString() const        { assert(isString()); return reinterpret_cast<TString*>(object_); }

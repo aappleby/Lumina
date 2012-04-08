@@ -22,7 +22,6 @@ char* luaT_typenames_[] = {
   "function",
   "proto",
   "upval",
-  "deadkey",
   "no value",
   "<invalid>",
 };
