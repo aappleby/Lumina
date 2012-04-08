@@ -97,7 +97,7 @@ public:
   void clearFixed();
 
   bool isOld();
-  void setOld();
+  virtual void setOld();
   void clearOld();
 
   bool isTestGray();

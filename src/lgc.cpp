@@ -387,7 +387,6 @@ static void freeobj (LuaObject *o) {
 }
 
 
-#define sweepwholelist(p)	sweeplist(p,MAX_LUMEM)
 static LuaObject **sweeplist (LuaObject **p, size_t count);
 
 
@@ -653,7 +652,7 @@ void luaC_changemode (lua_State *L, int mode) {
   else {  /* change to incremental mode */
     /* sweep all objects to turn them back to white
        (as white has not changed, nothing extra will be collected) */
-    g->sweepstrgc = 0;
+    g->strings_->sweepCursor_ = 0;
     g->gcstate = GCSsweepstring;
     g->gckind = KGC_NORMAL;
     luaC_runtilstate(~sweepphases);
@@ -750,7 +749,7 @@ static void atomic () {
   clearvalues(g->weak, origweak);
   clearvalues(g->allweak, origall);
 
-  g->sweepstrgc = 0;  /* prepare to sweep strings */
+  g->strings_->sweepCursor_ = 0;  /* prepare to sweep strings */
   g->gcstate = GCSsweepstring;
   
   std::swap(g->livecolor, g->deadcolor);
@@ -777,8 +776,8 @@ static l_mem singlestep () {
       }
     }
     case GCSsweepstring: {
-      if (g->sweepstrgc < g->strings_->size_) {
-        sweeplist(&g->strings_->hash_[g->sweepstrgc++], MAX_LUMEM);
+      if (g->strings_->sweepCursor_ < g->strings_->size_) {
+        sweeplist(&g->strings_->hash_[g->strings_->sweepCursor_++], MAX_LUMEM);
         return GCSWEEPCOST;
       }
       else {  /* no more strings to sweep */
@@ -899,7 +898,7 @@ void luaC_fullgc (int isemergency) {
   if (keepinvariant(g)) {  /* marking phase? */
     /* must sweep all objects to turn them back to white
        (as white has not changed, nothing will be collected) */
-    g->sweepstrgc = 0;
+    g->strings_->sweepCursor_ = 0;
     g->gcstate = GCSsweepstring;
   }
   g->gckind = isemergency ? KGC_EMERGENCY : KGC_NORMAL;

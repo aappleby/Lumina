@@ -498,8 +498,7 @@ static int llex (LexState *ls, SemInfo *seminfo) {
           do {
             save_and_next(ls);
           } while (lislalnum(ls->current));
-          ts = luaX_newstring(ls, luaZ_buffer(ls->buff),
-                                  luaZ_bufflen(ls->buff));
+          ts = luaX_newstring(ls, luaZ_buffer(ls->buff), luaZ_bufflen(ls->buff));
           seminfo->ts = ts;
           if (ts->getReserved() > 0)  /* reserved word? */
             return ts->getReserved() - 1 + FIRST_RESERVED;

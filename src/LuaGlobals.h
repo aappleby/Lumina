@@ -26,7 +26,9 @@ public:
 
   void incGCDebt(int debt) { 
     totalbytes_ += debt;
-    GCdebt_ += debt;
+    if(debt > 0) {
+      GCdebt_ += debt;
+    }
   }
 
   stringtable* strings_;  /* hash table for strings */
@@ -41,7 +43,6 @@ public:
   uint8_t gcstate;  /* state of garbage collector */
   uint8_t gckind;  /* kind of GC running */
   uint8_t gcrunning;  /* true if GC is running */
-  int sweepstrgc;  /* position of sweep in `strt' */
 
   LuaObject *allgc;  /* list of all collectable objects */
   LuaObject *finobj;  /* list of collectable objects with finalizers */

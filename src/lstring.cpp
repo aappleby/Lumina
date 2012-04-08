@@ -19,39 +19,6 @@
 #include "lstring.h"
 #include "ldebug.h"
 
-#define lmod(s,size) cast(int, (s) & ((size)-1))
-
-/*
-void luaS_resize (int newsize) {
-  int i;
-  stringtable *tb = thread_G->strings_;
-  // cannot resize while GC is traversing strings
-  luaC_runtilstate(~(1 << GCSsweepstring));
-  if (newsize > tb->size_) {
-    tb->hash_.resize(newsize);
-  }
-  // rehash
-  for (i=0; i<tb->size_; i++) {
-    LuaObject *p = tb->hash_[i];
-    tb->hash_[i] = NULL;
-    while (p) {  // for each node in the list
-      LuaObject *next = p->next;  // save next
-      unsigned int h = lmod(dynamic_cast<TString*>(p)->getHash(), newsize);  // new position
-      p->next = tb->hash_[h];  // chain it
-      tb->hash_[h] = p;
-      p->clearOld();  // see MOVE OLD rule
-      p = next;
-    }
-  }
-  if (newsize < tb->size_) {
-    // shrinking slice must be empty
-    assert(tb->hash_[newsize] == NULL && tb->hash_[tb->size_ - 1] == NULL);
-    tb->hash_.resize(newsize);
-  }
-  tb->size_ = newsize;
-}
-*/
-
 void luaS_resize(int newsize) {
   // cannot resize while GC is traversing strings
   luaC_runtilstate(~(1 << GCSsweepstring));
@@ -69,19 +36,14 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
   char* buf = (char*)luaM_alloc(l+1);
   if(buf == NULL) return NULL;
 
-  TString* ts = new TString();
+  TString* ts = new TString(buf, h, str, l);
   if(ts == NULL) {
     luaM_free(buf);
     return NULL;
   }
 
-  LuaObject*& list = tb->hash_[lmod(h, tb->size_)];
+  LuaObject*& list = tb->hash_[h & (tb->size_ - 1)];
   ts->linkGC(list);
-  ts->setHash(h);
-  ts->setReserved(0);
-  ts->setBuf(buf);
-  ts->setText(str, l);
-
   tb->nuse_++;
   return ts;
 }

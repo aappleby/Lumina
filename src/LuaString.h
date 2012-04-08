@@ -8,7 +8,7 @@
 __declspec(align(8)) class TString : public LuaObject {
 public:
 
-  TString();
+  TString(char* buf, uint32_t hash, const char* str, int len);
   ~TString();
 
   size_t getLen() const { return len_; }
@@ -60,4 +60,5 @@ public:
   LuaVector<LuaObject*> hash_;
   uint32_t nuse_;
   int size_;
+  int sweepCursor_;
 };
