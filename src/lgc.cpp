@@ -216,6 +216,11 @@ void GCVisitor::PushGrayAgain(LuaObject* o) {
   thread_G->grayagain = o;
 }
 
+void GCVisitor::PushWeak(LuaObject* o) {
+  o->next_gray_ = thread_G->weak;
+  thread_G->weak = o;
+}
+
 
 
 /*

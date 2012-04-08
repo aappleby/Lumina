@@ -232,4 +232,36 @@ int Table::PropagateGC_Strong(GCVisitor& visitor) {
 
   return TRAVCOST + (int)array.size() + 2 * (int)hashtable.size();
 }
+
+int Table::PropagateGC_WeakValues(GCVisitor& visitor) {
+  bool hasDeadValues = false;
+
+  for(int i = 0; i < (int)array.size(); i++) {
+    if(array[i].isLiveColor()) hasDeadValues = true;
+  }
+
+  for(int i = 0; i < (int)hashtable.size(); i++) {
+    Node* n = getNode(i);
+
+    // Sweep dead keys with no values, mark all other
+    // keys.
+    if(n->i_val.isNil() && n->i_key.isWhite()) {
+      n->i_key = TValue::Nil();
+    } else {
+      visitor.MarkValue(n->i_key);
+    }
+
+    if(n->i_val.isLiveColor()) hasDeadValues = true;
+  }
+
+  if (hasDeadValues) {
+    visitor.PushWeak(this);
+  }
+  else {
+    visitor.PushGrayAgain(this);
+  }
+
+  return TRAVCOST + (int)hashtable.size();
+}
+
 //-----------------------------------------------------------------------------

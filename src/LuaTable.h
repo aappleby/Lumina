@@ -77,6 +77,7 @@ public:
   virtual void VisitGC(GCVisitor& visitor);
 
   int PropagateGC_Strong(GCVisitor& visitor);
+  int PropagateGC_WeakValues(GCVisitor& visitor);
 
   //----------
 
