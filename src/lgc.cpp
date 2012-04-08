@@ -271,14 +271,7 @@ void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal) {
   }
 }
 
-/*
-** traverse one gray object, turning it to black (except for threads,
-** which are always gray).
-** Returns number of values traversed.
-*/
-
-// TODO(aappleby): Why do we mark objects black _before_ we traverse their children?
-
+// Traverse one gray object, return # values traversed.
 static int propagatemark (global_State *g) {
   // pop gray object off the list
   LuaObject *o = g->grayhead_;
@@ -288,6 +281,20 @@ static int propagatemark (global_State *g) {
 
   GCVisitor visitor;
   return o->PropagateGC(visitor);
+}
+
+// Propagate marks through all objects on this graylist, removing them
+// from the list as we go.
+void PropagateGC_Graylist(LuaObject*& head) {
+  GCVisitor visitor;
+
+  while(head) {
+    LuaObject *o = head;
+    head = o->next_gray_;
+    o->next_gray_ = NULL;
+    assert(o->isGray());
+    o->PropagateGC(visitor);
+  }
 }
 
 /*
@@ -304,13 +311,10 @@ static void retraversegrays (global_State *g) {
   g->grayagain_ = NULL;
   g->ephemeron_ = NULL;
 
-  while (g->grayhead_) propagatemark(g);
-  g->grayhead_ = grayagain;
-  while (g->grayhead_) propagatemark(g);
-  g->grayhead_ = weak;
-  while (g->grayhead_) propagatemark(g);
-  g->grayhead_ = ephemeron;
-  while (g->grayhead_) propagatemark(g);
+  PropagateGC_Graylist(g->grayhead_);
+  PropagateGC_Graylist(grayagain);
+  PropagateGC_Graylist(weak);
+  PropagateGC_Graylist(ephemeron);
 }
 
 
@@ -329,9 +333,12 @@ static void convergeephemerons (global_State *g) {
       GCVisitor v;
       w->PropagateGC(v);
 
-      if (v.mark_count_) {  /* traverse marked some value? */
-        /* propagate changes */
-        while (g->grayhead_) propagatemark(g);
+      // If propagating through the ephemeron table turned any objects gray,
+      // we have to re-propagate those objects as well. That could in turn
+      // cause more things in ephemeron tables to turn gray, so we have to repeat.
+      // the process until nothing gets turned gray.
+      if (v.mark_count_) {
+        PropagateGC_Graylist(g->grayhead_);
         changed = 1;  /* will have to revisit all ephemeron tables */
       }
     }
@@ -754,7 +761,7 @@ static void atomic () {
   }
   
   /* remark, to propagate `preserveness' */
-  while (g->grayhead_) propagatemark(g);
+  PropagateGC_Graylist(g->grayhead_);
   convergeephemerons(g);
 
   /* at this point, all resurrected objects are marked. */
@@ -786,8 +793,9 @@ static l_mem singlestep () {
       return GCROOTCOST;
     }
     case GCSpropagate: {
-      if (g->grayhead_)
+      if (g->grayhead_) {
         return propagatemark(g);
+      }
       else {  /* no more `gray' objects */
         g->gcstate = GCSatomic;  /* finish mark phase */
         atomic();

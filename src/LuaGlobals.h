@@ -47,8 +47,7 @@ public:
   LuaObject *weak_;       // list of tables with weak values
   LuaObject *ephemeron_;  // list of ephemeron tables (weak keys)
 
-  //LuaObject *allweak_;    // list of all-weak tables
-  LuaGraylist allweak_;
+  LuaGraylist allweak_; // list of all-weak tables
 
   LuaObject *tobefnz;  /* list of userdata to be GC */
   
