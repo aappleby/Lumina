@@ -80,17 +80,21 @@ inline void markvalue(TValue* v) {
 
 // Strings behave as value types _when used as table keys_.
 
-static int isWeakTableRef (const TValue *o) {
-  if (!o->isCollectable()) {
+static int isWeakTableRef (const TValue *v) {
+  if (!v->isCollectable()) {
     return 0;
   }
   
-  if (o->isString()) {
-    o->getString()->stringmark();  /* strings are `values', so are never weak */
+  if (v->isString()) {
+    v->getString()->stringmark();  /* strings are `values', so are never weak */
     return 0;
   }
   
-  return o->getObject()->isWhite();
+  LuaObject* o = v->getObject();
+
+  assert(!o->isDeadColor());
+
+  return o->isLiveColor();
 }
 
 
@@ -280,8 +284,8 @@ struct tableTraverseInfo {
   int markedAny;
   int hasclears;
   int propagate;
-  int weakkey;
-  int weakval;
+  bool weakkey;
+  bool weakval;
 };
 
 void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
@@ -376,34 +380,37 @@ static int traverseephemeron (Table *h) {
   return info.markedAny;
 }
 
+void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal) {
+  const TValue *mode = fasttm(t->metatable, TM_MODE);
+
+  if(mode) {
+    assert(mode->isString());
+    outWeakKey = (strchr(mode->getString()->c_str(), 'k') != NULL);
+    outWeakVal = (strchr(mode->getString()->c_str(), 'v') != NULL);
+    assert(outWeakKey || outWeakVal);
+  }
+}
 
 // Table modes really should be a flag on the table instead
 // of a special tag method just to get/set two flags...
 static int traversetable (global_State *g, Table *h) {
-  markobject(h->metatable);
+  h->grayToBlack();
 
-  const TValue *mode = fasttm(h->metatable, TM_MODE);
+  markobject(h->metatable);
 
   tableTraverseInfo info;
   info.markedAny = 0;
   info.hasclears = 0;
   info.propagate = 0;
-  info.weakkey = 0;
-  info.weakval = 0;
+  info.weakkey = false;
+  info.weakval = false;
+
+  getTableMode(h, info.weakkey, info.weakval);
 
   // Strong keys, strong values - use strong table traversal.
-  if(mode == NULL) {
+  if(!info.weakkey && !info.weakval) {
     return h->traverse(traverseStrongNode, &info);
   }
-
-  if(mode) {
-    assert(mode->isString());
-    info.weakkey = (strchr(mode->getString()->c_str(), 'k') != NULL);
-    info.weakval = (strchr(mode->getString()->c_str(), 'v') != NULL);
-    assert(info.weakkey || info.weakval);
-  }
-
-  // Keep table gray
 
   // Strong keys, weak values - use weak table traversal.
   if (!info.weakkey) {
@@ -487,7 +494,6 @@ static int propagatemark (global_State *g) {
 
   // traverse its children and add them to the gray list(s)
   if(o->isTable()) {
-    o->grayToBlack();
     return traversetable(g, dynamic_cast<Table*>(o));
   }
 
@@ -592,18 +598,22 @@ static void clearkeys (LuaObject *l) {
 static void clearvalues (LuaObject *l, LuaObject *f) {
   for (; l != f; l = l->next_gray_) {
     Table *h = dynamic_cast<Table*>(l);
+    
     for (int i = 0; i < (int)h->array.size(); i++) {
       TValue *o = &h->array[i];
       if (isWeakTableRef(o)) {  /* value was collected? */
         *o = TValue::nil;  /* remove value */
       }
     }
+
     for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
-      if (n->i_val.isNotNil() && isWeakTableRef(&n->i_val)) {
-        n->i_val = TValue::nil;
-        if (n->i_key.isWhite()) {
-          n->i_key.setDeadKey();
+      if (n->i_val.isNotNil()) {
+        if(isWeakTableRef(&n->i_val)) {
+          n->i_val = TValue::nil;
+          if (n->i_key.isWhite()) {
+            n->i_key.setDeadKey();
+          }
         }
       }
     }
@@ -929,9 +939,12 @@ void luaC_freeallobjects () {
 
 static void atomic () {
   global_State *g = thread_G;
-  LuaObject *origweak, *origall;
+
   assert(!g->mainthread->isWhite());
-  markobject(thread_L);  /* mark running thread */
+
+  /* mark running thread */
+  markobject(thread_L);  
+
   /* registry and global metatables may be changed by API */
   markvalue(&g->l_registry);
   
@@ -951,11 +964,14 @@ static void atomic () {
   /* traverse objects caught by write barrier and by 'remarkupvals' */
   retraversegrays(g);
   convergeephemerons(g);
+
   /* at this point, all strongly accessible objects are marked. */
   /* clear values from weak tables, before checking finalizers */
   clearvalues(g->weak, NULL);
   clearvalues(g->allweak, NULL);
-  origweak = g->weak; origall = g->allweak;
+
+  LuaObject* origweak = g->weak;
+  LuaObject* origall = g->allweak;
   separatetobefnz(0);  /* separate objects to be finalized */
   
   /* mark userdata that will be finalized */
@@ -967,13 +983,16 @@ static void atomic () {
   /* remark, to propagate `preserveness' */
   while (g->grayhead_) propagatemark(g);
   convergeephemerons(g);
+
   /* at this point, all resurrected objects are marked. */
   /* remove dead objects from weak tables */
   clearkeys(g->ephemeron);  /* clear keys from all ephemeron tables */
   clearkeys(g->allweak);  /* clear keys from all allweak tables */
+
   /* clear values from resurrected weak tables */
   clearvalues(g->weak, origweak);
   clearvalues(g->allweak, origall);
+
   g->sweepstrgc = 0;  /* prepare to sweep strings */
   g->gcstate = GCSsweepstring;
   
