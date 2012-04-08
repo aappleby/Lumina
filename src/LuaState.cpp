@@ -229,4 +229,28 @@ void lua_State::VisitGC(GCVisitor& visitor) {
   visitor.PushGray(this);
 }
 
+/*
+int lua_State::PropagateGC(GCVisitor& visitor) {
+  StkId o = stack.begin();
+
+  // stack not completely built yet
+  if (o == NULL) return 1;  
+
+  for (; o < L->top; o++) {
+    markvalue(o);
+  }
+
+  // final traversal?
+  if (g->gcstate == GCSatomic) {  
+    // clear not-marked stack slice
+    StkId lim = L->stack.end();
+    for (; o < lim; o++) {
+      *o = TValue::nil;
+    }
+  }
+
+  return TRAVCOST + cast_int(o - L->stack.begin());
+}
+*/
+
 //-----------------------------------------------------------------------------

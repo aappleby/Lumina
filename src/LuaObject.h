@@ -7,6 +7,7 @@ public:
   void MarkValue(TValue v);
   void MarkObject(LuaObject* o);
   void PushGray(LuaObject* o);
+  void PushGrayAgain(LuaObject* o);
 };
 
 class LuaObject : public LuaBase {

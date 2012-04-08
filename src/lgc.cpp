@@ -235,6 +235,10 @@ void GCVisitor::PushGray(LuaObject* o) {
   thread_G->grayhead_ = o;
 }
 
+void GCVisitor::PushGrayAgain(LuaObject* o) {
+  o->next_gray_ = thread_G->grayagain;
+  thread_G->grayagain = o;
+}
 
 
 
@@ -470,15 +474,20 @@ static int traverseclosure (global_State *g, Closure *cl) {
 
 static int traversestack (global_State *g, lua_State *L) {
   StkId o = L->stack.begin();
-  if (o == NULL)
-    return 1;  /* stack not completely built yet */
-  for (; o < L->top; o++)
+  
+  // stack not completely built yet
+  if (o == NULL) return 1;
+
+  for (; o < L->top; o++) {
     markvalue(o);
+  }
+
   if (g->gcstate == GCSatomic) {  /* final traversal? */
     StkId lim = L->stack.end();  /* real end of stack */
     for (; o < lim; o++)  /* clear not-marked stack slice */
       *o = TValue::nil;
   }
+
   return TRAVCOST + cast_int(o - L->stack.begin());
 }
 
