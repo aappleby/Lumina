@@ -26,3 +26,8 @@ void UpVal::VisitGC(GCVisitor& visitor) {
     setColor(BLACK);
   }
 }
+
+int UpVal::PropagateGC(GCVisitor& visitor) {
+  assert(false);
+  return 0;
+}

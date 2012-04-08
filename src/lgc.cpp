@@ -355,29 +355,8 @@ static int propagatemark (global_State *g) {
   g->grayhead_ = o->next_gray_;
   assert(o->isGray());
 
-  // traverse its children and add them to the gray list(s)
-  if(o->isTable()) {
-    GCVisitor visitor;
-    return o->PropagateGC(visitor);
-  }
-
-  if(o->isLClosure() || o->isCClosure()) {
-    GCVisitor visitor;
-    return o->PropagateGC(visitor);
-  }
-
-  if(o->isThread()) {
-    GCVisitor visitor;
-    return o->PropagateGC(visitor);
-  }
-
-  if(o->isProto()) {
-    GCVisitor visitor;
-    return o->PropagateGC(visitor);
-  }
-
-  assert(false);
-  return 0;
+  GCVisitor visitor;
+  return o->PropagateGC(visitor);
 }
 
 /*
@@ -435,18 +414,19 @@ static void convergeephemerons (global_State *g) {
 
 
 /*
-** clear entries with unmarked keys from all weaktables in list 'l' up
-** to element 'f'
+** clear entries with unmarked keys from all weaktables in list.
 */
-static void clearkeys (LuaObject *l) {
-  for (; l != NULL; l = l->next_gray_) {
-    Table *h = dynamic_cast<Table*>(l);
+static void clearkeys (LuaObject* graylist) {
+  for (LuaObject* grayobj = graylist; grayobj != NULL; grayobj = grayobj->next_gray_) {
+    Table *h = dynamic_cast<Table*>(grayobj);
 
     for(int i = 0; i < (int)h->hashtable.size(); i++) {
       Node* n = h->getNode(i);
+      if(n->i_val.isNil()) continue;
       if (n->i_val.isNotNil()) {
         if(n->i_key.isLiveColor()) {
           n->i_val = TValue::nil;  /* remove value ... */
+          assert(n->i_key.isWhite());
           if (n->i_key.isWhite()) {
             // Unused and unmarked key, remove it.
             n->i_key = TValue::Nil();

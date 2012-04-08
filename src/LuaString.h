@@ -35,6 +35,7 @@ public:
   void setReserved(uint8_t r) { reserved_ = r; }
 
   virtual void VisitGC(GCVisitor& visitor);
+  virtual int PropagateGC(GCVisitor& visitor);
 
 protected:
 

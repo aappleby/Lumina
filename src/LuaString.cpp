@@ -36,6 +36,11 @@ void TString::VisitGC(GCVisitor&) {
   setColor(GRAY);
 }
 
+int TString::PropagateGC(GCVisitor& visitor) {
+  assert(false);
+  return 0;
+}
+
 //-----------------------------------------------------------------------------
 // Stringtable
 

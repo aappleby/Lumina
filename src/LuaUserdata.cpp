@@ -22,3 +22,8 @@ void Udata::VisitGC(GCVisitor& visitor) {
   setColor(LuaObject::BLACK);
   return;
 }
+
+int Udata::PropagateGC(GCVisitor& visitor) {
+  assert(false);
+  return 0;
+}

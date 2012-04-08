@@ -11,6 +11,7 @@ public:
   ~Udata();
 
   virtual void VisitGC(GCVisitor& visitor);
+  virtual int PropagateGC(GCVisitor& visitor);
 
   Table* metatable_;
   Table* env_;

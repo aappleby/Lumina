@@ -14,6 +14,7 @@ public:
   void unlink();
 
   virtual void VisitGC(GCVisitor& visitor);
+  virtual int PropagateGC(GCVisitor& visitor);
 
   TValue *v;  /* points to stack or to its own value */
 
