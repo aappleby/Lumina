@@ -34,38 +34,17 @@ void global_State::PushGray(LuaObject* o) {
 }
 
 void global_State::PushGrayAgain(LuaObject* o) {
-  //assert(o->next_gray_ == NULL);
-  o->setColor(LuaObject::GRAY);
-  o->next_gray_ = grayagain_;
-  grayagain_ = o;
+  grayagain_.Push(o);
 }
 
 void global_State::PushWeak(LuaObject* o) {
-  //assert(o->next_gray_ == NULL);
-  /*
-  o->setColor(LuaObject::GRAY);
-  o->next_gray_ = weak_;
-  weak_ = o;
-  */
   weak_.Push(o);
 }
 
 void global_State::PushAllWeak(LuaObject* o) {
-  //assert(o->next_gray_ == NULL);
-  /*
-  o->setColor(LuaObject::GRAY);
-  o->next_gray_ = allweak_;
-  allweak_ = o;
-  */
   allweak_.Push(o);
 }
 
 void global_State::PushEphemeron(LuaObject* o) {
-  //assert(o->next_gray_ == NULL);
-  /*
-  o->setColor(LuaObject::GRAY);
-  o->next_gray_ = ephemeron_;
-  ephemeron_ = o;
-  */
   ephemeron_.Push(o);
 }

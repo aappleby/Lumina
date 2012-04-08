@@ -43,13 +43,11 @@ public:
 
   // Gray lists
   LuaObject *grayhead_;   // list of gray objects
-  LuaObject *grayagain_;  // list of objects to be traversed atomically
-  //LuaObject *weak_;       // list of tables with weak values
-  LuaGraylist weak_;
-  //LuaObject *ephemeron_;  // list of ephemeron tables (weak keys)
-  LuaGraylist ephemeron_;
 
-  LuaGraylist allweak_; // list of all-weak tables
+  LuaGraylist grayagain_; // list of objects to be traversed atomically
+  LuaGraylist weak_;      // list of tables with weak values
+  LuaGraylist ephemeron_; // list of ephemeron tables (weak keys)
+  LuaGraylist allweak_;   // list of all-weak tables
 
   LuaObject *tobefnz;  /* list of userdata to be GC */
   

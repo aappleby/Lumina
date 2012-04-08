@@ -137,6 +137,10 @@ static void close_state (lua_State *L) {
   assert(g->getTotalBytes() == (sizeof(lua_State) + sizeof(global_State)));
   thread_G = NULL;
   L->l_G = NULL;
+
+  // TODO(aappleby): grayagain_ still has nodes in it during destruction?
+  g->grayagain_.Clear();
+
   delete g;
   delete L;
 }
@@ -214,13 +218,6 @@ lua_State *lua_newstate () {
 
     // Gray lists
     g->grayhead_ = NULL;
-    g->grayagain_ = NULL;
-    //g->weak_ = NULL;
-    //g->allweak_ = NULL;
-    assert(g->weak_.isEmpty());
-    assert(g->allweak_.isEmpty());
-    //g->ephemeron_ = NULL;
-    assert(g->ephemeron_.isEmpty());
 
     g->gcpause = LUAI_GCPAUSE;
     g->gcmajorinc = LUAI_GCMAJOR;

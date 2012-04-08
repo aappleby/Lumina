@@ -230,8 +230,7 @@ void GCVisitor::PushEphemeron(LuaObject* o) {
 */
 static void markroot (global_State *g) {
   g->grayhead_ = NULL;
-  g->grayagain_ = NULL;
-
+  g->grayagain_.Clear();
   g->weak_.Clear();
   g->allweak_.Clear();
   g->ephemeron_.Clear();
@@ -304,20 +303,17 @@ static void retraversegrays (global_State *g) {
   LuaGraylist weak;
   weak.Swap(g->weak_);
 
-  LuaObject *grayagain = g->grayagain_;
+  LuaGraylist grayagain;
+  grayagain.Swap(g->grayagain_);
 
   LuaGraylist ephemeron;
   ephemeron.Swap(g->ephemeron_);
   
-  g->grayagain_ = NULL;
-
   GCVisitor v;
 
   PropagateGC_Graylist(g->grayhead_, v);
-  PropagateGC_Graylist(grayagain, v);
-  //PropagateGC_Graylist(weak, v);
+  grayagain.PropagateGC(v);
   weak.PropagateGC(v);
-  //PropagateGC_Graylist(ephemeron, v);
   ephemeron.PropagateGC(v);
 }
 
