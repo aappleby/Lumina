@@ -275,27 +275,6 @@ struct tableTraverseInfo {
   //bool weakval;
 };
 
-void traverseweakvalue_callback (TValue* key, TValue* val, void* blob) {
-  tableTraverseInfo& info = *(tableTraverseInfo*)blob;
-
-  if (val->isNil()) {
-    if (key->isWhite()) {
-      // unused and unmarked key, remove it
-      *key = TValue::Nil();
-    }
-    return;
-  }
-
-  assert(!key->isNil());
-
-  markvalue(key);  // mark key
-
-  // is there a white value? table will have to be cleared
-  if (val->isLiveColor()) {
-    info.hasclears = 1;
-  }
-}
-
 void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
   tableTraverseInfo& info = *(tableTraverseInfo*)blob;
 
@@ -321,22 +300,6 @@ void traverseephemeronCB(TValue* key, TValue* val, void* blob) {
     info.markedAny = 1;
     markobject(val->getObject());  /* mark it now */
   }
-}
-
-void traverseStrongNode(TValue* key, TValue* val, void* blob) {
-  tableTraverseInfo& info = *(tableTraverseInfo*)blob;
-
-  if (val->isNil()) {
-    if (key->isWhite()) {
-      // Unused and unmarked key, remove it.
-      *key = TValue::Nil();
-    }
-    return;
-  }
-
-  assert(key->isNotNil());
-  markvalue(key);  /* mark key */
-  markvalue(val);  /* mark value */
 }
 
 static int traverseephemeron (Table *h) {
@@ -378,62 +341,6 @@ void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal) {
   }
 }
 
-// Table modes really should be a flag on the table instead
-// of a special tag method just to get/set two flags...
-static int traversetable (global_State *g, Table *h) {
-  markobject(h->metatable);
-
-  bool weakkey = false;
-  bool weakval = false;
-
-  getTableMode(h, weakkey, weakval);
-
-  // Strong keys, strong values - use strong table traversal.
-  if(!weakkey && !weakval) {
-    GCVisitor v;
-    return h->PropagateGC_Strong(v);
-  }
-
-  // Strong keys, weak values - use weak table traversal.
-  if (!weakkey && weakval) {
-    GCVisitor v;
-    return h->PropagateGC_WeakValues(v);
-  }
-
-  // Weak keys, strong values - use ephemeron traversal.
-  if (weakkey && !weakval) {
-    GCVisitor v;
-    return h->PropagateGC_Ephemeron(v);
-  }
-
-  // Both keys and values are weak.
-  if(weakkey && weakval) {
-    h->next_gray_ = thread_G->allweak;
-    thread_G->allweak = h;
-    return TRAVCOST;
-  }
-
-  assert(false);
-  return 0;
-}
-
-
-static int traverseclosure (global_State *g, Closure *cl) {
-  if (cl->isC) {
-    int i;
-    for (i=0; i<cl->nupvalues; i++)  /* mark its upvalues */
-      markvalue(&cl->pupvals_[i]);
-  }
-  else {
-    int i;
-    assert(cl->nupvalues == cl->proto_->upvalues.size());
-    markobject(cl->proto_);  /* mark its prototype */
-    for (i=0; i<cl->nupvalues; i++)  /* mark its upvalues */
-      markobject(cl->ppupvals_[i]);
-  }
-  return TRAVCOST + cl->nupvalues;
-}
-
 /*
 ** traverse one gray object, turning it to black (except for threads,
 ** which are always gray).
@@ -450,7 +357,8 @@ static int propagatemark (global_State *g) {
 
   // traverse its children and add them to the gray list(s)
   if(o->isTable()) {
-    return traversetable(g, dynamic_cast<Table*>(o));
+    GCVisitor visitor;
+    return o->PropagateGC(visitor);
   }
 
   if(o->isLClosure() || o->isCClosure()) {

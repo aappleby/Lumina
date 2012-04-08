@@ -210,6 +210,34 @@ void Table::VisitGC(GCVisitor& visitor) {
   }
 }
 
+int Table::PropagateGC(GCVisitor& visitor) {
+  visitor.MarkObject(metatable);
+
+  bool weakkey = false;
+  bool weakval = false;
+
+  getTableMode(this, weakkey, weakval);
+
+  if(!weakkey) {
+    if(!weakval) {
+      // Strong keys, strong values - use strong table traversal.
+      return PropagateGC_Strong(visitor);
+    } else {
+      // Strong keys, weak values - use weak table traversal.
+      return PropagateGC_WeakValues(visitor);
+    }
+  } else {
+    if (!weakval) {
+      // Weak keys, strong values - use ephemeron traversal.
+      return PropagateGC_Ephemeron(visitor);
+    } else {
+      // Both keys and values are weak, don't traverse.
+      visitor.PushAllWeak(this);
+      return TRAVCOST;
+    }
+  }
+}
+
 int Table::PropagateGC_Strong(GCVisitor& visitor) {
   setColor(BLACK);
 

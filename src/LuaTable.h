@@ -75,6 +75,7 @@ public:
 
   // another piece of the gc visitor traversal stuff
   virtual void VisitGC(GCVisitor& visitor);
+  virtual int PropagateGC(GCVisitor& visitor);
 
   int PropagateGC_Strong(GCVisitor& visitor);
   int PropagateGC_WeakValues(GCVisitor& visitor);
