@@ -383,10 +383,6 @@ void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal) {
 static int traversetable (global_State *g, Table *h) {
   markobject(h->metatable);
 
-  tableTraverseInfo info;
-  info.markedAny = 0;
-  info.hasclears = 0;
-  info.propagate = 0;
   bool weakkey = false;
   bool weakval = false;
 
@@ -406,25 +402,8 @@ static int traversetable (global_State *g, Table *h) {
 
   // Weak keys, strong values - use ephemeron traversal.
   if (weakkey && !weakval) {
-    h->traverse(traverseephemeronCB, &info);
-
-    if (info.propagate) {
-      h->next_gray_ = thread_G->ephemeron;
-      thread_G->ephemeron = h;
-    }
-    else if (info.hasclears) {
-      /* does table have white keys? */
-      h->next_gray_ = thread_G->allweak;
-      thread_G->allweak = h;
-    }
-    else {
-      /* no white keys */
-      /* no need to clean */
-      h->next_gray_ = thread_G->grayagain;
-      thread_G->grayagain = h;
-    }
-
-    return TRAVCOST + (int)h->array.size() + (int)h->hashtable.size();
+    GCVisitor v;
+    return h->PropagateGC_Ephemeron(v);
   }
 
   // Both keys and values are weak.
