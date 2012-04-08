@@ -366,8 +366,6 @@ void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal) {
 // Table modes really should be a flag on the table instead
 // of a special tag method just to get/set two flags...
 static int traversetable (global_State *g, Table *h) {
-  h->grayToBlack();
-
   markobject(h->metatable);
 
   tableTraverseInfo info;
@@ -381,12 +379,12 @@ static int traversetable (global_State *g, Table *h) {
 
   // Strong keys, strong values - use strong table traversal.
   if(!weakkey && !weakval) {
-    return h->traverse(traverseStrongNode, &info);
+    GCVisitor v;
+    return h->PropagateGC_Strong(v);
   }
 
   // Strong keys, weak values - use weak table traversal.
-  if (!weakkey) {
-    h->blackToGray();
+  if (!weakkey && weakval) {
     h->traverse(traverseweakvalue_callback, &info);
 
     if (info.hasclears) {
@@ -403,8 +401,7 @@ static int traversetable (global_State *g, Table *h) {
   }
 
   // Weak keys, strong values - use ephemeron traversal.
-  if (!weakval) {
-    h->blackToGray();
+  if (weakkey && !weakval) {
     h->traverse(traverseephemeronCB, &info);
 
     if (info.propagate) {
@@ -427,10 +424,14 @@ static int traversetable (global_State *g, Table *h) {
   }
 
   // Both keys and values are weak.
-  h->blackToGray();
-  h->next_gray_ = thread_G->allweak;
-  thread_G->allweak = h;
-  return TRAVCOST;
+  if(weakkey && weakval) {
+    h->next_gray_ = thread_G->allweak;
+    thread_G->allweak = h;
+    return TRAVCOST;
+  }
+
+  assert(false);
+  return 0;
 }
 
 

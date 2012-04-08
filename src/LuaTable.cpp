@@ -1,5 +1,7 @@
 #include "LuaTable.h"
 
+void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal);
+
 uint32_t hash64 (uint32_t a, uint32_t b) {
   a ^= a >> 16;
   a *= 0x85ebca6b;
@@ -208,4 +210,26 @@ void Table::VisitGC(GCVisitor& visitor) {
   }
 }
 
+int Table::PropagateGC_Strong(GCVisitor& visitor) {
+  setColor(BLACK);
+
+  for(int i = 0; i < (int)array.size(); i++) {
+    visitor.MarkValue(array[i]);
+  }
+
+  for(int i = 0; i < (int)hashtable.size(); i++) {
+    Node* n = getNode(i);
+
+    if(n->i_val.isNil()) {
+      if (n->i_key.isWhite()) {
+        n->i_key = TValue::Nil();
+      }
+    } else {
+      visitor.MarkValue(n->i_key);
+      visitor.MarkValue(n->i_val);
+    }
+  }
+
+  return TRAVCOST + (int)array.size() + 2 * (int)hashtable.size();
+}
 //-----------------------------------------------------------------------------

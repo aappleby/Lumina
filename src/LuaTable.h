@@ -76,6 +76,8 @@ public:
   // another piece of the gc visitor traversal stuff
   virtual void VisitGC(GCVisitor& visitor);
 
+  int PropagateGC_Strong(GCVisitor& visitor);
+
   //----------
 
   Node* nodeAt(uint32_t hash);
