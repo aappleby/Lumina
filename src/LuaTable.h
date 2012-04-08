@@ -81,6 +81,8 @@ public:
   int PropagateGC_WeakValues(GCVisitor& visitor);
   int PropagateGC_Ephemeron(GCVisitor& visitor);
 
+  void SweepWhiteKeys();
+
   //----------
 
   Node* nodeAt(uint32_t hash);

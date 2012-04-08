@@ -339,4 +339,14 @@ int Table::PropagateGC_Ephemeron(GCVisitor& visitor) {
   return TRAVCOST + (int)array.size() + (int)hashtable.size();
 }
 
+void Table::SweepWhiteKeys() {
+  for(int i = 0; i < (int)hashtable.size(); i++) {
+    Node* n = getNode(i);
+    if(n->i_key.isLiveColor()) {
+      n->i_val = TValue::Nil();
+      n->i_key = TValue::Nil();
+    }
+  }
+}
+
 //-----------------------------------------------------------------------------

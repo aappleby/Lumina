@@ -417,23 +417,9 @@ static void convergeephemerons (global_State *g) {
 ** clear entries with unmarked keys from all weaktables in list.
 */
 static void clearkeys (LuaObject* graylist) {
-  for (LuaObject* grayobj = graylist; grayobj != NULL; grayobj = grayobj->next_gray_) {
-    Table *h = dynamic_cast<Table*>(grayobj);
-
-    for(int i = 0; i < (int)h->hashtable.size(); i++) {
-      Node* n = h->getNode(i);
-      if(n->i_val.isNil()) continue;
-      if (n->i_val.isNotNil()) {
-        if(n->i_key.isLiveColor()) {
-          n->i_val = TValue::nil;  /* remove value ... */
-          assert(n->i_key.isWhite());
-          if (n->i_key.isWhite()) {
-            // Unused and unmarked key, remove it.
-            n->i_key = TValue::Nil();
-          }
-        }
-      }
-    }
+  for (LuaObject* o = graylist; o != NULL; o = o->next_gray_) {
+    Table *h = dynamic_cast<Table*>(o);
+    h->SweepWhiteKeys();
   }
 }
 
