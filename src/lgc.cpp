@@ -503,17 +503,24 @@ static void checkSizes () {
   }
 }
 
+// Move the first item in the objects-with-finalizers list back to the global
+// GC list.
+
 static LuaObject *udata2finalize (global_State *g) {
   LuaObject *o = g->tobefnz;  /* get first element */
   assert(o->isFinalized());
+
   g->tobefnz = o->next;  /* remove it from 'tobefnz' list */
   o->next = g->allgc;  /* return it to 'allgc' list */
   g->allgc = o;
+
   /* mark that it is not in 'tobefnz' */
   o->clearSeparated();
   assert(!o->isOld());  /* see MOVE OLD rule */
-  if (!keepinvariant(g))  /* not keeping invariant? */
+
+  if (!keepinvariant(g)) {  /* not keeping invariant? */
     o->makeLive();  /* "sweep" object */
+  }
   return o;
 }
 
@@ -526,25 +533,34 @@ static void dothecall (lua_State *L, void *ud) {
 
 
 static void GCTM (int propagateerrors) {
-  lua_State* L = thread_L;
-  global_State *g = thread_G;
-  TValue v = TValue(udata2finalize(g));
+
+  // Pop object with finalizer off the 'finobj' list
+  TValue v = TValue(udata2finalize(thread_G));
+
+  // Get the finalizer from it.
   const TValue *tm = luaT_gettmbyobj(&v, TM_GC);
   if(tm == NULL) return;
   if(!tm->isFunction()) return;
 
-  int status;
-  uint8_t oldah = L->allowhook;
-  int running  = g->gcrunning;
+  lua_State* L = thread_L;
+  global_State *g = thread_G;
+
+  // Call the finalizer (with a bit of difficulty)
+  uint8_t allowhook = L->allowhook;
   L->allowhook = 0;  // stop debug hooks during GC metamethod
+
+  int gcrunning  = g->gcrunning;
   g->gcrunning = 0;  // avoid GC steps
+
   L->top[0] = *tm;  // push finalizer...
   L->top[1] = v; // ... and its argument
   L->top += 2;  // and (next line) call the finalizer
-  status = luaD_pcall(L, dothecall, NULL, savestack(L, L->top - 2), 0);
-  L->allowhook = oldah;  // restore hooks
-  g->gcrunning = running;  // restore state
+  int status = luaD_pcall(L, dothecall, NULL, savestack(L, L->top - 2), 0);
 
+  L->allowhook = allowhook;  // restore hooks
+  g->gcrunning = gcrunning;  // restore state
+
+  // Report errors during finalization.
   if (status != LUA_OK && propagateerrors) {  // error while running __gc?
     if (status == LUA_ERRRUN) {  // is there an error msg.?
       luaO_pushfstring(L, "error in __gc metamethod (%s)", lua_tostring(L, -1));
@@ -559,19 +575,27 @@ static void GCTM (int propagateerrors) {
 ** move all unreachable objects (or 'all' objects) that need
 ** finalization from list 'finobj' to list 'tobefnz' (to be finalized)
 */
-static void separatetobefnz (int all) {
+void separatetobefnz (int all) {
   global_State *g = thread_G;
   LuaObject **p = &g->finobj;
   LuaObject *curr;
   LuaObject **lastnext = &g->tobefnz;
+  
   /* find last 'next' field in 'tobefnz' list (to add elements in its end) */
-  while (*lastnext != NULL)
+  while (*lastnext != NULL) {
     lastnext = &(*lastnext)->next;
-  while ((curr = *p) != NULL) {  /* traverse all finalizable objects */
+  }
+
+  /* traverse all finalizable objects */
+  while ((curr = *p) != NULL) {  
     assert(!curr->isFinalized());
     assert(curr->isSeparated());
-    if (!(all || curr->isWhite()))  /* not being collected? */
-      p = &curr->next;  /* don't bother with it */
+    
+    if (!(all || curr->isWhite())) {
+      /* not being collected? */
+      /* don't bother with it */
+      p = &curr->next;
+    }
     else {
       /* won't be finalized again */
       curr->setFinalized();
@@ -583,6 +607,14 @@ static void separatetobefnz (int all) {
   }
 }
 
+// Removing a node in the middle of a singly-linked list requires
+// a scan of the list, lol.
+
+void RemoveObjectFromList(LuaObject* o, LuaObject** list) {
+  LuaObject **p = list;
+  for (; *p != o; p = &(*p)->next);
+  *p = o->next;
+}
 
 /*
 ** if object 'o' has a finalizer, remove it from 'allgc' list (must
@@ -590,22 +622,21 @@ static void separatetobefnz (int all) {
 */
 void luaC_checkfinalizer (LuaObject *o, Table *mt) {
   global_State *g = thread_G;
-  if (o->isSeparated() || /* obj. is already separated... */
-      o->isFinalized() ||                           /* ... or is finalized... */
-      fasttm(mt, TM_GC) == NULL)                /* or has no finalizer? */
-    return;  /* nothing to be done */
-  else {  /* move 'o' to 'finobj' list */
-    // Removing a node in the middle of a singly-linked list requires
-    // a scan of the list, lol.
-    LuaObject **p;
-    for (p = &g->allgc; *p != o; p = &(*p)->next) ;
-    *p = o->next;  /* remove 'o' from root list */
-    o->next = g->finobj;  /* link it in list 'finobj' */
-    g->finobj = o;
-    /* mark it as such */
-    o->setSeparated();
-    o->clearOld();  /* see MOVE OLD rule */
+
+  // If the object is already separated, is already finalized, or has no
+  // finalizer, skip it.
+  if (o->isSeparated() || o->isFinalized() || fasttm(mt, TM_GC) == NULL) {
+    return;
   }
+
+  // Remove the object from the global GC list and add it to the 'finobj' list.
+  RemoveObjectFromList(o, &g->allgc);
+  o->next = g->finobj;
+  g->finobj = o;
+
+  // Mark it as separated, and clear old (MOVE OLD rule).
+  o->setSeparated();
+  o->clearOld();
 }
 
 /* }====================================================== */
@@ -714,9 +745,9 @@ static void atomic () {
 
   LuaObject* origweak = g->weak_;
 
-  separatetobefnz(0);  /* separate objects to be finalized */
-  
-  /* mark userdata that will be finalized */
+  // Userdata that requires finalization has to be separated from the main gc list
+  // and kept alive until the finalizers are called.
+  separatetobefnz(0);
   for (LuaObject* o = g->tobefnz; o != NULL; o = o->next) {
     o->makeLive();
     markobject(o);

@@ -889,6 +889,11 @@ int lua_setmetatable (lua_State *L, int objindex) {
     api_check(L->top[-1].isTable(), "table expected");
     mt = L->top[-1].getTable();
   }
+
+  // This is a little weird, tables and userdata get their
+  // own metatables, but trying to set a metatable for anything
+  // else overrides the _global_ metatable.
+
   switch (obj->type()) {
     case LUA_TTABLE: {
       obj->getTable()->metatable = mt;
@@ -906,10 +911,11 @@ int lua_setmetatable (lua_State *L, int objindex) {
       break;
     }
     default: {
-      G(L)->base_metatables_[obj->type()] = mt;
+      thread_G->base_metatables_[obj->type()] = mt;
       break;
     }
   }
+
   L->top--;
   return 1;
 }
