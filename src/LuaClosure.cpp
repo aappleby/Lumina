@@ -1,5 +1,8 @@
 #include "LuaClosure.h"
 
+#include "LuaProto.h"
+#include "LuaUpval.h"
+
 Closure::Closure(TValue* buf, int n) : LuaObject(LUA_TCCL) {
   linkGC(getGlobalGCHead());
   isC = 1;
@@ -28,4 +31,22 @@ Closure::~Closure() {
 void Closure::VisitGC(GCVisitor& visitor) {
   setColor(GRAY);
   visitor.PushGray(this);
+}
+
+int Closure::PropagateGC(GCVisitor& visitor) {
+  setColor(BLACK);
+  if (isC) {
+    for (int i=0; i< nupvalues; i++) {
+      visitor.MarkValue(pupvals_[i]);
+    }
+  }
+  else {
+    assert(nupvalues == proto_->upvalues.size());
+    visitor.MarkObject(proto_);
+    for (int i=0; i< nupvalues; i++) {
+      visitor.MarkObject(ppupvals_[i]);
+    }
+  }
+
+  return 5 + nupvalues;
 }

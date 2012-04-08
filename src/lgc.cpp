@@ -492,8 +492,8 @@ static int propagatemark (global_State *g) {
   }
 
   if(o->isLClosure() || o->isCClosure()) {
-    o->grayToBlack();
-    return traverseclosure(g, dynamic_cast<Closure*>(o));
+    GCVisitor visitor;
+    return o->PropagateGC(visitor);
   }
 
   if(o->isThread()) {

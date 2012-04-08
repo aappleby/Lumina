@@ -10,6 +10,7 @@ public:
   ~Closure();
 
   virtual void VisitGC(GCVisitor& visitor);
+  virtual int PropagateGC(GCVisitor& visitor);
 
   uint8_t isC;
   uint8_t nupvalues;
