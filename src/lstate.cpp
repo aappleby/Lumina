@@ -219,7 +219,8 @@ lua_State *lua_newstate () {
     //g->allweak_ = NULL;
     assert(g->weak_.isEmpty());
     assert(g->allweak_.isEmpty());
-    g->ephemeron_ = NULL;
+    //g->ephemeron_ = NULL;
+    assert(g->ephemeron_.isEmpty());
 
     g->gcpause = LUAI_GCPAUSE;
     g->gcmajorinc = LUAI_GCMAJOR;

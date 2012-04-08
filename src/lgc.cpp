@@ -232,12 +232,9 @@ static void markroot (global_State *g) {
   g->grayhead_ = NULL;
   g->grayagain_ = NULL;
 
-  //g->weak_ = NULL;
   g->weak_.Clear();
-
   g->allweak_.Clear();
-
-  g->ephemeron_ = NULL;
+  g->ephemeron_.Clear();
 
   markobject(g->mainthread);
   markvalue(&g->l_registry);
@@ -308,10 +305,11 @@ static void retraversegrays (global_State *g) {
   weak.Swap(g->weak_);
 
   LuaObject *grayagain = g->grayagain_;
-  LuaObject *ephemeron = g->ephemeron_;
+
+  LuaGraylist ephemeron;
+  ephemeron.Swap(g->ephemeron_);
   
   g->grayagain_ = NULL;
-  g->ephemeron_ = NULL;
 
   GCVisitor v;
 
@@ -319,7 +317,8 @@ static void retraversegrays (global_State *g) {
   PropagateGC_Graylist(grayagain, v);
   //PropagateGC_Graylist(weak, v);
   weak.PropagateGC(v);
-  PropagateGC_Graylist(ephemeron, v);
+  //PropagateGC_Graylist(ephemeron, v);
+  ephemeron.PropagateGC(v);
 }
 
 
@@ -328,15 +327,15 @@ static void retraversegrays (global_State *g) {
 static void convergeephemerons (global_State *g) {
   int changed;
   do {
-    LuaObject *w;
-    LuaObject *next = g->ephemeron_;  /* get ephemeron list */
-    g->ephemeron_ = NULL;  /* tables will return to this list when traversed */
-    changed = 0;
-    while ((w = next) != NULL) {
-      next = w->next_gray_;
+    LuaGraylist ephemeron;
+    ephemeron.Swap(g->ephemeron_);
 
+    changed = 0;
+    while(!ephemeron.isEmpty()) {
+
+      LuaObject* o = ephemeron.Pop();
       GCVisitor v;
-      w->PropagateGC(v);
+      o->PropagateGC(v);
 
       // If propagating through the ephemeron table turned any objects gray,
       // we have to re-propagate those objects as well. That could in turn
@@ -771,7 +770,8 @@ static void atomic () {
 
   /* at this point, all resurrected objects are marked. */
   /* remove dead objects from weak tables */
-  clearkeys(g->ephemeron_);  /* clear keys from all ephemeron tables */
+  //clearkeys(g->ephemeron_);  /* clear keys from all ephemeron tables */
+  g->ephemeron_.SweepKeys();
 
   // clear keys from all allweak tables
 

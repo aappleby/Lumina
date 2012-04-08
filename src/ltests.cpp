@@ -290,7 +290,7 @@ static void markgrays (global_State *g) {
   checkgraylist(g->grayhead_);
   checkgraylist(g->grayagain_);
   checkgraylist(g->weak_.head_);
-  checkgraylist(g->ephemeron_);
+  checkgraylist(g->ephemeron_.head_);
   checkgraylist(g->allweak_.head_);
 }
 

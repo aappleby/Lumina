@@ -46,7 +46,8 @@ public:
   LuaObject *grayagain_;  // list of objects to be traversed atomically
   //LuaObject *weak_;       // list of tables with weak values
   LuaGraylist weak_;
-  LuaObject *ephemeron_;  // list of ephemeron tables (weak keys)
+  //LuaObject *ephemeron_;  // list of ephemeron tables (weak keys)
+  LuaGraylist ephemeron_;
 
   LuaGraylist allweak_; // list of all-weak tables
 
