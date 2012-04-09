@@ -3,6 +3,8 @@
 #include "LuaObject.h"
 #include "LuaVector.h"
 
+extern int deleting_thread;
+
 /* chain list of long jump buffers */
 struct lua_longjmp {
   lua_longjmp *previous;

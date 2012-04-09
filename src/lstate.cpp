@@ -121,28 +121,31 @@ static void preinit_state (lua_State *L, global_State *g) {
 
 static void close_state (lua_State *L) {
   THREAD_CHECK(L);
-  global_State *g = G(L);
 
-  g->isShuttingDown = true;
+  thread_G->isShuttingDown = true;
 
   luaF_close(L->stack.begin());  /* close all upvalues for this thread */
 
   // TODO(aappleby): grayagain_ and grayhead_ still have objects in them during destruction?
-  g->grayhead_.Clear();
-  g->grayagain_.Clear();
+  thread_G->grayhead_.Clear();
+  thread_G->grayagain_.Clear();
 
   luaC_freeallobjects();  /* collect all objects */
 
-  delete g->strings_;
-  g->strings_ = NULL;
+  delete thread_G->strings_;
+  thread_G->strings_ = NULL;
 
-  g->buff.buffer.clear();
+  thread_G->buff.buffer.clear();
 
+  assert(L->openupval == NULL);
+  deleting_thread = 1;
   delete L;
+  deleting_thread = 0;
   thread_L = NULL;
+
+  assert(thread_G->getTotalBytes() == sizeof(global_State));
+  delete thread_G;
   thread_G = NULL;
-  assert(g->getTotalBytes() == sizeof(global_State));
-  delete g;
 }
 
 
@@ -174,10 +177,12 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
   THREAD_CHECK(L);
   {
     THREAD_CHANGE(L1);
-    //luaF_close(L1->stack.begin());  /* close all upvalues for this thread */
-    L1->closeUpvals(L1->stack.begin());
-    assert(L1->openupval == NULL);
+    //L1->closeUpvals(L1->stack.begin());
+    //assert(L1->openupval == NULL);
+
+    deleting_thread = 1;
     delete L1;
+    deleting_thread = 0;
   }
 }
 
@@ -189,7 +194,9 @@ lua_State *lua_newstate () {
   if(L == NULL) { return NULL; }
   global_State* g = new global_State();
   if(g == NULL) {
+    deleting_thread = 1;
     delete L;
+    deleting_thread = 0;
     return NULL;
   }
   L->l_G = g;

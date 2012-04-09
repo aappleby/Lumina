@@ -9,17 +9,23 @@
 
 extern const TValue luaO_nilobject_;
 
+int deleting_thread = 0;
+
 l_noret luaG_runerror (const char *fmt, ...);
 void luaC_checkupvalcolor (global_State *g, UpVal *uv);
 
 lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
+  openupval = NULL;
 }
 
 lua_State::~lua_State() {
+  assert(deleting_thread);
   //THREAD_CHANGE(this);
   //luaF_close(L1->stack.begin());  /* close all upvalues for this thread */
-  //closeUpvals(stack.begin());
-  //assert(openupval == NULL);
+  if(!stack.empty()) {
+    closeUpvals(stack.begin());
+    assert(openupval == NULL);
+  }
   freestack();
 }
 
