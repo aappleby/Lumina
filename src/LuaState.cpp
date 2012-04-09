@@ -16,6 +16,10 @@ lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
 }
 
 lua_State::~lua_State() {
+  //THREAD_CHANGE(this);
+  //luaF_close(L1->stack.begin());  /* close all upvalues for this thread */
+  //closeUpvals(stack.begin());
+  //assert(openupval == NULL);
   freestack();
 }
 
@@ -40,15 +44,16 @@ void lua_State::freestack() {
     // Stack not completely built yet - we probably ran out of memory while trying to create a thread.
     return;  
   }
-  ci_ = &callinfo_head_;  /* free the entire 'ci' list */
-
-  CallInfo *ci = ci_;
-  CallInfo *next = ci->next;
-  ci->next = NULL;
-  while ((ci = next) != NULL) {
-    next = ci->next;
+  
+  // free the entire 'ci' list
+  ci_ = &callinfo_head_;
+  CallInfo *ci = callinfo_head_.next;
+  while (ci != NULL) {
+    CallInfo* next = ci->next;
     luaM_free(ci);
+    ci = next;
   }
+  callinfo_head_.next = NULL;
 
   stack.clear();
 }
