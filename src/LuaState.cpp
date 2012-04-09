@@ -15,18 +15,8 @@ lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
 }
 
 lua_State::~lua_State() {
+  freestack();
 }
-
-void lua_State::freeCI() {
-  CallInfo *ci = ci_;
-  CallInfo *next = ci->next;
-  ci->next = NULL;
-  while ((ci = next) != NULL) {
-    next = ci->next;
-    luaM_free(ci);
-  }
-}
-
 
 void lua_State::initstack() {
   stack.resize(BASIC_STACK_SIZE);
@@ -50,7 +40,15 @@ void lua_State::freestack() {
     return;  
   }
   ci_ = &callinfo_head_;  /* free the entire 'ci' list */
-  freeCI();
+
+  CallInfo *ci = ci_;
+  CallInfo *next = ci->next;
+  ci->next = NULL;
+  while ((ci = next) != NULL) {
+    next = ci->next;
+    luaM_free(ci);
+  }
+
   stack.clear();
 }
 

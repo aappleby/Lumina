@@ -43,8 +43,6 @@ public:
   lua_longjmp *errorJmp;  /* current error recover point */
   ptrdiff_t errfunc;  /* current error handling function (stack index) */
 
-  void freeCI();
-
   void initstack();
   void freestack();
   int stackinuse();

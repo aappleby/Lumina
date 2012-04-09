@@ -178,9 +178,8 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
     THREAD_CHANGE(L1);
     luaF_close(L1->stack.begin());  /* close all upvalues for this thread */
     assert(L1->openupval == NULL);
-    L1->freestack();
+    delete L1;
   }
-  delete L1;
 }
 
 
