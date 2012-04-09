@@ -10,6 +10,7 @@
 extern const TValue luaO_nilobject_;
 
 l_noret luaG_runerror (const char *fmt, ...);
+void luaC_checkupvalcolor (global_State *g, UpVal *uv);
 
 lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
 }
@@ -139,24 +140,30 @@ void lua_State::checkstack(int size) {
 }
 
 void lua_State::closeUpvals(StkId level) {
-  /*
+  THREAD_CHECK(this);
   UpVal *uv;
-  global_State *g = thread_G;
-  while (openupval != NULL && (uv = dynamic_cast<UpVal*>(openupval))->v >= level) {
+
+  while (openupval != NULL) {
+    uv = dynamic_cast<UpVal*>(openupval);
+    if(uv->v < level) break;
+
     assert(!uv->isBlack() && uv->v != &uv->value);
-    openupval = uv->next;  // remove from `open' list
+    openupval = uv->next_;  /* remove from `open' list */
+
     if (uv->isDead())
       delete uv;
     else {
-      uv->unlink();  // remove upvalue from 'uvhead' list
-      uv->value = *uv->v;  // move value to upvalue slot
-      uv->v = &uv->value;  // now current value lives here
-      uv->next = g->allgc;  // link upvalue into 'allgc' list
-      g->allgc = uv;
-      luaC_checkupvalcolor(g, uv);
+      uv->unlink();  /* remove upvalue from 'uvhead' list */
+
+      uv->value = *uv->v;  /* move value to upvalue slot */
+      uv->v = &uv->value;  /* now current value lives here */
+      
+      uv->next_ = thread_G->allgc;  /* link upvalue into 'allgc' list */
+      thread_G->allgc = uv;
+
+      luaC_checkupvalcolor(thread_G, uv);
     }
   }
-  */
 }
 
 // Positive stack indices are indexed from the current call frame.
