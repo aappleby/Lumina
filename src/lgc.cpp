@@ -362,16 +362,6 @@ static void clearvalues (LuaObject *l, LuaObject *f) {
   }
 }
 
-static void freeobj (LuaObject *o) {
-  lua_State *L = thread_L;
-  if(o->isThread()) {
-    luaE_freethread(L, dynamic_cast<lua_State*>(o));
-  } else {
-    delete o;
-  }
-}
-
-
 static LuaObject **sweeplist (LuaObject **p, size_t count);
 
 
@@ -421,7 +411,7 @@ static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
     LuaObject *curr = *p;
     if (curr->isDead()) {  /* is 'curr' dead? */
       *p = curr->next_;  /* remove 'curr' from list */
-      freeobj(curr);  /* erase 'curr' */
+      delete curr;
     }
     else {
       if (curr->isThread()) {
@@ -442,7 +432,7 @@ static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
     LuaObject *curr = *p;
     if (curr->isDead()) {  /* is 'curr' dead? */
       *p = curr->next_;  /* remove 'curr' from list */
-      freeobj(curr);  /* erase 'curr' */
+      delete curr;
     }
     else {
       if (curr->isThread()) {
@@ -473,7 +463,7 @@ void deletelist (LuaObject*& head) {
   while (head != NULL) {
     LuaObject *curr = head;
     head = curr->next_;
-    freeobj(curr);
+    delete curr;
   }
 }
 

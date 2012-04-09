@@ -138,9 +138,7 @@ static void close_state (lua_State *L) {
   thread_G->buff.buffer.clear();
 
   assert(L->openupval == NULL);
-  deleting_thread = 1;
   delete L;
-  deleting_thread = 0;
   thread_L = NULL;
 
   assert(thread_G->getTotalBytes() == sizeof(global_State));
@@ -173,20 +171,6 @@ lua_State *lua_newthread (lua_State *L) {
 }
 
 
-void luaE_freethread (lua_State *L, lua_State *L1) {
-  THREAD_CHECK(L);
-  {
-    THREAD_CHANGE(L1);
-    //L1->closeUpvals(L1->stack.begin());
-    //assert(L1->openupval == NULL);
-
-    deleting_thread = 1;
-    delete L1;
-    deleting_thread = 0;
-  }
-}
-
-
 lua_State *lua_newstate () {
   GLOBAL_CHANGE(NULL);
   int i;
@@ -194,9 +178,7 @@ lua_State *lua_newstate () {
   if(L == NULL) { return NULL; }
   global_State* g = new global_State();
   if(g == NULL) {
-    deleting_thread = 1;
     delete L;
-    deleting_thread = 0;
     return NULL;
   }
   L->l_G = g;

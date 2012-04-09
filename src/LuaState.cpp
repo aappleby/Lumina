@@ -9,8 +9,6 @@
 
 extern const TValue luaO_nilobject_;
 
-int deleting_thread = 0;
-
 l_noret luaG_runerror (const char *fmt, ...);
 void luaC_checkupvalcolor (global_State *g, UpVal *uv);
 
@@ -19,9 +17,6 @@ lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
 }
 
 lua_State::~lua_State() {
-  assert(deleting_thread);
-  //THREAD_CHANGE(this);
-  //luaF_close(L1->stack.begin());  /* close all upvalues for this thread */
   if(!stack.empty()) {
     closeUpvals(stack.begin());
     assert(openupval == NULL);
@@ -151,7 +146,6 @@ void lua_State::checkstack(int size) {
 }
 
 void lua_State::closeUpvals(StkId level) {
-  THREAD_CHECK(this);
   UpVal *uv;
 
   while (openupval != NULL) {
