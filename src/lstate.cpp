@@ -126,6 +126,11 @@ static void close_state (lua_State *L) {
   g->isShuttingDown = true;
 
   luaF_close(L->stack.begin());  /* close all upvalues for this thread */
+
+  // TODO(aappleby): grayagain_ and grayhead_ still have objects in them during destruction?
+  g->grayhead_.Clear();
+  g->grayagain_.Clear();
+
   luaC_freeallobjects();  /* collect all objects */
 
   delete g->strings_;
@@ -137,9 +142,6 @@ static void close_state (lua_State *L) {
   assert(g->getTotalBytes() == (sizeof(lua_State) + sizeof(global_State)));
   thread_G = NULL;
   L->l_G = NULL;
-
-  // TODO(aappleby): grayagain_ still has nodes in it during destruction?
-  g->grayagain_.Clear();
 
   delete g;
   delete L;
@@ -215,9 +217,6 @@ lua_State *lua_newstate () {
     g->allgc = NULL;
     g->finobj = NULL;
     g->tobefnz = NULL;
-
-    // Gray lists
-    g->grayhead_ = NULL;
 
     g->gcpause = LUAI_GCPAUSE;
     g->gcmajorinc = LUAI_GCMAJOR;

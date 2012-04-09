@@ -42,7 +42,7 @@ public:
   LuaObject **sweepgc;  /* current position of sweep */
 
   // Gray lists
-  LuaObject *grayhead_;   // list of gray objects
+  LuaGraylist grayhead_;  // Topmost list of gray objects
 
   LuaGraylist grayagain_; // list of objects to be traversed atomically
   LuaGraylist weak_;      // list of tables with weak values

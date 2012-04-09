@@ -229,7 +229,7 @@ void GCVisitor::PushEphemeron(LuaObject* o) {
 ** incremental (or full) collection
 */
 static void markroot (global_State *g) {
-  g->grayhead_ = NULL;
+  g->grayhead_.Clear();
   g->grayagain_.Clear();
   g->weak_.Clear();
   g->allweak_.Clear();
@@ -269,18 +269,6 @@ void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal) {
   }
 }
 
-// Traverse one gray object, return # values traversed.
-static int propagatemark (global_State *g) {
-  // pop gray object off the list
-  LuaObject *o = g->grayhead_;
-  g->grayhead_ = o->next_gray_;
-  o->next_gray_ = NULL;
-  assert(o->isGray());
-
-  GCVisitor visitor;
-  return o->PropagateGC(visitor);
-}
-
 // Propagate marks through all objects on this graylist, removing them
 // from the list as we go.
 void PropagateGC_Graylist(LuaObject*& head, GCVisitor& visitor) {
@@ -299,19 +287,17 @@ void PropagateGC_Graylist(LuaObject*& head, GCVisitor& visitor) {
 ** twice the same table (which is not wrong, but inefficient)
 */
 static void retraversegrays (global_State *g) {
-  //LuaObject *weak = g->weak_;  /* save original lists */
   LuaGraylist weak;
-  weak.Swap(g->weak_);
-
   LuaGraylist grayagain;
-  grayagain.Swap(g->grayagain_);
-
   LuaGraylist ephemeron;
+
+  weak.Swap(g->weak_);
+  grayagain.Swap(g->grayagain_);
   ephemeron.Swap(g->ephemeron_);
   
   GCVisitor v;
 
-  PropagateGC_Graylist(g->grayhead_, v);
+  g->grayhead_.PropagateGC(v);
   grayagain.PropagateGC(v);
   weak.PropagateGC(v);
   ephemeron.PropagateGC(v);
@@ -338,7 +324,7 @@ static void convergeephemerons (global_State *g) {
       // cause more things in ephemeron tables to turn gray, so we have to repeat.
       // the process until nothing gets turned gray.
       if (v.mark_count_) {
-        PropagateGC_Graylist(g->grayhead_, v);
+        g->grayhead_.PropagateGC(v);
         changed = 1;  /* will have to revisit all ephemeron tables */
       }
     }
@@ -761,7 +747,7 @@ static void atomic () {
   
   /* remark, to propagate `preserveness' */
   GCVisitor v;
-  PropagateGC_Graylist(g->grayhead_, v);
+  g->grayhead_.PropagateGC(v);
   convergeephemerons(g);
 
   /* at this point, all resurrected objects are marked. */
@@ -794,8 +780,10 @@ static l_mem singlestep () {
       return GCROOTCOST;
     }
     case GCSpropagate: {
-      if (g->grayhead_) {
-        return propagatemark(g);
+      if (!g->grayhead_.isEmpty()) {
+        GCVisitor visitor;
+        LuaObject *o = g->grayhead_.Pop();
+        return o->PropagateGC(visitor);
       }
       else {  /* no more `gray' objects */
         g->gcstate = GCSatomic;  /* finish mark phase */

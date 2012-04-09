@@ -27,10 +27,7 @@ void global_State::incGCDebt(int debt) {
 }
 
 void global_State::PushGray(LuaObject* o) {
-  //assert(o->next_gray_ == NULL);
-  o->setColor(LuaObject::GRAY);
-  o->next_gray_ = grayhead_;
-  grayhead_ = o;
+  grayhead_.Push(o);
 }
 
 void global_State::PushGrayAgain(LuaObject* o) {
