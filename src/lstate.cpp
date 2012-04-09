@@ -197,7 +197,7 @@ lua_State *lua_newstate () {
   L->l_G = g;
   {
     GLOBAL_CHANGE(L);
-    L->next = NULL;
+    L->next_ = NULL;
     //L->tt = LUA_TTHREAD;
     assert(L->type() == LUA_TTHREAD);
     g->livecolor = LuaObject::colorA;

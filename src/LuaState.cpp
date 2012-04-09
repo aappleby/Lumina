@@ -121,7 +121,7 @@ void lua_State::reallocstack (int newsize) {
   top = stack.begin() + (top - oldstack);
   
   // Correct all stack references in open upvalues.
-  for (LuaObject* up = openupval; up != NULL; up = up->next) {
+  for (LuaObject* up = openupval; up != NULL; up = up->next_) {
     UpVal* uv = static_cast<UpVal*>(up);
     uv->v = (uv->v - oldstack) + stack.begin();
   }

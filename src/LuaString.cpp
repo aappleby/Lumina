@@ -60,7 +60,7 @@ TString* stringtable::find(uint32_t hash, const char *str, size_t len) {
 
   LuaObject* o = hash_[hash & (size_-1)];
 
-  for (; o != NULL; o = o->next) {
+  for (; o != NULL; o = o->next_) {
     TString *ts = dynamic_cast<TString*>(o);
     if(ts->getHash() != hash) continue;
     if(ts->getLen() != len) continue;
@@ -82,9 +82,9 @@ void stringtable::resize(int newsize) {
     LuaObject *p = hash_[i];
     hash_[i] = NULL;
     while (p) {  /* for each node in the list */
-      LuaObject *next = p->next;  /* save next */
+      LuaObject *next = p->next_;  /* save next */
       unsigned int hash = dynamic_cast<TString*>(p)->getHash();
-      p->next = hash_[hash & (newsize-1)];  /* chain it */
+      p->next_ = hash_[hash & (newsize-1)];  /* chain it */
       hash_[hash & (newsize-1)] = p;
       p->clearOld();  /* see MOVE OLD rule */
       p = next;

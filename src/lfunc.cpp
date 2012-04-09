@@ -76,7 +76,7 @@ UpVal *luaF_findupval (StkId level) {
       return p;
     }
     p->clearOld();  /* may create a newer upval after this one */
-    pp = &(p->next);
+    pp = &(p->next_);
   }
   /* not found: create a new one */
   uv = new UpVal();
@@ -100,7 +100,7 @@ void luaF_close (StkId level) {
     if(uv->v < level) break;
 
     assert(!uv->isBlack() && uv->v != &uv->value);
-    L->openupval = uv->next;  /* remove from `open' list */
+    L->openupval = uv->next_;  /* remove from `open' list */
 
     if (uv->isDead())
       delete uv;
@@ -110,7 +110,7 @@ void luaF_close (StkId level) {
       uv->value = *uv->v;  /* move value to upvalue slot */
       uv->v = &uv->value;  /* now current value lives here */
       
-      uv->next = thread_G->allgc;  /* link upvalue into 'allgc' list */
+      uv->next_ = thread_G->allgc;  /* link upvalue into 'allgc' list */
       thread_G->allgc = uv;
 
       luaC_checkupvalcolor(thread_G, uv);

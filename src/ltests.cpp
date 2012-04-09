@@ -81,7 +81,7 @@ static int testobjref1 (global_State *g, LuaObject *f, LuaObject *t) {
 static void printobj (global_State *g, LuaObject *o) {
   int i = 0;
   LuaObject *p;
-  for (p = g->allgc; p != o && p != NULL; p = p->next) i++;
+  for (p = g->allgc; p != o && p != NULL; p = p->next_) i++;
   if (p == NULL) i = -1;
 
   char c = 'g';
@@ -197,7 +197,7 @@ static void checkstack (global_State *g, lua_State *L1) {
   CallInfo *ci;
   LuaObject *uvo;
   assert(!L1->isDead());
-  for (uvo = L1->openupval; uvo != NULL; uvo = uvo->next) {
+  for (uvo = L1->openupval; uvo != NULL; uvo = uvo->next_) {
     UpVal *uv = dynamic_cast<UpVal*>(uvo);
     assert(uv->v != &uv->value);  /* must be open */
     assert(!uvo->isBlack());  /* open upvalues cannot be black */
@@ -280,6 +280,12 @@ static void checkgraylist (LuaObject* o) {
   }
 }
 
+void CheckGraylistCB(LuaObject* o) {
+  assert(o->isGray());
+  assert(!o->isTestGray());
+  o->setTestGray();
+  o = o->next_gray_;
+}
 
 /*
 ** mark all objects in gray lists as TestGray, so that
@@ -287,17 +293,17 @@ static void checkgraylist (LuaObject* o) {
 */
 static void markgrays (global_State *g) {
   if (!keepinvariant(g)) return;
-  checkgraylist(g->grayhead_.head_);
-  checkgraylist(g->grayagain_.head_);
-  checkgraylist(g->weak_.head_);
-  checkgraylist(g->ephemeron_.head_);
-  checkgraylist(g->allweak_.head_);
+  g->grayhead_.Traverse(CheckGraylistCB);
+  g->grayagain_.Traverse(CheckGraylistCB);
+  g->weak_.Traverse(CheckGraylistCB);
+  g->ephemeron_.Traverse(CheckGraylistCB);
+  g->allweak_.Traverse(CheckGraylistCB);
 }
 
 
 static void checkold (global_State *g, LuaObject *o) {
   int isold = 0;
-  for (; o != NULL; o = o->next) {
+  for (; o != NULL; o = o->next_) {
     if (o->isOld()) {  /* old generation? */
       assert(isgenerational(g));
       if (!issweepphase(g))
@@ -328,20 +334,20 @@ int lua_checkmemory (lua_State *L) {
   /* check 'allgc' list */
   markgrays(g);
   checkold(g, g->allgc);
-  for (o = g->allgc; o != NULL; o = o->next) {
+  for (o = g->allgc; o != NULL; o = o->next_) {
     checkobject(g, o);
     assert(!o->isSeparated());
   }
   /* check 'finobj' list */
   checkold(g, g->finobj);
-  for (o = g->finobj; o != NULL; o = o->next) {
+  for (o = g->finobj; o != NULL; o = o->next_) {
     assert(!o->isDead() && o->isSeparated());
     assert(o->isUserdata() || o->isTable());
     checkobject(g, o);
   }
   /* check 'tobefnz' list */
   checkold(g, g->tobefnz);
-  for (o = g->tobefnz; o != NULL; o = o->next) {
+  for (o = g->tobefnz; o != NULL; o = o->next_) {
     assert(!o->isWhite());
     assert(!o->isDead() && o->isSeparated());
     assert(o->isUserdata() || o->isTable());
@@ -613,7 +619,7 @@ static int string_query (lua_State *L) {
   else if (s < tb->size_) {
     LuaObject *ts;
     int n = 0;
-    for (ts = tb->hash_[s]; ts; ts = ts->next) {
+    for (ts = tb->hash_[s]; ts; ts = ts->next_) {
       L->top[0] = dynamic_cast<TString*>(ts);
       incr_top(L);
       n++;

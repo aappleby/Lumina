@@ -21,7 +21,7 @@ int LuaObject::instanceCounts[256];
 
 LuaObject::LuaObject(LuaType type) {
 
-  next = NULL;
+  next_ = NULL;
   next_gray_ = NULL;
   flags_ = 0;
   color_ = thread_G ? thread_G->livecolor : GRAY;
@@ -36,8 +36,8 @@ LuaObject::~LuaObject() {
 }
 
 void LuaObject::linkGC(LuaObject*& gcHead) {
-  assert(next == NULL);
-  next = gcHead;
+  assert(next_ == NULL);
+  next_ = gcHead;
   gcHead = this;
 }
 

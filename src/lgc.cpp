@@ -243,7 +243,7 @@ static void markroot (global_State *g) {
   }
 
   /* mark any finalizing object left from previous cycle */
-  for (LuaObject* o = g->tobefnz; o != NULL; o = o->next) {
+  for (LuaObject* o = g->tobefnz; o != NULL; o = o->next_) {
     o->makeLive();
     markobject(o);
   }
@@ -420,7 +420,7 @@ static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
   while (*p != NULL && count-- > 0) {
     LuaObject *curr = *p;
     if (curr->isDead()) {  /* is 'curr' dead? */
-      *p = curr->next;  /* remove 'curr' from list */
+      *p = curr->next_;  /* remove 'curr' from list */
       freeobj(curr);  /* erase 'curr' */
     }
     else {
@@ -430,7 +430,7 @@ static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
       }
       /* update marks */
       curr->makeLive();
-      p = &curr->next;  /* go to next element */
+      p = &curr->next_;  /* go to next element */
     }
   }
   return p;
@@ -441,7 +441,7 @@ static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
   while (*p != NULL && count-- > 0) {
     LuaObject *curr = *p;
     if (curr->isDead()) {  /* is 'curr' dead? */
-      *p = curr->next;  /* remove 'curr' from list */
+      *p = curr->next_;  /* remove 'curr' from list */
       freeobj(curr);  /* erase 'curr' */
     }
     else {
@@ -455,7 +455,7 @@ static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
       }
       /* update marks */
       curr->setOld();
-      p = &curr->next;  /* go to next element */
+      p = &curr->next_;  /* go to next element */
     }
   }
   return p;
@@ -472,7 +472,7 @@ static LuaObject** sweeplist (LuaObject **p, size_t count) {
 void deletelist (LuaObject*& head) {
   while (head != NULL) {
     LuaObject *curr = head;
-    head = curr->next;
+    head = curr->next_;
     freeobj(curr);
   }
 }
@@ -503,8 +503,8 @@ static LuaObject *udata2finalize (global_State *g) {
   LuaObject *o = g->tobefnz;  /* get first element */
   assert(o->isFinalized());
 
-  g->tobefnz = o->next;  /* remove it from 'tobefnz' list */
-  o->next = g->allgc;  /* return it to 'allgc' list */
+  g->tobefnz = o->next_;  /* remove it from 'tobefnz' list */
+  o->next_ = g->allgc;  /* return it to 'allgc' list */
   g->allgc = o;
 
   /* mark that it is not in 'tobefnz' */
@@ -576,7 +576,7 @@ void separatetobefnz (int all) {
   
   /* find last 'next' field in 'tobefnz' list (to add elements in its end) */
   while (*lastnext != NULL) {
-    lastnext = &(*lastnext)->next;
+    lastnext = &(*lastnext)->next_;
   }
 
   /* traverse all finalizable objects */
@@ -587,15 +587,15 @@ void separatetobefnz (int all) {
     if (!(all || curr->isWhite())) {
       /* not being collected? */
       /* don't bother with it */
-      p = &curr->next;
+      p = &curr->next_;
     }
     else {
       /* won't be finalized again */
       curr->setFinalized();
-      *p = curr->next;  /* remove 'curr' from 'finobj' list */
-      curr->next = *lastnext;  /* link at the end of 'tobefnz' list */
+      *p = curr->next_;  /* remove 'curr' from 'finobj' list */
+      curr->next_ = *lastnext;  /* link at the end of 'tobefnz' list */
       *lastnext = curr;
-      lastnext = &curr->next;
+      lastnext = &curr->next_;
     }
   }
 }
@@ -605,8 +605,8 @@ void separatetobefnz (int all) {
 
 void RemoveObjectFromList(LuaObject* o, LuaObject** list) {
   LuaObject **p = list;
-  for (; *p != o; p = &(*p)->next);
-  *p = o->next;
+  for (; *p != o; p = &(*p)->next_);
+  *p = o->next_;
 }
 
 /*
@@ -624,7 +624,7 @@ void luaC_checkfinalizer (LuaObject *o, Table *mt) {
 
   // Remove the object from the global GC list and add it to the 'finobj' list.
   RemoveObjectFromList(o, &g->allgc);
-  o->next = g->finobj;
+  o->next_ = g->finobj;
   g->finobj = o;
 
   // Mark it as separated, and clear old (MOVE OLD rule).
@@ -740,7 +740,7 @@ static void atomic () {
   // Userdata that requires finalization has to be separated from the main gc list
   // and kept alive until the finalizers are called.
   separatetobefnz(0);
-  for (LuaObject* o = g->tobefnz; o != NULL; o = o->next) {
+  for (LuaObject* o = g->tobefnz; o != NULL; o = o->next_) {
     o->makeLive();
     markobject(o);
   }

@@ -106,7 +106,7 @@ public:
 
   //----------
 
-  LuaObject *next;
+  LuaObject *next_;
   LuaObject *next_gray_;
 
   static int instanceCounts[256];
