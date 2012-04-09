@@ -138,13 +138,11 @@ static void close_state (lua_State *L) {
 
   g->buff.buffer.clear();
 
-  L->freestack();
-  assert(g->getTotalBytes() == (sizeof(lua_State) + sizeof(global_State)));
-  thread_G = NULL;
-  L->l_G = NULL;
-
-  delete g;
   delete L;
+  thread_L = NULL;
+  thread_G = NULL;
+  assert(g->getTotalBytes() == sizeof(global_State));
+  delete g;
 }
 
 
