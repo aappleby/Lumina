@@ -346,11 +346,11 @@ int lua_checkmemory (lua_State *L) {
     checkobject(g, o);
   }
   /* check 'tobefnz' list */
-  checkold(g, g->tobefnz);
-  for (o = g->tobefnz; o != NULL; o = o->next_) {
-    assert(!o->isWhite());
-    assert(!o->isDead() && o->isSeparated());
-    assert(o->isUserdata() || o->isTable());
+  checkold(g, g->tobefnz.begin());
+  for (LuaList::iterator it = g->tobefnz.begin(); it; ++it) {
+    assert(!it->isWhite());
+    assert(!it->isDead() && it->isSeparated());
+    assert(it->isUserdata() || it->isTable());
   }
   /* check 'uvhead' list */
   for (uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {

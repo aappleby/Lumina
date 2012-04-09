@@ -38,8 +38,10 @@ public:
   uint8_t gcrunning;  /* true if GC is running */
 
   LuaObject *allgc;  /* list of all collectable objects */
-  LuaObject *finobj;  /* list of collectable objects with finalizers */
   LuaObject **sweepgc;  /* current position of sweep */
+
+  LuaObject *finobj;  /* list of collectable objects with finalizers */
+  LuaList tobefnz;  /* list of userdata to be GC */
 
   // Gray lists
   LuaGraylist grayhead_;  // Topmost list of gray objects
@@ -49,8 +51,6 @@ public:
   LuaGraylist ephemeron_; // list of ephemeron tables (weak keys)
   LuaGraylist allweak_;   // list of all-weak tables
 
-  LuaObject *tobefnz;  /* list of userdata to be GC */
-  
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
   Mbuffer buff;  /* temporary buffer for string concatenation */
   int gcpause;  /* size of pause between successive GCs */

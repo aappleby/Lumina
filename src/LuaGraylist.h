@@ -30,6 +30,18 @@ public:
     }
   }
 
+  void PushTail(LuaObject* o) {
+    assert(o->next_ == NULL);
+
+    if(tail_ == NULL) {
+      head_ = o;
+      tail_ = o;
+    } else {
+      tail_->next_ = o;
+      tail_ = o;
+    }
+  }
+
   LuaObject* Pop() {
     if(head_ == NULL) {
       return NULL;
@@ -91,8 +103,17 @@ public:
       return *this;
     }
 
+    operator LuaObject* () {
+      return object_;
+    }
+
+  protected:
     LuaObject* object_;
   };
+
+  iterator begin() {
+    return iterator(head_);
+  }
 
 protected:
   LuaObject* head_;

@@ -216,7 +216,7 @@ lua_State *lua_newstate () {
     g->gcstate = GCSpause;
     g->allgc = NULL;
     g->finobj = NULL;
-    g->tobefnz = NULL;
+    //g->tobefnz = NULL;
 
     g->gcpause = LUAI_GCPAUSE;
     g->gcmajorinc = LUAI_GCMAJOR;

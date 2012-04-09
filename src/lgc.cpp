@@ -243,9 +243,9 @@ static void markroot (global_State *g) {
   }
 
   /* mark any finalizing object left from previous cycle */
-  for (LuaObject* o = g->tobefnz; o != NULL; o = o->next_) {
-    o->makeLive();
-    markobject(o);
+  for(LuaList::iterator it = g->tobefnz.begin(); it; ++it) {
+    it->makeLive();
+    markobject(it);
   }
 }
 
@@ -500,10 +500,9 @@ static void checkSizes () {
 // GC list.
 
 static LuaObject *udata2finalize (global_State *g) {
-  LuaObject *o = g->tobefnz;  /* get first element */
+  LuaObject* o = g->tobefnz.Pop();  /* get first element */
   assert(o->isFinalized());
 
-  g->tobefnz = o->next_;  /* remove it from 'tobefnz' list */
   o->next_ = g->allgc;  /* return it to 'allgc' list */
   g->allgc = o;
 
@@ -572,12 +571,6 @@ void separatetobefnz (int all) {
   global_State *g = thread_G;
   LuaObject **p = &g->finobj;
   LuaObject *curr;
-  LuaObject **lastnext = &g->tobefnz;
-  
-  /* find last 'next' field in 'tobefnz' list (to add elements in its end) */
-  while (*lastnext != NULL) {
-    lastnext = &(*lastnext)->next_;
-  }
 
   /* traverse all finalizable objects */
   while ((curr = *p) != NULL) {  
@@ -593,9 +586,14 @@ void separatetobefnz (int all) {
       /* won't be finalized again */
       curr->setFinalized();
       *p = curr->next_;  /* remove 'curr' from 'finobj' list */
-      curr->next_ = *lastnext;  /* link at the end of 'tobefnz' list */
+      curr->next_ = NULL;
+
+      /*
+      curr->next_ = *lastnext;  // link at the end of 'tobefnz' list
       *lastnext = curr;
       lastnext = &curr->next_;
+      */
+      g->tobefnz.PushTail(curr);
     }
   }
 }
@@ -673,8 +671,8 @@ void luaC_changemode (lua_State *L, int mode) {
 */
 static void callallpendingfinalizers (int propagateerrors) {
   global_State *g = thread_G;
-  while (g->tobefnz) {
-    g->tobefnz->clearOld();
+  while (!g->tobefnz.isEmpty()) {
+    g->tobefnz.begin()->clearOld();
     GCTM(propagateerrors);
   }
 }
@@ -740,9 +738,10 @@ static void atomic () {
   // Userdata that requires finalization has to be separated from the main gc list
   // and kept alive until the finalizers are called.
   separatetobefnz(0);
-  for (LuaObject* o = g->tobefnz; o != NULL; o = o->next_) {
-    o->makeLive();
-    markobject(o);
+
+  for(LuaList::iterator it = g->tobefnz.begin(); it; ++it) {
+    it->makeLive();
+    markobject(it);
   }
   
   /* remark, to propagate `preserveness' */
@@ -882,7 +881,7 @@ void luaC_forcestep () {
   int i;
   if (isgenerational(g)) generationalcollection();
   else step();
-  for (i = 0; i < GCFINALIZENUM && g->tobefnz; i++) {
+  for (i = 0; i < GCFINALIZENUM && (!g->tobefnz.isEmpty()); i++) {
     GCTM(1);  /* Call a few pending finalizers */
   }
 }
