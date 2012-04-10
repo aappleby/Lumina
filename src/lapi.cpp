@@ -70,7 +70,7 @@ TValue index2addr3(lua_State* L, int idx) {
   if (idx > 0) {
     TValue *o = ci->func + idx;
     if (o >= L->top) {
-      return TValue::none;
+      return TValue::None();
     }
     else return *o;
   }
@@ -86,7 +86,7 @@ TValue index2addr3(lua_State* L, int idx) {
 
   // Light C functions have no upvals
   if (ci->func->isLightFunction()) {
-    return TValue::none;
+    return TValue::None();
   }
 
   idx = LUA_REGISTRYINDEX - idx - 1;
@@ -97,7 +97,7 @@ TValue index2addr3(lua_State* L, int idx) {
   }
 
   // Invalid stack index.
-  return TValue::none;
+  return TValue::None();
 }
 
 TValue* index2addr2 (lua_State *L, int idx) {

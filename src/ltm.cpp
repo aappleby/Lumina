@@ -49,31 +49,11 @@ void luaT_init() {
 }
 
 
-const TValue *luaT_gettmbyobj (const TValue *o, TMS event) {
-  Table* mt = lua_getmetatable(*o);
-  if(mt == NULL) return luaO_nilobject;
-  TValue temp(thread_G->tagmethod_names_[event]);
-  return luaH_get(mt, &temp);
-}
-
 TValue luaT_gettmbyobj2 (TValue v, TMS event) {
   Table* mt = lua_getmetatable(v);
   if(mt == NULL) return TValue::None();
   TValue temp(thread_G->tagmethod_names_[event]);
   return mt->get(temp);
-}
-
-const TValue* fasttm ( Table* table, TMS tag) {
-  if(table == NULL) return NULL;
-
-  TValue temp(thread_G->tagmethod_names_[tag]);
-  const TValue *tm = luaH_get2(table, &temp);
-
-  assert(tag <= TM_EQ);
-  if ((tm == NULL) || tm->isNil()) {  /* no tag method? */
-    return NULL;
-  }
-  else return tm;
 }
 
 TValue fasttm2 ( Table* table, TMS tag) {
@@ -88,33 +68,3 @@ TValue fasttm2 ( Table* table, TMS tag) {
   }
   else return tm;
 }
-
-/*
-const TValue* fasttm(Table* table, TMS tag) {
-  const TValue* oldtm= fasttm_old(table, tag);
-  TValue newtm = fasttm_new(table, tag);
-
-  if(oldtm == NULL) {
-    assert(newtm.isNone());
-    return oldtm;
-  } else {
-    assert(!oldtm->isNil());
-    assert(!newtm.isNil());
-    return oldtm;
-  }
-}
-
-TValue fasttm2(Table* table, TMS tag) {
-  const TValue* oldtm= fasttm_old(table, tag);
-  TValue newtm = fasttm_new(table, tag);
-
-  if(oldtm == NULL) {
-    assert(newtm.isNone());
-    return newtm;
-  } else {
-    assert(!oldtm->isNil());
-    assert(!newtm.isNil());
-    return newtm;
-  }
-}
-*/

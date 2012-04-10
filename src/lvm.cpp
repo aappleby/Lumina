@@ -252,27 +252,26 @@ void luaV_settable (lua_State *L, const TValue *t2, TValue *key, StkId val) {
 static int call_binTM (lua_State *L, const TValue *p1, const TValue *p2,
                        StkId res, TMS event) {
   THREAD_CHECK(L);
-  const TValue *tm = luaT_gettmbyobj(p1, event);  /* try first operand */
-  if (tm->isNil())
-    tm = luaT_gettmbyobj(p2, event);  /* try second operand */
-  if (tm->isNil()) return 0;
-  callTM(L, tm, p1, p2, res, 1);
+  TValue tm = luaT_gettmbyobj2(*p1, event);  /* try first operand */
+  if (tm.isNone() || tm.isNil())
+    tm = luaT_gettmbyobj2(*p2, event);  /* try second operand */
+  if (tm.isNone() || tm.isNil()) return 0;
+  callTM(L, &tm, p1, p2, res, 1);
   return 1;
 }
 
 
-static const TValue *get_equalTM (lua_State *L, Table *mt1, Table *mt2,
+TValue get_equalTM (lua_State *L, Table *mt1, Table *mt2,
                                   TMS event) {
   THREAD_CHECK(L);
-  const TValue *tm1 = fasttm(mt1, event);
-  const TValue *tm2;
-  if (tm1 == NULL) return NULL;  /* no metamethod */
+  TValue tm1 = fasttm2(mt1, event);
+  if (tm1.isNone() || tm1.isNil()) return TValue::None();  /* no metamethod */
   if (mt1 == mt2) return tm1;  /* same metatables => same metamethods */
-  tm2 = fasttm(mt2, event);
-  if (tm2 == NULL) return NULL;  /* no metamethod */
-  if (*tm1 == *tm2)  /* same metamethods? */
+  TValue tm2 = fasttm2(mt2, event);
+  if (tm2.isNone() || tm2.isNil()) return TValue::None();  /* no metamethod */
+  if (tm1 == tm2)  /* same metamethods? */
     return tm1;
-  return NULL;
+  return TValue::None();
 }
 
 
@@ -359,10 +358,10 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
       if (t1->getUserdata() == t2->getUserdata()) return 1;
       if (L == NULL) return 0;
 
-      const TValue* tm = get_equalTM(L, t1->getUserdata()->metatable_, t2->getUserdata()->metatable_, TM_EQ);
-      if (tm == NULL) return 0;  /* no TM? */
+      TValue tm = get_equalTM(L, t1->getUserdata()->metatable_, t2->getUserdata()->metatable_, TM_EQ);
+      if (tm.isNone() || tm.isNil()) return 0;  /* no TM? */
 
-      callTM(L, tm, t1, t2, L->top, 1);  /* call TM */
+      callTM(L, &tm, t1, t2, L->top, 1);  /* call TM */
       return !l_isfalse(L->top);
     }
 
@@ -370,10 +369,10 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
       if (t1->getTable() == t2->getTable()) return 1;
       if (L == NULL) return 0;
 
-      const TValue* tm = get_equalTM(L, t1->getTable()->metatable, t2->getTable()->metatable, TM_EQ);
-      if (tm == NULL) return 0;  /* no TM? */
+      TValue tm = get_equalTM(L, t1->getTable()->metatable, t2->getTable()->metatable, TM_EQ);
+      if (tm.isNone() || tm.isNil()) return 0;  /* no TM? */
 
-      callTM(L, tm, t1, t2, L->top, 1);  /* call TM */
+      callTM(L, &tm, t1, t2, L->top, 1);  /* call TM */
       return !l_isfalse(L->top);
     }
 
@@ -565,8 +564,8 @@ void luaV_finishOp (lua_State *L) {
       /* metamethod should not be called when operand is K */
       assert(!ISK(GETARG_B(inst)));
       /* "<=" using "<" instead? */
-      const TValue* tm = luaT_gettmbyobj(base + GETARG_B(inst), TM_LE);
-      if (op == OP_LE && tm->isNil()) {
+      TValue tm = luaT_gettmbyobj2(base[GETARG_B(inst)], TM_LE);
+      if (op == OP_LE && (tm.isNone() || tm.isNil())) {
         res = !res;  /* invert result */
       }
       assert(GET_OPCODE(*ci->savedpc) == OP_JMP);
