@@ -102,6 +102,21 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
   }
 }
 
+static void callTM0 (lua_State *L,
+                     const TValue* func,
+                     const TValue* arg1,
+                     const TValue* arg2,
+                     const TValue* arg3) {
+  THREAD_CHECK(L);
+  L->top[0] = *func;
+  L->top[1] = *arg1;
+  L->top[2] = *arg2;
+  L->top[3] = *arg3;
+  L->top += 4;
+  /* metamethod may yield only when called from Lua code */
+  luaD_call(L, L->top - 4, 0, isLua(L->ci_));
+}
+
 
 void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId result) {
   THREAD_CHECK(L);
@@ -192,7 +207,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       }
       else {
         if (tm->isFunction()) {
-          callTM(L, tm, t, key, val, 0);
+          callTM0(L, tm, t, key, val);
           return;
         }
         else {
@@ -208,7 +223,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
         luaG_typeerror(t, "index");
       }
       else if (tm->isFunction()) {
-        callTM(L, tm, t, key, val, 0);
+        callTM0(L, tm, t, key, val);
         return;
       }
       else {
