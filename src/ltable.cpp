@@ -59,8 +59,12 @@ void countKey( TValue key, int* logtable ) {
   }
 }
 
-int findBestArraySize( Table* t, TValue newkey ) {
+void findBestArraySize( Table* t,
+                       TValue newkey,
+                       int & outArraySize,
+                       int & outHashSize ) {
 
+  int totalKeys = 0;
   int logtable[32];
 
   memset(logtable,0,32*sizeof(int));
@@ -70,17 +74,19 @@ int findBestArraySize( Table* t, TValue newkey ) {
     // C index -> Lua index
     TValue key(i+1);
     countKey(key, logtable);
+    totalKeys++;
   }
 
   for(int i = 0; i < (int)t->hashtable.size(); i++) {
     TValue& key = t->hashtable[i].i_key;
     TValue& val = t->hashtable[i].i_val;
     if(val.isNil()) continue;
-
     countKey(key, logtable);
+    totalKeys++;
   }
 
   countKey(newkey, logtable);
+  totalKeys++;
 
   int bestSize = 0;
   int bestCount = 0;
@@ -94,81 +100,8 @@ int findBestArraySize( Table* t, TValue newkey ) {
     }
   }
 
-  return bestSize;
-}
-
-
-static int computesizes (int nums[], int *narray) {
-  int i;
-  int twotoi;  /* 2^i */
-  int a = 0;  /* number of elements smaller than 2^i */
-  int na = 0;  /* number of elements to go to array part */
-  int n = 0;  /* optimal size for array part */
-  for (i = 0, twotoi = 1; twotoi/2 < *narray; i++, twotoi *= 2) {
-    if (nums[i] > 0) {
-      a += nums[i];
-      if (a > twotoi/2) {  /* more than half elements present? */
-        n = twotoi;  /* optimal size (till now) */
-        na = a;  /* all elements smaller than n will go to array part */
-      }
-    }
-    if (a == *narray) break;  /* all elements already counted */
-  }
-  *narray = n;
-  assert(*narray/2 <= na && na <= *narray);
-  return na;
-}
-
-
-static int countint (const TValue *key, int *nums) {
-  int k = key->isInteger() ? key->getInteger() : -1;
-  if (0 < k && k <= MAXASIZE) {  /* is `key' an appropriate array index? */
-    nums[luaO_ceillog2(k)]++;  /* count as such */
-    return 1;
-  }
-  else
-    return 0;
-}
-
-
-static int numusearray (Table *t, int *nums) {
-  int lg;
-  int ttlg;  /* 2^lg */
-  int ause = 0;  /* summation of `nums' */
-  int i = 1;  /* count to traverse all array keys */
-  for (lg=0, ttlg=1; lg<=MAXBITS; lg++, ttlg*=2) {  /* for each slice */
-    int lc = 0;  /* counter */
-    int lim = ttlg;
-    if (lim > (int)t->array.size()) {
-      lim = (int)t->array.size();  /* adjust upper limit */
-      if (i > lim)
-        break;  /* no more elements to count */
-    }
-    /* count elements in range (2^(lg-1), 2^lg] */
-    for (; i <= lim; i++) {
-      if (!t->array[i-1].isNil())
-        lc++;
-    }
-    nums[lg] += lc;
-    ause += lc;
-  }
-  return ause;
-}
-
-
-static int numusehash (Table *t, int *nums, int *pnasize) {
-  int totaluse = 0;  /* total number of elements */
-  int ause = 0;  /* summation of `nums' */
-  int i = (int)t->hashtable.size();
-  while (i--) {
-    Node *n = t->getNode(i);
-    if (!n->i_val.isNil()) {
-      ause += countint(&n->i_key, nums);
-      totaluse++;
-    }
-  }
-  *pnasize += ause;
-  return totaluse;
+  outArraySize = bestSize;
+  outHashSize = totalKeys - bestCount;
 }
 
 // Note - new memory for array & hash _must_ be allocated before we start moving things around,
@@ -221,37 +154,10 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
 }
 
 
-void luaH_resizearray (Table *t, int nasize) {
-  int nsize = (int)t->hashtable.size();
-  luaH_resize(t, nasize, nsize);
-}
-
-
 static void rehash (Table *t, const TValue *ek) {
-  int nasize, na;
-  int i;
-  int totaluse;
-
-  int nums[MAXBITS+1];  /* nums[i] = number of keys with 2^(i-1) < k <= 2^i */
-  for (i=0; i<=MAXBITS; i++) nums[i] = 0;  /* reset counts */
-  nasize = numusearray(t, nums);  /* count keys in array part */
-  totaluse = nasize;  /* all those keys are integer keys */
-  totaluse += numusehash(t, nums, &nasize);  /* count keys in hash part */
-  /* count extra key */
-  nasize += countint(ek, nums);
-  totaluse++;
-
-  int bestsize = findBestArraySize(t, *ek);
-
-  /* compute new size for array part */
-  na = computesizes(nums, &nasize);
-
-  if(bestsize != nasize) {
-    printf("xxx");
-  }
-
-  /* resize the table to new computed sizes */
-  luaH_resize(t, nasize, totaluse - na);
+  int bestArraySize, bestHashSize;
+  findBestArraySize(t, *ek, bestArraySize, bestHashSize);
+  luaH_resize(t, bestArraySize, bestHashSize);
 }
 
 

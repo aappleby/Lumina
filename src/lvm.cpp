@@ -957,11 +957,16 @@ void luaV_execute (lua_State *L) {
         luai_runtimecheck(L, ra->isTable());
         h = ra->getTable();
         last = ((c-1)*LFIELDS_PER_FLUSH) + n;
-        if (last > (int)h->array.size())  /* needs more space? */
-          luaH_resizearray(h, last);  /* pre-allocate it at once */
+        
+        // needs more space? pre-allocate it at once.
+        if (last > (int)h->array.size()) {
+          luaH_resize(h, last, (int)h->hashtable.size());
+        }
+
         for (; n > 0; n--) {
           TValue *val = ra+n;
           luaH_setint(h, last--, val);
+          // TODO(aappleby): we probably don't have to call barrierback every time through this loop
           luaC_barrierback(h, *val);
         }
         L->top = ci->top;  /* correct top (in case of previous open call) */
