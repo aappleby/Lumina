@@ -168,10 +168,7 @@ void luaH_resize (Table *t, int nasize, int nhsize) {
   for (int i = (int)temphash.size() - 1; i >= 0; i--) {
     Node* old = &temphash[i];
     if (!old->i_val.isNil()) {
-      TValue* key = &old->i_key;
-      TValue* val = &old->i_val;
-      TValue* n = luaH_set(t, key);
-      *n = old->i_val;
+      luaH_set2(t, old->i_key, old->i_val);
     }
   }
 }
@@ -331,6 +328,20 @@ TValue *luaH_set (Table *t, const TValue *key) {
       luaG_runerror("Key is invalid (either nil or NaN)");
     }
     return result;
+  }
+}
+
+void luaH_set2 (Table *t, TValue key, TValue val) {
+  const TValue *p = luaH_get2(t, &key);
+  if (p) {
+    *(TValue*)p = val;
+  }
+  else {
+    const TValue* result = luaH_newkey(t, &key);
+    if(result == NULL) {
+      luaG_runerror("Key is invalid (either nil or NaN)");
+    }
+    *(TValue*)result = val;
   }
 }
 

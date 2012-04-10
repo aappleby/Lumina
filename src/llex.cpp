@@ -129,11 +129,13 @@ l_noret luaX_syntaxerror (LexState *ls, const char *msg) {
 TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
   THREAD_CHECK(ls->L);
   lua_State *L = ls->L;
-  TValue *o;  /* entry for `str' */
+
   TString *ts = luaS_newlstr(str, l);  /* create new string */
   L->top[0] = ts;  /* temporarily anchor it in stack */
   L->top++;
-  o = luaH_set(ls->fs->h, L->top - 1);
+
+  /* entry for `str' */
+  TValue* o = luaH_set(ls->fs->h, L->top - 1);
   if (o->isNil()) {  /* not in use yet? (see 'addK') */
     /* boolean value does not need GC barrier;
        table has no metatable, so it does not need to invalidate cache */
@@ -141,6 +143,7 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
     o[0] = true;
     luaC_checkGC();
   }
+
   L->top--;  /* remove string from stack */
   return ts;
 }

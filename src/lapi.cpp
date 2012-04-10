@@ -845,7 +845,7 @@ void lua_rawset (lua_State *L, int idx) {
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
   // TODO(aappleby): wtf, using the result of set as an assignment target?
-  *luaH_set(t->getTable(), L->top-2) = L->top[-1];
+  luaH_set2(t->getTable(), L->top[-2], L->top[-1]);
   luaC_barrierback(t->getObject(), L->top[-1]);
   L->top -= 2;
 }
@@ -871,7 +871,7 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
   k = TValue::LightUserdata((void*)p);
-  *luaH_set(t->getTable(), &k) = L->top[-1];
+  luaH_set2(t->getTable(), k, L->top[-1]);
   luaC_barrierback(t->getObject(), L->top[-1]);
   L->top--;
 }

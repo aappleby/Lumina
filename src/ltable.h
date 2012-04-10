@@ -22,7 +22,10 @@ const TValue *luaH_getint2 (Table *t, int key);
 
 
 TValue *luaH_newkey (Table *t, const TValue *key);
+
 TValue *luaH_set (Table *t, const TValue *key);
+void luaH_set2(Table* t, TValue key, TValue val);
+
 void luaH_resize (Table *t, int nasize, int nhsize);
 void luaH_resizearray (Table *t, int nasize);
 int luaH_next (Table *t, StkId key);
