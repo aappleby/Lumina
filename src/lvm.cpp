@@ -175,7 +175,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       /* if previous value is not nil, there must be a previous entry
          in the table; moreover, a metamethod has no relevance */
       if (oldval && oldval->isNotNil()) {
-        *oldval = *val;
+        luaH_set2(h, *key, *val);
         // invalidate TM cache
         luaC_barrierback(h, *val);
         return;
@@ -184,21 +184,8 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       /* previous value is nil; must check the metamethod */
       tm = fasttm(h->metatable, TM_NEWINDEX);
       if (tm == NULL) {
-
-         /* no metamethod; is there a previous entry in the table? */
-        if(oldval != luaO_nilobject) {
-          *oldval = *val;
-          // invalidate TM cache
-          luaC_barrierback(h, *val);
-          return;
-        }
-
-        // no previous entry; must create one.
-        oldval = luaH_newkey(h, key);
-        if(oldval == NULL) {
-          luaG_runerror("Key is invalid (either nil or NaN)");
-        }
-        *oldval = *val;
+        // no metamethod, add (key,val) to table
+        luaH_set2(h, *key, *val);
         // invalidate TM cache
         luaC_barrierback(h, *val);
         return;
