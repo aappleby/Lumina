@@ -63,7 +63,7 @@ TValue luaT_gettmbyobj2 (TValue v, TMS event) {
   return mt->get(temp);
 }
 
-const TValue* fasttm ( Table* table, TMS tag) {
+const TValue* fasttm_old ( Table* table, TMS tag) {
   if(table == NULL) return NULL;
 
   TValue temp(thread_G->tagmethod_names_[tag]);
@@ -76,7 +76,7 @@ const TValue* fasttm ( Table* table, TMS tag) {
   else return tm;
 }
 
-TValue fasttm2 ( Table* table, TMS tag) {
+TValue fasttm_new ( Table* table, TMS tag) {
   if(table == NULL) return TValue::None();
 
   TValue temp(thread_G->tagmethod_names_[tag]);
@@ -87,4 +87,32 @@ TValue fasttm2 ( Table* table, TMS tag) {
     return TValue::None();
   }
   else return tm;
+}
+
+const TValue* fasttm(Table* table, TMS tag) {
+  const TValue* oldtm= fasttm_old(table, tag);
+  TValue newtm = fasttm_new(table, tag);
+
+  if(oldtm == NULL) {
+    assert(newtm.isNone());
+    return oldtm;
+  } else {
+    assert(!oldtm->isNil());
+    assert(!newtm.isNil());
+    return oldtm;
+  }
+}
+
+TValue fasttm2(Table* table, TMS tag) {
+  const TValue* oldtm= fasttm_old(table, tag);
+  TValue newtm = fasttm_new(table, tag);
+
+  if(oldtm == NULL) {
+    assert(newtm.isNone());
+    return newtm;
+  } else {
+    assert(!oldtm->isNil());
+    assert(!newtm.isNil());
+    return newtm;
+  }
 }
