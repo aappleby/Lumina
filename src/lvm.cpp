@@ -105,6 +105,7 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
 
 void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId result) {
   THREAD_CHECK(L);
+  TValue tagmethod;
   for (int loop = 0; loop < MAXTAGLOOP; loop++) {
     if(source == NULL) {
       result->clear();
@@ -124,10 +125,13 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId resul
     // Table lookup failed. If there's no tag method, then either the search terminates
     // (if object is a table) or throws an error (if object is not a table)
 
-    const TValue* tagmethod = source->isTable() ? fasttm(source->getTable()->metatable, TM_INDEX) : 
-                                                  luaT_gettmbyobj(source, TM_INDEX);
+    if(source->isTable()) {
+      tagmethod = fasttm2(source->getTable()->metatable, TM_INDEX);
+    } else {
+      tagmethod = luaT_gettmbyobj2(*source, TM_INDEX);
+    }
 
-    if((tagmethod == NULL) || tagmethod->isNil()) {
+    if(tagmethod.isNone() || tagmethod.isNil()) {
       if(source->isTable()) {
         result->clear();
         return;
@@ -140,13 +144,13 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId resul
     // If the tagmethod is a function, call it. If it's a table, redo the search in
     // the new table.
 
-    if (tagmethod->isFunction()) {
-      callTM(L, tagmethod, source, key, result, 1);
+    if (tagmethod.isFunction()) {
+      callTM(L, &tagmethod, source, key, result, 1);
       return;
     }
 
-    if(tagmethod->isTable()) {
-      source = tagmethod;
+    if(tagmethod.isTable()) {
+      source = &tagmethod;
       continue;
     }
 
