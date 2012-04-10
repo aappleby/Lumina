@@ -191,6 +191,9 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
 
         // no previous entry; must create one.
         oldval = luaH_newkey(h, key);
+        if(oldval == NULL) {
+          luaG_runerror("Key is invalid (either nil or NaN)");
+        }
         *oldval = *val;
         // invalidate TM cache
         luaC_barrierback(h, *val);

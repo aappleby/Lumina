@@ -89,11 +89,19 @@ public:
 
   Node* nodeAt(uint32_t hash);
 
+  Node* getFreeNode();
+
+  void resize(int arrayssize, int hashsize);
+
+  TValue* newKey(const TValue* key);
+
   //----------
 
   Table *metatable;
-  int lastfree;
 
   LuaVector<TValue> array;
   LuaVector<Node> hashtable;
+
+//protected:
+  int lastfree;
 };

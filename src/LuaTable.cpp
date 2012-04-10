@@ -1,6 +1,9 @@
 #include "LuaTable.h"
 
 void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal);
+int luaO_ceillog2 (unsigned int x);
+
+//-----------------------------------------------------------------------------
 
 uint32_t hash64 (uint32_t a, uint32_t b) {
   a ^= a >> 16;
@@ -158,6 +161,134 @@ Node* Table::nodeAt(uint32_t hash) {
 
 //-----------------------------------------------------------------------------
 
+Node* Table::getFreeNode() {
+  while (lastfree > 0) {
+    lastfree--;
+    Node* last = &hashtable[lastfree];
+    if (last->i_key.isNil())
+      return last;
+  }
+  return NULL;
+}
+
+//-----------------------------------------------------------------------------
+
+// caller has to call luaC_barrierback(t, *key);
+//
+// inserts a new key into a hash table; first, check whether key's main
+// position is free. If not, check whether colliding node is in its main
+// position or not: if it is not, move colliding node to an empty place and
+// put new key in its main position; otherwise (colliding node is in its main
+// position), new key goes to an empty position.
+//
+/*
+TValue* Table::newKey(const TValue *key) {
+  if (key->isNil()) {
+    luaG_runerror("table index is nil");
+    return NULL;
+  }
+
+  if (key->isNumber()) {
+    double n = key->getNumber();
+    if(n != n) {
+      luaG_runerror("table index is NaN");
+      return NULL;
+    }
+  }
+  
+  Node* mp = findBin(*key);
+
+  if(mp && mp->i_val.isNil()) {
+    mp->i_key = *key;
+    //luaC_barrierback(t, *key);
+    assert(mp->i_val.isNil());
+    return &mp->i_val;
+  }
+
+  if ((mp == NULL) || !mp->i_val.isNil()) {  // main position is taken?
+    Node *n = getFreeNode();  // get a free place
+    if (n == NULL) {  // cannot find a free place?
+      rehash(t, key);  // grow table
+      // whatever called 'newkey' take care of TM cache and GC barrier
+      return luaH_set(t, key);  // insert key into grown table
+    }
+    assert(n);
+
+    Node* othern = t->findBin(mp->i_key);
+    if (othern != mp) {  // is colliding node out of its main position?
+      // yes; move colliding node into free position
+      while (othern->next != mp) othern = othern->next;  // find previous
+      othern->next = n;  // redo the chain with `n' in place of `mp'
+      *n = *mp;  // copy colliding node into free pos. (mp->next also goes)
+      mp->next = NULL;  // now `mp' is free
+      mp->i_val.clear();
+    }
+    else {  // colliding node is in its own main position
+      // new node will go into free position
+      n->next = mp->next;  // chain new position
+      mp->next = n;
+      mp = n;
+    }
+  }
+  mp->i_key = *key;
+  //luaC_barrierback(t, *key);
+  assert(mp->i_val.isNil());
+  return &mp->i_val;
+}
+*/
+
+//-----------------------------------------------------------------------------
+
+/*
+void Table::resize(int nasize, int nhsize) {
+  int oldasize = (int)array.size();
+  int oldhsize = (int)hashtable.size();
+
+  // Allocate temporary storage for the resize before we modify the table
+  LuaVector<Node> temphash;
+  LuaVector<TValue> temparray;
+
+  if(nasize) {
+    temparray.resize(nasize);
+    memcpy(temparray.begin(), array.begin(), std::min(oldasize, nasize) * sizeof(TValue));
+  }
+
+  if (nhsize) {
+    int lsize = luaO_ceillog2(nhsize);
+    nhsize = 1 << lsize;
+    temphash.resize(nhsize);
+  }
+
+  // Memory allocated, swap and reinsert
+
+  temparray.swap(array);
+  temphash.swap(hashtable);
+  lastfree = (int)hashtable.size(); // all positions are free
+
+  // Temparray now contains the old contents of array. If temparray is
+  // larger than array, move the overflow to the hash table.
+  if (temparray.size() > array.size()) {
+    for(int i = (int)array.size(); i < (int)temparray.size(); i++) {
+      if (!temparray[i].isNil()) {
+        luaH_setint(this, i + 1, &temparray[i]);
+      }
+    }
+  }
+  // And finally re-insert the saved nodes.
+  for (int i = (int)temphash.size() - 1; i >= 0; i--) {
+    Node* old = &temphash[i];
+    if (!old->i_val.isNil()) {
+      TValue* key = &old->i_key;
+      TValue* val = &old->i_val;
+      TValue* n = luaH_set(this, key);
+      *n = old->i_val;
+    }
+  }
+}
+*/
+
+//-----------------------------------------------------------------------------
+
 int Table::traverseNodes(Table::nodeCallback c, void* blob) {
   for(int i = 0; i < (int)hashtable.size(); i++) {
     Node* n = getNode(i);
@@ -210,6 +341,8 @@ void Table::VisitGC(GCVisitor& visitor) {
   }
 }
 
+//----------
+
 int Table::PropagateGC(GCVisitor& visitor) {
   visitor.MarkObject(metatable);
 
@@ -238,6 +371,8 @@ int Table::PropagateGC(GCVisitor& visitor) {
   }
 }
 
+//----------
+
 int Table::PropagateGC_Strong(GCVisitor& visitor) {
   setColor(BLACK);
 
@@ -260,6 +395,8 @@ int Table::PropagateGC_Strong(GCVisitor& visitor) {
 
   return TRAVCOST + (int)array.size() + 2 * (int)hashtable.size();
 }
+
+//----------
 
 int Table::PropagateGC_WeakValues(GCVisitor& visitor) {
   bool hasDeadValues = false;
@@ -292,7 +429,9 @@ int Table::PropagateGC_WeakValues(GCVisitor& visitor) {
   return TRAVCOST + (int)hashtable.size();
 }
 
+//----------
 // weak keys, strong values
+
 int Table::PropagateGC_Ephemeron(GCVisitor& visitor) {
   bool propagate = false;
   bool hasDeadKeys = false;
@@ -339,6 +478,8 @@ int Table::PropagateGC_Ephemeron(GCVisitor& visitor) {
   return TRAVCOST + (int)array.size() + (int)hashtable.size();
 }
 
+//----------
+
 void Table::SweepWhite() {
   for (int i = 0; i < (int)array.size(); i++) {
     if (array[i].isLiveColor()) {
@@ -360,6 +501,8 @@ void Table::SweepWhite() {
   }
 }
 
+//----------
+
 void Table::SweepWhiteKeys() {
   for(int i = 0; i < (int)hashtable.size(); i++) {
     Node* n = getNode(i);
@@ -369,6 +512,8 @@ void Table::SweepWhiteKeys() {
     }
   }
 }
+
+//----------
 
 void Table::SweepWhiteVals() {
   for (int i = 0; i < (int)array.size(); i++) {

@@ -228,14 +228,14 @@ static Node *getfreepos (Table *t) {
 */
 TValue *luaH_newkey (Table *t, const TValue *key) {
   if (key->isNil()) {
-    luaG_runerror("table index is nil");
+    //luaG_runerror("table index is nil");
     return NULL;
   }
 
   if (key->isNumber()) {
     double n = key->getNumber();
     if(n != n) {
-      luaG_runerror("table index is NaN");
+      //luaG_runerror("table index is NaN");
       return NULL;
     }
   }
@@ -326,7 +326,11 @@ TValue *luaH_set (Table *t, const TValue *key) {
     return cast(TValue *, p);
   }
   else {
-    return luaH_newkey(t, key);
+    TValue* result = luaH_newkey(t, key);
+    if(result == NULL) {
+      luaG_runerror("Key is invalid (either nil or NaN)");
+    }
+    return result;
   }
 }
 
@@ -340,6 +344,9 @@ void luaH_setint (Table *t, int key, TValue *value) {
   else {
     TValue k = TValue(key);
     cell = luaH_newkey(t, &k);
+    if(cell == NULL) {
+      luaG_runerror("Key is invalid (either nil or NaN)");
+    }
   }
   *cell = *value;
 }
