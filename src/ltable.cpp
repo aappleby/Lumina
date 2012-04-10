@@ -247,7 +247,7 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
   }
 
   if ((mp == NULL) || !mp->i_val.isNil()) {  /* main position is taken? */
-    Node *n = getfreepos(t);  /* get a free place */
+    Node *n = t->getFreeNode();  /* get a free place */
     if (n == NULL) {  /* cannot find a free place? */
       rehash(t, key);  /* grow table */
       /* whatever called 'newkey' take care of TM cache and GC barrier */

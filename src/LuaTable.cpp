@@ -152,32 +152,32 @@ const TValue* Table::findValue(int key) {
 
 //-----------------------------------------------------------------------------
 
+TValue Table::get(int key) const {
+  // lua index -> c index
+  int index = key - 1;
+  if((index >= 0) && (index < (int)array.size())) {
+    return array[index];
+  }
+
+  if(hashtable.empty()) return TValue::None();
+
+  uint32_t hash = hash64(key, 0);
+  uint32_t mask = (uint32_t)hashtable.size() - 1;
+
+  const Node* node = &hashtable[hash & mask];
+
+  for(; node; node = node->next) {
+    if(node->i_key == TValue(key)) {
+      return node->i_val;
+    }
+  }
+
+  return TValue::None();
+}
+
 TValue Table::get(TValue key) const {
   if(key.isNil()) return TValue::None();
-
-  if(key.isInteger()) {
-    int intkey = key.getInteger();
-    // lua index -> c index
-    int index = intkey - 1;
-    if((index >= 0) && (index < (int)array.size())) {
-      return array[index];
-    }
-
-    if(hashtable.empty()) return TValue::None();
-
-    uint32_t hash = hash64(intkey, 0);
-    uint32_t mask = (uint32_t)hashtable.size() - 1;
-
-    const Node* node = &hashtable[hash & mask];
-
-    for(; node; node = node->next) {
-      if(node->i_key == key) {
-        return node->i_val;
-      }
-    }
-
-    return TValue::None();
-  }
+  if(key.isInteger()) return get(key.getInteger());
 
   // Non-integer key, search hashtable
 

@@ -715,8 +715,9 @@ void lua_rawget (lua_State *L, int idx) {
   StkId t;
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  const TValue* result = luaH_get2(t->getTable(), L->top-1);
-  L->top[-1] = result ? *result : TValue::nil;
+
+  TValue result = t->getTable()->get(L->top[-1]);
+  L->top[-1] = result.isNone() ? TValue::Nil() : result;
 }
 
 

@@ -63,7 +63,9 @@ public:
   }
 
   TValue get(TValue key) const;
+  TValue get(int key) const;
   void   set(TValue key, TValue val);
+  void   set(int key, TValue val);
 
   //----------
   // Visitor pattern stuff for GC. Traversal returns the 'cost'
