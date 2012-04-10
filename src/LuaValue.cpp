@@ -33,11 +33,11 @@ TValue::TValue(TString* v) {
   sanityCheck();
 }
 
-TValue TValue::LightUserdata(void * p) {
+TValue TValue::LightUserdata(const void * p) {
   TValue v;
   v.type_ = LUA_TLIGHTUSERDATA;
   v.bytes_ = 0;
-  v.pointer_ = p;
+  v.pointer_ = (void*)p;
   return v;
 }
 

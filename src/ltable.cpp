@@ -166,18 +166,6 @@ static void rehash (Table *t, const TValue *ek) {
 ** }=============================================================
 */
 
-static Node *getfreepos (Table *t) {
-  while (t->lastfree > 0) {
-    t->lastfree--;
-    Node* last = t->getNode(t->lastfree);
-    if (last->i_key.isNil())
-      return last;
-  }
-  return NULL;  /* could not find a free place */
-}
-
-
-
 /*
 ** inserts a new key into a hash table; first, check whether key's main
 ** position is free. If not, check whether colliding node is in its main

@@ -710,8 +710,7 @@ void lua_getfield (lua_State *L, int idx, const char *k) {
 
 void lua_rawget (lua_State *L, int idx) {
   THREAD_CHECK(L);
-  StkId t;
-  t = index2addr(L, idx);
+  StkId t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
 
   TValue result = t->getTable()->get(L->top[-1]);
@@ -721,23 +720,21 @@ void lua_rawget (lua_State *L, int idx) {
 
 void lua_rawgeti (lua_State *L, int idx, int n) {
   THREAD_CHECK(L);
-  StkId t;
-  t = index2addr(L, idx);
+  StkId t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  const TValue* result = luaH_getint2(t->getTable(), n);
-  L->top[0] = result ? *result : TValue::nil;
+
+  TValue result = t->getTable()->get(n);
+  L->top[0] = (result.isNone() || result.isNil()) ? TValue::Nil() : result;
   api_incr_top(L);
 }
 
 
 void lua_rawgetp (lua_State *L, int idx, const void *p) {
   THREAD_CHECK(L);
-  StkId t;
-  TValue k;
-  t = index2addr(L, idx);
+  StkId t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  k = TValue::LightUserdata((void*)p);
-  TValue result = t->getTable()->get(k);
+  
+  TValue result = t->getTable()->get( TValue::LightUserdata(p) );
   L->top[0] = (result.isNone() || result.isNil()) ? TValue::Nil() : result;
   api_incr_top(L);
 }
@@ -1049,12 +1046,10 @@ int lua_load (lua_State *L, lua_Reader reader, void *data,
     Closure *f = L->top[-1].getLClosure();  /* get newly created function */
     if (f->nupvalues == 1) {  /* does it have one upvalue? */
       /* get global table from registry */
-      Table *reg = thread_G->l_registry.getTable();
-      const TValue *gt = luaH_getint2(reg, LUA_RIDX_GLOBALS);
-      assert(gt);
+      TValue globals = thread_G->l_registry.getTable()->get(LUA_RIDX_GLOBALS);
       /* set global table as 1st upvalue of 'f' (may be LUA_ENV) */
-      *f->ppupvals_[0]->v = *gt;
-      luaC_barrier(f->ppupvals_[0], *gt);
+      *f->ppupvals_[0]->v = globals;
+      luaC_barrier(f->ppupvals_[0], globals);
     }
   }
   return status;
