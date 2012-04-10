@@ -50,6 +50,53 @@
 ** ==============================================================
 */
 
+void countKey( TValue key, int* logtable ) {
+  if(key.isInteger()) {
+    int k = key.getInteger();
+    if((0 < k) && (k <= MAXASIZE)) {
+      logtable[luaO_ceillog2(k)]++;
+    }
+  }
+}
+
+int findBestArraySize( Table* t, TValue newkey ) {
+
+  int logtable[32];
+
+  memset(logtable,0,32*sizeof(int));
+
+  for(int i = 0; i < (int)t->array.size(); i++) {
+    if(t->array[i].isNil()) continue;
+    // C index -> Lua index
+    TValue key(i+1);
+    countKey(key, logtable);
+  }
+
+  for(int i = 0; i < (int)t->hashtable.size(); i++) {
+    TValue& key = t->hashtable[i].i_key;
+    TValue& val = t->hashtable[i].i_val;
+    if(val.isNil()) continue;
+
+    countKey(key, logtable);
+  }
+
+  countKey(newkey, logtable);
+
+  int bestSize = 0;
+  int bestCount = 0;
+  int arrayCount = 0;
+  for(int i = 0; i < 30; i++) {
+    int arraySize = (1 << i);
+    arrayCount += logtable[i];
+    if(arrayCount > (arraySize/2)) {
+      bestSize = arraySize;
+      bestCount = arrayCount;
+    }
+  }
+
+  return bestSize;
+}
+
 
 static int computesizes (int nums[], int *narray) {
   int i;
@@ -182,9 +229,10 @@ void luaH_resizearray (Table *t, int nasize) {
 
 static void rehash (Table *t, const TValue *ek) {
   int nasize, na;
-  int nums[MAXBITS+1];  /* nums[i] = number of keys with 2^(i-1) < k <= 2^i */
   int i;
   int totaluse;
+
+  int nums[MAXBITS+1];  /* nums[i] = number of keys with 2^(i-1) < k <= 2^i */
   for (i=0; i<=MAXBITS; i++) nums[i] = 0;  /* reset counts */
   nasize = numusearray(t, nums);  /* count keys in array part */
   totaluse = nasize;  /* all those keys are integer keys */
@@ -192,8 +240,16 @@ static void rehash (Table *t, const TValue *ek) {
   /* count extra key */
   nasize += countint(ek, nums);
   totaluse++;
+
+  int bestsize = findBestArraySize(t, *ek);
+
   /* compute new size for array part */
   na = computesizes(nums, &nasize);
+
+  if(bestsize != nasize) {
+    printf("xxx");
+  }
+
   /* resize the table to new computed sizes */
   luaH_resize(t, nasize, totaluse - na);
 }

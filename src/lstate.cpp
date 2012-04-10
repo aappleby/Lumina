@@ -129,6 +129,9 @@ static void close_state (lua_State *L) {
   // TODO(aappleby): grayagain_ and grayhead_ still have objects in them during destruction?
   thread_G->grayhead_.Clear();
   thread_G->grayagain_.Clear();
+  thread_G->weak_.Clear();
+  thread_G->ephemeron_.Clear();
+  thread_G->allweak_.Clear();
 
   luaC_freeallobjects();  /* collect all objects */
 
