@@ -76,7 +76,7 @@ public:
     resize(size_ ? size_ * 2 : 16);
   }
 
-  bool empty() 
+  bool empty() const
   {
     return (size_ == 0);
   }

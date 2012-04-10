@@ -152,6 +152,58 @@ const TValue* Table::findValue(int key) {
 
 //-----------------------------------------------------------------------------
 
+TValue Table::get(TValue key) const {
+  if(key.isNil()) return TValue::None();
+
+  if(key.isInteger()) {
+    int intkey = key.getInteger();
+    // lua index -> c index
+    int index = intkey - 1;
+    if((index >= 0) && (index < (int)array.size())) {
+      return array[index];
+    }
+
+    if(hashtable.empty()) return TValue::None();
+
+    uint32_t hash = hash64(intkey, 0);
+    uint32_t mask = (uint32_t)hashtable.size() - 1;
+
+    const Node* node = &hashtable[hash & mask];
+
+    for(; node; node = node->next) {
+      if(node->i_key == key) {
+        return node->i_val;
+      }
+    }
+
+    return TValue::None();
+  }
+
+  // Non-integer key, search hashtable
+
+  if(hashtable.empty()) return TValue::None();
+
+  uint32_t hash = key.hashValue();
+  uint32_t mask = (uint32_t)hashtable.size() - 1;
+
+  const Node* node = &hashtable[hash & mask];
+
+  for(; node; node = node->next) {
+    if(node->i_key == key) {
+      return node->i_val;
+    }
+  }
+
+  return TValue::None();
+}
+
+/*
+void Table::set(TValue key, TValue val) {
+}
+*/
+
+//-----------------------------------------------------------------------------
+
 Node* Table::nodeAt(uint32_t hash) {
   if(hashtable.empty()) return NULL;
 

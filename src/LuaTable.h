@@ -62,6 +62,9 @@ public:
     return &hashtable[i];
   }
 
+  TValue get(TValue key) const;
+  void   set(TValue key, TValue val);
+
   //----------
   // Visitor pattern stuff for GC. Traversal returns the 'cost'
   // of visiting the nodes, used for GC heuristics.
