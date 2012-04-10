@@ -193,56 +193,54 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId resul
 // TODO(aappleby): The original version of luaV_settable needs to be enshrined
 // as an example of baaaaaad code.
 
-void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
+void luaV_settable (lua_State *L, const TValue *t2, TValue *key, StkId val) {
   THREAD_CHECK(L);
   int loop;
+  TValue cursor = *t2;
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
-    const TValue *tm;
-    if (t->isTable()) {  /* `t' is a table? */
-      Table *h = t->getTable();
+    if (cursor.isTable()) {
+      Table *h = cursor.getTable();
       TValue oldval = h->get(*key);
 
       /* if previous value is not nil, there must be a previous entry
          in the table; moreover, a metamethod has no relevance */
       if (!oldval.isNone() && !oldval.isNil()) {
         luaH_set2(h, *key, *val);
-        // invalidate TM cache
         luaC_barrierback(h, *val);
         return;
       }
 
       /* previous value is nil; must check the metamethod */
-      tm = fasttm(h->metatable, TM_NEWINDEX);
-      if (tm == NULL) {
+      TValue tagmethod = fasttm2(h->metatable, TM_NEWINDEX);
+      if (tagmethod.isNil() || tagmethod.isNone()) {
         // no metamethod, add (key,val) to table
         luaH_set2(h, *key, *val);
-        // invalidate TM cache
         luaC_barrierback(h, *val);
         return;
       }
       else {
-        if (tm->isFunction()) {
-          callTM1(L, *tm, *t, *key, *val);
+        if (tagmethod.isFunction()) {
+          callTM1(L, tagmethod, cursor, *key, *val);
           return;
         }
         else {
-          t = tm;
+          cursor = tagmethod;
           continue;
         }
       }
     }
     else {
       /* not a table; check metamethod */
-      tm = luaT_gettmbyobj(t, TM_NEWINDEX);
-      if (tm->isNil()) {
-        luaG_typeerror(t, "index");
+      TValue tagmethod = luaT_gettmbyobj2(cursor, TM_NEWINDEX);
+      if (tagmethod.isNone() || tagmethod.isNil()) {
+        luaG_typeerror(&cursor, "index");
       }
-      else if (tm->isFunction()) {
-        callTM1(L, *tm, *t, *key, *val);
+      else if (tagmethod.isFunction()) {
+        callTM1(L, tagmethod, cursor, *key, *val);
         return;
       }
       else {
-        t = tm;  /* else repeat with 'tm' */
+        cursor = tagmethod;
         continue;
       }
     }

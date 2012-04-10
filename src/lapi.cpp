@@ -803,14 +803,13 @@ void lua_getuservalue (lua_State *L, int idx) {
 
 void lua_setglobal (lua_State *L, const char *var) {
   THREAD_CHECK(L);
-  Table *reg = thread_G->l_registry.getTable();
-  const TValue *gt;  /* global table */
   api_checknelems(L, 1);
-  gt = luaH_getint2(reg, LUA_RIDX_GLOBALS);
-  assert(gt);
+
+  TValue globals = thread_G->l_registry.getTable()->get(LUA_RIDX_GLOBALS);
+
   L->top[0] = luaS_new(var);
   L->top++;
-  luaV_settable(L, gt, L->top - 1, L->top - 2);
+  luaV_settable(L, &globals, L->top - 1, L->top - 2);
   L->top -= 2;  /* pop value and key */
 }
 
