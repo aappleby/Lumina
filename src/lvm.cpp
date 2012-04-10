@@ -170,11 +170,11 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
     const TValue *tm;
     if (t->isTable()) {  /* `t' is a table? */
       Table *h = t->getTable();
-      TValue *oldval = (TValue *)luaH_get(h, key);
+      TValue oldval = h->get(*key);
 
       /* if previous value is not nil, there must be a previous entry
          in the table; moreover, a metamethod has no relevance */
-      if (oldval && oldval->isNotNil()) {
+      if (!oldval.isNone() && !oldval.isNil()) {
         luaH_set2(h, *key, *val);
         // invalidate TM cache
         luaC_barrierback(h, *val);
