@@ -182,7 +182,7 @@ TValue lua_State::at(int idx) {
     TValue *o = ci->func + idx;
     if (o >= top) {
       assert(false);
-      return luaO_nilobject_;
+      return TValue::None();
     }
     else return *o;
   }
@@ -199,7 +199,7 @@ TValue lua_State::at(int idx) {
   // Light C functions have no upvals
   if (ci->func->isLightFunction()) {
     assert(false);
-    return luaO_nilobject_;
+    return TValue::None();
   }
 
   idx = LUA_REGISTRYINDEX - idx - 1;
@@ -211,7 +211,7 @@ TValue lua_State::at(int idx) {
 
   // Invalid stack index.
   assert(false);
-  return luaO_nilobject_;
+  return TValue::None();
 }
 
 

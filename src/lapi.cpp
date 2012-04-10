@@ -758,11 +758,11 @@ void lua_createtable (lua_State *L, int narray, int nrec) {
     luaH_resize(t, narray, nrec);
 }
 
-Table* lua_getmetatable( const TValue* o ) {
-  int type = o->type();
+Table* lua_getmetatable(TValue v) {
+  int type = v.type();
   switch (type) {
-    case LUA_TTABLE:    return o->getTable()->metatable;
-    case LUA_TUSERDATA: return o->getUserdata()->metatable_;
+    case LUA_TTABLE:    return v.getTable()->metatable;
+    case LUA_TUSERDATA: return v.getUserdata()->metatable_;
     default:            return thread_G->base_metatables_[type];
   }
 }
@@ -772,7 +772,7 @@ int lua_getmetatable (lua_State *L, int objindex) {
   const TValue *obj;
   int res;
   obj = index2addr(L, objindex);
-  Table* mt = lua_getmetatable(obj);
+  Table* mt = lua_getmetatable(*obj);
   if (mt == NULL)
     res = 0;
   else {

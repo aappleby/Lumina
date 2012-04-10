@@ -15,9 +15,13 @@ const char* ttypename(int tag);
 const char* objtypename(const TValue* v);
 
 const TValue *luaT_gettm (Table *events, TMS event, TString *ename);
+
 const TValue *luaT_gettmbyobj (const TValue *o, TMS event);
+TValue luaT_gettmbyobj2 (TValue v, TMS event);
+
 void luaT_init ();
 
 const TValue* fasttm  ( Table* table, TMS tag);
+TValue fasttm2 ( Table* table, TMS tag);
 
 #endif

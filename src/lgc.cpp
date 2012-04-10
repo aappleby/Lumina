@@ -520,9 +520,8 @@ static void GCTM (int propagateerrors) {
   TValue v = TValue(udata2finalize(thread_G));
 
   // Get the finalizer from it.
-  const TValue *tm = luaT_gettmbyobj(&v, TM_GC);
-  if(tm == NULL) return;
-  if(!tm->isFunction()) return;
+  TValue tm = luaT_gettmbyobj2(v, TM_GC);
+  if(!tm.isFunction()) return;
 
   lua_State* L = thread_L;
   global_State *g = thread_G;
@@ -534,7 +533,7 @@ static void GCTM (int propagateerrors) {
   int gcrunning  = g->gcrunning;
   g->gcrunning = 0;  // avoid GC steps
 
-  L->top[0] = *tm;  // push finalizer...
+  L->top[0] = tm;  // push finalizer...
   L->top[1] = v; // ... and its argument
   L->top += 2;  // and (next line) call the finalizer
   int status = luaD_pcall(L, dothecall, NULL, savestack(L, L->top - 2), 0);

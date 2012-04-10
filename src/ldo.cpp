@@ -179,9 +179,9 @@ static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
 
 static StkId tryfuncTM (lua_State *L, StkId func) {
   THREAD_CHECK(L);
-  const TValue *tm = luaT_gettmbyobj(func, TM_CALL);
+  TValue tm = luaT_gettmbyobj2(*func, TM_CALL);
 
-  if ((tm == NULL) || !tm->isFunction())
+  if (!tm.isFunction())
     luaG_typeerror(func, "call");
 
   /* Open a hole inside the stack at `func' */
@@ -192,7 +192,7 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
   ptrdiff_t funcr = func - L->stack.begin();
   incr_top(L);
   func = L->stack.begin() + funcr; /* previous call may change stack */
-  *func = *tm;  /* tag method is the new function to be called */
+  *func = tm;  /* tag method is the new function to be called */
   return func;
 }
 

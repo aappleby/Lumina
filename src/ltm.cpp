@@ -17,7 +17,7 @@
 #include "ltable.h"
 #include "ltm.h"
 
-Table* lua_getmetatable (const TValue* o);
+Table* lua_getmetatable (TValue v);
 
 /* ORDER TM */
 static const char *const luaT_eventname[] = {
@@ -50,10 +50,17 @@ void luaT_init() {
 
 
 const TValue *luaT_gettmbyobj (const TValue *o, TMS event) {
-  Table* mt = lua_getmetatable(o);
+  Table* mt = lua_getmetatable(*o);
   if(mt == NULL) return luaO_nilobject;
   TValue temp(thread_G->tagmethod_names_[event]);
   return luaH_get(mt, &temp);
+}
+
+TValue luaT_gettmbyobj2 (TValue v, TMS event) {
+  Table* mt = lua_getmetatable(v);
+  if(mt == NULL) return TValue::None();
+  TValue temp(thread_G->tagmethod_names_[event]);
+  return mt->get(temp);
 }
 
 const TValue* fasttm ( Table* table, TMS tag) {
@@ -65,6 +72,19 @@ const TValue* fasttm ( Table* table, TMS tag) {
   assert(tag <= TM_EQ);
   if ((tm == NULL) || tm->isNil()) {  /* no tag method? */
     return NULL;
+  }
+  else return tm;
+}
+
+TValue fasttm2 ( Table* table, TMS tag) {
+  if(table == NULL) return TValue::None();
+
+  TValue temp(thread_G->tagmethod_names_[tag]);
+  TValue tm = table->get(temp);
+
+  assert(tag <= TM_EQ);
+  if (tm.isNone() || tm.isNil()) {  /* no tag method? */
+    return TValue::None();
   }
   else return tm;
 }
