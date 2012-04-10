@@ -330,10 +330,7 @@ void Table::resize(int nasize, int nhsize) {
   for (int i = (int)temphash.size() - 1; i >= 0; i--) {
     Node* old = &temphash[i];
     if (!old->i_val.isNil()) {
-      TValue* key = &old->i_key;
-      TValue* val = &old->i_val;
-      TValue* n = luaH_set(this, key);
-      *n = old->i_val;
+      luaH_set2(t, old->i_key, old->i_val);
     }
   }
 }

@@ -14,8 +14,6 @@
 
 void luaH_setint (Table *t, int key, TValue *value);
 
-const TValue *luaH_get (Table *t, const TValue *key);
-
 // these return NULL instead of luaO_nilobject
 const TValue *luaH_get2 (Table *t, const TValue *key);
 const TValue *luaH_getint2 (Table *t, int key);

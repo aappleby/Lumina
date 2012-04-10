@@ -737,8 +737,8 @@ void lua_rawgetp (lua_State *L, int idx, const void *p) {
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
   k = TValue::LightUserdata((void*)p);
-  const TValue* result = luaH_get(t->getTable(), &k);
-  L->top[0] = result ? *result : TValue::nil;
+  TValue result = t->getTable()->get(k);
+  L->top[0] = (result.isNone() || result.isNil()) ? TValue::Nil() : result;
   api_incr_top(L);
 }
 
