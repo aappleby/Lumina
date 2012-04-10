@@ -259,12 +259,11 @@ static void markroot (global_State *g) {
 */
 
 void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal) {
-  const TValue *mode = fasttm(t->metatable, TM_MODE);
+  TValue mode = fasttm2(t->metatable, TM_MODE);
 
-  if(mode) {
-    assert(mode->isString());
-    outWeakKey = (strchr(mode->getString()->c_str(), 'k') != NULL);
-    outWeakVal = (strchr(mode->getString()->c_str(), 'v') != NULL);
+  if(mode.isString()) {
+    outWeakKey = (strchr(mode.getString()->c_str(), 'k') != NULL);
+    outWeakVal = (strchr(mode.getString()->c_str(), 'v') != NULL);
     assert(outWeakKey || outWeakVal);
   }
 }
@@ -605,9 +604,11 @@ void luaC_checkfinalizer (LuaObject *o, Table *mt) {
 
   // If the object is already separated, is already finalized, or has no
   // finalizer, skip it.
-  if (o->isSeparated() || o->isFinalized() || fasttm(mt, TM_GC) == NULL) {
-    return;
-  }
+  if(o->isSeparated()) return;
+  if(o->isFinalized()) return;
+  
+  TValue tm = fasttm2(mt, TM_GC);
+  if(tm.isNone() || tm.isNil()) return;
 
   // Remove the object from the global GC list and add it to the 'finobj' list.
   RemoveObjectFromList(o, &g->allgc);
