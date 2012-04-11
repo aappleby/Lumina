@@ -21,17 +21,6 @@ public:
   bool hasArray() { return !array.empty(); }
   bool hasHash()  { return !hashtable.empty(); }
 
-  // Returns the node matching the key.
-  Node* findNode(TValue key);
-  Node* findNode(int key);
-
-  // Returns the node where the key would go.
-  Node* findBin(TValue key);
-  Node* findBin(int key);
-
-  // This is only used by one test...
-  int   findBinIndex(TValue key);
-
   // Converts key to/from linear table index.
   int  getTableIndexSize  () const;
   bool keyToTableIndex    (TValue key, int& outIndex);
@@ -44,9 +33,6 @@ public:
   // can't turn this to value return until the rest of the code doesn't fetch by pointer...
   const TValue* findValue(TValue key);
   const TValue* findValue(int key);
-
-  const TValue* findValueInHash(TValue key);
-  const TValue* findValueInHash(int key);
 
   Node* getNode(int i) {
     assert(hashtable.size());
@@ -62,24 +48,22 @@ public:
     return &hashtable[i];
   }
 
+  // Main get/set methods, which we'll gradually be transitioning to.
   TValue get(TValue key) const;
   TValue get(int key) const;
+
   bool   set(TValue key, TValue val);
   bool   set(int key, TValue val);
   
+  // This is only used by one test...
+  int   findBinIndex(TValue key);
+
+  // This is used in a few places
+  void resize(int arrayssize, int hashsize);
 
   //----------
-  // Visitor pattern stuff for GC. Traversal returns the 'cost'
-  // of visiting the nodes, used for GC heuristics.
+  // Garbage collection support, should probably be split out into a subclass
 
-  typedef void (*nodeCallback)(TValue* key, TValue* value, void* blob);
-  typedef void (*valueCallback)(TValue* v, void* blob);
-
-  int traverseNodes(Table::nodeCallback c, void* blob);
-  int traverseArray(Table::valueCallback c, void* blob);
-  int traverse(Table::nodeCallback c, void* blob);
-
-  // another piece of the gc visitor traversal stuff
   virtual void VisitGC(GCVisitor& visitor);
   virtual int PropagateGC(GCVisitor& visitor);
 
@@ -93,22 +77,42 @@ public:
 
   //----------
 
-  Node* nodeAt(uint32_t hash);
-
-  Node* getFreeNode();
-
-  void resize(int arrayssize, int hashsize);
-  void rehash(TValue newkey);
-
-  TValue* newKey(const TValue* key);
-
-  //----------
-
   Table *metatable;
 
   LuaVector<TValue> array;
   LuaVector<Node> hashtable;
 
-//protected:
   int lastfree;
+
+protected:
+
+
+  // Returns the node matching the key.
+  Node* findNode(TValue key);
+  Node* findNode(int key);
+
+  // Returns the node where the key would go.
+  Node* findBin(TValue key);
+  Node* findBin(int key);
+
+  const TValue* findValueInHash(TValue key);
+  const TValue* findValueInHash(int key);
+
+  //----------
+
+  Node* getFreeNode();
+
+  void rehash(TValue newkey);
+
+  TValue* newKey(const TValue* key);
+
+  //----------
+  // Visitor pattern stuff.
+
+  typedef void (*nodeCallback)(TValue* key, TValue* value, void* blob);
+  typedef void (*valueCallback)(TValue* v, void* blob);
+
+  int traverseNodes(Table::nodeCallback c, void* blob);
+  int traverseArray(Table::valueCallback c, void* blob);
+  int traverse(Table::nodeCallback c, void* blob);
 };

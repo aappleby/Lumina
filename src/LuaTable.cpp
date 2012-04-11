@@ -42,6 +42,27 @@ Table::Table() : LuaObject(LUA_TTABLE) {
 
 //-----------------------------------------------------------------------------
 
+Node* Table::findBin(TValue key) {
+  if(hashtable.empty()) return NULL;
+
+  uint32_t hash = key.hashValue();
+  uint32_t mask = (uint32_t)hashtable.size() - 1;
+
+  return &hashtable[hash & mask];
+}
+
+Node* Table::findBin(int key) {
+  if(hashtable.empty()) return NULL;
+
+  TValue key2(key);
+  uint32_t hash = key2.hashValue();
+  uint32_t mask = (uint32_t)hashtable.size() - 1;
+
+  return &hashtable[hash & mask];
+}
+
+//-----------------------------------------------------------------------------
+
 Node* Table::findNode(TValue key) {
   if(hashtable.empty()) return NULL;
 
@@ -64,29 +85,14 @@ Node* Table::findNode(int key) {
 
 //-----------------------------------------------------------------------------
 
-Node* Table::findBin(TValue key) {
-  if(hashtable.empty()) return NULL;
-
-  uint32_t hash = key.hashValue();
-  uint32_t mask = (uint32_t)hashtable.size() - 1;
-
-  return &hashtable[hash & mask];
-}
-
-Node* Table::findBin(int key) {
-  if(hashtable.empty()) return NULL;
-
-  TValue key2(key);
-  uint32_t hash = key2.hashValue();
-  uint32_t mask = (uint32_t)hashtable.size() - 1;
-
-  return &hashtable[hash & mask];
-}
-
 int Table::findBinIndex(TValue key) {
   Node* node = findBin(key);
   return node ? (int)(node - hashtable.begin()) : -1;
 }
+
+//-----------------------------------------------------------------------------
+// Linear index <-> key-val conversion, used to (inefficiently) implement
+// lua_next.
 
 int Table::getTableIndexSize() const {
   return (int)(array.size() + hashtable.size());
@@ -126,40 +132,25 @@ bool Table::tableIndexToKeyVal(int index, TValue& outKey, TValue& outVal) {
   return false;
 }
 
+//-----------------------------------------------------------------------------
+
 const TValue* Table::findValue(TValue key) {
-
   if(key.isNil()) return NULL;
+  if(key.isInteger()) return findValue(key.getInteger());
 
-  if(key.isInteger()) {
-    // lua index -> c index
-    int index = key.getInteger() - 1;
-    if((index >= 0) && (index < (int)array.size())) {
-      return &array[index];
-    } else {
-      return findValueInHash(key.getInteger());
-    }
-  }
-
-  return findValueInHash(key);
-}
-
-const TValue* Table::findValueInHash(TValue key) {
-  Node* node = findNode(key);
-  return node ? &node->i_val : NULL;
-}
-
-const TValue* Table::findValueInHash(int key) {
   Node* node = findNode(key);
   return node ? &node->i_val : NULL;
 }
 
 const TValue* Table::findValue(int key) {
-  int index = key - 1; // lua index -> c index
+  // Lua index -> C index
+  int index = key - 1;
   if((index >= 0) && (index < (int)array.size())) {
     return &array[index];
   }
 
-  return findValueInHash(TValue(key));
+  Node* node = findNode(TValue(key));
+  return node ? &node->i_val : NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -170,6 +161,8 @@ TValue Table::get(int key) const {
   if((index >= 0) && (index < (int)array.size())) {
     return array[index];
   }
+
+  // Integer key but not in array part, search the hash table.
 
   if(hashtable.empty()) return TValue::None();
 
@@ -192,7 +185,7 @@ TValue Table::get(TValue key) const {
   if(key.isNil()) return TValue::None();
   if(key.isInteger()) return get(key.getInteger());
 
-  // Non-integer key, search hashtable
+  // Non-integer key, search the hashtable.
 
   if(hashtable.empty()) return TValue::None();
 
@@ -237,15 +230,6 @@ bool Table::set(int key, TValue val) {
   if(cell == NULL) return false;
   *cell = val;
   return true;
-}
-
-//-----------------------------------------------------------------------------
-
-Node* Table::nodeAt(uint32_t hash) {
-  if(hashtable.empty()) return NULL;
-
-  uint32_t mask = (uint32_t)hashtable.size() - 1;
-  return &hashtable[hash & mask];
 }
 
 //-----------------------------------------------------------------------------
