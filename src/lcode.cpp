@@ -321,11 +321,11 @@ static void freeexp (FuncState *fs, expdesc *e) {
 static int addk (FuncState *fs, TValue *key, TValue *v) {
   THREAD_CHECK(fs->ls->L);
   lua_State *L = fs->ls->L;
-  const TValue *idx1 = luaH_get2(fs->constant_map, key);
+  TValue idx = fs->constant_map->get(*key);
   Proto *f = fs->f;
   int k, oldsize;
-  if (idx1 && idx1->isNumber()) {
-    lua_Number n = idx1->getNumber();
+  if (idx.isNumber()) {
+    lua_Number n = idx.getNumber();
     lua_number2int(k, n);
     if (f->constants[k] == *v)
       return k;
