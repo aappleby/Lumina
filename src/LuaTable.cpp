@@ -76,7 +76,8 @@ Node* Table::findBin(TValue key) {
 Node* Table::findBin(int key) {
   if(hashtable.empty()) return NULL;
 
-  uint32_t hash = hash64(key, 0);
+  TValue key2(key);
+  uint32_t hash = key2.hashValue();
   uint32_t mask = (uint32_t)hashtable.size() - 1;
 
   return &hashtable[hash & mask];
@@ -172,7 +173,8 @@ TValue Table::get(int key) const {
 
   if(hashtable.empty()) return TValue::None();
 
-  uint32_t hash = hash64(key, 0);
+  TValue key2(key);
+  uint32_t hash = key2.hashValue();
   uint32_t mask = (uint32_t)hashtable.size() - 1;
 
   const Node* node = &hashtable[hash & mask];
