@@ -173,7 +173,6 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
 
   if(mp && mp->i_val.isNil()) {
     mp->i_key = *key;
-    luaC_barrierback(t, *key);
     assert(mp->i_val.isNil());
     return &mp->i_val;
   }
@@ -204,7 +203,6 @@ TValue *luaH_newkey (Table *t, const TValue *key) {
     }
   }
   mp->i_key = *key;
-  luaC_barrierback(t, *key);
   assert(mp->i_val.isNil());
   return &mp->i_val;
 }
@@ -259,6 +257,7 @@ TValue *luaH_set (Table *t, const TValue *key) {
     if(result == NULL) {
       luaG_runerror("Key is invalid (either nil or NaN)");
     }
+    luaC_barrierback(t, *key);
     return result;
   }
 }
@@ -273,6 +272,7 @@ void luaH_set2 (Table *t, TValue key, TValue val) {
     if(result == NULL) {
       luaG_runerror("Key is invalid (either nil or NaN)");
     }
+    luaC_barrierback(t, key);
     *(TValue*)result = val;
   }
 }
@@ -290,6 +290,7 @@ void luaH_setint (Table *t, int key, TValue *value) {
     if(cell == NULL) {
       luaG_runerror("Key is invalid (either nil or NaN)");
     }
+    luaC_barrierback(t, k);
   }
   *cell = *value;
 }
