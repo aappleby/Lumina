@@ -321,11 +321,11 @@ static void freeexp (FuncState *fs, expdesc *e) {
 static int addk (FuncState *fs, TValue *key, TValue *v) {
   THREAD_CHECK(fs->ls->L);
   lua_State *L = fs->ls->L;
-  TValue *idx = luaH_set(fs->constant_map, key);
+  const TValue *idx1 = luaH_get2(fs->constant_map, key);
   Proto *f = fs->f;
   int k, oldsize;
-  if (idx->isNumber()) {
-    lua_Number n = idx->getNumber();
+  if (idx1 && idx1->isNumber()) {
+    lua_Number n = idx1->getNumber();
     lua_number2int(k, n);
     if (f->constants[k] == *v)
       return k;
@@ -337,7 +337,8 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   k = fs->num_constants;
   /* numerical value does not need GC barrier;
      table has no metatable, so it does not need to invalidate cache */
-  idx[0] = k;
+  TValue* idx2 = luaH_set(fs->constant_map, key);
+  idx2[0] = k;
   
   if (k >= (int)f->constants.size()) {
     f->constants.grow();
