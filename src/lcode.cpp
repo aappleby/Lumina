@@ -337,8 +337,7 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   k = fs->num_constants;
   /* numerical value does not need GC barrier;
      table has no metatable, so it does not need to invalidate cache */
-  TValue* idx2 = luaH_set(fs->constant_map, key);
-  idx2[0] = k;
+  luaH_set2(fs->constant_map, *key, TValue(k));
   
   if (k >= (int)f->constants.size()) {
     f->constants.grow();
