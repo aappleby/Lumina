@@ -3,11 +3,6 @@
 void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal);
 int luaO_ceillog2 (unsigned int x);
 
-void luaH_setint (Table *t, int key, TValue *value);
-void luaH_set2 (Table *t, TValue key, TValue val);
-void rehash (Table *t, const TValue *newkey);
-const TValue *luaH_get2 (Table *t, const TValue *key);
-
 /*
 ** max size of array part is 2^MAXBITS
 */
@@ -278,7 +273,7 @@ TValue* Table::newKey(const TValue *key) {
     if (n == NULL) {  /* cannot find a free place? */
       rehash(*key);  /* grow table */
       /* whatever called 'newkey' take care of TM cache and GC barrier */
-      const TValue *p = luaH_get2(this, key);
+      const TValue *p = findValue(*key);
       if (p) {
         return (TValue*)p;
       }
@@ -376,6 +371,8 @@ void Table::resize(int nasize, int nhsize) {
   LuaVector<Node> temphash;
   LuaVector<TValue> temparray;
 
+  // The resizes here _can_ throw, we have not pushed the throws down yet.
+
   if(nasize) {
     temparray.resize(nasize);
     memcpy(temparray.begin(), array.begin(), std::min(oldasize, nasize) * sizeof(TValue));
@@ -398,7 +395,7 @@ void Table::resize(int nasize, int nhsize) {
   if (temparray.size() > array.size()) {
     for(int i = (int)array.size(); i < (int)temparray.size(); i++) {
       if (!temparray[i].isNil()) {
-        luaH_setint(this, i + 1, &temparray[i]);
+        set(i+1, temparray[i]);
       }
     }
   }
@@ -406,7 +403,7 @@ void Table::resize(int nasize, int nhsize) {
   for (int i = (int)temphash.size() - 1; i >= 0; i--) {
     Node* old = &temphash[i];
     if (!old->i_val.isNil()) {
-      luaH_set2(this, old->i_key, old->i_val);
+      set(old->i_key, old->i_val);
     }
   }
 }
