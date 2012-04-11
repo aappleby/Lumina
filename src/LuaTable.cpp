@@ -6,7 +6,6 @@ int luaO_ceillog2 (unsigned int x);
 void luaH_setint (Table *t, int key, TValue *value);
 void luaH_set2 (Table *t, TValue key, TValue val);
 void rehash (Table *t, const TValue *newkey);
-TValue *luaH_set (Table *t, const TValue *key);
 const TValue *luaH_get2 (Table *t, const TValue *key);
 
 /*
@@ -211,10 +210,34 @@ TValue Table::get(TValue key) const {
   return TValue::None();
 }
 
-/*
-void Table::set(TValue key, TValue val) {
+//-----------------------------------------------------------------------------
+
+bool Table::set(TValue key, TValue val) {
+  TValue* p = (TValue*)findValue(key);
+  if (p) {
+    *p = val;
+    return true;
+  }
+
+  TValue* cell = newKey(&key);
+  if(cell == NULL) return false;
+  *cell = val;
+  return true;
 }
-*/
+
+bool Table::set(int key, TValue val) {
+  TValue *p = (TValue*)findValue(key);
+  if (p) {
+    *p = val;
+    return true;
+  }
+
+  TValue key2(key);
+  TValue* cell = newKey(&key2);
+  if(cell == NULL) return false;
+  *cell = val;
+  return true;
+}
 
 //-----------------------------------------------------------------------------
 

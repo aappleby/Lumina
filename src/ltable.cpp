@@ -66,67 +66,20 @@ const TValue* luaH_get2(Table* t, const TValue* key) {
   return t->findValue(*key);
 }
 
-const TValue *luaH_get (Table *t, const TValue *key) {
-  const TValue* result = luaH_get2(t, key);
-  return result ? result : luaO_nilobject;
-}
-
-
-/*
-** beware: when using this function you probably need to check a GC
-** barrier and invalidate the TM cache.
-*/
-TValue *luaH_set (Table *t, const TValue *key) {
-  const TValue *p = luaH_get2(t, key);
-  if (p) {
-    return cast(TValue *, p);
-  }
-  else {
-    TValue* result = t->newKey(key);
-    if(result == NULL) {
-      //_getch();
-      luaG_runerror("Key is invalid (either nil or NaN)");
-    }
-    luaC_barrierback(t, *key);
-    return result;
-  }
-}
-
 void luaH_set2 (Table *t, TValue key, TValue val) {
-  const TValue *p = luaH_get2(t, &key);
-  if (p) {
-    *(TValue*)p = val;
-  }
-  else {
-    const TValue* result = t->newKey(&key);
-    if(result == NULL) {
-      //_getch();
-      luaG_runerror("Key is invalid (either nil or NaN)");
-    }
+  if(t->set(key,val)) {
     luaC_barrierback(t, key);
-    *(TValue*)result = val;
+    luaC_barrierback(t, val);
+  } else {
+    luaG_runerror("Key is invalid (either nil or NaN)");
   }
 }
-
 
 void luaH_setint (Table *t, int key, TValue *value) {
-  const TValue *p = luaH_getint2(t, key);
-  TValue *cell;
-  if (p) {
-    cell = cast(TValue *, p);
-    *cell = *value;
-    return;
-  }
-  else {
-    TValue k = TValue(key);
-    cell = t->newKey(&k);
-    if(cell == NULL) {
-      //_getch();
-      luaG_runerror("Key is invalid (either nil or NaN)");
-    }
-    *cell = *value;
-    luaC_barrierback(t, k);
-    return;
+  if(t->set(key,*value)) {
+    luaC_barrierback(t, *value);
+  } else {
+    luaG_runerror("Key is invalid (either nil or NaN)");
   }
 }
 
