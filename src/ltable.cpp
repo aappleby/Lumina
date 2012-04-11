@@ -104,7 +104,7 @@ void findBestArraySize( Table* t,
   outHashSize = totalKeys - bestCount;
 }
 
-static void rehash (Table *t, const TValue *newkey) {
+void rehash (Table *t, const TValue *newkey) {
   int totalKeys = 0;
   int logtable[32];
 
@@ -150,62 +150,6 @@ static void rehash (Table *t, const TValue *newkey) {
 ** }=============================================================
 */
 
-/*
-** inserts a new key into a hash table; first, check whether key's main
-** position is free. If not, check whether colliding node is in its main
-** position or not: if it is not, move colliding node to an empty place and
-** put new key in its main position; otherwise (colliding node is in its main
-** position), new key goes to an empty position.
-*/
-TValue *luaH_newkey (Table *t, const TValue *key) {
-  if (key->isNil()) {
-    return NULL;
-  }
-
-  if (key->isNumber()) {
-    double n = key->getNumber();
-    if(n != n) {
-      return NULL;
-    }
-  }
-  
-  Node* mp = t->findBin(*key);
-
-  if(mp && mp->i_val.isNil()) {
-    mp->i_key = *key;
-    assert(mp->i_val.isNil());
-    return &mp->i_val;
-  }
-
-  if ((mp == NULL) || !mp->i_val.isNil()) {  /* main position is taken? */
-    Node *n = t->getFreeNode();  /* get a free place */
-    if (n == NULL) {  /* cannot find a free place? */
-      rehash(t, key);  /* grow table */
-      /* whatever called 'newkey' take care of TM cache and GC barrier */
-      return luaH_set(t, key);  /* insert key into grown table */
-    }
-    assert(n);
-
-    Node* othern = t->findBin(mp->i_key);
-    if (othern != mp) {  /* is colliding node out of its main position? */
-      /* yes; move colliding node into free position */
-      while (othern->next != mp) othern = othern->next;  /* find previous */
-      othern->next = n;  /* redo the chain with `n' in place of `mp' */
-      *n = *mp;  /* copy colliding node into free pos. (mp->next also goes) */
-      mp->next = NULL;  /* now `mp' is free */
-      mp->i_val.clear();
-    }
-    else {  /* colliding node is in its own main position */
-      /* new node will go into free position */
-      n->next = mp->next;  /* chain new position */
-      mp->next = n;
-      mp = n;
-    }
-  }
-  mp->i_key = *key;
-  assert(mp->i_val.isNil());
-  return &mp->i_val;
-}
 
 
 /*
@@ -253,7 +197,7 @@ TValue *luaH_set (Table *t, const TValue *key) {
     return cast(TValue *, p);
   }
   else {
-    TValue* result = luaH_newkey(t, key);
+    TValue* result = t->newKey(key);
     if(result == NULL) {
       luaG_runerror("Key is invalid (either nil or NaN)");
     }
@@ -268,7 +212,7 @@ void luaH_set2 (Table *t, TValue key, TValue val) {
     *(TValue*)p = val;
   }
   else {
-    const TValue* result = luaH_newkey(t, &key);
+    const TValue* result = t->newKey(&key);
     if(result == NULL) {
       luaG_runerror("Key is invalid (either nil or NaN)");
     }
@@ -286,7 +230,7 @@ void luaH_setint (Table *t, int key, TValue *value) {
   }
   else {
     TValue k = TValue(key);
-    cell = luaH_newkey(t, &k);
+    cell = t->newKey(&k);
     if(cell == NULL) {
       luaG_runerror("Key is invalid (either nil or NaN)");
     }

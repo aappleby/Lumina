@@ -5,6 +5,8 @@ int luaO_ceillog2 (unsigned int x);
 
 void luaH_setint (Table *t, int key, TValue *value);
 void luaH_set2 (Table *t, TValue key, TValue val);
+void rehash (Table *t, const TValue *newkey);
+TValue *luaH_set (Table *t, const TValue *key);
 
 //-----------------------------------------------------------------------------
 
@@ -228,25 +230,21 @@ Node* Table::getFreeNode() {
 
 //-----------------------------------------------------------------------------
 
-// caller has to call luaC_barrierback(t, *key);
-//
 // inserts a new key into a hash table; first, check whether key's main
 // position is free. If not, check whether colliding node is in its main
 // position or not: if it is not, move colliding node to an empty place and
 // put new key in its main position; otherwise (colliding node is in its main
 // position), new key goes to an empty position.
 //
-/*
+
 TValue* Table::newKey(const TValue *key) {
   if (key->isNil()) {
-    luaG_runerror("table index is nil");
     return NULL;
   }
 
   if (key->isNumber()) {
     double n = key->getNumber();
     if(n != n) {
-      luaG_runerror("table index is NaN");
       return NULL;
     }
   }
@@ -255,42 +253,39 @@ TValue* Table::newKey(const TValue *key) {
 
   if(mp && mp->i_val.isNil()) {
     mp->i_key = *key;
-    //luaC_barrierback(t, *key);
     assert(mp->i_val.isNil());
     return &mp->i_val;
   }
 
-  if ((mp == NULL) || !mp->i_val.isNil()) {  // main position is taken?
-    Node *n = getFreeNode();  // get a free place
-    if (n == NULL) {  // cannot find a free place?
-      rehash(t, key);  // grow table
-      // whatever called 'newkey' take care of TM cache and GC barrier
-      return luaH_set(t, key);  // insert key into grown table
+  if ((mp == NULL) || !mp->i_val.isNil()) {  /* main position is taken? */
+    Node *n = getFreeNode();  /* get a free place */
+    if (n == NULL) {  /* cannot find a free place? */
+      rehash(this, key);  /* grow table */
+      /* whatever called 'newkey' take care of TM cache and GC barrier */
+      return luaH_set(this, key);  /* insert key into grown table */
     }
     assert(n);
 
-    Node* othern = t->findBin(mp->i_key);
-    if (othern != mp) {  // is colliding node out of its main position?
-      // yes; move colliding node into free position
-      while (othern->next != mp) othern = othern->next;  // find previous
-      othern->next = n;  // redo the chain with `n' in place of `mp'
-      *n = *mp;  // copy colliding node into free pos. (mp->next also goes)
-      mp->next = NULL;  // now `mp' is free
+    Node* othern = findBin(mp->i_key);
+    if (othern != mp) {  /* is colliding node out of its main position? */
+      /* yes; move colliding node into free position */
+      while (othern->next != mp) othern = othern->next;  /* find previous */
+      othern->next = n;  /* redo the chain with `n' in place of `mp' */
+      *n = *mp;  /* copy colliding node into free pos. (mp->next also goes) */
+      mp->next = NULL;  /* now `mp' is free */
       mp->i_val.clear();
     }
-    else {  // colliding node is in its own main position
-      // new node will go into free position
-      n->next = mp->next;  // chain new position
+    else {  /* colliding node is in its own main position */
+      /* new node will go into free position */
+      n->next = mp->next;  /* chain new position */
       mp->next = n;
       mp = n;
     }
   }
   mp->i_key = *key;
-  //luaC_barrierback(t, *key);
   assert(mp->i_val.isNil());
   return &mp->i_val;
 }
-*/
 
 //-----------------------------------------------------------------------------
 // Note - new memory for array & hash _must_ be allocated before we start moving things around,
