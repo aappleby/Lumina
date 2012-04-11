@@ -134,15 +134,18 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
   L->top[0] = ts;  /* temporarily anchor it in stack */
   L->top++;
 
-  /* entry for `str' */
+  /*
+  // entry for `str'
   TValue* o = luaH_set(ls->fs->h, L->top - 1);
-  if (o->isNil()) {  /* not in use yet? (see 'addK') */
-    /* boolean value does not need GC barrier;
-       table has no metatable, so it does not need to invalidate cache */
-    /* t[string] = true */
+  if (o->isNil()) {  // not in use yet? (see 'addK')
+    // boolean value does not need GC barrier;
+    // table has no metatable, so it does not need to invalidate cache
+    // t[string] = true
     o[0] = true;
     luaC_checkGC();
   }
+  */
+  luaH_set2(ls->fs->h, TValue(ts), TValue(true));
 
   L->top--;  /* remove string from stack */
   return ts;
