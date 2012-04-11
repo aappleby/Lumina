@@ -134,18 +134,9 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
   L->top[0] = ts;  /* temporarily anchor it in stack */
   L->top++;
 
-  /*
-  // entry for `str'
-  TValue* o = luaH_set(ls->fs->h, L->top - 1);
-  if (o->isNil()) {  // not in use yet? (see 'addK')
-    // boolean value does not need GC barrier;
-    // table has no metatable, so it does not need to invalidate cache
-    // t[string] = true
-    o[0] = true;
-    luaC_checkGC();
-  }
-  */
-  luaH_set2(ls->fs->h, TValue(ts), TValue(true));
+  // Save string in 'ls->fs->h'. Why it does so exactly this way, I don't
+  // know. Will have to investigate in the future.
+  luaH_set2(ls->fs->constant_map, TValue(ts), TValue(true));
 
   L->top--;  /* remove string from stack */
   return ts;

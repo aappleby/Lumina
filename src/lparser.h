@@ -90,19 +90,23 @@ class LexState;
 class FuncState {
 public:
   Proto *f;  /* current function header */
-  Table *h;  /* table to find (and reuse) elements in `k' */
+
+  // This table maps constants to indexes into the constants array, and
+  // is used to de-duplicate constants during compilation.
+  Table* constant_map;  /* table to find (and reuse) elements in `k' */
+
   FuncState *prev;  /* enclosing function */
   LexState *ls;  /* lexical state */
   BlockCnt *bl;  /* chain of current blocks */
   int pc;  /* next position to code (equivalent to `ncode') */
   int lasttarget;   /* 'label' of last 'jump label' */
   int jpc;  /* list of pending jumps to `pc' */
-  int nk;  /* number of elements in `k' */
-  int np;  /* number of elements in `p' */
+  int num_constants;  /* number of elements in `k' */
+  int num_protos;  /* number of elements in `p' */
   int firstlocal;  /* index of first local var (in Dyndata array) */
   short nlocvars;  /* number of elements in 'f->locvars' */
   uint8_t nactvar;  /* number of active local variables */
-  uint8_t nups;  /* number of upvalues */
+  uint8_t num_upvals;  /* number of upvalues */
   uint8_t freereg;  /* first free register */
 };
 

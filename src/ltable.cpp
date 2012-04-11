@@ -98,7 +98,7 @@ TValue *luaH_set (Table *t, const TValue *key) {
   else {
     TValue* result = t->newKey(key);
     if(result == NULL) {
-      _getch();
+      //_getch();
       luaG_runerror("Key is invalid (either nil or NaN)");
     }
     luaC_barrierback(t, *key);
@@ -114,7 +114,7 @@ void luaH_set2 (Table *t, TValue key, TValue val) {
   else {
     const TValue* result = t->newKey(&key);
     if(result == NULL) {
-      _getch();
+      //_getch();
       luaG_runerror("Key is invalid (either nil or NaN)");
     }
     luaC_barrierback(t, key);
@@ -128,17 +128,20 @@ void luaH_setint (Table *t, int key, TValue *value) {
   TValue *cell;
   if (p) {
     cell = cast(TValue *, p);
+    *cell = *value;
+    return;
   }
   else {
     TValue k = TValue(key);
     cell = t->newKey(&k);
     if(cell == NULL) {
-      _getch();
+      //_getch();
       luaG_runerror("Key is invalid (either nil or NaN)");
     }
+    *cell = *value;
     luaC_barrierback(t, k);
+    return;
   }
-  *cell = *value;
 }
 
 static int unbound_search (Table *t, unsigned int j) {

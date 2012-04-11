@@ -225,7 +225,7 @@ static void removevars (FuncState *fs, int tolevel) {
 static int searchupvalue (FuncState *fs, TString *name) {
   int i;
   Upvaldesc *up = fs->f->upvalues.begin();
-  for (i = 0; i < fs->nups; i++) {
+  for (i = 0; i < fs->num_upvals; i++) {
     if (up[i].name == name) return i;
   }
   return -1;  /* not found */
@@ -235,16 +235,16 @@ static int searchupvalue (FuncState *fs, TString *name) {
 static int newupvalue (FuncState *fs, TString *name, expdesc *v) {
   Proto *f = fs->f;
   int oldsize = (int)f->upvalues.size();
-  checklimit(fs, fs->nups + 1, MAXUPVAL, "upvalues");
-  if(fs->nups >= f->upvalues.size()) {
+  checklimit(fs, fs->num_upvals + 1, MAXUPVAL, "upvalues");
+  if(fs->num_upvals >= f->upvalues.size()) {
     f->upvalues.grow();
   }
   while (oldsize < (int)f->upvalues.size()) f->upvalues[oldsize++].name = NULL;
-  f->upvalues[fs->nups].instack = (v->k == VLOCAL);
-  f->upvalues[fs->nups].idx = cast_byte(v->info);
-  f->upvalues[fs->nups].name = name;
+  f->upvalues[fs->num_upvals].instack = (v->k == VLOCAL);
+  f->upvalues[fs->num_upvals].idx = cast_byte(v->info);
+  f->upvalues[fs->num_upvals].name = name;
   luaC_barrier(f, TValue(name));
-  return fs->nups++;
+  return fs->num_upvals++;
 }
 
 
@@ -505,16 +505,16 @@ static void leaveblock (FuncState *fs) {
 static void codeclosure (LexState *ls, Proto *clp, expdesc *v) {
   FuncState *fs = ls->fs->prev;
   Proto *f = fs->f;  /* prototype of function creating new closure */
-  if (fs->np >= (int)f->subprotos_.size()) {
+  if (fs->num_protos >= (int)f->subprotos_.size()) {
     int oldsize = (int)f->subprotos_.size();
-    if(fs->np >= (int)f->subprotos_.size()) {
+    if(fs->num_protos >= (int)f->subprotos_.size()) {
       f->subprotos_.grow();
     }
     while (oldsize < (int)f->subprotos_.size()) f->subprotos_[oldsize++] = NULL;
   }
-  f->subprotos_[fs->np++] = clp;
+  f->subprotos_[fs->num_protos++] = clp;
   luaC_barrier(f, TValue(clp));
-  init_exp(v, VRELOCABLE, luaK_codeABx(fs, OP_CLOSURE, 0, fs->np-1));
+  init_exp(v, VRELOCABLE, luaK_codeABx(fs, OP_CLOSURE, 0, fs->num_protos-1));
   luaK_exp2nextreg(fs, v);  /* fix it at stack top (for GC) */
 }
 
@@ -529,9 +529,9 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   fs->lasttarget = 0;
   fs->jpc = NO_JUMP;
   fs->freereg = 0;
-  fs->nk = 0;
-  fs->np = 0;
-  fs->nups = 0;
+  fs->num_constants = 0;
+  fs->num_protos = 0;
+  fs->num_upvals = 0;
   fs->nlocvars = 0;
   fs->nactvar = 0;
   fs->firstlocal = ls->dyd->actvar.n;
@@ -545,11 +545,11 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   /* anchor prototype (to avoid being collected) */
   L->top[0] = f;
   incr_top(L);
-  fs->h = new Table();
-  if(fs->h == NULL) luaD_throw(LUA_ERRMEM);
-  fs->h->linkGC(getGlobalGCHead());
+  fs->constant_map = new Table();
+  if(fs->constant_map == NULL) luaD_throw(LUA_ERRMEM);
+  fs->constant_map->linkGC(getGlobalGCHead());
   /* anchor table of constants (to avoid being collected) */
-  L->top[0] = fs->h;
+  L->top[0] = fs->constant_map;
   incr_top(L);
   enterblock(fs, bl, 0);
 }
@@ -563,10 +563,10 @@ static void close_func (LexState *ls) {
   leaveblock(fs);
   f->code.resize(fs->pc);
   f->lineinfo.resize(fs->pc);
-  f->constants.resize(fs->nk);
-  f->subprotos_.resize(fs->np);
+  f->constants.resize(fs->num_constants);
+  f->subprotos_.resize(fs->num_protos);
   f->locvars.resize(fs->nlocvars);
-  f->upvalues.resize(fs->nups);
+  f->upvalues.resize(fs->num_upvals);
   assert(fs->bl == NULL);
   ls->fs = fs->prev;
   /* last token read was anchored in defunct function; must re-anchor it */
@@ -1618,7 +1618,7 @@ Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
   check(&lexstate, TK_EOS);
   close_func(&lexstate);
   L->top--;  /* pop name */
-  assert(!funcstate.prev && funcstate.nups == 1 && !lexstate.fs);
+  assert(!funcstate.prev && funcstate.num_upvals == 1 && !lexstate.fs);
   /* all scopes should be correctly finished */
   assert(dyd->actvar.n == 0 && dyd->gt.n == 0 && dyd->label.n == 0);
   return funcstate.f;

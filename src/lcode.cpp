@@ -321,7 +321,7 @@ static void freeexp (FuncState *fs, expdesc *e) {
 static int addk (FuncState *fs, TValue *key, TValue *v) {
   THREAD_CHECK(fs->ls->L);
   lua_State *L = fs->ls->L;
-  TValue *idx = luaH_set(fs->h, key);
+  TValue *idx = luaH_set(fs->constant_map, key);
   Proto *f = fs->f;
   int k, oldsize;
   if (idx->isNumber()) {
@@ -334,7 +334,7 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   }
   /* constant not found; create a new entry */
   oldsize = (int)f->constants.size();
-  k = fs->nk;
+  k = fs->num_constants;
   /* numerical value does not need GC barrier;
      table has no metatable, so it does not need to invalidate cache */
   idx[0] = k;
@@ -347,7 +347,7 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
     f->constants[oldsize++] = TValue::nil;
   }
   f->constants[k] = *v;
-  fs->nk++;
+  fs->num_constants++;
   luaC_barrier(f, *v);
   return k;
 }
@@ -391,7 +391,7 @@ static int nilK (FuncState *fs) {
   THREAD_CHECK(fs->ls->L);
   TValue k, v;
   /* cannot use nil as key; instead use table itself to represent nil */
-  k = fs->h;
+  k = fs->constant_map;
   return addk(fs, &k, &v);
 }
 
@@ -583,7 +583,7 @@ int luaK_exp2RK (FuncState *fs, expdesc *e) {
     case VTRUE:
     case VFALSE:
     case VNIL: {
-      if (fs->nk <= MAXINDEXRK) {  /* constant fits in RK operand? */
+      if (fs->num_constants <= MAXINDEXRK) {  /* constant fits in RK operand? */
         e->info = (e->k == VNIL) ? nilK(fs) : boolK(fs, (e->k == VTRUE));
         e->k = VK;
         return RKASK(e->info);
