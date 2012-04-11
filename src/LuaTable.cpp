@@ -8,6 +8,12 @@ void luaH_set2 (Table *t, TValue key, TValue val);
 void rehash (Table *t, const TValue *newkey);
 TValue *luaH_set (Table *t, const TValue *key);
 
+/*
+** max size of array part is 2^MAXBITS
+*/
+#define MAXBITS		30
+#define MAXASIZE	(1 << MAXBITS)
+
 //-----------------------------------------------------------------------------
 
 uint32_t hash64 (uint32_t a, uint32_t b) {
@@ -260,7 +266,7 @@ TValue* Table::newKey(const TValue *key) {
   if ((mp == NULL) || !mp->i_val.isNil()) {  /* main position is taken? */
     Node *n = getFreeNode();  /* get a free place */
     if (n == NULL) {  /* cannot find a free place? */
-      rehash(this, key);  /* grow table */
+      rehash(*key);  /* grow table */
       /* whatever called 'newkey' take care of TM cache and GC barrier */
       return luaH_set(this, key);  /* insert key into grown table */
     }
@@ -285,6 +291,57 @@ TValue* Table::newKey(const TValue *key) {
   mp->i_key = *key;
   assert(mp->i_val.isNil());
   return &mp->i_val;
+}
+
+//-----------------------------------------------------------------------------
+
+void countKey( TValue key, int* logtable ) {
+  if(key.isInteger()) {
+    int k = key.getInteger();
+    if((0 < k) && (k <= MAXASIZE)) {
+      logtable[luaO_ceillog2(k)]++;
+    }
+  }
+}
+
+void Table::rehash(TValue newkey) {
+  int totalKeys = 0;
+  int logtable[32];
+
+  memset(logtable,0,32*sizeof(int));
+
+  for(int i = 0; i < (int)array.size(); i++) {
+    if(array[i].isNil()) continue;
+    // C index -> Lua index
+    TValue key(i+1);
+    countKey(key, logtable);
+    totalKeys++;
+  }
+
+  for(int i = 0; i < (int)hashtable.size(); i++) {
+    TValue& key = hashtable[i].i_key;
+    TValue& val = hashtable[i].i_val;
+    if(val.isNil()) continue;
+    countKey(key, logtable);
+    totalKeys++;
+  }
+
+  countKey(newkey, logtable);
+  totalKeys++;
+
+  int bestSize = 0;
+  int bestCount = 0;
+  int arrayCount = 0;
+  for(int i = 0; i < 30; i++) {
+    int arraySize = (1 << i);
+    arrayCount += logtable[i];
+    if(arrayCount > (arraySize/2)) {
+      bestSize = arraySize;
+      bestCount = arrayCount;
+    }
+  }
+
+  resize(bestSize, totalKeys - bestCount);
 }
 
 //-----------------------------------------------------------------------------

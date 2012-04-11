@@ -97,6 +97,7 @@ public:
   Node* getFreeNode();
 
   void resize(int arrayssize, int hashsize);
+  void rehash(TValue newkey);
 
   TValue* newKey(const TValue* key);
 
