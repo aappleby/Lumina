@@ -62,22 +62,8 @@ const TValue *luaH_getint2 (Table *t, int key) {
 ** main search function
 */
 
-const TValue *luaH_get2 (Table *t, const TValue *key) {
-  if(key->isNil()) return NULL;
-  
-  if(key->isInteger()) {
-    return t->findValue(key->getInteger());
-  }
-
-  if(key->isString()) {
-    return t->findValueInHash(*key);
-  }
-
-  for(Node* n = t->findBin(*key); n; n = n->next) {
-    if(n->i_key == *key) return &n->i_val;
-  }
-
-  return NULL;
+const TValue* luaH_get2(Table* t, const TValue* key) {
+  return t->findValue(*key);
 }
 
 const TValue *luaH_get (Table *t, const TValue *key) {
