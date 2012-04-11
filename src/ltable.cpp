@@ -104,60 +104,44 @@ void findBestArraySize( Table* t,
   outHashSize = totalKeys - bestCount;
 }
 
-// Note - new memory for array & hash _must_ be allocated before we start moving things around,
-// otherwise the allocation could trigger a GC pass which would try and traverse this table while
-// it's in an invalid state.
+static void rehash (Table *t, const TValue *newkey) {
+  int totalKeys = 0;
+  int logtable[32];
 
-// #TODO - Table resize should be effectively atomic...
+  memset(logtable,0,32*sizeof(int));
 
-void luaH_resize (Table *t, int nasize, int nhsize) {
-  int oldasize = (int)t->array.size();
-  int oldhsize = (int)t->hashtable.size();
-
-  // Allocate temporary storage for the resize before we modify the table
-  LuaVector<Node> temphash;
-  LuaVector<TValue> temparray;
-
-  if(nasize) {
-    temparray.resize(nasize);
-    memcpy(temparray.begin(), t->array.begin(), std::min(oldasize, nasize) * sizeof(TValue));
+  for(int i = 0; i < (int)t->array.size(); i++) {
+    if(t->array[i].isNil()) continue;
+    // C index -> Lua index
+    TValue key(i+1);
+    countKey(key, logtable);
+    totalKeys++;
   }
 
-  if (nhsize) {
-    int lsize = luaO_ceillog2(nhsize);
-    nhsize = 1 << lsize;
-    temphash.resize(nhsize);
+  for(int i = 0; i < (int)t->hashtable.size(); i++) {
+    TValue& key = t->hashtable[i].i_key;
+    TValue& val = t->hashtable[i].i_val;
+    if(val.isNil()) continue;
+    countKey(key, logtable);
+    totalKeys++;
   }
 
-  // Memory allocated, swap and reinsert
+  countKey(*newkey, logtable);
+  totalKeys++;
 
-  temparray.swap(t->array);
-  temphash.swap(t->hashtable);
-  t->lastfree = (int)t->hashtable.size(); // all positions are free
-
-  // Temparray now contains the old contents of array. If temparray is
-  // larger than array, move the overflow to the hash table.
-  if (temparray.size() > t->array.size()) {
-    for(int i = (int)t->array.size(); i < (int)temparray.size(); i++) {
-      if (!temparray[i].isNil()) {
-        luaH_setint(t, i + 1, &temparray[i]);
-      }
+  int bestSize = 0;
+  int bestCount = 0;
+  int arrayCount = 0;
+  for(int i = 0; i < 30; i++) {
+    int arraySize = (1 << i);
+    arrayCount += logtable[i];
+    if(arrayCount > (arraySize/2)) {
+      bestSize = arraySize;
+      bestCount = arrayCount;
     }
   }
-  // And finally re-insert the saved nodes.
-  for (int i = (int)temphash.size() - 1; i >= 0; i--) {
-    Node* old = &temphash[i];
-    if (!old->i_val.isNil()) {
-      luaH_set2(t, old->i_key, old->i_val);
-    }
-  }
-}
 
-
-static void rehash (Table *t, const TValue *ek) {
-  int bestArraySize, bestHashSize;
-  findBestArraySize(t, *ek, bestArraySize, bestHashSize);
-  luaH_resize(t, bestArraySize, bestHashSize);
+  t->resize(bestSize, totalKeys - bestCount);
 }
 
 
@@ -175,14 +159,12 @@ static void rehash (Table *t, const TValue *ek) {
 */
 TValue *luaH_newkey (Table *t, const TValue *key) {
   if (key->isNil()) {
-    //luaG_runerror("table index is nil");
     return NULL;
   }
 
   if (key->isNumber()) {
     double n = key->getNumber();
     if(n != n) {
-      //luaG_runerror("table index is NaN");
       return NULL;
     }
   }

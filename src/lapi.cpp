@@ -750,7 +750,7 @@ void lua_createtable (lua_State *L, int narray, int nrec) {
   L->top[0] = t;
   api_incr_top(L);
   if (narray > 0 || nrec > 0)
-    luaH_resize(t, narray, nrec);
+    t->resize(narray, nrec);
 }
 
 Table* lua_getmetatable(TValue v) {

@@ -66,7 +66,7 @@ static void init_registry (lua_State *L, global_State *g) {
   registry->linkGC(getGlobalGCHead());
   g->l_registry = registry;
 
-  luaH_resize(registry, LUA_RIDX_LAST, 0);
+  registry->resize(LUA_RIDX_LAST, 0);
   /* registry[LUA_RIDX_MAINTHREAD] = L */
   mt = L;
   luaH_setint(registry, LUA_RIDX_MAINTHREAD, &mt);

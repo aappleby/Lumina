@@ -3,6 +3,9 @@
 void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal);
 int luaO_ceillog2 (unsigned int x);
 
+void luaH_setint (Table *t, int key, TValue *value);
+void luaH_set2 (Table *t, TValue key, TValue val);
+
 //-----------------------------------------------------------------------------
 
 uint32_t hash64 (uint32_t a, uint32_t b) {
@@ -290,8 +293,12 @@ TValue* Table::newKey(const TValue *key) {
 */
 
 //-----------------------------------------------------------------------------
+// Note - new memory for array & hash _must_ be allocated before we start moving things around,
+// otherwise the allocation could trigger a GC pass which would try and traverse this table while
+// it's in an invalid state.
 
-/*
+// #TODO - Table resize should be effectively atomic...
+
 void Table::resize(int nasize, int nhsize) {
   int oldasize = (int)array.size();
   int oldhsize = (int)hashtable.size();
@@ -330,11 +337,10 @@ void Table::resize(int nasize, int nhsize) {
   for (int i = (int)temphash.size() - 1; i >= 0; i--) {
     Node* old = &temphash[i];
     if (!old->i_val.isNil()) {
-      luaH_set2(t, old->i_key, old->i_val);
+      luaH_set2(this, old->i_key, old->i_val);
     }
   }
 }
-*/
 
 //-----------------------------------------------------------------------------
 

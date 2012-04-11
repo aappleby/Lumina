@@ -734,7 +734,7 @@ void luaV_execute (lua_State *L) {
         t->linkGC(getGlobalGCHead());
         *ra = t;
         if (b != 0 || c != 0)
-          luaH_resize(t, luaO_fb2int(b), luaO_fb2int(c));
+          t->resize(luaO_fb2int(b), luaO_fb2int(c));
         checkGC(L,
           L->top = ra + 1;  /* limit of live values */
           luaC_step();
@@ -960,7 +960,7 @@ void luaV_execute (lua_State *L) {
         
         // needs more space? pre-allocate it at once.
         if (last > (int)h->array.size()) {
-          luaH_resize(h, last, (int)h->hashtable.size());
+          h->resize(last, (int)h->hashtable.size());
         }
 
         for (; n > 0; n--) {
