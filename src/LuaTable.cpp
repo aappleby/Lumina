@@ -7,6 +7,7 @@ void luaH_setint (Table *t, int key, TValue *value);
 void luaH_set2 (Table *t, TValue key, TValue val);
 void rehash (Table *t, const TValue *newkey);
 TValue *luaH_set (Table *t, const TValue *key);
+const TValue *luaH_get2 (Table *t, const TValue *key);
 
 /*
 ** max size of array part is 2^MAXBITS
@@ -270,7 +271,14 @@ TValue* Table::newKey(const TValue *key) {
     if (n == NULL) {  /* cannot find a free place? */
       rehash(*key);  /* grow table */
       /* whatever called 'newkey' take care of TM cache and GC barrier */
-      return luaH_set(this, key);  /* insert key into grown table */
+      const TValue *p = luaH_get2(this, key);
+      if (p) {
+        return (TValue*)p;
+      }
+      else {
+        TValue* result = newKey(key);
+        return result;
+      }
     }
     assert(n);
 
