@@ -150,35 +150,16 @@ const TValue* Table::findValue(int key) {
 
 //-----------------------------------------------------------------------------
 
-TValue Table::get(int key) const {
-  // lua index -> c index
-  int index = key - 1;
-  if((index >= 0) && (index < (int)array.size())) {
-    return array[index];
-  }
-
-  // Integer key but not in array part, search the hash table.
-
-  if(hashtable.empty()) return TValue::None();
-
-  TValue key2(key);
-  uint32_t hash = key2.hashValue();
-  uint32_t mask = (uint32_t)hashtable.size() - 1;
-
-  const Node* node = &hashtable[hash & mask];
-
-  for(; node; node = node->next) {
-    if(node->i_key == TValue(key)) {
-      return node->i_val;
-    }
-  }
-
-  return TValue::None();
-}
-
 TValue Table::get(TValue key) const {
   if(key.isNil()) return TValue::None();
-  if(key.isInteger()) return get(key.getInteger());
+
+  if(key.isInteger()) {
+    // lua index -> c index
+    int index = key.getInteger() - 1;
+    if((index >= 0) && (index < (int)array.size())) {
+      return array[index];
+    }
+  }
 
   // Non-integer key, search the hashtable.
 
@@ -208,20 +189,6 @@ bool Table::set(TValue key, TValue val) {
   }
 
   TValue* cell = newKey(&key);
-  if(cell == NULL) return false;
-  *cell = val;
-  return true;
-}
-
-bool Table::set(int key, TValue val) {
-  TValue *p = (TValue*)findValue(key);
-  if (p) {
-    *p = val;
-    return true;
-  }
-
-  TValue key2(key);
-  TValue* cell = newKey(&key2);
   if(cell == NULL) return false;
   *cell = val;
   return true;
@@ -264,42 +231,37 @@ TValue* Table::newKey(const TValue *key) {
 
   if(mp && mp->i_val.isNil()) {
     mp->i_key = *key;
-    assert(mp->i_val.isNil());
     return &mp->i_val;
   }
 
-  if ((mp == NULL) || !mp->i_val.isNil()) {  /* main position is taken? */
-    Node *n = getFreeNode();  /* get a free place */
-    if (n == NULL) {  /* cannot find a free place? */
-      rehash(*key);  /* grow table */
-      /* whatever called 'newkey' take care of TM cache and GC barrier */
-      const TValue *p = findValue(*key);
-      if (p) {
-        return (TValue*)p;
-      }
-      else {
-        TValue* result = newKey(key);
-        return result;
-      }
+  Node *n = getFreeNode();  /* get a free place */
+  if (n == NULL) {  /* cannot find a free place? */
+    rehash(*key);  /* grow table */
+    const TValue *p = findValue(*key);
+    if (p) {
+      return (TValue*)p;
     }
-    assert(n);
-
-    Node* othern = findBin(mp->i_key);
-    if (othern != mp) {  /* is colliding node out of its main position? */
-      /* yes; move colliding node into free position */
-      while (othern->next != mp) othern = othern->next;  /* find previous */
-      othern->next = n;  /* redo the chain with `n' in place of `mp' */
-      *n = *mp;  /* copy colliding node into free pos. (mp->next also goes) */
-      mp->next = NULL;  /* now `mp' is free */
-      mp->i_val.clear();
-    }
-    else {  /* colliding node is in its own main position */
-      /* new node will go into free position */
-      n->next = mp->next;  /* chain new position */
-      mp->next = n;
-      mp = n;
+    else {
+      return newKey(key);
     }
   }
+
+  Node* othern = findBin(mp->i_key);
+  if (othern != mp) {  /* is colliding node out of its main position? */
+    /* yes; move colliding node into free position */
+    while (othern->next != mp) othern = othern->next;  /* find previous */
+    othern->next = n;  /* redo the chain with `n' in place of `mp' */
+    *n = *mp;  /* copy colliding node into free pos. (mp->next also goes) */
+    mp->next = NULL;  /* now `mp' is free */
+    mp->i_val.clear();
+  }
+  else {  /* colliding node is in its own main position */
+    /* new node will go into free position */
+    n->next = mp->next;  /* chain new position */
+    mp->next = n;
+    mp = n;
+  }
+
   mp->i_key = *key;
   assert(mp->i_val.isNil());
   return &mp->i_val;
@@ -395,7 +357,7 @@ void Table::resize(int nasize, int nhsize) {
   if (temparray.size() > array.size()) {
     for(int i = (int)array.size(); i < (int)temparray.size(); i++) {
       if (!temparray[i].isNil()) {
-        set(i+1, temparray[i]);
+        set(TValue(i+1), temparray[i]);
       }
     }
   }

@@ -76,7 +76,7 @@ void luaH_set2 (Table *t, TValue key, TValue val) {
 }
 
 void luaH_setint (Table *t, int key, TValue *value) {
-  if(t->set(key,*value)) {
+  if(t->set(TValue(key),*value)) {
     luaC_barrierback(t, *value);
   } else {
     luaG_runerror("Key is invalid (either nil or NaN)");

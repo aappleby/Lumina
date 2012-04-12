@@ -50,10 +50,7 @@ public:
 
   // Main get/set methods, which we'll gradually be transitioning to.
   TValue get(TValue key) const;
-  TValue get(int key) const;
-
   bool   set(TValue key, TValue val);
-  bool   set(int key, TValue val);
   
   // This is only used by one test...
   int   findBinIndex(TValue key);

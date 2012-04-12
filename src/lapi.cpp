@@ -684,7 +684,7 @@ int lua_pushthread (lua_State *L) {
 
 void lua_getglobal (lua_State *L, const char *var) {
   THREAD_CHECK(L);
-  TValue globals = thread_G->getRegistry()->get(LUA_RIDX_GLOBALS);
+  TValue globals = thread_G->getRegistry()->get(TValue(LUA_RIDX_GLOBALS));
   L->push(TValue(luaS_new(var)));
   luaV_gettable(L, &globals, L->top - 1, L->top - 1);
 }
@@ -723,7 +723,7 @@ void lua_rawgeti (lua_State *L, int idx, int n) {
   StkId t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
 
-  TValue result = t->getTable()->get(n);
+  TValue result = t->getTable()->get(TValue(n));
   L->top[0] = (result.isNone() || result.isNil()) ? TValue::Nil() : result;
   api_incr_top(L);
 }
@@ -802,7 +802,7 @@ void lua_setglobal (lua_State *L, const char *var) {
   THREAD_CHECK(L);
   api_checknelems(L, 1);
 
-  TValue globals = thread_G->l_registry.getTable()->get(LUA_RIDX_GLOBALS);
+  TValue globals = thread_G->l_registry.getTable()->get(TValue(LUA_RIDX_GLOBALS));
 
   L->top[0] = luaS_new(var);
   L->top++;
@@ -1046,7 +1046,7 @@ int lua_load (lua_State *L, lua_Reader reader, void *data,
     Closure *f = L->top[-1].getLClosure();  /* get newly created function */
     if (f->nupvalues == 1) {  /* does it have one upvalue? */
       /* get global table from registry */
-      TValue globals = thread_G->l_registry.getTable()->get(LUA_RIDX_GLOBALS);
+      TValue globals = thread_G->l_registry.getTable()->get(TValue(LUA_RIDX_GLOBALS));
       /* set global table as 1st upvalue of 'f' (may be LUA_ENV) */
       *f->ppupvals_[0]->v = globals;
       luaC_barrier(f->ppupvals_[0], globals);
