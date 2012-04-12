@@ -63,7 +63,20 @@ const TValue *luaH_getint2 (Table *t, int key) {
 */
 
 const TValue* luaH_get2(Table* t, const TValue* key) {
-  return t->findValue(*key);
+  const TValue* result1 = t->findValue(*key);
+  TValue result2 = t->get(*key);
+
+  if(result1 == NULL) {
+    if(!result2.isNone()) {
+      printf("xxx");
+    }
+  } else if(result1->isNil()) {
+    if(!result2.isNil()) {
+      printf("xxx");
+    }
+  }
+
+  return result1;
 }
 
 void luaH_set2 (Table *t, TValue key, TValue val) {
