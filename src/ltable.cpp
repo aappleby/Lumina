@@ -83,48 +83,27 @@ void luaH_setint (Table *t, int key, TValue *value) {
   }
 }
 
-static int unbound_search (Table *t, unsigned int j) {
-  unsigned int i = j;  /* i is zero or a present index */
-  j++;
-  /* find `i' and `j' such that i is present and j is not */
-  while (t->findValue(j)) {
-    i = j;
-    j *= 2;
-    if (j > cast(unsigned int, MAX_INT)) {  /* overflow? */
-      /* table was built with bad purposes: resort to linear search */
-      i = 1;
-      while (t->findValue(i)) i++;
-      return i - 1;
+int luaH_getn(Table* t) {
+  int start = 30;
+  int cursor = 0;
+  
+  // Exponential search up (starting at 32) until we find a nil,
+  for(int j = 5; j < 30; j++) {
+    TValue v = t->get(TValue(1 << j));
+    if(v.isNone() || v.isNil()) {
+      start = j-1;
+      break;
     }
   }
-  /* now do a binary search between them */
-  while (j - i > 1) {
-    unsigned int m = (i+j)/2;
-    if (t->findValue(m) == NULL) j = m;
-    else i = m;
-  }
-  return i;
-}
 
-
-/*
-** Try to find a boundary in table `t'. A `boundary' is an integer index
-** such that t[i] is non-nil and t[i+1] is nil (and 0 if t[1] is nil).
-*/
-int luaH_getn (Table *t) {
-  unsigned int j = (unsigned int)t->array.size();
-  if (j > 0 && t->array[j-1].isNil()) {
-    /* there is a boundary in the array part: (binary) search for it */
-    unsigned int i = 0;
-    while (j - i > 1) {
-      unsigned int m = (i+j)/2;
-      if (t->array[m-1].isNil()) j = m;
-      else i = m;
+  // then binary search below it to find the end.
+  for(int i = start; i >= 0; i--) {
+    int step = (1 << i);
+    TValue v = t->get(TValue(cursor+step));
+    if(!v.isNone() && !v.isNil()) {
+      cursor += step;
     }
-    return i;
   }
-  /* else must find a boundary in hash part */
-  else if (t->hashtable.empty())  /* hash part is empty? */
-    return j;  /* that is easy... */
-  else return unbound_search(t, j);
+
+  return cursor;
 }

@@ -435,27 +435,25 @@ void luaV_concat (lua_State *L, int total) {
 
 void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
   THREAD_CHECK(L);
-  TValue tm;
-  switch (rb->type()) {
-    case LUA_TTABLE: {
-      Table *h = rb->getTable();
-      tm = fasttm2(h->metatable, TM_LEN);
-      if (!tm.isNone()) break;  /* metamethod? break switch to call it */
-      ra[0] = luaH_getn(h);  /* else primitive len */
-      return;
-    }
-    case LUA_TSTRING: {
-      ra[0] = rb->getString()->getLen();
-      return;
-    }
-    default: {  /* try metamethod */
-      tm = luaT_gettmbyobj2(*rb, TM_LEN);
-      if (tm.isNone() || tm.isNil())  /* no metamethod? */
-        luaG_typeerror(rb, "get length of");
-      break;
-    }
+
+  if(rb->isString()) {
+    ra[0] = rb->getString()->getLen();
+    return;
   }
-  callTM(L, &tm, rb, rb, ra, 1);
+
+  TValue tagmethod = luaT_gettmbyobj2(*rb, TM_LEN);
+  if (!tagmethod.isNone()) {
+    callTM(L, &tagmethod, rb, rb, ra, 1);
+    return;
+  }
+
+  if(rb->isTable()) {
+    ra[0] = luaH_getn(rb->getTable());
+    return;
+  }
+
+  luaG_typeerror(rb, "get length of");
+  return;
 }
 
 
