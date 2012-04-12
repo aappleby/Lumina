@@ -181,6 +181,7 @@ TValue Table::get(TValue key) const {
 
 //-----------------------------------------------------------------------------
 
+/*
 bool Table::set(TValue key, TValue val) {
   TValue* p = (TValue*)findValue(key);
   if (p) {
@@ -193,6 +194,7 @@ bool Table::set(TValue key, TValue val) {
   *cell = val;
   return true;
 }
+*/
 
 //-----------------------------------------------------------------------------
 
@@ -215,56 +217,85 @@ Node* Table::getFreeNode() {
 // position), new key goes to an empty position.
 //
 
-TValue* Table::newKey(const TValue *key) {
-  if (key->isNil()) {
-    return NULL;
+bool Table::set(TValue key, TValue val) {
+  // Check for nil keys
+  if (key.isNil()) {
+    return false;
   }
 
-  if (key->isNumber()) {
-    double n = key->getNumber();
+  // Check for NaN keys
+  if (key.isNumber()) {
+    double n = key.getNumber();
     if(n != n) {
-      return NULL;
+      return false;
     }
+  }
+
+  // Check for integer key
+  if(key.isInteger()) {
+    // Lua index -> C index
+    int index = key.getInteger() - 1;
+    if((index >= 0) && (index < (int)array.size())) {
+      array[index] = val;
+      return true;
+    }
+  }
+
+  // Not an integer key, or integer doesn't fall in the array. Is there
+  // already a node in the hash table for it?
+  Node* node = findNode(key);
+  if(node) {
+    node->i_val = val;
+    return true;
   }
   
-  Node* mp = findBin(*key);
-
-  if(mp && mp->i_val.isNil()) {
-    mp->i_key = *key;
-    return &mp->i_val;
+  // No node for that key. Can we just put the key in its primary position?
+  Node* primary_node = findBin(key);
+  if(primary_node && primary_node->i_val.isNil()) {
+    primary_node->i_key = key;
+    primary_node->i_val = val;
+    return true;
   }
 
-  Node *n = getFreeNode();  /* get a free place */
-  if (n == NULL) {  /* cannot find a free place? */
-    rehash(*key);  /* grow table */
-    const TValue *p = findValue(*key);
-    if (p) {
-      return (TValue*)p;
-    }
-    else {
-      return newKey(key);
-    }
+  // Nope, primary position occupied. Get a free node in the hashtable
+  Node *new_node = getFreeNode();
+
+  // If there are no free nodes, rehash to make space for the key and repeat.
+  if (new_node == NULL) {
+    rehash(key);
+    return set(key,val);
   }
 
-  Node* othern = findBin(mp->i_key);
-  if (othern != mp) {  /* is colliding node out of its main position? */
-    /* yes; move colliding node into free position */
-    while (othern->next != mp) othern = othern->next;  /* find previous */
-    othern->next = n;  /* redo the chain with `n' in place of `mp' */
-    *n = *mp;  /* copy colliding node into free pos. (mp->next also goes) */
-    mp->next = NULL;  /* now `mp' is free */
-    mp->i_val.clear();
-  }
-  else {  /* colliding node is in its own main position */
-    /* new node will go into free position */
-    n->next = mp->next;  /* chain new position */
-    mp->next = n;
-    mp = n;
-  }
+  // OK, where is the key that's occupying our desired primary position
+  // supposed to go?
+  Node* other_bin = findBin(primary_node->i_key);
 
-  mp->i_key = *key;
-  assert(mp->i_val.isNil());
-  return &mp->i_val;
+  if (other_bin != primary_node) {
+    // The key-val in the primary node is not in its own primary node, so
+    // we can gain a bit of efficiency by moving it elsewhere so that our
+    // new key-val can go in the primary node.
+    while (other_bin->next != primary_node) other_bin = other_bin->next;
+    other_bin->next = new_node;
+
+    // move the old contents of the primary node to the new node
+    new_node->i_key = primary_node->i_key;
+    new_node->i_val = primary_node->i_val;
+    new_node->next = primary_node->next;
+
+    // and put our new key-val in the primary node.
+    primary_node->i_key = key;
+    primary_node->i_val = val;
+    primary_node->next = NULL;
+    return true;
+  }
+  else {
+    // 
+    new_node->next = primary_node->next;
+    primary_node->next = new_node;
+    new_node->i_key = key;
+    new_node->i_val = val;
+    return true;
+  }
 }
 
 //-----------------------------------------------------------------------------
