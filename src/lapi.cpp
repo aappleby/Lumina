@@ -493,7 +493,7 @@ size_t lua_rawlen (lua_State *L, int idx) {
   switch (o->type()) {
     case LUA_TSTRING: return o->getString()->getLen();
     case LUA_TUSERDATA: return o->getUserdata()->len_;
-    case LUA_TTABLE: return luaH_getn(o->getTable());
+    case LUA_TTABLE: return o->getTable()->getLength();
     default: return 0;
   }
 }

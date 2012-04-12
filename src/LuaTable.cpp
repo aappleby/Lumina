@@ -37,6 +37,33 @@ Table::Table() : LuaObject(LUA_TTABLE) {
 
 //-----------------------------------------------------------------------------
 
+int Table::getLength() const {
+  int start = 30;
+  int cursor = 0;
+  
+  // Exponential search up (starting at 32) until we find a nil,
+  for(int j = 5; j < 30; j++) {
+    TValue v = get(TValue(1 << j));
+    if(v.isNone() || v.isNil()) {
+      start = j-1;
+      break;
+    }
+  }
+
+  // then binary search below it to find the end.
+  for(int i = start; i >= 0; i--) {
+    int step = (1 << i);
+    TValue v = get(TValue(cursor+step));
+    if(!v.isNone() && !v.isNil()) {
+      cursor += step;
+    }
+  }
+
+  return cursor;
+}
+
+//-----------------------------------------------------------------------------
+
 Node* Table::findBin(TValue key) {
   if(hashtable.empty()) return NULL;
 

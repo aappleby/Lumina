@@ -18,6 +18,8 @@ public:
 
   Table();
 
+  int getLength() const;
+
   bool hasArray() { return !array.empty(); }
   bool hasHash()  { return !hashtable.empty(); }
 

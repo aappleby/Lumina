@@ -19,6 +19,4 @@ const TValue *luaH_getint2 (Table *t, int key);
 
 void luaH_set2(Table* t, TValue key, TValue val);
 
-int luaH_getn (Table *t);
-
 #endif

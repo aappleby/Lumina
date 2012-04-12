@@ -448,7 +448,7 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
   }
 
   if(rb->isTable()) {
-    ra[0] = luaH_getn(rb->getTable());
+    ra[0] = rb->getTable()->getLength();
     return;
   }
 
