@@ -99,7 +99,7 @@ protected:
 
   Node* getFreeNode();
 
-  void rehash(TValue newkey);
+  void computeOptimalSizes(TValue newkey, int& arraysize, int& hashsize);
 
   TValue* newKey(const TValue* key);
 

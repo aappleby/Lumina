@@ -181,23 +181,6 @@ TValue Table::get(TValue key) const {
 
 //-----------------------------------------------------------------------------
 
-/*
-bool Table::set(TValue key, TValue val) {
-  TValue* p = (TValue*)findValue(key);
-  if (p) {
-    *p = val;
-    return true;
-  }
-
-  TValue* cell = newKey(&key);
-  if(cell == NULL) return false;
-  *cell = val;
-  return true;
-}
-*/
-
-//-----------------------------------------------------------------------------
-
 Node* Table::getFreeNode() {
   while (lastfree > 0) {
     lastfree--;
@@ -219,9 +202,7 @@ Node* Table::getFreeNode() {
 
 bool Table::set(TValue key, TValue val) {
   // Check for nil keys
-  if (key.isNil()) {
-    return false;
-  }
+  if (key.isNil()) return false;
 
   // Check for NaN keys
   if (key.isNumber()) {
@@ -262,40 +243,22 @@ bool Table::set(TValue key, TValue val) {
 
   // If there are no free nodes, rehash to make space for the key and repeat.
   if (new_node == NULL) {
-    rehash(key);
+    int arraysize, hashsize;
+    computeOptimalSizes(key, arraysize, hashsize);
+    resize(arraysize, hashsize);
     return set(key,val);
   }
 
-  // OK, where is the key that's occupying our desired primary position
-  // supposed to go?
-  Node* other_bin = findBin(primary_node->i_key);
+  // Otherwise, move the old contents of the primary node to the new node
+  new_node->i_key = primary_node->i_key;
+  new_node->i_val = primary_node->i_val;
+  new_node->next = primary_node->next;
 
-  if (other_bin != primary_node) {
-    // The key-val in the primary node is not in its own primary node, so
-    // we can gain a bit of efficiency by moving it elsewhere so that our
-    // new key-val can go in the primary node.
-    while (other_bin->next != primary_node) other_bin = other_bin->next;
-    other_bin->next = new_node;
-
-    // move the old contents of the primary node to the new node
-    new_node->i_key = primary_node->i_key;
-    new_node->i_val = primary_node->i_val;
-    new_node->next = primary_node->next;
-
-    // and put our new key-val in the primary node.
-    primary_node->i_key = key;
-    primary_node->i_val = val;
-    primary_node->next = NULL;
-    return true;
-  }
-  else {
-    // 
-    new_node->next = primary_node->next;
-    primary_node->next = new_node;
-    new_node->i_key = key;
-    new_node->i_val = val;
-    return true;
-  }
+  // and put our new key-val in the primary node.
+  primary_node->i_key = key;
+  primary_node->i_val = val;
+  primary_node->next = new_node;
+  return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -309,7 +272,7 @@ void countKey( TValue key, int* logtable ) {
   }
 }
 
-void Table::rehash(TValue newkey) {
+void Table::computeOptimalSizes(TValue newkey, int& outArraySize, int& outHashSize) {
   int totalKeys = 0;
   int logtable[32];
 
@@ -346,7 +309,16 @@ void Table::rehash(TValue newkey) {
     }
   }
 
-  resize(bestSize, totalKeys - bestCount);
+  int hashSize = totalKeys - bestCount;
+
+  // NOTE(aappleby): The old code didn't include padding for the hash table,
+  // which meant that if the number of keys was near a power of 2 the table
+  // could get rehashed multiple times in succession. We're padding it out
+  // by an additional 1/8th here.
+  hashSize += hashSize >> 3;
+
+  outArraySize = bestSize;
+  outHashSize = hashSize;
 }
 
 //-----------------------------------------------------------------------------
@@ -378,20 +350,17 @@ void Table::resize(int nasize, int nhsize) {
   }
 
   // Memory allocated, swap and reinsert
-
   temparray.swap(array);
   temphash.swap(hashtable);
   lastfree = (int)hashtable.size(); // all positions are free
 
-  // Temparray now contains the old contents of array. If temparray is
-  // larger than array, move the overflow to the hash table.
-  if (temparray.size() > array.size()) {
-    for(int i = (int)array.size(); i < (int)temparray.size(); i++) {
-      if (!temparray[i].isNil()) {
-        set(TValue(i+1), temparray[i]);
-      }
+  // Move array overflow to hashtable
+  for(int i = (int)array.size(); i < (int)temparray.size(); i++) {
+    if (!temparray[i].isNil()) {
+      set(TValue(i+1), temparray[i]);
     }
   }
+
   // And finally re-insert the saved nodes.
   for (int i = (int)temphash.size() - 1; i >= 0; i--) {
     Node* old = &temphash[i];
