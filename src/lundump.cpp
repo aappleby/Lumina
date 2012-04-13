@@ -164,16 +164,16 @@ static void LoadDebug(LoadState* S, Proto* f)
 
 static Proto* LoadFunction(LoadState* S)
 {
-  //l_memcontrol.disableLimit();
+  l_memcontrol.disableLimit();
 
   Proto* f = new Proto();
   if(f == NULL) luaD_throw(LUA_ERRMEM);
   f->linkGC(getGlobalGCHead());
-
-  //l_memcontrol.enableLimit();
-  //l_memcontrol.checkLimit();
-
   S->L->top[0] = f; incr_top(S->L);
+
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
+
   f->linedefined=LoadInt(S);
   f->lastlinedefined=LoadInt(S);
   f->numparams=LoadByte(S);
