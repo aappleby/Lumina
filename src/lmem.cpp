@@ -24,7 +24,7 @@ Memcontrol::Memcontrol() {
   total = 0;
   maxmem = 0;
   memlimit = 0;
-  limitEnabled = true;
+  limitDisabled = 0;
 
   char *limit = getenv("MEMLIMIT");  /* initialize memory limit */
   memlimit = limit ? strtoul(limit, NULL, 10) : ULONG_MAX;
@@ -44,7 +44,7 @@ bool Memcontrol::alloc(size_t size) {
 }
 
 bool Memcontrol::canAlloc(size_t size) {
-  return !limitEnabled || (total+size <= memlimit);
+  return limitDisabled || (total+size <= memlimit);
 }
 
 bool Memcontrol::isOverLimit() {
@@ -52,13 +52,12 @@ bool Memcontrol::isOverLimit() {
 }
 
 void Memcontrol::enableLimit() {
-  assert(!limitEnabled);
-  limitEnabled = true;
+  assert(limitDisabled);
+  limitDisabled--;
 }
 
 void Memcontrol::disableLimit() { 
-  assert(limitEnabled);
-  limitEnabled = false;
+  limitDisabled++;
 }
 
 #define MARK		0x55  /* 01010101 (a nice pattern) */

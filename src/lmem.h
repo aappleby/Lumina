@@ -25,7 +25,9 @@ struct Memcontrol {
   void enableLimit();
   void disableLimit();
 
-  bool limitEnabled;
+  // calls to enable/disble limit can be nested.
+  int limitDisabled;
+
   size_t numblocks;
   size_t total;
   size_t maxmem;

@@ -63,7 +63,9 @@ public:
   {
     /*
     if(!l_memcontrol.limitEnabled) {
-      resize_nothrow(newsize);
+      if(!resize_nothrow(newsize)) {
+        luaD_throw(LUA_ERRMEM);
+      }
       return;
     }
 
@@ -73,7 +75,9 @@ public:
 
     l_memcontrol.disableLimit();
 
-    resize_nothrow(newsize);
+    if(!resize_nothrow(newsize)) {
+      luaD_throw(LUA_ERRMEM);
+    }
 
     l_memcontrol.enableLimit();
 
