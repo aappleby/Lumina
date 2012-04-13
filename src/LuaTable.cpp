@@ -273,6 +273,11 @@ bool Table::set(TValue key, TValue val) {
     int arraysize, hashsize;
     computeOptimalSizes(key, arraysize, hashsize);
     resize(arraysize, hashsize);
+
+    if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
+      luaD_throw(LUA_ERRMEM);
+    }
+
     return set(key,val);
   }
 
@@ -363,8 +368,6 @@ void Table::resize(int nasize, int nhsize) {
   LuaVector<Node> temphash;
   LuaVector<TValue> temparray;
 
-  // The resizes here _can_ throw, we have not pushed the throws down yet.
-
   if(nasize) {
     temparray.resize_nocheck(nasize);
     memcpy(temparray.begin(), array.begin(), std::min(oldasize, nasize) * sizeof(TValue));
@@ -374,10 +377,6 @@ void Table::resize(int nasize, int nhsize) {
     int lsize = luaO_ceillog2(nhsize);
     nhsize = 1 << lsize;
     temphash.resize_nocheck(nhsize);
-  }
-
-  if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
-    luaD_throw(LUA_ERRMEM);
   }
 
   // Memory allocated, swap and reinsert

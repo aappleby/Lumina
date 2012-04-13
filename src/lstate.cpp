@@ -67,6 +67,10 @@ static void init_registry (lua_State *L, global_State *g) {
   g->l_registry = registry;
 
   registry->resize(LUA_RIDX_LAST, 0);
+  if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
+    luaD_throw(LUA_ERRMEM);
+  }
+
   /* registry[LUA_RIDX_MAINTHREAD] = L */
   mt = L;
   luaH_setint(registry, LUA_RIDX_MAINTHREAD, &mt);

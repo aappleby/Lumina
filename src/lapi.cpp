@@ -751,6 +751,9 @@ void lua_createtable (lua_State *L, int narray, int nrec) {
   api_incr_top(L);
   if (narray > 0 || nrec > 0) {
     t->resize(narray, nrec);
+    if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
+      luaD_throw(LUA_ERRMEM);
+    }
   }
 }
 

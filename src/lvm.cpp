@@ -731,8 +731,12 @@ void luaV_execute (lua_State *L) {
         if(t == NULL) luaD_throw(LUA_ERRMEM);
         t->linkGC(getGlobalGCHead());
         *ra = t;
-        if (b != 0 || c != 0)
+        if (b != 0 || c != 0) {
           t->resize(luaO_fb2int(b), luaO_fb2int(c));
+          if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
+            luaD_throw(LUA_ERRMEM);
+          }
+        }
         checkGC(L,
           L->top = ra + 1;  /* limit of live values */
           luaC_step();
@@ -959,6 +963,9 @@ void luaV_execute (lua_State *L) {
         // needs more space? pre-allocate it at once.
         if (last > (int)h->array.size()) {
           h->resize(last, (int)h->hashtable.size());
+          if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
+            luaD_throw(LUA_ERRMEM);
+          }
         }
 
         for (; n > 0; n--) {

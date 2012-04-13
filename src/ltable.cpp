@@ -51,12 +51,6 @@
 
 
 
-/*
-** search function for integers
-*/
-const TValue *luaH_getint2 (Table *t, int key) {
-  return t->findValue(key);
-}
 
 /*
 ** main search function
