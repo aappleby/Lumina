@@ -4,6 +4,7 @@
 #include "LuaUpval.h"
 
 Closure::Closure(TValue* buf, int n) : LuaObject(LUA_TCCL) {
+  assert(l_memcontrol.limitDisabled);
   linkGC(getGlobalGCHead());
   isC = 1;
   nupvalues = n;
@@ -12,6 +13,7 @@ Closure::Closure(TValue* buf, int n) : LuaObject(LUA_TCCL) {
 }
 
 Closure::Closure(Proto* proto, UpVal** buf, int n) : LuaObject(LUA_TLCL) {
+  assert(l_memcontrol.limitDisabled);
   linkGC(getGlobalGCHead());
   isC = 0;
   nupvalues = n;

@@ -1,20 +1,31 @@
 #include "LuaUpval.h"
 
+#include "lmem.h"
+
 UpVal::UpVal() : LuaObject(LUA_TUPVAL) {
+  assert(l_memcontrol.limitDisabled);
+  v = NULL;
+  uprev = NULL;
+  unext = NULL;
 }
 
 UpVal::~UpVal() {
-  if (v != &value) {
-    assert((unext->uprev == this) && (uprev->unext == this));
-    unext->uprev = uprev;
-    uprev->unext = unext;
-  }
+  unlink();
 }
 
 void UpVal::unlink() {
-  assert((unext->uprev == this) && (uprev->unext == this));
-  unext->uprev = uprev;
-  uprev->unext = unext;
+  if(unext) {
+    assert(unext->uprev == this);
+    unext->uprev = uprev;
+  }
+
+  if(uprev) {
+    assert(uprev->unext == this);
+    uprev->unext = unext;
+  }
+
+  unext = NULL;
+  uprev = NULL;
 }
 
 void UpVal::VisitGC(GCVisitor& visitor) {

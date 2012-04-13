@@ -4,6 +4,7 @@
 #include "LuaString.h"
 
 Proto::Proto() : LuaObject(LUA_TPROTO) {
+  assert(l_memcontrol.limitDisabled);
   cache = NULL;
   numparams = 0;
   is_vararg = 0;
