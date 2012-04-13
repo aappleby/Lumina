@@ -159,9 +159,7 @@ void lua_State::reallocstack (int newsize) {
 
   // Stack is valid again, _now_ kick off memory errors if we're over the
   // limit.
-  if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
-    luaD_throw(LUA_ERRMEM);
-  }
+  l_memcontrol.checkLimit();
 }
 
 void lua_State::checkstack(int size) {

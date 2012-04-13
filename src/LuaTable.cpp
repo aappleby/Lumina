@@ -274,9 +274,7 @@ bool Table::set(TValue key, TValue val) {
     computeOptimalSizes(key, arraysize, hashsize);
     resize(arraysize, hashsize);
 
-    if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
-      luaD_throw(LUA_ERRMEM);
-    }
+    l_memcontrol.checkLimit();
 
     return set(key,val);
   }

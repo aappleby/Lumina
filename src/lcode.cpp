@@ -235,11 +235,13 @@ static int luaK_code (FuncState *fs, Instruction i) {
   /* put new instruction in code array */
   if(fs->pc >= (int)f->code.size()) {
     f->code.grow();
+    l_memcontrol.checkLimit();
   }
   f->code[fs->pc] = i;
   /* save corresponding line information */
   if(fs->pc >= (int)f->lineinfo.size()) {
     f->lineinfo.grow();
+    l_memcontrol.checkLimit();
   }
   f->lineinfo[fs->pc] = fs->ls->lastline;
   return fs->pc++;
@@ -341,6 +343,7 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   
   if (k >= (int)f->constants.size()) {
     f->constants.grow();
+    l_memcontrol.checkLimit();
   }
   
   while (oldsize < (int)f->constants.size()) {

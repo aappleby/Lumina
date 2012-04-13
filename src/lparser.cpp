@@ -169,6 +169,7 @@ static int registerlocalvar (LexState *ls, TString *varname) {
   int oldsize = (int)f->locvars.size();
   if(fs->nlocvars >= (int)f->locvars.size()) {
     f->locvars.grow();
+    l_memcontrol.checkLimit();
   }
   
   while (oldsize < (int)f->locvars.size()) f->locvars[oldsize++].varname = NULL;
@@ -186,6 +187,7 @@ static void new_localvar (LexState *ls, TString *name) {
                   MAXVARS, "local variables");
   if(dyd->actvar.n+1 >= (int)dyd->actvar.arr.size()) {
     dyd->actvar.arr.grow();
+    l_memcontrol.checkLimit();
   }
   dyd->actvar.arr[dyd->actvar.n++].idx = cast(short, reg);
 }
@@ -238,6 +240,7 @@ static int newupvalue (FuncState *fs, TString *name, expdesc *v) {
   checklimit(fs, fs->num_upvals + 1, MAXUPVAL, "upvalues");
   if(fs->num_upvals >= f->upvalues.size()) {
     f->upvalues.grow();
+    l_memcontrol.checkLimit();
   }
   while (oldsize < (int)f->upvalues.size()) f->upvalues[oldsize++].name = NULL;
   f->upvalues[fs->num_upvals].instack = (v->k == VLOCAL);
@@ -391,6 +394,7 @@ static int newlabelentry (LexState *ls, Labellist *l, TString *name,
   int n = l->n;
   if(n >= (int)l->arr.size()) {
     l->arr.grow();
+    l_memcontrol.checkLimit();
   }
   l->arr[n].name = name;
   l->arr[n].line = line;
@@ -509,6 +513,7 @@ static void codeclosure (LexState *ls, Proto *clp, expdesc *v) {
     int oldsize = (int)f->subprotos_.size();
     if(fs->num_protos >= (int)f->subprotos_.size()) {
       f->subprotos_.grow();
+      l_memcontrol.checkLimit();
     }
     while (oldsize < (int)f->subprotos_.size()) f->subprotos_[oldsize++] = NULL;
   }
@@ -561,12 +566,15 @@ static void close_func (LexState *ls) {
   Proto *f = fs->f;
   luaK_ret(fs, 0, 0);  /* final return */
   leaveblock(fs);
-  f->code.resize(fs->pc);
-  f->lineinfo.resize(fs->pc);
-  f->constants.resize(fs->num_constants);
-  f->subprotos_.resize(fs->num_protos);
-  f->locvars.resize(fs->nlocvars);
-  f->upvalues.resize(fs->num_upvals);
+  f->code.resize_nocheck(fs->pc);
+  f->lineinfo.resize_nocheck(fs->pc);
+  f->constants.resize_nocheck(fs->num_constants);
+  f->subprotos_.resize_nocheck(fs->num_protos);
+  f->locvars.resize_nocheck(fs->nlocvars);
+  f->upvalues.resize_nocheck(fs->num_upvals);
+
+  l_memcontrol.checkLimit();
+
   assert(fs->bl == NULL);
   ls->fs = fs->prev;
   /* last token read was anchored in defunct function; must re-anchor it */

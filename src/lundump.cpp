@@ -86,7 +86,8 @@ static TString* LoadString(LoadState* S)
 static void LoadCode(LoadState* S, Proto* f)
 {
   int n=LoadInt(S);
-  f->code.resize(n);
+  f->code.resize_nocheck(n);
+  l_memcontrol.checkLimit();
   LoadVector(S,&f->code[0],n,sizeof(Instruction));
 }
 
@@ -96,7 +97,8 @@ static void LoadConstants(LoadState* S, Proto* f)
 {
   int i,n;
   n=LoadInt(S);
-  f->constants.resize(n);
+  f->constants.resize_nocheck(n);
+  l_memcontrol.checkLimit();
   for (i=0; i<n; i++)
   {
     switch(LoadChar(S))
@@ -118,7 +120,8 @@ static void LoadConstants(LoadState* S, Proto* f)
     }
   }
   n=LoadInt(S);
-  f->subprotos_.resize(n);
+  f->subprotos_.resize_nocheck(n);
+  l_memcontrol.checkLimit();
   for (i=0; i<n; i++) f->subprotos_[i]=NULL;
   for (i=0; i<n; i++) f->subprotos_[i]=LoadFunction(S);
 }
@@ -127,7 +130,8 @@ static void LoadUpvalues(LoadState* S, Proto* f)
 {
  int i,n;
  n=LoadInt(S);
- f->upvalues.resize(n);
+ f->upvalues.resize_nocheck(n);
+ l_memcontrol.checkLimit();
  for (i=0; i<n; i++) f->upvalues[i].name=NULL;
  for (i=0; i<n; i++)
  {
@@ -141,10 +145,12 @@ static void LoadDebug(LoadState* S, Proto* f)
  int i,n;
  f->source=LoadString(S);
  n=LoadInt(S);
- f->lineinfo.resize(n);
+ f->lineinfo.resize_nocheck(n);
+ l_memcontrol.checkLimit();
  LoadVector(S,f->lineinfo.begin(),n,sizeof(int));
  n=LoadInt(S);
- f->locvars.resize(n);
+ f->locvars.resize_nocheck(n);
+ l_memcontrol.checkLimit();
  for (i=0; i<n; i++) f->locvars[i].varname=NULL;
  for (i=0; i<n; i++)
  {

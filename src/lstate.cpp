@@ -67,9 +67,7 @@ static void init_registry (lua_State *L, global_State *g) {
   g->l_registry = registry;
 
   registry->resize(LUA_RIDX_LAST, 0);
-  if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
-    luaD_throw(LUA_ERRMEM);
-  }
+  l_memcontrol.checkLimit();
 
   /* registry[LUA_RIDX_MAINTHREAD] = L */
   mt = L;
@@ -101,9 +99,7 @@ static void f_luaopen (lua_State *L, void *) {
   g->memerrmsg->setFixed();  /* it should never be collected */
   g->gcrunning = 1;  /* allow gc */
 
-  if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
-    luaD_throw(LUA_ERRMEM);
-  }
+  l_memcontrol.checkLimit();
 }
 
 
@@ -180,9 +176,7 @@ lua_State *lua_newthread (lua_State *L) {
   
   L1->initstack();  /* init stack */
 
-  if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
-    luaD_throw(LUA_ERRMEM);
-  }
+  l_memcontrol.checkLimit();
 
   return L1;
 }

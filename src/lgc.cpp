@@ -481,9 +481,7 @@ static void checkSizes () {
     int hs = g->strings_->size_ / 2;  /* half the size of the string table */
     if (g->strings_->nuse_ < cast(uint32_t, hs)) {  /* using less than that half? */
       luaS_resize(hs);  /* halve its size */
-      if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
-        luaD_throw(LUA_ERRMEM);
-      }
+      l_memcontrol.checkLimit();
     }
     g->buff.buffer.clear();
   }

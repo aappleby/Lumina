@@ -37,28 +37,6 @@ public:
     return buf_[index];
   }
 
-  bool resize_nothrow ( size_t newsize )
-  {
-    if(newsize == 0)
-    {
-      clear();
-      return true;
-    }
-    void* blob = luaM_alloc(sizeof(T) * newsize);
-    if(blob == NULL) return false;
-    T* newbuf = reinterpret_cast<T*>(blob);
-    if(size_) {
-      memcpy(newbuf, buf_, sizeof(T) * std::min(size_,newsize));
-      luaM_free(buf_);
-    }
-    if(newsize > size_) {
-      memset(&newbuf[size_], 0 , sizeof(T) * (newsize - size_));
-    }
-    buf_ = newbuf;
-    size_ = newsize;
-    return true;
-  }
-
   bool resize_nocheck ( size_t newsize )
   {
     if(newsize == 0)
@@ -81,37 +59,6 @@ public:
     return true;
   }
 
-  void resize ( size_t newsize )
-  {
-    /*
-    if(!l_memcontrol.limitEnabled) {
-      if(!resize_nothrow(newsize)) {
-        luaD_throw(LUA_ERRMEM);
-      }
-      return;
-    }
-
-    if(l_memcontrol.isOverLimit()) {
-      luaD_throw(LUA_ERRMEM);
-    }
-
-    l_memcontrol.disableLimit();
-
-    if(!resize_nothrow(newsize)) {
-      luaD_throw(LUA_ERRMEM);
-    }
-
-    l_memcontrol.enableLimit();
-
-    if(l_memcontrol.isOverLimit()) {
-      luaD_throw(LUA_ERRMEM);
-    }
-    */
-    if(!resize_nothrow(newsize)) {
-      luaD_throw(LUA_ERRMEM);
-    }
-  }
-
   void clear ( void )
   {
     if(size_) luaM_free(buf_);
@@ -121,7 +68,7 @@ public:
 
   void grow() 
   {
-    resize(size_ ? size_ * 2 : 16);
+    resize_nocheck(size_ ? size_ * 2 : 16);
   }
 
   bool empty() const

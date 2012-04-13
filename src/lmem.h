@@ -25,6 +25,9 @@ struct Memcontrol {
   void enableLimit();
   void disableLimit();
 
+  // THROWS AN EXCEPTION if the memory limit has been exceeded.
+  void checkLimit();
+
   // calls to enable/disble limit can be nested.
   int limitDisabled;
 

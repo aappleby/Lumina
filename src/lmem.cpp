@@ -60,6 +60,12 @@ void Memcontrol::disableLimit() {
   limitDisabled++;
 }
 
+void Memcontrol::checkLimit() {
+  if(!limitDisabled && isOverLimit()) {
+    luaD_throw(LUA_ERRMEM);
+  }
+}
+
 #define MARK		0x55  /* 01010101 (a nice pattern) */
 #define MARKSIZE	16  /* size of marks after each block */
 

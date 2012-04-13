@@ -68,7 +68,8 @@ char *luaZ_openspace (lua_State *L, Mbuffer *buff, size_t n) {
   THREAD_CHECK(L);
   if (n > buff->buffer.size()) {
     if (n < LUA_MINBUFFER) n = LUA_MINBUFFER;
-    buff->buffer.resize(n);
+    buff->buffer.resize_nocheck(n);
+    l_memcontrol.checkLimit();
   }
   return &buff->buffer[0];
 }
