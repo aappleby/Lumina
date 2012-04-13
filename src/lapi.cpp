@@ -641,6 +641,7 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
     api_checknelems(L, n);
     api_check(n <= MAXUPVAL, "upvalue index too large");
     luaC_checkGC();
+    l_memcontrol.disableLimit();
     cl = luaF_newCclosure(n);
     if(cl == NULL) luaD_throw(LUA_ERRMEM);
     cl->cfunction_ = fn;
@@ -650,6 +651,8 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
     }
     L->top[0] = TValue::CClosure(cl);
     api_incr_top(L);
+    l_memcontrol.enableLimit();
+    l_memcontrol.checkLimit();
   }
 }
 
