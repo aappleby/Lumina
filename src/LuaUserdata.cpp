@@ -2,7 +2,10 @@
 
 #include "LuaTable.h"
 
+#include "lmem.h"
+
 Udata::Udata(uint8_t* buf, size_t len, Table* env) : LuaObject(LUA_TUSERDATA) {
+  assert(l_memcontrol.limitDisabled);
   buf_ = buf;
   len_ = len;
   metatable_ = NULL;

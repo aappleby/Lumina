@@ -1229,10 +1229,19 @@ void *lua_newuserdata (lua_State *L, size_t size) {
   THREAD_CHECK(L);
   Udata *u;
   luaC_checkGC();
+
+  if(!l_memcontrol.canAlloc(size)) {
+    luaD_throw(LUA_ERRMEM);
+  }
+
+  l_memcontrol.disableLimit();
   u = luaS_newudata(size, NULL);
-  if(u == NULL) luaD_throw(LUA_ERRMEM);
+  assert(u);
   L->top[0] = u;
   api_incr_top(L);
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
+
   return u->buf_;
 }
 
