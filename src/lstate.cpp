@@ -87,7 +87,12 @@ static void f_luaopen (lua_State *L, void *) {
   global_State *g = thread_G;
   L->initstack();  /* init stack */
   init_registry(L, g);
+
   luaS_resize(MINSTRTABSIZE);  /* initial size of string table */
+  if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
+    luaD_throw(LUA_ERRMEM);
+  }
+
   luaT_init();
   luaX_init(L);
   /* pre-create memory-error message */

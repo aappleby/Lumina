@@ -75,7 +75,7 @@ TString* stringtable::find(uint32_t hash, const char *str, size_t len) {
 
 void stringtable::resize(int newsize) {
   if (newsize > size_) {
-    hash_.resize(newsize);
+    hash_.resize_nocheck(newsize);
   }
   /* rehash */
   for (int i=0; i<size_; i++) {
@@ -93,7 +93,7 @@ void stringtable::resize(int newsize) {
   if (newsize < size_) {
     /* shrinking slice must be empty */
     assert(hash_[newsize] == NULL && hash_[size_ - 1] == NULL);
-    hash_.resize(newsize);
+    hash_.resize_nocheck(newsize);
   }
   size_ = newsize;
 }
