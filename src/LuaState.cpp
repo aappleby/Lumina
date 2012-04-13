@@ -13,7 +13,22 @@ l_noret luaG_runerror (const char *fmt, ...);
 void luaC_checkupvalcolor (global_State *g, UpVal *uv);
 
 lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
+  status = 0;
+  top = 0;
+  l_G = NULL;
+  ci_ = NULL;
+  oldpc = NULL;
+  stack_last = NULL;
+  nonyieldable_count_ = 0;
+  nCcalls = 0;
+  hookmask = 0;
+  allowhook = 0;
+  basehookcount = 0;
+  hookcount = 0;
+  hook = NULL;
   openupval = NULL;
+  errorJmp = NULL;
+  errfunc = 0;
 }
 
 lua_State::~lua_State() {

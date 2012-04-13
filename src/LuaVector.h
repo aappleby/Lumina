@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <assert.h>
 
+#include "lmem.h"
+
 l_noret luaD_throw (int errcode);
 
 template<class T>
@@ -59,6 +61,26 @@ public:
 
   void resize ( size_t newsize )
   {
+    /*
+    if(!l_memcontrol.limitEnabled) {
+      resize_nothrow(newsize);
+      return;
+    }
+
+    if(l_memcontrol.isOverLimit()) {
+      luaD_throw(LUA_ERRMEM);
+    }
+
+    l_memcontrol.disableLimit();
+
+    resize_nothrow(newsize);
+
+    l_memcontrol.enableLimit();
+
+    if(l_memcontrol.isOverLimit()) {
+      luaD_throw(LUA_ERRMEM);
+    }
+    */
     if(!resize_nothrow(newsize)) {
       luaD_throw(LUA_ERRMEM);
     }

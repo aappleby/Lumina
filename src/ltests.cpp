@@ -271,15 +271,11 @@ static void checkobject (global_State *g, LuaObject *o) {
 }
 
 
-static void checkgraylist (LuaObject* o) {
-  while (o) {
-    assert(o->isGray());
-    assert(!o->isTestGray());
-    o->setTestGray();
-    o = o->next_gray_;
-  }
-}
 
+/*
+** mark all objects in gray lists as TestGray, so that
+** 'checkmemory' can check that all gray objects are in a gray list
+*/
 void CheckGraylistCB(LuaObject* o) {
   assert(o->isGray());
   assert(!o->isTestGray());
@@ -287,10 +283,6 @@ void CheckGraylistCB(LuaObject* o) {
   o = o->next_gray_;
 }
 
-/*
-** mark all objects in gray lists as TestGray, so that
-** 'checkmemory' can check that all gray objects are in a gray list
-*/
 static void markgrays (global_State *g) {
   if (!keepinvariant(g)) return;
   g->grayhead_.Traverse(CheckGraylistCB);

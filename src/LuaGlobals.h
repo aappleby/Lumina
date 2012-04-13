@@ -1,7 +1,7 @@
 #pragma once
 #include "LuaTypes.h"
 #include "LuaBuffer.h"
-#include "LuaGraylist.h"
+#include "LuaList.h"
 #include "LuaUpval.h" // for uvhead
 #include "LuaValue.h" // for l_registry
 

@@ -47,6 +47,10 @@ bool Memcontrol::canAlloc(size_t size) {
   return !limitEnabled || (total+size <= memlimit);
 }
 
+bool Memcontrol::isOverLimit() {
+  return total > memlimit;
+}
+
 void Memcontrol::enableLimit() {
   assert(!limitEnabled);
   limitEnabled = true;

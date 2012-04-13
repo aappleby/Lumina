@@ -8,7 +8,22 @@
 class CallInfo : public LuaBase {
 public:
 
-  CallInfo() {}
+  CallInfo() {
+    func = NULL;
+    top = NULL;
+    previous = NULL;
+    next = NULL;
+    nresults = 0;
+    callstatus = 0;
+    base = NULL;
+    savedpc = NULL;
+    ctx = 0;
+    continuation_ = NULL;
+    old_errfunc = 0;
+    extra = 0;
+    old_allowhook = 0;
+    status = 0;
+  }
   ~CallInfo() {}
 
   StkId func;  /* function index in the stack */

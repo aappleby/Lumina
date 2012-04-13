@@ -15,6 +15,8 @@ struct Memcontrol {
 
   bool alloc(size_t size);
   bool free(size_t size);
+
+  bool isOverLimit();
   bool canAlloc(size_t size);
 
   bool newObject(int type);
