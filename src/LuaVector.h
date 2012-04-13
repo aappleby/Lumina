@@ -59,6 +59,28 @@ public:
     return true;
   }
 
+  bool resize_nocheck ( size_t newsize )
+  {
+    if(newsize == 0)
+    {
+      clear();
+      return true;
+    }
+    void* blob = luaM_alloc_nocheck(sizeof(T) * newsize);
+    if(blob == NULL) return false;
+    T* newbuf = reinterpret_cast<T*>(blob);
+    if(size_) {
+      memcpy(newbuf, buf_, sizeof(T) * std::min(size_,newsize));
+      luaM_free(buf_);
+    }
+    if(newsize > size_) {
+      memset(&newbuf[size_], 0 , sizeof(T) * (newsize - size_));
+    }
+    buf_ = newbuf;
+    size_ = newsize;
+    return true;
+  }
+
   void resize ( size_t newsize )
   {
     /*

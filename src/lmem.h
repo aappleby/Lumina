@@ -36,8 +36,9 @@ struct Memcontrol {
 
 extern Memcontrol l_memcontrol;
 
-void* luaM_alloc_nothrow(size_t size);
 void* luaM_alloc(size_t size);
+void* luaM_alloc_nocheck(size_t size);
+
 void  luaM_free(void * blob);
 
 #endif

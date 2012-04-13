@@ -133,11 +133,9 @@ void lua_State::reallocstack (int newsize) {
   // existing pointers - it doesn't get dereferenced.
   TValue *oldstack = stack.begin();
 
-  // Turn off memory checking while we're reallocating the stack.
-  l_memcontrol.disableLimit();
-
-  // Resize the stack array.
-  stack.resize_nothrow(newsize);
+  // Resize the stack array. but do not check to see if we've exceeded
+  // our memory limit.
+  stack.resize_nocheck(newsize);
   stack_last = stack.end() - EXTRA_STACK;
 
   // Correct the stack top pointer.
@@ -158,8 +156,8 @@ void lua_State::reallocstack (int newsize) {
     }
   }
 
-  // Stack is valid again. Kick off memory errors if we're over the limit.
-  l_memcontrol.enableLimit();
+  // Stack is valid again, _now_ kick off memory errors if we're over the
+  // limit.
   if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
     luaD_throw(LUA_ERRMEM);
   }

@@ -104,6 +104,13 @@ void* default_alloc(size_t size) {
   return newblock ? newblock + 1 : NULL;
 }
 
+void* default_alloc_nocheck(size_t size) {
+  Header* newblock = allocblock(size);
+  assert(newblock);
+  l_memcontrol.alloc(size);
+  return newblock + 1;
+}
+
 void *luaM_alloc (size_t size) {
   void* newblock = default_alloc(size);
   if (newblock == NULL) {
@@ -116,6 +123,12 @@ void *luaM_alloc (size_t size) {
     }
   }
 
+  if(thread_G) thread_G->incTotalBytes(size);
+  return newblock;
+}
+
+void *luaM_alloc_nocheck (size_t size) {
+  void* newblock = default_alloc_nocheck(size);
   if(thread_G) thread_G->incTotalBytes(size);
   return newblock;
 }
