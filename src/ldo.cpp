@@ -596,11 +596,16 @@ static void f_parser (lua_State *L, void *ud) {
   }
   L->top[0] = tf;
   incr_top(L);
+  l_memcontrol.disableLimit();
   cl = luaF_newLclosure(tf);
   if(cl == NULL) luaD_throw(LUA_ERRMEM);
   L->top[-1] = TValue::LClosure(cl);
-  for (i = 0; i < (int)tf->upvalues.size(); i++)  /* initialize upvalues */
+  // initialize upvalues
+  for (i = 0; i < (int)tf->upvalues.size(); i++) {
     cl->ppupvals_[i] = luaF_newupval();
+  }
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
 }
 
 

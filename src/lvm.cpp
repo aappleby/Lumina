@@ -519,6 +519,7 @@ static void pushclosure (lua_State *L,
                          StkId ra) {
   THREAD_CHECK(L);
 
+  l_memcontrol.disableLimit();
   Closure *ncl = luaF_newLclosure(p);
   if(ncl == NULL) luaD_throw(LUA_ERRMEM);
 
@@ -536,6 +537,8 @@ static void pushclosure (lua_State *L,
 
   luaC_barrierproto(p, ncl);
   p->cache = ncl;  /* save it on cache for reuse */
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
 }
 
 
