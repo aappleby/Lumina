@@ -61,9 +61,16 @@ void Memcontrol::disableLimit() {
 }
 
 void Memcontrol::checkLimit() {
-  if(!limitDisabled && isOverLimit()) {
-    luaD_throw(LUA_ERRMEM);
+  if(limitDisabled || !isOverLimit()) return;
+
+  // Limit in place and we're over it. Try running an emergency garbage
+  // collection cycle.
+  if (thread_G && thread_G->gcrunning) {
+    luaC_fullgc(1);
   }
+
+  // If we're still over, throw the out-of-memory error.
+  if(isOverLimit()) luaD_throw(LUA_ERRMEM);
 }
 
 #define MARK		0x55  /* 01010101 (a nice pattern) */
