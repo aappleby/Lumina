@@ -161,12 +161,18 @@ lua_State *lua_newthread (lua_State *L) {
 
   luaC_checkGC();
 
+  l_memcontrol.disableLimit();
+
   lua_State* L1 = new lua_State();
   if(L1 == NULL) luaD_throw(LUA_ERRMEM);
   L1->linkGC(getGlobalGCHead());
-
   L->top[0] = L1;
   L->top++;
+
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
+
+
   preinit_state(L1, thread_G);
   
   L1->hookmask = L->hookmask;
@@ -185,6 +191,7 @@ lua_State *lua_newthread (lua_State *L) {
 lua_State *lua_newstate () {
   GLOBAL_CHANGE(NULL);
   int i;
+  
   lua_State* L = new lua_State();
   if(L == NULL) { return NULL; }
   global_State* g = new global_State();
@@ -192,6 +199,7 @@ lua_State *lua_newstate () {
     delete L;
     return NULL;
   }
+
   L->l_G = g;
   {
     GLOBAL_CHANGE(L);
