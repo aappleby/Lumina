@@ -40,7 +40,8 @@ lua_State::~lua_State() {
 }
 
 void lua_State::initstack() {
-  stack.resize(BASIC_STACK_SIZE);
+  stack.resize_nocheck(BASIC_STACK_SIZE);
+
   top = stack.begin();
   stack_last = stack.end() - EXTRA_STACK;
 

@@ -749,8 +749,9 @@ void lua_createtable (lua_State *L, int narray, int nrec) {
   t->linkGC(getGlobalGCHead());
   L->top[0] = t;
   api_incr_top(L);
-  if (narray > 0 || nrec > 0)
+  if (narray > 0 || nrec > 0) {
     t->resize(narray, nrec);
+  }
 }
 
 Table* lua_getmetatable(TValue v) {

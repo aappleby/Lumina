@@ -366,14 +366,18 @@ void Table::resize(int nasize, int nhsize) {
   // The resizes here _can_ throw, we have not pushed the throws down yet.
 
   if(nasize) {
-    temparray.resize(nasize);
+    temparray.resize_nocheck(nasize);
     memcpy(temparray.begin(), array.begin(), std::min(oldasize, nasize) * sizeof(TValue));
   }
 
   if (nhsize) {
     int lsize = luaO_ceillog2(nhsize);
     nhsize = 1 << lsize;
-    temphash.resize(nhsize);
+    temphash.resize_nocheck(nhsize);
+  }
+
+  if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
+    luaD_throw(LUA_ERRMEM);
   }
 
   // Memory allocated, swap and reinsert

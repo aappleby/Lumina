@@ -89,9 +89,6 @@ static void f_luaopen (lua_State *L, void *) {
   init_registry(L, g);
 
   luaS_resize(MINSTRTABSIZE);  /* initial size of string table */
-  if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
-    luaD_throw(LUA_ERRMEM);
-  }
 
   luaT_init();
   luaX_init(L);
@@ -99,6 +96,10 @@ static void f_luaopen (lua_State *L, void *) {
   g->memerrmsg = luaS_newliteral(MEMERRMSG);
   g->memerrmsg->setFixed();  /* it should never be collected */
   g->gcrunning = 1;  /* allow gc */
+
+  if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
+    luaD_throw(LUA_ERRMEM);
+  }
 }
 
 
@@ -174,7 +175,11 @@ lua_State *lua_newthread (lua_State *L) {
   L1->hookcount = L1->basehookcount;
   
   L1->initstack();  /* init stack */
-  
+
+  if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
+    luaD_throw(LUA_ERRMEM);
+  }
+
   return L1;
 }
 
