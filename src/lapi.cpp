@@ -656,7 +656,7 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
     luaC_checkGC();
     {
       ScopedMemChecker c;
-      cl = luaF_newCclosure(n);
+      cl = new Closure(NULL, n);
       if(cl == NULL) luaD_throw(LUA_ERRMEM);
       cl->cfunction_ = fn;
       L->top -= n;
@@ -1259,16 +1259,16 @@ void lua_len (lua_State *L, int idx) {
 
 void *lua_newuserdata (lua_State *L, size_t size) {
   THREAD_CHECK(L);
-  Udata *u;
   luaC_checkGC();
 
   if(!l_memcontrol.canAlloc(size)) {
     luaD_throw(LUA_ERRMEM);
   }
 
+  Udata* u = NULL;
   {
     ScopedMemChecker c;
-    u = luaS_newudata(size, NULL);
+    u = new Udata(size);
     assert(u);
     L->top[0] = u;
     api_incr_top(L);

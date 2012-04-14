@@ -35,16 +35,9 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
     luaS_resize(tb->size_ * 2);  /* too crowded */
   }
   
-  char* buf = (char*)luaM_alloc_nocheck(l+1);
-  if(buf == NULL) return NULL;
+  TString* ts = new TString(h, str, l);
 
-  TString* ts = new TString(buf, h, str, l);
-  if(ts == NULL) {
-    luaM_free(buf);
-    return NULL;
-  }
-
-  LuaObject*& list = tb->hash_[h & (tb->size_ - 1)];
+  LuaObject** list = &tb->hash_[h & (tb->size_ - 1)];
   ts->linkGC(list);
   tb->nuse_++;
   return ts;
@@ -70,20 +63,4 @@ TString *luaS_newlstr (const char *str, size_t l) {
 
 TString *luaS_new (const char *str) {
   return luaS_newlstr(str, strlen(str));
-}
-
-Udata *luaS_newudata (size_t s, Table *e) {
-  if (s > MAX_SIZET - sizeof(Udata)) luaG_runerror("memory allocation error: udata too big");
-
-  uint8_t* b = (uint8_t*)luaM_alloc_nocheck(s);
-  if(b == NULL) return NULL;
-
-  Udata* u = new Udata(b,s,e);
-  if(u == NULL) {
-    luaM_free(b);
-    return NULL;
-  }
-
-  u->linkGC(getGlobalGCHead());
-  return u;
 }

@@ -556,7 +556,7 @@ static void pushclosure (lua_State *L,
   ScopedMemChecker c;
   THREAD_CHECK(L);
 
-  Closure *ncl = luaF_newLclosure(p);
+  Closure *ncl = new Closure(p, p->upvalues.size());
   if(ncl == NULL) luaD_throw(LUA_ERRMEM);
 
   *ra = TValue::LClosure(ncl);  /* anchor new closure in stack */

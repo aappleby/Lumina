@@ -5,8 +5,7 @@
 class Closure : public LuaObject {
 public:
 
-  Closure(TValue* buf, int n);
-  Closure(Proto* proto, UpVal** buf, int n);
+  Closure(Proto* proto, int n);
   ~Closure();
 
   virtual void VisitGC(GCVisitor& visitor);

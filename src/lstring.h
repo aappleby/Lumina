@@ -20,7 +20,4 @@ void     luaS_resize   (int newsize);
 TString* luaS_newlstr  (const char *str, size_t l);
 TString* luaS_new      (const char *str);
 
-Udata*   luaS_newudata (size_t s, Table *e);
-
-
 #endif

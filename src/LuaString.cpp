@@ -17,14 +17,14 @@ uint32_t hashString(const char* str, size_t len) {
 //-----------------------------------------------------------------------------
 // TString
 
-TString::TString(char* buf, uint32_t hash, const char* str, int len)
+TString::TString(uint32_t hash, const char* str, int len)
 : LuaObject(LUA_TSTRING),
-  buf_(buf),
+  buf_(NULL),
   reserved_(0),
   hash_(hash),
   len_(len)
 {
-  //assert(l_memcontrol.limitDisabled);
+  buf_ = (char*)luaM_alloc_nocheck(len_+1);
   memcpy(buf_, str, len*sizeof(char));
   buf_[len_] = '\0'; // terminating null
 }

@@ -35,10 +35,12 @@ LuaObject::~LuaObject() {
   LuaObject::instanceCounts[type_]--;
 }
 
-void LuaObject::linkGC(LuaObject*& gcHead) {
+void LuaObject::linkGC(LuaObject** gcHead) {
   assert(next_ == NULL);
-  next_ = gcHead;
-  gcHead = this;
+  if(gcHead) {
+    next_ = *gcHead;
+    *gcHead = this;
+  }
 }
 
 // Sanity check object state

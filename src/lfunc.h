@@ -11,10 +11,6 @@
 #include "lobject.h"
 
 
-Closure*  luaF_newCclosure (int nelems);
-Closure*  luaF_newLclosure (Proto *p);
-UpVal*    luaF_newupval    ();
-
 UpVal* luaF_findupval (StkId level);
 
 void luaF_close       (StkId level);

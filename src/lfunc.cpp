@@ -23,50 +23,6 @@
 
 using std::auto_ptr;
 
-Closure *luaF_newCclosure (int n) {
-  //l_memcontrol.disableLimit();
-  TValue* b = (TValue*)luaM_alloc_nocheck(n * sizeof(TValue));
-  if(b == NULL) return NULL;
-
-  Closure *c = new Closure(b, n);
-  if(c == NULL) {
-    luaM_free(b);
-    return NULL;
-  }
-  // Closure puts itself on the gc list, safe to check limit now.
-  //l_memcontrol.enableLimit();
-  //l_memcontrol.checkLimit();
-
-  return c;
-}
-
-
-Closure *luaF_newLclosure (Proto *p) {
-  int n = (int)p->upvalues.size();
-
-  UpVal** b = (UpVal**)luaM_alloc_nocheck(n * sizeof(TValue*));
-  if(b == NULL) return NULL;
-
-  Closure* c = new Closure(p, b, n);
-  if(c == NULL) {
-    luaM_free(b);
-    return NULL;
-  }
-
-  return c;
-}
-
-
-UpVal *luaF_newupval () {
-  UpVal *uv = new UpVal();
-  if(uv == NULL) luaD_throw(LUA_ERRMEM);
-  uv->linkGC(getGlobalGCHead());
-  uv->v = &uv->value;
-  *uv->v = TValue::nil;
-  return uv;
-}
-
-
 UpVal *luaF_findupval (StkId level) {
   global_State *g = thread_G;
   LuaObject **pp = &thread_L->openupval;
@@ -83,9 +39,7 @@ UpVal *luaF_findupval (StkId level) {
     pp = &(p->next_);
   }
   /* not found: create a new one */
-  uv = new UpVal();
-  if(uv == NULL) luaD_throw(LUA_ERRMEM);
-  uv->linkGC(*pp);
+  uv = new UpVal(pp);
   uv->v = level;  /* current value lives in the stack */
   uv->uprev = &g->uvhead;  /* double link it in `uvhead' list */
   uv->unext = g->uvhead.unext;

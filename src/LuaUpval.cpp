@@ -2,9 +2,10 @@
 
 #include "lmem.h"
 
-UpVal::UpVal() : LuaObject(LUA_TUPVAL) {
+UpVal::UpVal(LuaObject** gchead) : LuaObject(LUA_TUPVAL) {
   assert(l_memcontrol.limitDisabled);
-  v = NULL;
+  linkGC(gchead);
+  v = &value;
   uprev = NULL;
   unext = NULL;
 }

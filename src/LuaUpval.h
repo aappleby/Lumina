@@ -8,7 +8,7 @@
 class UpVal : public LuaObject {
 public:
 
-  UpVal();
+  UpVal(LuaObject** gchead);
   ~UpVal();
 
   void unlink();

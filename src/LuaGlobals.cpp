@@ -1,11 +1,13 @@
 #include "LuaGlobals.h"
 #include "LuaState.h"
 
-LuaObject*& getGlobalGCHead() {
-  return thread_G->allgc;
+LuaObject** getGlobalGCHead() {
+  return &thread_G->allgc;
 }
 
-global_State::global_State() {
+global_State::global_State()
+: uvhead(NULL)
+{
   GCdebt_ = 0;
   isShuttingDown = false;
   totalbytes_ = sizeof(lua_State) + sizeof(global_State);

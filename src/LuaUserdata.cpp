@@ -4,12 +4,13 @@
 
 #include "lmem.h"
 
-Udata::Udata(uint8_t* buf, size_t len, Table* env) : LuaObject(LUA_TUSERDATA) {
+Udata::Udata(size_t len) : LuaObject(LUA_TUSERDATA) {
   assert(l_memcontrol.limitDisabled);
-  buf_ = buf;
+  linkGC(getGlobalGCHead());
+  buf_ = (uint8_t*)luaM_alloc_nocheck(len);
   len_ = len;
   metatable_ = NULL;
-  env_ = env;
+  env_ = NULL;
 }
 
 Udata::~Udata() {

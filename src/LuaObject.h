@@ -28,7 +28,7 @@ public:
   LuaObject(LuaType type);
   virtual ~LuaObject();
 
-  void linkGC(LuaObject*& gcHead);
+  void linkGC(LuaObject** gcHead);
 
   void sanityCheck();
 
