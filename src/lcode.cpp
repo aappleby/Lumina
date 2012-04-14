@@ -371,8 +371,13 @@ int luaK_numberK (FuncState *fs, lua_Number r) {
   TValue o = TValue(r);
   if (r == 0 || (r != r)) {  /* handle -0 and NaN */
     /* use raw representation as key to avoid numeric problems */
+    
+    l_memcontrol.disableLimit();
     L->top[0] = luaS_newlstr((char *)&r, sizeof(r));
     incr_top(L);
+    l_memcontrol.enableLimit();
+    l_memcontrol.checkLimit();
+
     n = addk(fs, L->top - 1, &o);
     L->top--;
   }

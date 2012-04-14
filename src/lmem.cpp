@@ -44,7 +44,7 @@ bool Memcontrol::alloc(size_t size) {
 }
 
 bool Memcontrol::canAlloc(size_t size) {
-  return limitDisabled || (total+size <= memlimit);
+  return total+size <= memlimit;
 }
 
 bool Memcontrol::isOverLimit() {
@@ -111,7 +111,7 @@ void freeblock (Header *block) {
 //-----------------------------------------------------------------------------
 
 void* default_alloc(size_t size) {
-  if (!l_memcontrol.canAlloc(size)) return NULL;
+  if (!l_memcontrol.limitDisabled && !l_memcontrol.canAlloc(size)) return NULL;
   Header* newblock = allocblock(size);
   if(newblock) l_memcontrol.alloc(size);
   return newblock ? newblock + 1 : NULL;

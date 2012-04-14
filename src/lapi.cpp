@@ -719,8 +719,16 @@ void lua_getfield (lua_State *L, int idx, const char *k) {
   THREAD_CHECK(L);
   StkId t;
   t = index2addr_checked(L, idx);
+
+  l_memcontrol.disableLimit();
+
   L->top[0] = luaS_new(k);
   api_incr_top(L);
+
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
+
+
   luaV_gettable(L, t, L->top - 1, L->top - 1);
 }
 
@@ -830,8 +838,14 @@ void lua_setglobal (lua_State *L, const char *var) {
 
   TValue globals = thread_G->l_registry.getTable()->get(TValue(LUA_RIDX_GLOBALS));
 
+  l_memcontrol.disableLimit();
+
   L->top[0] = luaS_new(var);
   L->top++;
+
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
+
   luaV_settable(L, &globals, L->top - 1, L->top - 2);
   L->top -= 2;  /* pop value and key */
 }

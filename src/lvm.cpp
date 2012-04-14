@@ -425,7 +425,11 @@ void luaV_concat (lua_State *L, int total) {
         memcpy(buffer+tl, top[-i].getString()->c_str(), l * sizeof(char));
         tl += l;
       } while (--i > 0);
+
+      l_memcontrol.disableLimit();
       top[-n] = luaS_newlstr(buffer, tl);
+      l_memcontrol.enableLimit();
+      l_memcontrol.checkLimit();
     }
     total -= n-1;  /* got 'n' strings to create 1 new */
     L->top -= n-1;  /* popped 'n' strings and pushed one */

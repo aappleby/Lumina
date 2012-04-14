@@ -173,8 +173,12 @@ int luaO_str2d (const char *s, size_t len, lua_Number *result) {
 
 static void pushstr (lua_State *L, const char *str, size_t l) {
   THREAD_CHECK(L);
+
+  l_memcontrol.disableLimit();
   L->top[0] = luaS_newlstr(str, l);
   incr_top(L);
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
 }
 
 
@@ -185,8 +189,16 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
   for (;;) {
     const char *e = strchr(fmt, '%');
     if (e == NULL) break;
+
+    l_memcontrol.disableLimit();
+
     L->top[0] = luaS_newlstr(fmt, e-fmt);
     incr_top(L);
+
+    l_memcontrol.enableLimit();
+    l_memcontrol.checkLimit();
+
+
     switch (*(e+1)) {
       case 's': {
         const char *s = va_arg(argp, char *);
