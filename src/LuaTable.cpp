@@ -159,27 +159,6 @@ bool Table::tableIndexToKeyVal(int index, TValue& outKey, TValue& outVal) {
 
 //-----------------------------------------------------------------------------
 
-const TValue* Table::findValue(TValue key) {
-  if(key.isNil()) return NULL;
-  if(key.isInteger()) return findValue(key.getInteger());
-
-  Node* node = findNode(key);
-  return node ? &node->i_val : NULL;
-}
-
-const TValue* Table::findValue(int key) {
-  // Lua index -> C index
-  int index = key - 1;
-  if((index >= 0) && (index < (int)array.size())) {
-    return &array[index];
-  }
-
-  Node* node = findNode(TValue(key));
-  return node ? &node->i_val : NULL;
-}
-
-//-----------------------------------------------------------------------------
-
 TValue Table::get(TValue key) const {
   if(key.isNil()) return TValue::None();
 

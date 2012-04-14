@@ -31,11 +31,6 @@ public:
   int getArraySize() const { return (int)array.size(); }
   int getHashSize() const { return (int)hashtable.size(); }
 
-  // Returns the value associated with the key
-  // can't turn this to value return until the rest of the code doesn't fetch by pointer...
-  const TValue* findValue(TValue key);
-  const TValue* findValue(int key);
-
   Node* getNode(int i) {
     assert(hashtable.size());
     assert(i >= 0);
@@ -93,9 +88,6 @@ protected:
   // Returns the node where the key would go.
   Node* findBin(TValue key);
   Node* findBin(int key);
-
-  const TValue* findValueInHash(TValue key);
-  const TValue* findValueInHash(int key);
 
   //----------
 
