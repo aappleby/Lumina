@@ -584,9 +584,16 @@ const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
   THREAD_CHECK(L);
   TString *ts;
   luaC_checkGC();
+
+  l_memcontrol.disableLimit();
+
   ts = luaS_newlstr(s, len);
   L->top[0] = ts;
   api_incr_top(L);
+
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
+
   return ts->c_str();
 }
 
@@ -600,9 +607,16 @@ const char *lua_pushstring (lua_State *L, const char *s) {
   else {
     TString *ts;
     luaC_checkGC();
+
+    l_memcontrol.disableLimit();
+    
     ts = luaS_new(s);
     L->top[0] = ts;
     api_incr_top(L);
+
+    l_memcontrol.enableLimit();
+    l_memcontrol.checkLimit();
+
     return ts->c_str();
   }
 }
@@ -838,8 +852,15 @@ void lua_setfield (lua_State *L, int idx, const char *k) {
   StkId t;
   api_checknelems(L, 1);
   t = index2addr_checked(L, idx);
+
+  l_memcontrol.disableLimit();
+
   L->top[0] = luaS_new(k);
   L->top++;
+
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
+
   luaV_settable(L, t, L->top - 1, L->top - 2);
   L->top -= 2;  /* pop value and key */
 }

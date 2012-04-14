@@ -89,6 +89,9 @@ static void init_registry (lua_State *L, global_State *g) {
 */
 static void f_luaopen (lua_State *L, void *) {
   THREAD_CHECK(L);
+
+  l_memcontrol.disableLimit();
+
   global_State *g = thread_G;
   L->initstack();  /* init stack */
   init_registry(L, g);
@@ -97,11 +100,14 @@ static void f_luaopen (lua_State *L, void *) {
 
   luaT_init();
   luaX_init(L);
+
   /* pre-create memory-error message */
   g->memerrmsg = luaS_newliteral(MEMERRMSG);
   g->memerrmsg->setFixed();  /* it should never be collected */
+
   g->gcrunning = 1;  /* allow gc */
 
+  l_memcontrol.enableLimit();
   l_memcontrol.checkLimit();
 }
 

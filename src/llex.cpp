@@ -66,11 +66,17 @@ static void save (LexState *ls, int c) {
 void luaX_init (lua_State *L) {
   THREAD_CHECK(L);
   int i;
+
+  l_memcontrol.disableLimit();
+
   for (i=0; i<NUM_RESERVED; i++) {
     TString *ts = luaS_new(luaX_tokens[i]);
     ts->setFixed();  /* reserved words are never collected */
     ts->setReserved(cast_byte(i+1));  /* reserved word */
   }
+
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
 }
 
 
