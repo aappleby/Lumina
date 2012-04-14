@@ -74,6 +74,11 @@ static void seterrorobj (lua_State *L, int errcode, StkId oldtop) {
 
 
 l_noret luaD_throw (int errcode) {
+
+  if(l_memcontrol.limitDisabled) {
+    printf("xxx");
+  }
+
   lua_State* L = thread_L;
   if (L->errorJmp) {  // thread has an error handler?
     L->errorJmp->status = errcode;  // set status
@@ -211,12 +216,19 @@ int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
   ptrdiff_t funcr = savestack(L, func);
   lua_CFunction f = func->getLightFunction();
   L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
+
+  l_memcontrol.disableLimit();
+
   CallInfo* ci = next_ci(L);  /* now 'enter' new function */
   ci->nresults = nresults;
   ci->func = restorestack(L, funcr);
   ci->top = L->top + LUA_MINSTACK;
   assert(ci->top <= L->stack_last);
   ci->callstatus = 0;
+
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
+
   if (L->hookmask & LUA_MASKCALL)
     luaD_hook(L, LUA_HOOKCALL, -1);
   int n = (*f)(L);  /* do the actual call */
@@ -229,6 +241,9 @@ int luaD_precallC(lua_State* L, StkId func, int nresults) {
   ptrdiff_t funcr = savestack(L, func);
   lua_CFunction f = func->getCClosure()->cfunction_;
   L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
+
+  l_memcontrol.disableLimit();
+
   CallInfo* ci = next_ci(L);  /* now 'enter' new function */
   ci->nresults = nresults;
   ci->func = restorestack(L, funcr);
@@ -237,6 +252,10 @@ int luaD_precallC(lua_State* L, StkId func, int nresults) {
   ci->callstatus = 0;
   if (L->hookmask & LUA_MASKCALL)
     luaD_hook(L, LUA_HOOKCALL, -1);
+
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
+
   int n = (*f)(L);  /* do the actual call */
   api_checknelems(L, n);
   luaD_poscall(L, L->top - n);
