@@ -149,40 +149,46 @@ static void callTM1 (lua_State *L,
   luaD_call(L, L->top - 4, 0, isLua(L->ci_));
 }
 
-void luaV_gettable2 (lua_State *L, const TValue *source, TValue *key, TValue& outResult) {
+enum LuaResult
+{
+  LR_OK = 0,
+  LR_BAD_TABLE,
+  LR_BAD_INDEX_TM,
+  LR_META_LOOP,
+};
+
+LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outResult) {
   THREAD_CHECK(L);
   TValue tagmethod;
-  assert(source);
 
   for (int loop = 0; loop < MAXTAGLOOP; loop++) {
 
-    if (source->isTable()) {
-      Table* table = source->getTable();
-      TValue value = table->get(*key);
+    if (source.isTable()) {
+      Table* table = source.getTable();
+      TValue value = table->get(key);
 
       if(!value.isNone() && !value.isNil()) {
         // Basic table lookup, nothing weird going on here.
         outResult = value;
-        return;
+        return LR_OK;
       }
     }
 
     // Table lookup failed. If there's no tag method, then either the search terminates
     // (if object is a table) or throws an error (if object is not a table)
 
-    if(source->isTable()) {
-      tagmethod = fasttm2(source->getTable()->metatable, TM_INDEX);
+    if(source.isTable()) {
+      tagmethod = fasttm2(source.getTable()->metatable, TM_INDEX);
     } else {
-      tagmethod = luaT_gettmbyobj2(*source, TM_INDEX);
+      tagmethod = luaT_gettmbyobj2(source, TM_INDEX);
     }
 
     if(tagmethod.isNone() || tagmethod.isNil()) {
-      if(source->isTable()) {
+      if(source.isTable()) {
         outResult = TValue::Nil();
-        return;
+        return LR_OK;
       } else {
-        luaG_typeerror(source, "index");
-        return;
+        return LR_BAD_TABLE;
       }
     }
 
@@ -190,8 +196,8 @@ void luaV_gettable2 (lua_State *L, const TValue *source, TValue *key, TValue& ou
     // the new table.
 
     if (tagmethod.isFunction()) {
-      callTM3(L, tagmethod, *source, *key, outResult);
-      return;
+      callTM3(L, tagmethod, source, key, outResult);
+      return LR_OK;
     }
 
     if(tagmethod.isTable()) {
@@ -200,9 +206,10 @@ void luaV_gettable2 (lua_State *L, const TValue *source, TValue *key, TValue& ou
     }
 
     // Trying to use other things as the __index tagmethod is an error.
-    luaG_typeerror(source, "invalid type in __index method");
+    return LR_BAD_INDEX_TM;
   }
-  luaG_runerror("loop in gettable");
+
+  return LR_META_LOOP;
 }
 
 // TODO(aappleby) - This gets a StkId parameter, but the tag method calling can invalidate the stack.
@@ -214,9 +221,18 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId outRe
   int stackIndex = outResult - L->stack.begin();
 
   TValue result;
-  luaV_gettable2(L, source, key, result);
+  LuaResult r = luaV_gettable2(L, *source, *key, result);
 
-  L->stack[stackIndex] = result;
+  switch(r) {
+    case LR_BAD_TABLE:
+      luaG_typeerror(source, "index"); break;
+    case LR_BAD_INDEX_TM:
+      luaG_typeerror(source, "invalid type in __index method"); break;
+    case LR_META_LOOP:
+      luaG_runerror("loop in gettable"); break;
+  }
+
+  if(r == LR_OK) L->stack[stackIndex] = result;
 }
 
 // TODO(aappleby): The original version of luaV_settable needs to be enshrined

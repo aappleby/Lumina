@@ -1204,7 +1204,7 @@ int lua_error (lua_State *L) {
 
 int lua_next (lua_State* L, int idx) {
 
-  Table* t = L->at(idx);
+  Table* t = L->at(idx).getTable();
 
   TValue key = L->pop();
 

@@ -524,9 +524,10 @@ l_noret luaG_typeerror (const TValue *o, const char *op) {
   const char *kind = NULL;
   if (isLua(ci)) {
     kind = getupvalname(ci, o, &name);  /* check whether 'o' is an upvalue */
-    if (!kind && isinstack(ci, o))  /* no? try a register */
-      kind = getobjname(ci_func(ci)->proto_, currentpc(ci),
-                        cast_int(o - ci->base), &name);
+    if (!kind && isinstack(ci, o)) {
+      /* no? try a register */
+      kind = getobjname(ci_func(ci)->proto_, currentpc(ci), cast_int(o - ci->base), &name);
+    }
   }
   if (kind)
     luaG_runerror("attempt to %s %s " LUA_QS " (a %s value)",

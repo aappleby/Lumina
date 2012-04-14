@@ -30,9 +30,9 @@ public:
   explicit TValue(TString* v);
   explicit TValue(LuaObject* o);
 
-  // Conversion operators
+  // Conversion operators are dangerous
 
-  operator Table*() { return getTable(); }
+  // operator Table*() { return getTable(); }
 
   // Assignment operators
 
