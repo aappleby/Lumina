@@ -6,6 +6,7 @@ class Closure : public LuaObject {
 public:
 
   Closure(Proto* proto, int n);
+  Closure(lua_CFunction func, int n);
   ~Closure();
 
   virtual void VisitGC(GCVisitor& visitor);

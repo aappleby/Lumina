@@ -626,7 +626,7 @@ static void f_parser (lua_State *L, void *ud) {
     ScopedMemChecker c;
     cl = new Closure(tf, (int)tf->upvalues.size());
     if(cl == NULL) luaD_throw(LUA_ERRMEM);
-    L->top[-1] = TValue::LClosure(cl);
+    L->top[-1] = TValue(cl);
     // initialize upvalues
     for (i = 0; i < (int)tf->upvalues.size(); i++) {
       cl->ppupvals_[i] = new UpVal(getGlobalGCHead());

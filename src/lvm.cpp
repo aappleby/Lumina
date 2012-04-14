@@ -559,7 +559,7 @@ static void pushclosure (lua_State *L,
   Closure *ncl = new Closure(p, p->upvalues.size());
   if(ncl == NULL) luaD_throw(LUA_ERRMEM);
 
-  *ra = TValue::LClosure(ncl);  /* anchor new closure in stack */
+  *ra = TValue(ncl);  /* anchor new closure in stack */
   for (int i = 0; i < (int)p->upvalues.size(); i++) {  /* fill in its upvalues */
     if (p->upvalues[i].instack) {
       /* upvalue refers to local variable? */
@@ -1022,7 +1022,7 @@ void luaV_execute (lua_State *L) {
         if (ncl == NULL)  /* no match? */
           pushclosure(L, p, cl->ppupvals_, base, ra);  /* create a new one */
         else
-          *ra = TValue::LClosure(ncl);  /* push cashed closure */
+          *ra = TValue(ncl);  /* push cashed closure */
         checkGC(L,
           L->top = ra + 1;  /* limit of live values */
           luaC_step();

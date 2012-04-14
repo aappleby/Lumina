@@ -21,13 +21,12 @@ public:
 
   static TValue LightUserdata(const void* p);
   static TValue LightFunction(lua_CFunction f);
-  static TValue LClosure(Closure* c);
-  static TValue CClosure(Closure* c);
+  //static TValue LClosure(Closure* c);
+  //static TValue CClosure(Closure* c);
 
   explicit TValue(bool v)   { type_ = LUA_TBOOLEAN; bytes_ = v ? 1 : 0; }
   explicit TValue(int v)    { type_ = LUA_TNUMBER; number_ = v; }
   explicit TValue(double v) { type_ = LUA_TNUMBER; number_ = v; }
-
   explicit TValue(TString* v);
   explicit TValue(LuaObject* o);
 

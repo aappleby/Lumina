@@ -3,26 +3,34 @@
 #include "LuaProto.h"
 #include "LuaUpval.h"
 
+// Lua closure
 Closure::Closure(Proto* proto, int n) 
-: LuaObject(proto ? LUA_TLCL : LUA_TCCL) {
+: LuaObject(LUA_TLCL) {
   assert(l_memcontrol.limitDisabled);
   linkGC(getGlobalGCHead());
 
-  if(proto) {
-    // Lua closure
-    isC = 0;
-    nupvalues = n;
-    proto_ = proto;
-    pupvals_ = NULL;
-    ppupvals_ = (UpVal**)luaM_alloc_nocheck(n * sizeof(TValue*));
-    while (n--) ppupvals_[n] = NULL;
-  } else {
-    // C closure
-    isC = 1;
-    nupvalues = n;
-    pupvals_ = (TValue*)luaM_alloc_nocheck(n * sizeof(TValue));
-    ppupvals_ = NULL;
-  }
+  isC = 0;
+  nupvalues = n;
+  pupvals_ = NULL;
+  ppupvals_ = (UpVal**)luaM_alloc_nocheck(n * sizeof(TValue*));
+  cfunction_ = NULL;
+  proto_ = proto;
+
+  while (n--) ppupvals_[n] = NULL;
+}
+
+// C closure
+Closure::Closure(lua_CFunction func, int n) 
+: LuaObject(LUA_TCCL) {
+  assert(l_memcontrol.limitDisabled);
+  linkGC(getGlobalGCHead());
+
+  isC = 1;
+  nupvalues = n;
+  pupvals_ = (TValue*)luaM_alloc_nocheck(n * sizeof(TValue));
+  ppupvals_ = NULL;
+  cfunction_ = func;
+  proto_ = NULL;
 }
 
 Closure::~Closure() {

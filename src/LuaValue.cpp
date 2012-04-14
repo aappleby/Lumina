@@ -49,6 +49,7 @@ TValue TValue::LightFunction(lua_CFunction f) {
   return v;
 }
 
+/*
 TValue TValue::CClosure(Closure* c) {
   TValue v;
   v.type_ = LUA_TCCL;
@@ -64,7 +65,7 @@ TValue TValue::LClosure(Closure* c) {
   v.object_ = c;
   return v;
 }
-
+*/
 
 void TValue::operator = ( TValue v )
 {

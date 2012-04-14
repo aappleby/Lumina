@@ -648,25 +648,21 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
   if (n == 0) {
     L->top[0] = TValue::LightFunction(fn);
     api_incr_top(L);
+    return;
   }
-  else {
-    Closure *cl;
-    api_checknelems(L, n);
-    api_check(n <= MAXUPVAL, "upvalue index too large");
-    luaC_checkGC();
-    {
-      ScopedMemChecker c;
-      cl = new Closure(NULL, n);
-      if(cl == NULL) luaD_throw(LUA_ERRMEM);
-      cl->cfunction_ = fn;
-      L->top -= n;
-      while (n--) {
-        cl->pupvals_[n] = L->top[n];
-      }
-      L->top[0] = TValue::CClosure(cl);
-      api_incr_top(L);
-    }
+
+  api_checknelems(L, n);
+  api_check(n <= MAXUPVAL, "upvalue index too large");
+  luaC_checkGC();
+
+  ScopedMemChecker c;
+  Closure *cl = new Closure(fn, n);
+  L->top -= n;
+  while (n--) {
+    cl->pupvals_[n] = L->top[n];
   }
+  L->top[0] = TValue(cl);
+  api_incr_top(L);
 }
 
 
