@@ -13,6 +13,7 @@ l_noret luaG_runerror (const char *fmt, ...);
 void luaC_checkupvalcolor (global_State *g, UpVal *uv);
 
 lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
+  assert(l_memcontrol.limitDisabled);
   status = 0;
   top = 0;
   l_G = NULL;
