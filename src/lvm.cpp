@@ -149,15 +149,10 @@ static void callTM1 (lua_State *L,
   luaD_call(L, L->top - 4, 0, isLua(L->ci_));
 }
 
-// TODO(aappleby) - This gets a StkId parameter, but the tag method calling can invalidate the stack.
-// Very dangerous, need to replace.
-
-void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId outResult) {
+void luaV_gettable2 (lua_State *L, const TValue *source, TValue *key, TValue& outResult) {
   THREAD_CHECK(L);
   TValue tagmethod;
   assert(source);
-
-  int stackIndex = outResult - L->stack.begin();
 
   for (int loop = 0; loop < MAXTAGLOOP; loop++) {
 
@@ -167,7 +162,7 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId outRe
 
       if(!value.isNone() && !value.isNil()) {
         // Basic table lookup, nothing weird going on here.
-        L->stack[stackIndex] = value;
+        outResult = value;
         return;
       }
     }
@@ -183,7 +178,7 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId outRe
 
     if(tagmethod.isNone() || tagmethod.isNil()) {
       if(source->isTable()) {
-        L->stack[stackIndex].clear();
+        outResult = TValue::Nil();
         return;
       } else {
         luaG_typeerror(source, "index");
@@ -195,9 +190,7 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId outRe
     // the new table.
 
     if (tagmethod.isFunction()) {
-      TValue result;
-      callTM3(L, &tagmethod, source, key, result);
-      L->stack[stackIndex] = result;
+      callTM3(L, &tagmethod, source, key, outResult);
       return;
     }
 
@@ -212,10 +205,18 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId outRe
   luaG_runerror("loop in gettable");
 }
 
-TValue luaV_gettable2(lua_State *L, const TValue *source, TValue *key) {
+// TODO(aappleby) - This gets a StkId parameter, but the tag method calling can invalidate the stack.
+// Very dangerous, need to replace.
+
+void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId outResult) {
+  THREAD_CHECK(L);
+
+  int stackIndex = outResult - L->stack.begin();
+
   TValue result;
-  luaV_gettable(L, source, key, &result);
-  return result;
+  luaV_gettable2(L, source, key, result);
+
+  L->stack[stackIndex] = result;
 }
 
 // TODO(aappleby): The original version of luaV_settable needs to be enshrined
