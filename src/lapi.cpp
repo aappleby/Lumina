@@ -24,7 +24,6 @@
 #include "lobject.h"
 #include "lstate.h"
 #include "lstring.h"
-#include "ltable.h"
 #include "ltm.h"
 #include "lundump.h"
 #include "lvm.h"
@@ -877,9 +876,9 @@ void lua_rawset (lua_State *L, int idx) {
   api_checknelems(L, 2);
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  // TODO(aappleby): wtf, using the result of set as an assignment target?
-  luaH_set2(t->getTable(), L->top[-2], L->top[-1]);
+  t->getTable()->set(L->top[-2], L->top[-1]);
   luaC_barrierback(t->getObject(), L->top[-1]);
+  luaC_barrierback(t->getObject(), L->top[-2]);
   L->top -= 2;
 }
 
@@ -890,7 +889,7 @@ void lua_rawseti (lua_State *L, int idx, int n) {
   api_checknelems(L, 1);
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
-  luaH_setint(t->getTable(), n, L->top - 1);
+  t->getTable()->set(TValue(n),L->top[-1]);
   luaC_barrierback(t->getObject(), L->top[-1]);
   L->top--;
 }
@@ -904,7 +903,7 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
   t = index2addr(L, idx);
   api_check(t->isTable(), "table expected");
   k = TValue::LightUserdata((void*)p);
-  luaH_set2(t->getTable(), k, L->top[-1]);
+  t->getTable()->set(k, L->top[-1]);
   luaC_barrierback(t->getObject(), L->top[-1]);
   L->top--;
 }

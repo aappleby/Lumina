@@ -28,7 +28,6 @@
 #include "lopcodes.h"
 #include "lstate.h"
 #include "lstring.h"
-#include "ltable.h"
 #include "lualib.h"
 
 

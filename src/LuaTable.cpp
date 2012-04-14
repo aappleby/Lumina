@@ -4,6 +4,7 @@
 
 void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal);
 int luaO_ceillog2 (unsigned int x);
+l_noret luaG_runerror (const char *fmt, ...);
 
 /*
 ** max size of array part is 2^MAXBITS
@@ -209,12 +210,16 @@ Node* Table::getFreeNode() {
 
 bool Table::set(TValue key, TValue val) {
   // Check for nil keys
-  if (key.isNil()) return false;
+  if (key.isNil()) {
+    luaG_runerror("Key is invalid (either nil or NaN)");
+    return false;
+  }
 
   // Check for NaN keys
   if (key.isNumber()) {
     double n = key.getNumber();
     if(n != n) {
+      luaG_runerror("Key is invalid (either nil or NaN)");
       return false;
     }
   }

@@ -21,7 +21,6 @@
 #include "lmem.h"
 #include "lstate.h"
 #include "lstring.h"
-#include "ltable.h"
 #include "ltm.h"
 
 
@@ -71,13 +70,18 @@ static void init_registry (lua_State *L, global_State *g) {
 
   /* registry[LUA_RIDX_MAINTHREAD] = L */
   mt = L;
-  luaH_setint(registry, LUA_RIDX_MAINTHREAD, &mt);
+  registry->set(TValue(LUA_RIDX_MAINTHREAD), mt);
+  luaC_barrierback(registry, mt);
+
+  // TODO(aappleby): Are barriers needed on the registry?
+
   /* registry[LUA_RIDX_GLOBALS] = table of globals */
   Table* t = new Table();
   if(t == NULL) luaD_throw(LUA_ERRMEM);
   t->linkGC(getGlobalGCHead());
   mt = t;
-  luaH_setint(registry, LUA_RIDX_GLOBALS, &mt);
+  registry->set(TValue(LUA_RIDX_GLOBALS),mt);
+  luaC_barrierback(registry,mt);
 }
 
 

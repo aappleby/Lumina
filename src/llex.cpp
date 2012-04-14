@@ -19,7 +19,6 @@
 #include "lparser.h"
 #include "lstate.h"
 #include "lstring.h"
-#include "ltable.h"
 #include "lzio.h"
 
 
@@ -141,9 +140,11 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
     L->top++;
   }
 
-  // Save string in 'ls->fs->h'. Why it does so exactly this way, I don't
+  // TODO(aappleby): Save string in 'ls->fs->h'. Why it does so exactly this way, I don't
   // know. Will have to investigate in the future.
-  luaH_set2(ls->fs->constant_map, TValue(ts), TValue(true));
+  TValue s(ts);
+  ls->fs->constant_map->set(s, TValue(true));
+  luaC_barrierback(ls->fs->constant_map, s);
 
   L->top--;  /* remove string from stack */
   return ts;

@@ -27,7 +27,6 @@
 #include "lopcodes.h"
 #include "lstate.h"
 #include "lstring.h"
-#include "ltable.h"
 #include "ltm.h"
 #include "lvm.h"
 
@@ -217,8 +216,11 @@ static void collectvalidlines (lua_State *L, Closure *f) {
     }
 
     v = true;
-    for (i = 0; i < (int)f->proto_->lineinfo.size(); i++)  /* for all lines with code */
-      luaH_setint(t, f->proto_->lineinfo[i], &v);  /* table[line] = true */
+    for (i = 0; i < (int)f->proto_->lineinfo.size(); i++) {
+      /* for all lines with code */
+      TValue key(f->proto_->lineinfo[i]);
+      t->set(key, v);  /* table[line] = true */
+    }
   }
 }
 

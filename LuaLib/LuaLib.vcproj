@@ -475,14 +475,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\ltable.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\ltable.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\ltm.cpp"
 				>
 			</File>

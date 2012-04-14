@@ -24,7 +24,6 @@
 #include "lopcodes.h"
 #include "lparser.h"
 #include "lstring.h"
-#include "ltable.h"
 #include "lvm.h"
 
 
@@ -339,7 +338,7 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   k = fs->num_constants;
   /* numerical value does not need GC barrier;
      table has no metatable, so it does not need to invalidate cache */
-  luaH_set2(fs->constant_map, *key, TValue(k));
+  fs->constant_map->set(*key, TValue(k));
   
   if (k >= (int)f->constants.size()) {
     f->constants.grow();

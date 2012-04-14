@@ -26,7 +26,6 @@
 #include "lopcodes.h"
 #include "lstate.h"
 #include "lstring.h"
-#include "ltable.h"
 #include "ltm.h"
 #include "lvm.h"
 
@@ -205,7 +204,8 @@ void luaV_settable (lua_State *L, const TValue *t2, TValue *key, StkId val) {
       /* if previous value is not nil, there must be a previous entry
          in the table; moreover, a metamethod has no relevance */
       if (!oldval.isNone() && !oldval.isNil()) {
-        luaH_set2(h, *key, *val);
+        h->set(*key,*val);
+        luaC_barrierback(h, *key);
         luaC_barrierback(h, *val);
         return;
       }
@@ -214,7 +214,8 @@ void luaV_settable (lua_State *L, const TValue *t2, TValue *key, StkId val) {
       TValue tagmethod = fasttm2(h->metatable, TM_NEWINDEX);
       if (tagmethod.isNil() || tagmethod.isNone()) {
         // no metamethod, add (key,val) to table
-        luaH_set2(h, *key, *val);
+        h->set(*key,*val);
+        luaC_barrierback(h, *key);
         luaC_barrierback(h, *val);
         return;
       }
@@ -1008,11 +1009,10 @@ void luaV_execute (lua_State *L) {
           l_memcontrol.checkLimit();
         }
 
+        // TODO(aappleby): we probably don't have to call barrierback every time through this loop
         for (; n > 0; n--) {
-          TValue *val = ra+n;
-          luaH_setint(h, last--, val);
-          // TODO(aappleby): we probably don't have to call barrierback every time through this loop
-          luaC_barrierback(h, *val);
+          h->set(TValue(last--), ra[n]);
+          luaC_barrierback(h, ra[n]);
         }
         L->top = ci->top;  /* correct top (in case of previous open call) */
       )
