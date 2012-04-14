@@ -206,16 +206,15 @@ static void collectvalidlines (lua_State *L, Closure *f) {
     int i;
     TValue v;
 
-    l_memcontrol.disableLimit();
-
-    Table *t = new Table();  /* new table to store active lines */
-    if(t == NULL) luaD_throw(LUA_ERRMEM);
-    t->linkGC(getGlobalGCHead());
-    L->top[0] = t;  /* push it on stack */
-    incr_top(L);
-
-    l_memcontrol.enableLimit();
-    l_memcontrol.checkLimit();
+    Table* t = NULL;
+    {
+      ScopedMemChecker c;
+      t = new Table();  /* new table to store active lines */
+      if(t == NULL) luaD_throw(LUA_ERRMEM);
+      t->linkGC(getGlobalGCHead());
+      L->top[0] = t;  /* push it on stack */
+      incr_top(L);
+    }
 
     v = true;
     for (i = 0; i < (int)f->proto_->lineinfo.size(); i++)  /* for all lines with code */

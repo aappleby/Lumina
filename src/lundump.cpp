@@ -85,9 +85,9 @@ static TString* LoadString(LoadState* S)
 
 static void LoadCode(LoadState* S, Proto* f)
 {
+  ScopedMemChecker c;
   int n=LoadInt(S);
   f->code.resize_nocheck(n);
-  l_memcontrol.checkLimit();
   LoadVector(S,&f->code[0],n,sizeof(Instruction));
 }
 
@@ -97,8 +97,10 @@ static void LoadConstants(LoadState* S, Proto* f)
 {
   int i,n;
   n=LoadInt(S);
-  f->constants.resize_nocheck(n);
-  l_memcontrol.checkLimit();
+  {
+    ScopedMemChecker c;
+    f->constants.resize_nocheck(n);
+  }
   for (i=0; i<n; i++)
   {
     switch(LoadChar(S))
@@ -120,8 +122,10 @@ static void LoadConstants(LoadState* S, Proto* f)
     }
   }
   n=LoadInt(S);
-  f->subprotos_.resize_nocheck(n);
-  l_memcontrol.checkLimit();
+  {
+    ScopedMemChecker c;
+    f->subprotos_.resize_nocheck(n);
+  }
   for (i=0; i<n; i++) f->subprotos_[i]=NULL;
   for (i=0; i<n; i++) f->subprotos_[i]=LoadFunction(S);
 }
@@ -164,15 +168,14 @@ static void LoadDebug(LoadState* S, Proto* f)
 
 static Proto* LoadFunction(LoadState* S)
 {
-  l_memcontrol.disableLimit();
-
-  Proto* f = new Proto();
-  if(f == NULL) luaD_throw(LUA_ERRMEM);
-  f->linkGC(getGlobalGCHead());
-  S->L->top[0] = f; incr_top(S->L);
-
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
+  Proto* f = NULL;
+  {
+    ScopedMemChecker c;
+    f = new Proto();
+    if(f == NULL) luaD_throw(LUA_ERRMEM);
+    f->linkGC(getGlobalGCHead());
+    S->L->top[0] = f; incr_top(S->L);
+  }
 
   f->linedefined=LoadInt(S);
   f->lastlinedefined=LoadInt(S);

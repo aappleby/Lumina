@@ -543,29 +543,27 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   fs->firstlocal = ls->dyd->actvar.n;
   fs->bl = NULL;
 
-  l_memcontrol.disableLimit();
+  {
+    ScopedMemChecker c;
+    f = new Proto();
+    if(f == NULL) luaD_throw(LUA_ERRMEM);
+    f->linkGC(getGlobalGCHead());
 
-  f = new Proto();
-  if(f == NULL) luaD_throw(LUA_ERRMEM);
-  f->linkGC(getGlobalGCHead());
+    /* anchor prototype (to avoid being collected) */
+    L->top[0] = f;
+    incr_top(L);
 
-  /* anchor prototype (to avoid being collected) */
-  L->top[0] = f;
-  incr_top(L);
+    fs->f = f;
+    f->source = ls->source;
+    f->maxstacksize = 2;  /* registers 0/1 are always valid */
 
-  fs->f = f;
-  f->source = ls->source;
-  f->maxstacksize = 2;  /* registers 0/1 are always valid */
-
-  fs->constant_map = new Table();
-  if(fs->constant_map == NULL) luaD_throw(LUA_ERRMEM);
-  fs->constant_map->linkGC(getGlobalGCHead());
-  /* anchor table of constants (to avoid being collected) */
-  L->top[0] = fs->constant_map;
-  incr_top(L);
-
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
+    fs->constant_map = new Table();
+    if(fs->constant_map == NULL) luaD_throw(LUA_ERRMEM);
+    fs->constant_map->linkGC(getGlobalGCHead());
+    /* anchor table of constants (to avoid being collected) */
+    L->top[0] = fs->constant_map;
+    incr_top(L);
+  }
 
   enterblock(fs, bl, 0);
 }

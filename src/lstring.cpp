@@ -31,8 +31,8 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
 
   stringtable *tb = thread_G->strings_;
   if (tb->nuse_ >= cast(uint32_t, tb->size_) && tb->size_ <= MAX_INT/2) {
+    ScopedMemChecker c;
     luaS_resize(tb->size_ * 2);  /* too crowded */
-    l_memcontrol.checkLimit();
   }
   
   char* buf = (char*)luaM_alloc(l+1);

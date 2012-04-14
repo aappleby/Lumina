@@ -61,8 +61,8 @@ static void init_registry (lua_State *L, global_State *g) {
   TValue mt;
   
   /* create registry */
-  l_memcontrol.disableLimit();
-  
+  //ScopedMemChecker c;
+
   Table *registry = new Table();
   if(registry == NULL) luaD_throw(LUA_ERRMEM);
   registry->linkGC(getGlobalGCHead());
@@ -78,9 +78,6 @@ static void init_registry (lua_State *L, global_State *g) {
   t->linkGC(getGlobalGCHead());
   mt = t;
   luaH_setint(registry, LUA_RIDX_GLOBALS, &mt);
-
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
 }
 
 
@@ -90,7 +87,7 @@ static void init_registry (lua_State *L, global_State *g) {
 static void f_luaopen (lua_State *L, void *) {
   THREAD_CHECK(L);
 
-  l_memcontrol.disableLimit();
+  ScopedMemChecker c;
 
   global_State *g = thread_G;
   L->initstack();  /* init stack */
@@ -106,9 +103,6 @@ static void f_luaopen (lua_State *L, void *) {
   g->memerrmsg->setFixed();  /* it should never be collected */
 
   g->gcrunning = 1;  /* allow gc */
-
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
 }
 
 
@@ -170,17 +164,15 @@ lua_State *lua_newthread (lua_State *L) {
 
   luaC_checkGC();
 
-  l_memcontrol.disableLimit();
-
-  lua_State* L1 = new lua_State();
-  if(L1 == NULL) luaD_throw(LUA_ERRMEM);
-  L1->linkGC(getGlobalGCHead());
-  L->top[0] = L1;
-  L->top++;
-
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
-
+  lua_State* L1 = NULL;
+  {
+    ScopedMemChecker c;
+    L1 = new lua_State();
+    if(L1 == NULL) luaD_throw(LUA_ERRMEM);
+    L1->linkGC(getGlobalGCHead());
+    L->top[0] = L1;
+    L->top++;
+  }
 
   preinit_state(L1, thread_G);
   
@@ -189,9 +181,10 @@ lua_State *lua_newthread (lua_State *L) {
   L1->hook = L->hook;
   L1->hookcount = L1->basehookcount;
   
-  L1->initstack();  /* init stack */
-
-  l_memcontrol.checkLimit();
+  {
+    ScopedMemChecker c;
+    L1->initstack();  /* init stack */
+  }
 
   return L1;
 }

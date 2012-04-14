@@ -39,6 +39,22 @@ struct Memcontrol {
 
 extern Memcontrol l_memcontrol;
 
+class ScopedMemChecker {
+public:
+  ScopedMemChecker() {
+    old = l_memcontrol.limitDisabled;
+    l_memcontrol.disableLimit();
+  }
+
+  ~ScopedMemChecker() {
+    l_memcontrol.enableLimit();
+    assert(old == l_memcontrol.limitDisabled);
+    l_memcontrol.checkLimit();
+  }
+
+  int old;
+};
+
 void* luaM_alloc(size_t size);
 void* luaM_alloc_nocheck(size_t size);
 

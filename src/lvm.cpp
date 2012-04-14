@@ -391,46 +391,71 @@ void luaV_concat (lua_State *L, int total) {
   do {
     StkId top = L->top;
     int n = 2;  /* number of elements handled in this pass (at least 2) */
-    if (!(top[-2].isString() || top[-2].isNumber()) || !luaV_tostring(top-1)) {
-      if (!call_binTM(L, top-2, top-1, top-2, TM_CONCAT))
+
+    if (!top[-2].isString() && !top[-2].isNumber()) {
+      if (!call_binTM(L, top-2, top-1, top-2, TM_CONCAT)) {
         luaG_concaterror(top-2, top-1);
+      }
+      total -= n-1;  /* got 'n' strings to create 1 new */
+      L->top -= n-1;  /* popped 'n' strings and pushed one */
+      continue;
     }
-    else if (top[-1].getString()->getLen() == 0) { /* second operand is empty? */
+
+    if (!luaV_tostring(top-1)) {
+      if (!call_binTM(L, top-2, top-1, top-2, TM_CONCAT)) {
+        luaG_concaterror(top-2, top-1);
+      }
+      total -= n-1;  /* got 'n' strings to create 1 new */
+      L->top -= n-1;  /* popped 'n' strings and pushed one */
+      continue;
+    }
+
+    if (top[-1].getString()->getLen() == 0) { /* second operand is empty? */
       luaV_tostring(top-2);
+      total -= n-1;  /* got 'n' strings to create 1 new */
+      L->top -= n-1;  /* popped 'n' strings and pushed one */
+      continue;
     }
-    else if (top[-2].isString() && top[-2].getString()->getLen() == 0) {
+
+    if (top[-2].isString() && top[-2].getString()->getLen() == 0) {
       top[-2] = top[-1].getString();
+      total -= n-1;  /* got 'n' strings to create 1 new */
+      L->top -= n-1;  /* popped 'n' strings and pushed one */
+      continue;
     }
-    else {
-      /* at least two non-empty string values; get as many as possible */
-      size_t tl = top[-1].getString()->getLen();
-      char *buffer;
-      int i;
-      /* collect total length */
-      for (i = 1; i < total; i++) {
+
+    /* at least two non-empty string values; get as many as possible */
+    size_t tl = top[-1].getString()->getLen();
+    char *buffer;
+    int i;
+    /* collect total length */
+    for (i = 1; i < total; i++) {
+      {
+        ScopedMemChecker c;
         TValue temp = top[-i-1].convertToString();
         if(temp.isNone()) break;
         top[-i-1] = temp;
-
-        size_t l = top[-i-1].getString()->getLen();
-        if (l >= (MAX_SIZET/sizeof(char)) - tl)
-          luaG_runerror("string length overflow");
-        tl += l;
       }
-      buffer = luaZ_openspace(L, &G(L)->buff, tl);
-      tl = 0;
-      n = i;
-      do {  /* concat all strings */
-        size_t l = top[-i].getString()->getLen();
-        memcpy(buffer+tl, top[-i].getString()->c_str(), l * sizeof(char));
-        tl += l;
-      } while (--i > 0);
 
-      l_memcontrol.disableLimit();
-      top[-n] = luaS_newlstr(buffer, tl);
-      l_memcontrol.enableLimit();
-      l_memcontrol.checkLimit();
+      size_t l = top[-i-1].getString()->getLen();
+      if (l >= (MAX_SIZET/sizeof(char)) - tl)
+        luaG_runerror("string length overflow");
+      tl += l;
     }
+    buffer = luaZ_openspace(L, &G(L)->buff, tl);
+    tl = 0;
+    n = i;
+    do {  /* concat all strings */
+      size_t l = top[-i].getString()->getLen();
+      memcpy(buffer+tl, top[-i].getString()->c_str(), l * sizeof(char));
+      tl += l;
+    } while (--i > 0);
+
+    {
+      ScopedMemChecker c;
+      top[-n] = luaS_newlstr(buffer, tl);
+    }
+
     total -= n-1;  /* got 'n' strings to create 1 new */
     L->top -= n-1;  /* popped 'n' strings and pushed one */
   } while (total > 1);  /* repeat until only 1 result left */
@@ -521,9 +546,9 @@ static void pushclosure (lua_State *L,
                          UpVal **encup,
                          StkId base,
                          StkId ra) {
+  ScopedMemChecker c;
   THREAD_CHECK(L);
 
-  l_memcontrol.disableLimit();
   Closure *ncl = luaF_newLclosure(p);
   if(ncl == NULL) luaD_throw(LUA_ERRMEM);
 
@@ -541,8 +566,6 @@ static void pushclosure (lua_State *L,
 
   luaC_barrierproto(p, ncl);
   p->cache = ncl;  /* save it on cache for reuse */
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
 }
 
 

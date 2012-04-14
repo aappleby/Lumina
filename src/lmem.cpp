@@ -57,6 +57,7 @@ void Memcontrol::enableLimit() {
 }
 
 void Memcontrol::disableLimit() { 
+  //assert(!limitDisabled);
   limitDisabled++;
 }
 

@@ -477,8 +477,12 @@ const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
 
   char s[LUAI_MAXNUMBER2STR];
   lua_Number n = o->getNumber();
-  int l = lua_number2str(s, n);
-  *o = luaS_newlstr(s, l);
+
+  {
+    ScopedMemChecker c;
+    int l = lua_number2str(s, n);
+    *o = luaS_newlstr(s, l);
+  }
 
   luaC_checkGC();
 
@@ -585,14 +589,12 @@ const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
   TString *ts;
   luaC_checkGC();
 
-  l_memcontrol.disableLimit();
-
-  ts = luaS_newlstr(s, len);
-  L->top[0] = ts;
-  api_incr_top(L);
-
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
+  {
+    ScopedMemChecker c;
+    ts = luaS_newlstr(s, len);
+    L->top[0] = ts;
+    api_incr_top(L);
+  }
 
   return ts->c_str();
 }
@@ -608,14 +610,12 @@ const char *lua_pushstring (lua_State *L, const char *s) {
     TString *ts;
     luaC_checkGC();
 
-    l_memcontrol.disableLimit();
-    
-    ts = luaS_new(s);
-    L->top[0] = ts;
-    api_incr_top(L);
-
-    l_memcontrol.enableLimit();
-    l_memcontrol.checkLimit();
+    {
+      ScopedMemChecker c;
+      ts = luaS_new(s);
+      L->top[0] = ts;
+      api_incr_top(L);
+    }
 
     return ts->c_str();
   }
@@ -655,18 +655,18 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
     api_checknelems(L, n);
     api_check(n <= MAXUPVAL, "upvalue index too large");
     luaC_checkGC();
-    l_memcontrol.disableLimit();
-    cl = luaF_newCclosure(n);
-    if(cl == NULL) luaD_throw(LUA_ERRMEM);
-    cl->cfunction_ = fn;
-    L->top -= n;
-    while (n--) {
-      cl->pupvals_[n] = L->top[n];
+    {
+      ScopedMemChecker c;
+      cl = luaF_newCclosure(n);
+      if(cl == NULL) luaD_throw(LUA_ERRMEM);
+      cl->cfunction_ = fn;
+      L->top -= n;
+      while (n--) {
+        cl->pupvals_[n] = L->top[n];
+      }
+      L->top[0] = TValue::CClosure(cl);
+      api_incr_top(L);
     }
-    L->top[0] = TValue::CClosure(cl);
-    api_incr_top(L);
-    l_memcontrol.enableLimit();
-    l_memcontrol.checkLimit();
   }
 }
 
@@ -720,14 +720,11 @@ void lua_getfield (lua_State *L, int idx, const char *k) {
   StkId t;
   t = index2addr_checked(L, idx);
 
-  l_memcontrol.disableLimit();
-
-  L->top[0] = luaS_new(k);
-  api_incr_top(L);
-
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
-
+  {
+    ScopedMemChecker c;
+    L->top[0] = luaS_new(k);
+    api_incr_top(L);
+  }
 
   luaV_gettable(L, t, L->top - 1, L->top - 1);
 }
@@ -770,20 +767,18 @@ void lua_createtable (lua_State *L, int narray, int nrec) {
   Table *t;
   luaC_checkGC();
 
-  l_memcontrol.disableLimit();
-
-  t = new Table();
-  if(t == NULL) luaD_throw(LUA_ERRMEM);
-  t->linkGC(getGlobalGCHead());
-  L->top[0] = t;
-  api_incr_top(L);
-
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
+  {
+    ScopedMemChecker c;
+    t = new Table();
+    if(t == NULL) luaD_throw(LUA_ERRMEM);
+    t->linkGC(getGlobalGCHead());
+    L->top[0] = t;
+    api_incr_top(L);
+  }
 
   if (narray > 0 || nrec > 0) {
+    ScopedMemChecker c;
     t->resize(narray, nrec);
-    l_memcontrol.checkLimit();
   }
 }
 
@@ -838,13 +833,11 @@ void lua_setglobal (lua_State *L, const char *var) {
 
   TValue globals = thread_G->l_registry.getTable()->get(TValue(LUA_RIDX_GLOBALS));
 
-  l_memcontrol.disableLimit();
-
-  L->top[0] = luaS_new(var);
-  L->top++;
-
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
+  {
+    ScopedMemChecker c;
+    L->top[0] = luaS_new(var);
+    L->top++;
+  }
 
   luaV_settable(L, &globals, L->top - 1, L->top - 2);
   L->top -= 2;  /* pop value and key */
@@ -867,13 +860,11 @@ void lua_setfield (lua_State *L, int idx, const char *k) {
   api_checknelems(L, 1);
   t = index2addr_checked(L, idx);
 
-  l_memcontrol.disableLimit();
-
-  L->top[0] = luaS_new(k);
-  L->top++;
-
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
+  {
+    ScopedMemChecker c;
+    L->top[0] = luaS_new(k);
+    L->top++;
+  }
 
   luaV_settable(L, t, L->top - 1, L->top - 2);
   L->top -= 2;  /* pop value and key */
@@ -1276,13 +1267,13 @@ void *lua_newuserdata (lua_State *L, size_t size) {
     luaD_throw(LUA_ERRMEM);
   }
 
-  l_memcontrol.disableLimit();
-  u = luaS_newudata(size, NULL);
-  assert(u);
-  L->top[0] = u;
-  api_incr_top(L);
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
+  {
+    ScopedMemChecker c;
+    u = luaS_newudata(size, NULL);
+    assert(u);
+    L->top[0] = u;
+    api_incr_top(L);
+  }
 
   return u->buf_;
 }

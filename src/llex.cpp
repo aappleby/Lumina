@@ -64,19 +64,15 @@ static void save (LexState *ls, int c) {
 
 
 void luaX_init (lua_State *L) {
+  //ScopedMemChecker c;
   THREAD_CHECK(L);
   int i;
-
-  l_memcontrol.disableLimit();
 
   for (i=0; i<NUM_RESERVED; i++) {
     TString *ts = luaS_new(luaX_tokens[i]);
     ts->setFixed();  /* reserved words are never collected */
     ts->setReserved(cast_byte(i+1));  /* reserved word */
   }
-
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
 }
 
 
@@ -137,12 +133,13 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
   THREAD_CHECK(ls->L);
   lua_State *L = ls->L;
 
-  l_memcontrol.disableLimit();
-  TString *ts = luaS_newlstr(str, l);  /* create new string */
-  L->top[0] = ts;  /* temporarily anchor it in stack */
-  L->top++;
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
+  TString* ts = NULL;
+  {
+    ScopedMemChecker c;
+    ts = luaS_newlstr(str, l);  /* create new string */
+    L->top[0] = ts;  /* temporarily anchor it in stack */
+    L->top++;
+  }
 
   // Save string in 'ls->fs->h'. Why it does so exactly this way, I don't
   // know. Will have to investigate in the future.
@@ -169,11 +166,9 @@ static void inclinenumber (LexState *ls) {
 }
 
 
-void luaX_setinput (lua_State *L, LexState *ls, ZIO *z, TString *source,
-                    int firstchar) {
+void luaX_setinput (lua_State *L, LexState *ls, ZIO *z, TString *source, int firstchar) {
+  ScopedMemChecker c;
   THREAD_CHECK(L);
-
-  l_memcontrol.disableLimit();
 
   ls->decpoint = '.';
   ls->L = L;
@@ -187,9 +182,6 @@ void luaX_setinput (lua_State *L, LexState *ls, ZIO *z, TString *source,
   ls->envn = luaS_new(LUA_ENV);  /* create env name */
   ls->envn->setFixed();  /* never collect this name */
   ls->buff->buffer.resize_nocheck(LUA_MINBUFFER);
-
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
 }
 
 

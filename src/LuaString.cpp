@@ -24,6 +24,7 @@ TString::TString(char* buf, uint32_t hash, const char* str, int len)
   hash_(hash),
   len_(len)
 {
+  //assert(l_memcontrol.limitDisabled);
   memcpy(buf_, str, len*sizeof(char));
   buf_[len_] = '\0'; // terminating null
 }

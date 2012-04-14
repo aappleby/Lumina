@@ -41,14 +41,11 @@ static const char *const luaT_eventname[] = {
 };
 
 void luaT_init() {
-  int i;
-  l_memcontrol.disableLimit();
-  for (i=0; i<TM_N; i++) {
+  //ScopedMemChecker c;
+  for (int i=0; i<TM_N; i++) {
     thread_G->tagmethod_names_[i] = luaS_new(luaT_eventname[i]);
     thread_G->tagmethod_names_[i]->setFixed();  /* never collect these names */
   }
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
 }
 
 

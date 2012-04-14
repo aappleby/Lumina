@@ -217,17 +217,15 @@ int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
   lua_CFunction f = func->getLightFunction();
   L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
 
-  l_memcontrol.disableLimit();
-
-  CallInfo* ci = next_ci(L);  /* now 'enter' new function */
-  ci->nresults = nresults;
-  ci->func = restorestack(L, funcr);
-  ci->top = L->top + LUA_MINSTACK;
-  assert(ci->top <= L->stack_last);
-  ci->callstatus = 0;
-
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
+  {
+    ScopedMemChecker c;
+    CallInfo* ci = next_ci(L);  /* now 'enter' new function */
+    ci->nresults = nresults;
+    ci->func = restorestack(L, funcr);
+    ci->top = L->top + LUA_MINSTACK;
+    assert(ci->top <= L->stack_last);
+    ci->callstatus = 0;
+  }
 
   if (L->hookmask & LUA_MASKCALL)
     luaD_hook(L, LUA_HOOKCALL, -1);
@@ -242,19 +240,17 @@ int luaD_precallC(lua_State* L, StkId func, int nresults) {
   lua_CFunction f = func->getCClosure()->cfunction_;
   L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
 
-  l_memcontrol.disableLimit();
-
-  CallInfo* ci = next_ci(L);  /* now 'enter' new function */
-  ci->nresults = nresults;
-  ci->func = restorestack(L, funcr);
-  ci->top = L->top + LUA_MINSTACK;
-  assert(ci->top <= L->stack_last);
-  ci->callstatus = 0;
-  if (L->hookmask & LUA_MASKCALL)
-    luaD_hook(L, LUA_HOOKCALL, -1);
-
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
+  {
+    ScopedMemChecker c;
+    CallInfo* ci = next_ci(L);  /* now 'enter' new function */
+    ci->nresults = nresults;
+    ci->func = restorestack(L, funcr);
+    ci->top = L->top + LUA_MINSTACK;
+    assert(ci->top <= L->stack_last);
+    ci->callstatus = 0;
+    if (L->hookmask & LUA_MASKCALL)
+      luaD_hook(L, LUA_HOOKCALL, -1);
+  }
 
   int n = (*f)(L);  /* do the actual call */
   api_checknelems(L, n);
@@ -615,16 +611,16 @@ static void f_parser (lua_State *L, void *ud) {
   }
   L->top[0] = tf;
   incr_top(L);
-  l_memcontrol.disableLimit();
-  cl = luaF_newLclosure(tf);
-  if(cl == NULL) luaD_throw(LUA_ERRMEM);
-  L->top[-1] = TValue::LClosure(cl);
-  // initialize upvalues
-  for (i = 0; i < (int)tf->upvalues.size(); i++) {
-    cl->ppupvals_[i] = luaF_newupval();
+  {
+    ScopedMemChecker c;
+    cl = luaF_newLclosure(tf);
+    if(cl == NULL) luaD_throw(LUA_ERRMEM);
+    L->top[-1] = TValue::LClosure(cl);
+    // initialize upvalues
+    for (i = 0; i < (int)tf->upvalues.size(); i++) {
+      cl->ppupvals_[i] = luaF_newupval();
+    }
   }
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
 }
 
 

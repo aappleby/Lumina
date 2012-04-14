@@ -372,11 +372,11 @@ int luaK_numberK (FuncState *fs, lua_Number r) {
   if (r == 0 || (r != r)) {  /* handle -0 and NaN */
     /* use raw representation as key to avoid numeric problems */
     
-    l_memcontrol.disableLimit();
-    L->top[0] = luaS_newlstr((char *)&r, sizeof(r));
-    incr_top(L);
-    l_memcontrol.enableLimit();
-    l_memcontrol.checkLimit();
+    {
+      ScopedMemChecker c;
+      L->top[0] = luaS_newlstr((char *)&r, sizeof(r));
+      incr_top(L);
+    }
 
     n = addk(fs, L->top - 1, &o);
     L->top--;

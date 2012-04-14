@@ -42,7 +42,6 @@ Closure *luaF_newCclosure (int n) {
 
 
 Closure *luaF_newLclosure (Proto *p) {
-  //l_memcontrol.disableLimit();
   int n = (int)p->upvalues.size();
 
   UpVal** b = (UpVal**)luaM_alloc(n * sizeof(TValue*));
@@ -53,10 +52,6 @@ Closure *luaF_newLclosure (Proto *p) {
     luaM_free(b);
     return NULL;
   }
-
-  // Closure puts itself on the gc list, safe to check limit now.
-  //l_memcontrol.enableLimit();
-  //l_memcontrol.checkLimit();
 
   return c;
 }
