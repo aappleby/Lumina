@@ -101,6 +101,24 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
   }
 }
 
+static void callTM3 (lua_State *L,
+                     const TValue *f,
+                     const TValue *p1,
+                     const TValue *p2,
+                     TValue& result) {
+  THREAD_CHECK(L);
+  L->top[0] = *f; // push function
+  L->top[1] = *p1; // 1st argument
+  L->top[2] = *p2; // 2nd argument
+  L->top += 3;
+  L->checkstack(0);
+  /* metamethod may yield only when called from Lua code */
+  luaD_call(L, L->top - 3, 1, isLua(L->ci_));
+  L->top--;
+  result = L->top[0];
+}
+
+
 static void callTM0 (lua_State *L,
                      const TValue* func,
                      const TValue* arg1,
@@ -134,21 +152,22 @@ static void callTM1 (lua_State *L,
 // TODO(aappleby) - This gets a StkId parameter, but the tag method calling can invalidate the stack.
 // Very dangerous, need to replace.
 
-void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId result) {
+void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId outResult) {
   THREAD_CHECK(L);
   TValue tagmethod;
+  assert(source);
+
+  int stackIndex = outResult - L->stack.begin();
+
   for (int loop = 0; loop < MAXTAGLOOP; loop++) {
-    if(source == NULL) {
-      result->clear();
-      return;
-    }
 
     if (source->isTable()) {
       Table* table = source->getTable();
       TValue value = table->get(*key);
 
       if(!value.isNone() && !value.isNil()) {
-        *result = value;
+        // Basic table lookup, nothing weird going on here.
+        L->stack[stackIndex] = value;
         return;
       }
     }
@@ -164,7 +183,7 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId resul
 
     if(tagmethod.isNone() || tagmethod.isNil()) {
       if(source->isTable()) {
-        result->clear();
+        L->stack[stackIndex].clear();
         return;
       } else {
         luaG_typeerror(source, "index");
@@ -176,7 +195,9 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId resul
     // the new table.
 
     if (tagmethod.isFunction()) {
-      callTM(L, &tagmethod, source, key, result, 1);
+      TValue result;
+      callTM3(L, &tagmethod, source, key, result);
+      L->stack[stackIndex] = result;
       return;
     }
 
