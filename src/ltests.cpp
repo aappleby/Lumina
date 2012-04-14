@@ -538,24 +538,6 @@ static int gc_state (lua_State *L) {
   }
 }
 
-
-static int hash_query (lua_State *L) {
-  THREAD_CHECK(L);
-  if (lua_isnone(L, 2)) {
-    luaL_argcheck(L, lua_type(L, 1) == LUA_TSTRING, 1, "string expected");
-    lua_pushinteger(L, obj_at(L, 1)->getString()->getHash());
-  }
-  else {
-    TValue *o = obj_at(L, 1);
-    Table *t;
-    luaL_checktype(L, 2, LUA_TTABLE);
-    t = obj_at(L, 2)->getTable();
-    lua_pushinteger(L, t->findBinIndex(*o));
-  }
-  return 1;
-}
-
-
 static int stacklevel (lua_State *L) {
   THREAD_CHECK(L);
   unsigned long a = 0;
@@ -573,29 +555,30 @@ static int table_query (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   t = obj_at(L, 1)->getTable();
   if (i == -1) {
-    lua_pushinteger(L, (int)t->array.size());
-    lua_pushinteger(L, (int)t->hashtable.size());
-    lua_pushinteger(L, t->lastfree);
+    lua_pushinteger(L, (int)t->getArraySize());
+    lua_pushinteger(L, (int)t->getHashSize());
+    return 2;
   }
-  else if (i < (int)t->array.size()) {
+  else if (i < (int)t->getArraySize()) {
+    TValue val;
+    t->getArrayElement(i, val);
     lua_pushinteger(L, i);
-    pushobject(L, &t->array[i]);
-    lua_pushnil(L);
+    pushobject(L, &val);
+    return 2;
   }
-  else if ((i -= (int)t->array.size()) < (int)t->hashtable.size()) {
-    Node* n = t->getNode(i);
-    if (n->i_val.isNotNil() || n->i_key.isNil() || n->i_key.isNumber()) {
-      pushobject(L, &n->i_key);
+  else if ((i -= (int)t->getArraySize()) < (int)t->getHashSize()) {
+    TValue key,val;
+    t->getHashElement(i,key,val);
+    if (val.isNotNil() || key.isNil() || key.isNumber()) {
+      pushobject(L, &key);
     }
     else
       lua_pushliteral(L, "<undef>");
-    pushobject(L, &n->i_val);
-    if (n->next)
-      lua_pushinteger(L, n->next - t->getNode(0));
-    else
-      lua_pushnil(L);
+    pushobject(L, &val);
+    return 2;
   }
-  return 3;
+  assert(false);
+  return 0;
 }
 
 
@@ -1458,7 +1441,7 @@ static const struct luaL_Reg tests_funcs[] = {
   {"gccolor", get_gccolor},
   {"gcstate", gc_state},
   {"getref", getref},
-  {"hash", hash_query},
+//  {"hash", hash_query},
   {"int2fb", int2fb_aux},
   {"limits", get_limits},
   {"listcode", listcode},

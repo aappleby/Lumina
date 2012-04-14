@@ -109,13 +109,6 @@ Node* Table::findNode(int key) {
 }
 
 //-----------------------------------------------------------------------------
-
-int Table::findBinIndex(TValue key) {
-  Node* node = findBin(key);
-  return node ? (int)(node - hashtable.begin()) : -1;
-}
-
-//-----------------------------------------------------------------------------
 // Linear index <-> key-val conversion, used to (inefficiently) implement
 // lua_next.
 
@@ -387,25 +380,6 @@ void Table::resize(int nasize, int nhsize) {
 
 //-----------------------------------------------------------------------------
 
-/*
-int Table::traverseNodes(Table::nodeCallback c, void* blob) {
-  for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node* n = getNode(i);
-    c(&n->i_key, &n->i_val, blob);
-  }
-
-  return TRAVCOST + 2 * (int)hashtable.size();
-}
-
-int Table::traverseArray(Table::valueCallback c, void* blob) {
-  for(int i = 0; i < (int)array.size(); i++) {
-    c(&array[i],blob);
-  }
-
-  return TRAVCOST + (int)array.size();
-}
-*/
-
 int Table::traverse(Table::nodeCallback c, void* blob) {
   TValue temp;
 
@@ -414,8 +388,8 @@ int Table::traverse(Table::nodeCallback c, void* blob) {
     c(temp,array[i],blob);
   }
   for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node* n = getNode(i);
-    c(n->i_key, n->i_val, blob);
+    Node& n = hashtable[i];
+    c(n.i_key, n.i_val, blob);
   }
 
   return TRAVCOST + (int)array.size() + 2 * (int)hashtable.size();
@@ -434,10 +408,10 @@ void Table::VisitGC(GCVisitor& visitor) {
   }
 
   for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node* n = getNode(i);
+    Node& n = hashtable[i];
 
-    if(n->i_key.isString()) n->i_key.getObject()->setColor(LuaObject::GRAY);
-    if(n->i_val.isString()) n->i_val.getObject()->setColor(LuaObject::GRAY);
+    if(n.i_key.isString()) n.i_key.getObject()->setColor(LuaObject::GRAY);
+    if(n.i_val.isString()) n.i_val.getObject()->setColor(LuaObject::GRAY);
   }
 }
 
@@ -481,15 +455,15 @@ int Table::PropagateGC_Strong(GCVisitor& visitor) {
   }
 
   for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node* n = getNode(i);
+    Node& n = hashtable[i];
 
-    if(n->i_val.isNil()) {
-      if (n->i_key.isWhite()) {
-        n->i_key = TValue::Nil();
+    if(n.i_val.isNil()) {
+      if (n.i_key.isWhite()) {
+        n.i_key = TValue::Nil();
       }
     } else {
-      visitor.MarkValue(n->i_key);
-      visitor.MarkValue(n->i_val);
+      visitor.MarkValue(n.i_key);
+      visitor.MarkValue(n.i_val);
     }
   }
 
@@ -506,17 +480,17 @@ int Table::PropagateGC_WeakValues(GCVisitor& visitor) {
   }
 
   for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node* n = getNode(i);
+    Node& n = hashtable[i];
 
     // Sweep dead keys with no values, mark all other
     // keys.
-    if(n->i_val.isNil() && n->i_key.isWhite()) {
-      n->i_key = TValue::Nil();
+    if(n.i_val.isNil() && n.i_key.isWhite()) {
+      n.i_key = TValue::Nil();
     } else {
-      visitor.MarkValue(n->i_key);
+      visitor.MarkValue(n.i_key);
     }
 
-    if(n->i_val.isLiveColor()) hasDeadValues = true;
+    if(n.i_val.isLiveColor()) hasDeadValues = true;
   }
 
   if (hasDeadValues) {
@@ -543,26 +517,26 @@ int Table::PropagateGC_Ephemeron(GCVisitor& visitor) {
   }
 
   for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node* n = getNode(i);
+    Node& n = hashtable[i];
 
     // sweep keys for nil values
-    if (n->i_val.isNil()) {
-      if (n->i_key.isWhite()) {
-        n->i_key = TValue::Nil();
+    if (n.i_val.isNil()) {
+      if (n.i_key.isWhite()) {
+        n.i_key = TValue::Nil();
       }
       continue;
     }
 
-    if (n->i_key.isLiveColor()) {
+    if (n.i_key.isLiveColor()) {
       hasDeadKeys = true;
      
-      if (n->i_val.isLiveColor()) {
+      if (n.i_val.isLiveColor()) {
         propagate = true;
       }
     } else {
       // Key is marked, mark the value if it's white.
-      if (n->i_val.isWhite()) {
-        visitor.MarkValue(n->i_val);
+      if (n.i_val.isWhite()) {
+        visitor.MarkValue(n.i_val);
       }
     }
   }
@@ -588,15 +562,15 @@ void Table::SweepWhite() {
   }
 
   for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node* n = getNode(i);
+    Node& n = hashtable[i];
 
-    if(n->i_key.isLiveColor()) {
-      n->i_key = TValue::Nil();
-      n->i_val = TValue::Nil();
+    if(n.i_key.isLiveColor()) {
+      n.i_key = TValue::Nil();
+      n.i_val = TValue::Nil();
     }
 
-    if(n->i_val.isLiveColor()) {
-      n->i_val = TValue::Nil();
+    if(n.i_val.isLiveColor()) {
+      n.i_val = TValue::Nil();
     }
   }
 }
@@ -605,10 +579,10 @@ void Table::SweepWhite() {
 
 void Table::SweepWhiteKeys() {
   for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node* n = getNode(i);
-    if(n->i_key.isLiveColor()) {
-      n->i_val = TValue::Nil();
-      n->i_key = TValue::Nil();
+    Node& n = hashtable[i];
+    if(n.i_key.isLiveColor()) {
+      n.i_val = TValue::Nil();
+      n.i_key = TValue::Nil();
     }
   }
 }
@@ -623,13 +597,13 @@ void Table::SweepWhiteVals() {
   }
 
   for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node* n = getNode(i);
-    if(!n->i_val.isLiveColor()) continue;
+    Node& n = hashtable[i];
+    if(!n.i_val.isLiveColor()) continue;
 
     // White value. If key was white, key goes away too.
-    n->i_val = TValue::nil;
-    if (n->i_key.isWhite()) {
-      n->i_key = TValue::Nil();
+    n.i_val = TValue::nil;
+    if (n.i_key.isWhite()) {
+      n.i_key = TValue::Nil();
     }
   }
 }

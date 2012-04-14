@@ -28,32 +28,32 @@ public:
   bool keyToTableIndex    (TValue key, int& outIndex);
   bool tableIndexToKeyVal (int index, TValue& outKey, TValue& outValue);
 
+  // Would be nice if I could remove these, but nextvar.lua fails
+  // if I remove the optimization in OP_SETLIST that uses them.
   int getArraySize() const { return (int)array.size(); }
   int getHashSize() const { return (int)hashtable.size(); }
-
-  Node* getNode(int i) {
-    assert(hashtable.size());
-    assert(i >= 0);
-    assert(i < (int)hashtable.size());
-    return &hashtable[i];
-  }
-
-  const Node* getNode(int i) const {
-    assert(hashtable.size());
-    assert(i >= 0);
-    assert(i < (int)hashtable.size());
-    return &hashtable[i];
-  }
 
   // Main get/set methods, which we'll gradually be transitioning to.
   TValue get(TValue key) const;
   bool   set(TValue key, TValue val);
   
-  // This is only used by one test...
-  int   findBinIndex(TValue key);
-
   // This is used in a few places
   void resize(int arrayssize, int hashsize);
+
+  //----------
+  // Test support, not used in actual VM
+
+  int getArraySize() { return array.size(); }
+  int getHashSize()  { return hashtable.size(); }
+
+  void getArrayElement ( int index, TValue& outVal ) {
+    outVal = array[index];
+  }
+
+  void getHashElement ( int index, TValue& outKey, TValue& outVal ) {
+    outKey = hashtable[index].i_key;
+    outVal = hashtable[index].i_val;
+  }
 
   //----------
   // Garbage collection support, should probably be split out into a subclass
@@ -79,13 +79,12 @@ public:
 
   Table *metatable;
 
+protected:
+
   LuaVector<TValue> array;
   LuaVector<Node> hashtable;
 
   int lastfree;
-
-protected:
-
 
   // Returns the node matching the key.
   Node* findNode(TValue key);

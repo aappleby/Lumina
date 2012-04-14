@@ -1001,8 +1001,10 @@ void luaV_execute (lua_State *L) {
         last = ((c-1)*LFIELDS_PER_FLUSH) + n;
         
         // needs more space? pre-allocate it at once.
-        if (last > (int)h->array.size()) {
-          h->resize(last, (int)h->hashtable.size());
+        // NOTE(aappleby): This is mostly a performance optimization, but the
+        // nextvar.lua tests break if it's removed.
+        if (last > (int)h->getArraySize()) {
+          h->resize(last, (int)h->getHashSize());
           l_memcontrol.checkLimit();
         }
 
