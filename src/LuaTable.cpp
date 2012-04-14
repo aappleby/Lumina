@@ -185,10 +185,15 @@ TValue Table::get(TValue key) const {
 
   if(key.isInteger()) {
     // lua index -> c index
-    int index = key.getInteger() - 1;
+    int intkey = key.getInteger();
+    int index = intkey - 1;
     if((index >= 0) && (index < (int)array.size())) {
       return array[index];
     }
+
+    // Important - if the integer wasn't in the array, we have convert it
+    // back into a TValue key in order to catch the negative-zero case.
+    key = intkey;
   }
 
   // Non-integer key, search the hashtable.

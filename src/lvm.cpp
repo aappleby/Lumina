@@ -144,10 +144,18 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId resul
 
     if (source->isTable()) {
       Table* table = source->getTable();
+      /*
       const TValue* value = luaH_get2(table, key);
 
       if (value && !value->isNil()) {
         *result = *value;
+        return;
+      }
+      */
+      TValue value = table->get(*key);
+
+      if(!value.isNone() && !value.isNil()) {
+        *result = value;
         return;
       }
     }
