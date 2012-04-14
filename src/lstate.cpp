@@ -61,13 +61,13 @@ static void init_registry (lua_State *L, global_State *g) {
   TValue mt;
   
   /* create registry */
+  l_memcontrol.disableLimit();
+  
   Table *registry = new Table();
   if(registry == NULL) luaD_throw(LUA_ERRMEM);
   registry->linkGC(getGlobalGCHead());
   g->l_registry = registry;
-
   registry->resize(LUA_RIDX_LAST, 0);
-  l_memcontrol.checkLimit();
 
   /* registry[LUA_RIDX_MAINTHREAD] = L */
   mt = L;
@@ -78,6 +78,9 @@ static void init_registry (lua_State *L, global_State *g) {
   t->linkGC(getGlobalGCHead());
   mt = t;
   luaH_setint(registry, LUA_RIDX_GLOBALS, &mt);
+
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
 }
 
 

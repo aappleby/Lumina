@@ -205,11 +205,18 @@ static void collectvalidlines (lua_State *L, Closure *f) {
   else {
     int i;
     TValue v;
+
+    l_memcontrol.disableLimit();
+
     Table *t = new Table();  /* new table to store active lines */
     if(t == NULL) luaD_throw(LUA_ERRMEM);
     t->linkGC(getGlobalGCHead());
     L->top[0] = t;  /* push it on stack */
     incr_top(L);
+
+    l_memcontrol.enableLimit();
+    l_memcontrol.checkLimit();
+
     v = true;
     for (i = 0; i < (int)f->proto_->lineinfo.size(); i++)  /* for all lines with code */
       luaH_setint(t, f->proto_->lineinfo[i], &v);  /* table[line] = true */

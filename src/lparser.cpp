@@ -553,9 +553,6 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   L->top[0] = f;
   incr_top(L);
 
-  l_memcontrol.enableLimit();
-  l_memcontrol.checkLimit();
-
   fs->f = f;
   f->source = ls->source;
   f->maxstacksize = 2;  /* registers 0/1 are always valid */
@@ -566,6 +563,10 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   /* anchor table of constants (to avoid being collected) */
   L->top[0] = fs->constant_map;
   incr_top(L);
+
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
+
   enterblock(fs, bl, 0);
 }
 

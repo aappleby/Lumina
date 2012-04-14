@@ -730,14 +730,20 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_NEWTABLE,
         int b = GETARG_B(i);
         int c = GETARG_C(i);
+
+        l_memcontrol.disableLimit();
+
         Table *t = new Table();
         if(t == NULL) luaD_throw(LUA_ERRMEM);
         t->linkGC(getGlobalGCHead());
         *ra = t;
         if (b != 0 || c != 0) {
           t->resize(luaO_fb2int(b), luaO_fb2int(c));
-          l_memcontrol.checkLimit();
         }
+
+        l_memcontrol.enableLimit();
+        l_memcontrol.checkLimit();
+
         checkGC(L,
           L->top = ra + 1;  /* limit of live values */
           luaC_step();

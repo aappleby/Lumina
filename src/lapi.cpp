@@ -747,11 +747,18 @@ void lua_createtable (lua_State *L, int narray, int nrec) {
   THREAD_CHECK(L);
   Table *t;
   luaC_checkGC();
+
+  l_memcontrol.disableLimit();
+
   t = new Table();
   if(t == NULL) luaD_throw(LUA_ERRMEM);
   t->linkGC(getGlobalGCHead());
   L->top[0] = t;
   api_incr_top(L);
+
+  l_memcontrol.enableLimit();
+  l_memcontrol.checkLimit();
+
   if (narray > 0 || nrec > 0) {
     t->resize(narray, nrec);
     l_memcontrol.checkLimit();
