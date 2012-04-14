@@ -129,19 +129,6 @@ static void checktable (global_State *g, Table *h) {
     checkobjref(g, h, h->metatable);
 
   h->traverse(checkTableCallback,h);
-
-  /*
-  for (int i = 0; i < (int)h->array.size(); i++)
-    checkvalref(g, h, &h->array[i]);
-  for(int i = 0; i < (int)h->hashtable.size(); i++) {
-    Node* n = h->getNode(i);
-    if (n->i_val.isNotNil()) {
-      assert(n->i_key.isNotNil());
-      checkvalref(g, h, &n->i_key);
-      checkvalref(g, h, &n->i_val);
-    }
-  }
-  */
 }
 
 

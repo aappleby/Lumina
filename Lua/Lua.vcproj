@@ -343,10 +343,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\tests\checktable.lua"
-				>
-			</File>
-			<File
 				RelativePath="..\tests\closure.lua"
 				>
 			</File>
