@@ -699,11 +699,11 @@ void lua_getglobal (lua_State *L, const char *var) {
   TValue globals = thread_G->getRegistry()->get(TValue(LUA_RIDX_GLOBALS));
   L->push(TValue(luaS_new(var)));
   
-  TValue result;
-  LuaResult r = luaV_gettable2(L, globals, L->top[-1], result);
+  TValue val;
+  LuaResult r = luaV_gettable2(L, globals, L->top[-1], val);
 
   if(r == LR_OK) {
-    L->top[-1] = result;
+    L->top[-1] = val;
   } else {
     handleError(r, &globals);
   }
@@ -714,7 +714,15 @@ void lua_gettable (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId t;
   t = index2addr_checked(L, idx);
-  luaV_gettable(L, t, L->top - 1, L->top - 1);
+
+  TValue val;
+  LuaResult r = luaV_gettable2(L, *t, L->top[-1], val);
+
+  if(r == LR_OK) {
+    L->top[-1] = val;
+  } else {
+    handleError(r, t);
+  }
 }
 
 
@@ -729,7 +737,14 @@ void lua_getfield (lua_State *L, int idx, const char *k) {
     api_incr_top(L);
   }
 
-  luaV_gettable(L, t, L->top - 1, L->top - 1);
+  TValue val;
+  LuaResult r = luaV_gettable2(L, *t, L->top[-1], val);
+
+  if(r == LR_OK) {
+    L->top[-1] = val;
+  } else {
+    handleError(r, t);
+  }
 }
 
 
