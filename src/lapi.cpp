@@ -698,7 +698,15 @@ void lua_getglobal (lua_State *L, const char *var) {
   THREAD_CHECK(L);
   TValue globals = thread_G->getRegistry()->get(TValue(LUA_RIDX_GLOBALS));
   L->push(TValue(luaS_new(var)));
-  luaV_gettable(L, &globals, L->top - 1, L->top - 1);
+  
+  TValue result;
+  LuaResult r = luaV_gettable2(L, globals, L->top[-1], result);
+
+  if(r == LR_OK) {
+    L->top[-1] = result;
+  } else {
+    handleError(r, &globals);
+  }
 }
 
 

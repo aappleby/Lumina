@@ -34,6 +34,18 @@
 /* limit for table tag-method chains (to avoid loops) */
 #define MAXTAGLOOP	100
 
+void handleError(LuaResult err, const TValue* val)
+{
+  switch(err) {
+    case LR_BAD_TABLE:
+      luaG_typeerror(val, "index"); break;
+    case LR_BAD_INDEX_TM:
+      luaG_typeerror(val, "invalid type in __index method"); break;
+    case LR_META_LOOP:
+      luaG_runerror("loop in gettable"); break;
+  }
+}
+
 
 // Converts value to string in-place, returning 1 if successful.
 int luaV_tostring (TValue* v) {
@@ -149,14 +161,6 @@ static void callTM1 (lua_State *L,
   luaD_call(L, L->top - 4, 0, isLua(L->ci_));
 }
 
-enum LuaResult
-{
-  LR_OK = 0,
-  LR_BAD_TABLE,
-  LR_BAD_INDEX_TM,
-  LR_META_LOOP,
-};
-
 LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outResult) {
   THREAD_CHECK(L);
   TValue tagmethod;
@@ -223,16 +227,11 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId outRe
   TValue result;
   LuaResult r = luaV_gettable2(L, *source, *key, result);
 
-  switch(r) {
-    case LR_BAD_TABLE:
-      luaG_typeerror(source, "index"); break;
-    case LR_BAD_INDEX_TM:
-      luaG_typeerror(source, "invalid type in __index method"); break;
-    case LR_META_LOOP:
-      luaG_runerror("loop in gettable"); break;
+  if(r == LR_OK) {
+    L->stack[stackIndex] = result;
+  } else {
+    handleError(r, source);
   }
-
-  if(r == LR_OK) L->stack[stackIndex] = result;
 }
 
 // TODO(aappleby): The original version of luaV_settable needs to be enshrined

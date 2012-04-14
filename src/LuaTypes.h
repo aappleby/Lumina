@@ -26,6 +26,21 @@ typedef uint32_t lua_Unsigned;
 typedef ptrdiff_t l_mem;
 typedef uint32_t Instruction;
 
+
+//-----------------------------------------------------------------------------
+
+enum LuaResult
+{
+  LR_OK = 0,
+  LR_BAD_TABLE,
+  LR_BAD_INDEX_TM,
+  LR_META_LOOP,
+};
+
+// Whether 'val' points to a value on the Lua stack or elsewhere _does_ matter,
+// as it's used to deduce what sort of variable 'val' is.
+void handleError(LuaResult err, const TValue* val);
+
 //-----------------------------------------------------------------------------
 
 void  luaM_free(void * blob);

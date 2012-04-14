@@ -24,7 +24,7 @@ int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r);
 int luaV_tostring (TValue* v);
 
 void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val);
-TValue luaV_gettable2 (lua_State *L, const TValue *t, TValue *key);
+LuaResult luaV_gettable2 (lua_State *L, TValue table, TValue key, TValue& outResult);
 
 void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val);
 void luaV_finishOp (lua_State *L);
