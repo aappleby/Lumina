@@ -70,6 +70,12 @@ public:
   void SweepWhiteVals();
 
   //----------
+  // Visitor pattern stuff. Used in ltests.cpp
+
+  typedef void (*nodeCallback)(const TValue& key, const TValue& value, void* blob);
+  int traverse(Table::nodeCallback c, void* blob);
+
+  //----------
 
   Table *metatable;
 
@@ -98,12 +104,11 @@ protected:
   TValue* newKey(const TValue* key);
 
   //----------
-  // Visitor pattern stuff.
 
-  typedef void (*nodeCallback)(TValue* key, TValue* value, void* blob);
+  /*
   typedef void (*valueCallback)(TValue* v, void* blob);
 
   int traverseNodes(Table::nodeCallback c, void* blob);
   int traverseArray(Table::valueCallback c, void* blob);
-  int traverse(Table::nodeCallback c, void* blob);
+  */
 };

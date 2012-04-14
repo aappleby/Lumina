@@ -387,6 +387,7 @@ void Table::resize(int nasize, int nhsize) {
 
 //-----------------------------------------------------------------------------
 
+/*
 int Table::traverseNodes(Table::nodeCallback c, void* blob) {
   for(int i = 0; i < (int)hashtable.size(); i++) {
     Node* n = getNode(i);
@@ -403,17 +404,18 @@ int Table::traverseArray(Table::valueCallback c, void* blob) {
 
   return TRAVCOST + (int)array.size();
 }
+*/
 
 int Table::traverse(Table::nodeCallback c, void* blob) {
   TValue temp;
 
   for(int i = 0; i < (int)array.size(); i++) {
     temp = i + 1; // c index -> lua index;
-    c(&temp,&array[i],blob);
+    c(temp,array[i],blob);
   }
   for(int i = 0; i < (int)hashtable.size(); i++) {
     Node* n = getNode(i);
-    c(&n->i_key, &n->i_val, blob);
+    c(n->i_key, n->i_val, blob);
   }
 
   return TRAVCOST + (int)array.size() + 2 * (int)hashtable.size();

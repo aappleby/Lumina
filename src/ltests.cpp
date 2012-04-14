@@ -115,10 +115,22 @@ static void checkvalref (global_State *g, LuaObject *f, const TValue *t) {
   }
 }
 
+void checkTableCallback ( const TValue& key, const TValue& val, void* blob ) {
+  Table* t = (Table*)blob;
+  if (!val.isNil()) {
+    assert(!key.isNil());
+    checkvalref(thread_G, t, &key);
+    checkvalref(thread_G, t, &val);
+  }
+}
 
 static void checktable (global_State *g, Table *h) {
   if (h->metatable)
     checkobjref(g, h, h->metatable);
+
+  h->traverse(checkTableCallback,h);
+
+  /*
   for (int i = 0; i < (int)h->array.size(); i++)
     checkvalref(g, h, &h->array[i]);
   for(int i = 0; i < (int)h->hashtable.size(); i++) {
@@ -129,6 +141,7 @@ static void checktable (global_State *g, Table *h) {
       checkvalref(g, h, &n->i_val);
     }
   }
+  */
 }
 
 
