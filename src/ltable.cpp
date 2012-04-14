@@ -58,6 +58,7 @@
 
 const TValue* luaH_get2(Table* t, const TValue* key) {
   const TValue* result1 = t->findValue(*key);
+  /*
   TValue result2 = t->get(*key);
 
   if(result1 == NULL) {
@@ -69,6 +70,7 @@ const TValue* luaH_get2(Table* t, const TValue* key) {
       printf("xxx");
     }
   }
+  */
 
   return result1;
 }

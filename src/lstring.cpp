@@ -35,7 +35,7 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
     luaS_resize(tb->size_ * 2);  /* too crowded */
   }
   
-  char* buf = (char*)luaM_alloc(l+1);
+  char* buf = (char*)luaM_alloc_nocheck(l+1);
   if(buf == NULL) return NULL;
 
   TString* ts = new TString(buf, h, str, l);
@@ -75,7 +75,7 @@ TString *luaS_new (const char *str) {
 Udata *luaS_newudata (size_t s, Table *e) {
   if (s > MAX_SIZET - sizeof(Udata)) luaG_runerror("memory allocation error: udata too big");
 
-  uint8_t* b = (uint8_t*)luaM_alloc(s);
+  uint8_t* b = (uint8_t*)luaM_alloc_nocheck(s);
   if(b == NULL) return NULL;
 
   Udata* u = new Udata(b,s,e);

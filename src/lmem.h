@@ -56,7 +56,6 @@ public:
   int old;
 };
 
-void* luaM_alloc(size_t size);
 void* luaM_alloc_nocheck(size_t size);
 
 void  luaM_free(void * blob);

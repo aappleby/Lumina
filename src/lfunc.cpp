@@ -25,7 +25,7 @@ using std::auto_ptr;
 
 Closure *luaF_newCclosure (int n) {
   //l_memcontrol.disableLimit();
-  TValue* b = (TValue*)luaM_alloc(n * sizeof(TValue));
+  TValue* b = (TValue*)luaM_alloc_nocheck(n * sizeof(TValue));
   if(b == NULL) return NULL;
 
   Closure *c = new Closure(b, n);
@@ -44,7 +44,7 @@ Closure *luaF_newCclosure (int n) {
 Closure *luaF_newLclosure (Proto *p) {
   int n = (int)p->upvalues.size();
 
-  UpVal** b = (UpVal**)luaM_alloc(n * sizeof(TValue*));
+  UpVal** b = (UpVal**)luaM_alloc_nocheck(n * sizeof(TValue*));
   if(b == NULL) return NULL;
 
   Closure* c = new Closure(p, b, n);

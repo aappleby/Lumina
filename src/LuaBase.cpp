@@ -7,7 +7,7 @@
 
 void * LuaBase::operator new(size_t size) {
   assert(l_memcontrol.limitDisabled);
-  void* blob = luaM_alloc(size);
+  void* blob = luaM_alloc_nocheck(size);
   if(blob && thread_G) {
     thread_G->incGCDebt(size);
   }

@@ -28,7 +28,6 @@ typedef uint32_t Instruction;
 
 //-----------------------------------------------------------------------------
 
-void* luaM_alloc(size_t size);
 void  luaM_free(void * blob);
 
 LuaObject*& getGlobalGCHead();
