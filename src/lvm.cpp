@@ -102,14 +102,14 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
 }
 
 static void callTM3 (lua_State *L,
-                     const TValue *f,
-                     const TValue *p1,
-                     const TValue *p2,
+                     TValue f,
+                     TValue p1,
+                     TValue p2,
                      TValue& result) {
   THREAD_CHECK(L);
-  L->top[0] = *f; // push function
-  L->top[1] = *p1; // 1st argument
-  L->top[2] = *p2; // 2nd argument
+  L->top[0] = f; // push function
+  L->top[1] = p1; // 1st argument
+  L->top[2] = p2; // 2nd argument
   L->top += 3;
   L->checkstack(0);
   /* metamethod may yield only when called from Lua code */
@@ -190,7 +190,7 @@ void luaV_gettable2 (lua_State *L, const TValue *source, TValue *key, TValue& ou
     // the new table.
 
     if (tagmethod.isFunction()) {
-      callTM3(L, &tagmethod, source, key, outResult);
+      callTM3(L, tagmethod, *source, *key, outResult);
       return;
     }
 
