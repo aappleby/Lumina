@@ -3,6 +3,8 @@
 
 #include "LuaGlobals.h"
 
+#include <assert.h>
+
 void * LuaBase::operator new(size_t size) {
   //assert(l_memcontrol.limitDisabled);
   void* blob = luaM_alloc(size);
