@@ -131,6 +131,8 @@ static void callTM1 (lua_State *L,
   luaD_call(L, L->top - 4, 0, isLua(L->ci_));
 }
 
+// TODO(aappleby) - This gets a StkId parameter, but the tag method calling can invalidate the stack.
+// Very dangerous, need to replace.
 
 void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId result) {
   THREAD_CHECK(L);
@@ -187,6 +189,12 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId resul
     luaG_typeerror(source, "invalid type in __index method");
   }
   luaG_runerror("loop in gettable");
+}
+
+TValue luaV_gettable2(lua_State *L, const TValue *source, TValue *key) {
+  TValue result;
+  luaV_gettable(L, source, key, &result);
+  return result;
 }
 
 // TODO(aappleby): The original version of luaV_settable needs to be enshrined
