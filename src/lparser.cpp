@@ -1622,9 +1622,13 @@ Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
   LexState lexstate;
   FuncState funcstate;
   BlockCnt bl;
-  TString *tname = luaS_new(name);
-  L->top[0] = tname;  /* push name to protect it */
-  incr_top(L);
+  TString* tname = NULL;
+  {
+    ScopedMemChecker c;
+    tname = luaS_new(name);
+    L->top[0] = tname;  /* push name to protect it */
+    incr_top(L);
+  }
   lexstate.buff = buff;
   lexstate.dyd = dyd;
   dyd->actvar.n = dyd->gt.n = dyd->label.n = 0;

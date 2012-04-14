@@ -401,7 +401,13 @@ void luaV_concat (lua_State *L, int total) {
       continue;
     }
 
-    if (!luaV_tostring(top-1)) {
+    int tostring_result = 0;
+    {
+      ScopedMemChecker c;
+      tostring_result = luaV_tostring(top-1);
+    }
+
+    if (!tostring_result) {
       if (!call_binTM(L, top-2, top-1, top-2, TM_CONCAT)) {
         luaG_concaterror(top-2, top-1);
       }

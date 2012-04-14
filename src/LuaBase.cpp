@@ -6,7 +6,7 @@
 #include <assert.h>
 
 void * LuaBase::operator new(size_t size) {
-  //assert(l_memcontrol.limitDisabled);
+  assert(l_memcontrol.limitDisabled);
   void* blob = luaM_alloc(size);
   if(blob && thread_G) {
     thread_G->incGCDebt(size);

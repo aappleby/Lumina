@@ -270,16 +270,20 @@ int luaD_precallLua(lua_State* L, StkId func, int nresults) {
     L->top++;
   }
   base = (!p->is_vararg) ? func + 1 : adjust_varargs(L, p, n);
-  CallInfo* ci = next_ci(L);  /* now 'enter' new function */
-  ci->nresults = nresults;
-  ci->func = func;
-  ci->base = base;
-  ci->top = base + p->maxstacksize;
-  assert(ci->top <= L->stack_last);
-  //ci->savedpc = p->code;  /* starting point */
-  ci->savedpc = &p->code[0];
-  ci->callstatus = CIST_LUA;
-  L->top = ci->top;
+  CallInfo* ci = NULL;
+  {
+    ScopedMemChecker c;
+    ci = next_ci(L);  /* now 'enter' new function */
+    ci->nresults = nresults;
+    ci->func = func;
+    ci->base = base;
+    ci->top = base + p->maxstacksize;
+    assert(ci->top <= L->stack_last);
+    //ci->savedpc = p->code;  /* starting point */
+    ci->savedpc = &p->code[0];
+    ci->callstatus = CIST_LUA;
+    L->top = ci->top;
+  }
   if (L->hookmask & LUA_MASKCALL)
     callhook(L, ci);
   return 0;
@@ -439,9 +443,12 @@ static int recover (lua_State *L, int status) {
 */
 static l_noret resume_error (lua_State *L, const char *msg, StkId firstArg) {
   THREAD_CHECK(L);
-  L->top = firstArg;  /* remove args from the stack */
-  L->top[0] = luaS_new(msg);  /* push error message */
-  incr_top(L);
+  {
+    ScopedMemChecker c;
+    L->top = firstArg;  /* remove args from the stack */
+    L->top[0] = luaS_new(msg);  /* push error message */
+    incr_top(L);
+  }
   luaD_throw(-1);  /* jump back to 'lua_resume' */
 }
 
