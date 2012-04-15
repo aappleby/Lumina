@@ -785,14 +785,13 @@ void luaV_execute (lua_State *L) {
 
       case OP_GETTABUP:
         {
-          int b = GETARG_B(i);
-          luaV_gettable(L, cl->ppupvals_[b]->v, RKC(i), &base[A]); 
+          luaV_gettable(L, cl->ppupvals_[B]->v, RKC(i), &base[A]); 
           break;
         }
 
       case OP_GETTABLE:
         {
-          luaV_gettable(L, RB(i), RKC(i), &base[A]);
+          luaV_gettable(L, &base[B], RKC(i), &base[A]);
           break;
         }
 
@@ -846,9 +845,11 @@ void luaV_execute (lua_State *L) {
 
       case OP_SELF:
         {
-          StkId rb = RB(i);
-          ra[1] = *rb;
-          luaV_gettable(L, rb, RKC(i), ra);
+          base[A+1] = base[B];
+          luaV_gettable(L,
+                        &base[B],
+                        (C & 256) ? &k[Ck] : &base[Ck],
+                        &base[A]);
           break;
         }
 
@@ -861,7 +862,11 @@ void luaV_execute (lua_State *L) {
             double nc = rc->getNumber();
             base[A] = nb + nc;
           } else {
-            luaV_arith(L, ra, rb, rc, TM_ADD);
+            luaV_arith(L,
+                       &base[A],
+                       rb,
+                       rc,
+                       TM_ADD);
           }
           break;
         }
@@ -875,7 +880,11 @@ void luaV_execute (lua_State *L) {
             double nc = rc->getNumber();
             base[A] = nb - nc;
           } else {
-            luaV_arith(L, ra, rb, rc, TM_SUB);
+            luaV_arith(L,
+                       &base[A],
+                       rb,
+                       rc,
+                       TM_SUB);
           }
           break;
         }
@@ -889,7 +898,11 @@ void luaV_execute (lua_State *L) {
             double nc = rc->getNumber();
             base[A] = nb * nc;
           } else {
-            luaV_arith(L, ra, rb, rc, TM_MUL);
+            luaV_arith(L,
+                       &base[A],
+                       rb,
+                       rc,
+                       TM_MUL);
           }
           break;
         }
@@ -903,7 +916,11 @@ void luaV_execute (lua_State *L) {
             double nc = rc->getNumber();
             base[A] = nb / nc;
           } else {
-            luaV_arith(L, ra, rb, rc, TM_DIV);
+            luaV_arith(L,
+                       &base[A],
+                       rb,
+                       rc,
+                       TM_DIV);
           }
           break;
         }
@@ -917,7 +934,11 @@ void luaV_execute (lua_State *L) {
             double nc = rc->getNumber();
             base[A] = ((nb) - floor((nb)/(nc))*(nc));
           } else {
-            luaV_arith(L, ra, rb, rc, TM_MOD);
+            luaV_arith(L,
+                       &base[A],
+                       rb,
+                       rc,
+                       TM_MOD);
           }
           break;
         }
@@ -931,7 +952,11 @@ void luaV_execute (lua_State *L) {
             double nc = rc->getNumber();
             base[A] = pow(nb,nc);
           } else {
-            luaV_arith(L, ra, rb, rc, TM_POW);
+            luaV_arith(L,
+                       &base[A],
+                       rb,
+                       rc,
+                       TM_POW);
           }
           break;
         }
@@ -944,22 +969,25 @@ void luaV_execute (lua_State *L) {
             ra[0] = -nb;
           }
           else {
-            luaV_arith(L, ra, rb, rb, TM_UNM);
+            luaV_arith(L,
+                       &base[A],
+                       rb,
+                       rb,
+                       TM_UNM);
           }
           break;
         }
 
       case OP_NOT:
         {
-          TValue *rb = RB(i);
-          int res = l_isfalse(rb);  /* next assignment may change this value */
-          ra[0] = res ? true : false;
+          int res = l_isfalse(&base[B]);
+          base[A] = res ? true : false;
           break;
         }
 
       case OP_LEN:
         {
-          luaV_objlen(L, ra, RB(i));
+          luaV_objlen(L, &base[A], &base[B]);
           break;
         }
 
@@ -986,9 +1014,8 @@ void luaV_execute (lua_State *L) {
 
       case OP_JMP:
         {
-          int a = GETARG_A(i);
-          if (a > 0) {
-            luaF_close(ci->base + a - 1);
+          if (A > 0) {
+            luaF_close(ci->base + A - 1);
           }
           ci->savedpc += GETARG_sBx(i);
           break;
