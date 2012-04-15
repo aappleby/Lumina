@@ -1158,42 +1158,38 @@ void luaV_execute (lua_State *L) {
 
       case OP_FORPREP:
         {
-          TValue init = ra[0].convertToNumber();
-          TValue plimit = ra[1].convertToNumber();
-          TValue pstep = ra[2].convertToNumber();
+          TValue index = base[A+0].convertToNumber();
+          TValue limit = base[A+1].convertToNumber();
+          TValue step  = base[A+2].convertToNumber();
 
-          if (init.isNone())   luaG_runerror(LUA_QL("for") " initial value must be a number");
-          if (plimit.isNone()) luaG_runerror(LUA_QL("for") " limit must be a number");
-          if (pstep.isNone())  luaG_runerror(LUA_QL("for") " step must be a number");
+          if (index.isNone()) luaG_runerror(LUA_QL("for") " initial value must be a number");
+          if (limit.isNone()) luaG_runerror(LUA_QL("for") " limit must be a number");
+          if (step.isNone())  luaG_runerror(LUA_QL("for") " step must be a number");
 
-          ra[0] = init.getNumber() - pstep.getNumber();
-          ra[1] = plimit;
-          ra[2] = pstep;
+          base[A+0] = index.getNumber() - step.getNumber();
+          base[A+1] = limit;
+          base[A+2] = step;
 
           ci->savedpc += GETARG_sBx(i);
           break;
         }
       
-        // NO BREAK
       case OP_TFORCALL:
         {
           StkId cb = ra + 3;  /* call base */
           cb[2] = ra[2];
           cb[1] = ra[1];
           cb[0] = ra[0];
+
           L->top = cb + 3;  /* func. + 2 args (state and index) */
-          luaD_call(L, cb, GETARG_C(i), 1);
-          base = ci->base;
+          luaD_call(L, cb, C, 1);
           L->top = ci->top;
-          i = *(ci->savedpc++);  /* go to next instruction */
-          ra = RA(i);
-          assert(GET_OPCODE(i) == OP_TFORLOOP);
-          goto l_tforloop;
+          
+          break;
         }
 
       case OP_TFORLOOP:
         {
-          l_tforloop:
           if (ra[1].isNotNil()) {  /* continue loop? */
             ra[0] = ra[1];  /* save control variable */
             ci->savedpc += GETARG_sBx(i);  /* jump back */
