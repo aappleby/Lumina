@@ -799,10 +799,9 @@ void luaV_execute (lua_State *L) {
 
       case OP_LOADNIL: 
         {
-          int b = (int)B;
-          do {
-            base[A++] = TValue::Nil();
-          } while (b--);
+          for(uint32_t b = 0; b <= B; b++) {
+            base[A+b] = TValue::Nil();
+          }
           break;
         }
 
