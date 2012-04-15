@@ -1010,7 +1010,7 @@ void luaV_execute (lua_State *L) {
       case OP_JMP:
         {
           if (A > 0) {
-            luaF_close(ci->base + A - 1);
+            luaF_close(&base[A-1]);
           }
           ci->savedpc += GETARG_sBx(i);
           break;
@@ -1018,8 +1018,8 @@ void luaV_execute (lua_State *L) {
 
       case OP_EQ:
         {
-          TValue *rb = RKB(i);
-          TValue *rc = RKC(i);
+          TValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
+          TValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
           if (cast_int(luaV_equalobj_(L, rb, rc)) != GETARG_A(i)) {
             ci->savedpc++;
           }
@@ -1028,25 +1028,31 @@ void luaV_execute (lua_State *L) {
 
       case OP_LT:
         {
-          if (luaV_lessthan(L, RKB(i), RKC(i)) != GETARG_A(i)) {
-            ci->savedpc++;
-          }
+          TValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
+          TValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
+
+          int result = luaV_lessthan(L, rb, rc);
+
+          if (result != A) ci->savedpc++;
           break;
         }
 
       case OP_LE:
         {
-          if (luaV_lessequal(L, RKB(i), RKC(i)) != GETARG_A(i)) {
-            ci->savedpc++;
-          }
+          TValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
+          TValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
+
+          int result = luaV_lessequal(L, rb, rc);
+
+          if (result != A) ci->savedpc++;
           break;
         }
 
       case OP_TEST:
         {
-          if (GETARG_C(i) ? l_isfalse(ra) : !l_isfalse(ra)) {
-            ci->savedpc++;
-          }
+          bool isfalse = (base[A].isNil() || (base[A].isBool() && !base[A].getBool()));
+
+          if (isfalse == (C ? true : false)) ci->savedpc++;
           break;
         }
 
