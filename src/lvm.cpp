@@ -706,16 +706,6 @@ void luaV_finishOp (lua_State *L) {
 #define KBx(i)  (k + (GETARG_Bx(i) != 0 ? GETARG_Bx(i) - 1 : GETARG_Ax(*ci->savedpc++)))
 
 
-/* execute a jump instruction */
-#define dojump(ci,i,e) \
-  { int a = GETARG_A(i); \
-    if (a > 0) luaF_close(ci->base + a - 1); \
-    ci->savedpc += GETARG_sBx(i) + e; }
-
-/* for test instructions, execute the jump instruction that follows it */
-#define donextjump(ci)	{ i = *ci->savedpc; dojump(ci, i, 1); }
-
-
 #define Protect(x)	{ {x;}; base = ci->base; }
 
 #define luaC_condGC(L,c) {if (thread_G->getGCDebt() > 0) {c;};}
@@ -753,13 +743,15 @@ void luaV_execute (lua_State *L) {
 
     /* WARNING: several calls may realloc the stack and invalidate `ra' */
     base = ci->base;
-    assert(base <= L->top && L->top < L->stack.end());
-    StkId ra = &base[A];
 
     if ((L->hookmask & (LUA_MASKLINE | LUA_MASKCOUNT)) &&
         (--L->hookcount == 0 || L->hookmask & LUA_MASKLINE)) {
-      Protect(traceexec(L));
+      traceexec(L);
+      base = ci->base;
     }
+
+    assert(base <= L->top && L->top < L->stack.end());
+    StkId ra = &base[A];
 
     switch(GET_OPCODE(i)) {
       case OP_MOVE:
@@ -1005,7 +997,11 @@ void luaV_execute (lua_State *L) {
 
       case OP_JMP:
         {
-          dojump(ci, i, 0);
+          int a = GETARG_A(i);
+          if (a > 0) {
+            luaF_close(ci->base + a - 1);
+          }
+          ci->savedpc += GETARG_sBx(i);
           break;
         }
 
@@ -1016,7 +1012,12 @@ void luaV_execute (lua_State *L) {
           if (cast_int(luaV_equalobj_(L, rb, rc)) != GETARG_A(i)) {
             ci->savedpc++;
           } else {
-            donextjump(ci);
+            i = *ci->savedpc;
+            int a = GETARG_A(i);
+            if (a > 0) {
+              luaF_close(ci->base + a - 1);
+            }
+            ci->savedpc += GETARG_sBx(i) + 1;
           }
           break;
         }
@@ -1026,7 +1027,12 @@ void luaV_execute (lua_State *L) {
           if (luaV_lessthan(L, RKB(i), RKC(i)) != GETARG_A(i)) {
             ci->savedpc++;
           } else {
-            donextjump(ci);
+            i = *ci->savedpc;
+            int a = GETARG_A(i);
+            if (a > 0) {
+              luaF_close(ci->base + a - 1);
+            }
+            ci->savedpc += GETARG_sBx(i) + 1;
           }
           break;
         }
@@ -1036,7 +1042,12 @@ void luaV_execute (lua_State *L) {
           if (luaV_lessequal(L, RKB(i), RKC(i)) != GETARG_A(i)) {
             ci->savedpc++;
           } else {
-            donextjump(ci);
+            i = *ci->savedpc;
+            int a = GETARG_A(i);
+            if (a > 0) {
+              luaF_close(ci->base + a - 1);
+            }
+            ci->savedpc += GETARG_sBx(i) + 1;
           }
           break;
         }
@@ -1046,7 +1057,12 @@ void luaV_execute (lua_State *L) {
           if (GETARG_C(i) ? l_isfalse(ra) : !l_isfalse(ra)) {
             ci->savedpc++;
           } else {
-            donextjump(ci);
+            i = *ci->savedpc;
+            int a = GETARG_A(i);
+            if (a > 0) {
+              luaF_close(ci->base + a - 1);
+            }
+            ci->savedpc += GETARG_sBx(i) + 1;
           }
           break;
         }
@@ -1058,7 +1074,12 @@ void luaV_execute (lua_State *L) {
             ci->savedpc++;
           } else {
             *ra = *rb;
-            donextjump(ci);
+            i = *ci->savedpc;
+            int a = GETARG_A(i);
+            if (a > 0) {
+              luaF_close(ci->base + a - 1);
+            }
+            ci->savedpc += GETARG_sBx(i) + 1;
           }
           break;
         }
