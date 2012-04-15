@@ -1057,8 +1057,9 @@ void luaV_execute (lua_State *L) {
 
       case OP_TESTSET:
         {
-          TValue *rb = RB(i);
-          if (GETARG_C(i) ? l_isfalse(rb) : !l_isfalse(rb)) {
+          bool isfalse = base[B].isFalse();
+
+          if (isfalse == (C ? true : false)) {
             ci->savedpc++;
           } else {
             base[A] = base[B];

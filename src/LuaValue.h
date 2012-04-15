@@ -2,8 +2,6 @@
 #include "LuaTypes.h"
 #include <assert.h>
 
-#define l_isfalse(o)	((o)->isNil() || ((o)->isBool() && !(o)->getBool()))
-
 class TValue {
 public:
 
@@ -104,11 +102,22 @@ public:
   bool isLClosure() const      { return type_ == LUA_TLCL; }
   bool isLightFunction() const { return type_ == LUA_TLCF; }
 
-  // A value is 'false' if it is nil, or it is a boolean whose value is false.
+  // A 'true' value is either a true boolean or a non-Nil.
+  // TODO(aappleby): this means that a None is true... might want to fix that.
+  bool isTrue() const {
+    if(isBool()) {
+      return bytes_ ? true : false;
+    } else {
+      return !isNil();
+    }
+  }
+
+  // A 'false' value is either a false boolean or a Nil.
   bool isFalse() const {
-    if(isNil()) return true;
     if(isBool()) {
       return bytes_ ? false : true;
+    } else {
+      return isNil();
     }
   }
 
