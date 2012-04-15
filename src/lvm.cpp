@@ -691,11 +691,6 @@ void luaV_finishOp (lua_State *L) {
 ** some macros for common tasks in `luaV_execute'
 */
 
-#if !defined luai_runtimecheck
-#define luai_runtimecheck(L, c)		/* void */
-#endif
-
-
 #define RA(i)	(base+GETARG_A(i))
 /* to be used after possible stack reallocation */
 #define RB(i)	  check_exp(getBMode(GET_OPCODE(i)) == OpArgR, base+GETARG_B(i))
@@ -704,13 +699,6 @@ void luaV_finishOp (lua_State *L) {
 #define RKB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgK, ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i))
 #define RKC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgK, ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
 #define KBx(i)  (k + (GETARG_Bx(i) != 0 ? GETARG_Bx(i) - 1 : GETARG_Ax(*ci->savedpc++)))
-
-
-#define Protect(x)	{ {x;}; base = ci->base; }
-
-#define luaC_condGC(L,c) {if (thread_G->getGCDebt() > 0) {c;};}
-
-#define checkGC(L,c)	Protect(luaC_condGC(L, c);)
 
 
 void luaV_execute (lua_State *L) {
@@ -769,7 +757,7 @@ void luaV_execute (lua_State *L) {
       case OP_LOADKX:
         {
           assert(GET_OPCODE(*ci->savedpc) == OP_EXTRAARG);
-          *ra = k[GETARG_Ax(*ci->savedpc)];
+          base[A] = k[GETARG_Ax(*ci->savedpc)];
           ci->savedpc++;
           break;
         }
@@ -798,13 +786,13 @@ void luaV_execute (lua_State *L) {
       case OP_GETTABUP:
         {
           int b = GETARG_B(i);
-          luaV_gettable(L, cl->ppupvals_[b]->v, RKC(i), ra); 
+          luaV_gettable(L, cl->ppupvals_[b]->v, RKC(i), &base[A]); 
           break;
         }
 
       case OP_GETTABLE:
         {
-          luaV_gettable(L, RB(i), RKC(i), ra);
+          luaV_gettable(L, RB(i), RKC(i), &base[A]);
           break;
         }
 
@@ -818,14 +806,14 @@ void luaV_execute (lua_State *L) {
       case OP_SETUPVAL:
         {
           UpVal *uv = cl->ppupvals_[GETARG_B(i)];
-          *uv->v = *ra;
-          luaC_barrier(uv, *ra);
+          *uv->v = base[A];
+          luaC_barrier(uv, base[A]);
           break;
         }
 
       case OP_SETTABLE:
         {
-          luaV_settable(L, ra, RKB(i), RKC(i));
+          luaV_settable(L, &base[A], RKB(i), RKC(i));
           break;
         }
 
@@ -839,7 +827,7 @@ void luaV_execute (lua_State *L) {
           Table *t = new Table();
           if(t == NULL) luaD_throw(LUA_ERRMEM);
           t->linkGC(getGlobalGCHead());
-          *ra = t;
+          base[A] = t;
           if (b != 0 || c != 0) {
             t->resize(luaO_fb2int(b), luaO_fb2int(c));
           }
@@ -847,11 +835,11 @@ void luaV_execute (lua_State *L) {
           l_memcontrol.enableLimit();
           l_memcontrol.checkLimit();
 
-          checkGC(L,
-            L->top = ra + 1;  /* limit of live values */
+          if (thread_G->getGCDebt() > 0) {
+            L->top = &base[A] + 1;  /* limit of live values */
             luaC_step();
             L->top = ci->top;  /* restore top */
-          )
+          }
 
           break;
         }
@@ -987,10 +975,11 @@ void luaV_execute (lua_State *L) {
           ra = RA(i);  /* 'luav_concat' may invoke TMs and move the stack */
           rb = b + base;
           *ra = b[base];
-          checkGC(L,
+
+          if(thread_G->getGCDebt() > 0) {
             L->top = (ra >= rb ? ra + 1 : rb);  /* limit of live values */
             luaC_step();
-          )
+          }
           L->top = ci->top;  /* restore top */
           break;
         }
@@ -1187,7 +1176,6 @@ void luaV_execute (lua_State *L) {
             assert(GET_OPCODE(*ci->savedpc) == OP_EXTRAARG);
             c = GETARG_Ax(*ci->savedpc++);
           }
-          luai_runtimecheck(L, ra->isTable());
           h = ra->getTable();
           last = ((c-1)*LFIELDS_PER_FLUSH) + n;
           
@@ -1216,11 +1204,12 @@ void luaV_execute (lua_State *L) {
             pushclosure(L, p, cl->ppupvals_, base, ra);  /* create a new one */
           else
             *ra = TValue(ncl);  /* push cashed closure */
-          checkGC(L,
+
+          if(thread_G->getGCDebt() > 0) {
             L->top = ra + 1;  /* limit of live values */
             luaC_step();
             L->top = ci->top;  /* restore top */
-          )
+          }
           break;
         }
 
