@@ -104,6 +104,14 @@ public:
   bool isLClosure() const      { return type_ == LUA_TLCL; }
   bool isLightFunction() const { return type_ == LUA_TLCF; }
 
+  // A value is 'false' if it is nil, or it is a boolean whose value is false.
+  bool isFalse() const {
+    if(isNil()) return true;
+    if(isBool()) {
+      return bytes_ ? false : true;
+    }
+  }
+
   //----------
   // These conversion operations return None if they fail.
 

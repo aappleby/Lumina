@@ -327,7 +327,7 @@ static int call_orderTM (lua_State *L, const TValue *p1, const TValue *p2,
   if (!call_binTM(L, p1, p2, L->top, event))
     return -1;  /* no metamethod */
   else
-    return !l_isfalse(L->top);
+    return !L->top->isFalse();
 }
 
 
@@ -408,7 +408,7 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
       if (tm.isNone() || tm.isNil()) return 0;  /* no TM? */
 
       callTM(L, &tm, t1, t2, L->top, 1);  /* call TM */
-      return !l_isfalse(L->top);
+      return !L->top->isFalse();
     }
 
     case LUA_TTABLE: {
@@ -419,7 +419,7 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
       if (tm.isNone() || tm.isNil()) return 0;  /* no TM? */
 
       callTM(L, &tm, t1, t2, L->top, 1);  /* call TM */
-      return !l_isfalse(L->top);
+      return !L->top->isFalse();
     }
 
     default:
@@ -639,7 +639,7 @@ void luaV_finishOp (lua_State *L) {
       break;
     }
     case OP_LE: case OP_LT: case OP_EQ: {
-      int res = !l_isfalse(L->top - 1);
+      int res = !L->top[-1].isFalse();
       L->top--;
       /* metamethod should not be called when operand is K */
       assert(!ISK(GETARG_B(inst)));
@@ -979,8 +979,7 @@ void luaV_execute (lua_State *L) {
 
       case OP_NOT:
         {
-          int res = l_isfalse(&base[B]);
-          base[A] = res ? true : false;
+          base[A] = base[B].isFalse();
           break;
         }
 
@@ -1050,7 +1049,7 @@ void luaV_execute (lua_State *L) {
 
       case OP_TEST:
         {
-          bool isfalse = (base[A].isNil() || (base[A].isBool() && !base[A].getBool()));
+          bool isfalse = base[A].isFalse();
 
           if (isfalse == (C ? true : false)) ci->savedpc++;
           break;
@@ -1062,7 +1061,7 @@ void luaV_execute (lua_State *L) {
           if (GETARG_C(i) ? l_isfalse(rb) : !l_isfalse(rb)) {
             ci->savedpc++;
           } else {
-            *ra = *rb;
+            base[A] = base[B];
           }
           break;
         }
