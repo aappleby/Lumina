@@ -963,16 +963,15 @@ void luaV_execute (lua_State *L) {
 
       case OP_UNM:
         {
-          TValue *rb = RB(i);
-          if (rb->isNumber()) {
-            lua_Number nb = rb->getNumber();
-            ra[0] = -nb;
+          if (base[B].isNumber()) {
+            lua_Number nb = base[B].getNumber();
+            base[A] = -nb;
           }
           else {
             luaV_arith(L,
                        &base[A],
-                       rb,
-                       rb,
+                       &base[B],
+                       &base[B],
                        TM_UNM);
           }
           break;
@@ -993,19 +992,15 @@ void luaV_execute (lua_State *L) {
 
       case OP_CONCAT:
         {
-          int b = GETARG_B(i);
-          int c = GETARG_C(i);
-          StkId rb;
-          L->top = base + c + 1;  /* mark the end of concat operands */
-          luaV_concat(L, c - b + 1);
-          base = ci->base;
+          L->top = &base[C + 1];  /* mark the end of concat operands */
+          luaV_concat(L, C - B + 1);
 
-          ra = RA(i);  /* 'luav_concat' may invoke TMs and move the stack */
-          rb = b + base;
-          *ra = b[base];
+          // concat may realloc the stack
+          base = ci->base;
+          base[A] = base[B];
 
           if(thread_G->getGCDebt() > 0) {
-            L->top = (ra >= rb ? ra + 1 : rb);  /* limit of live values */
+            L->top = (A >= B ? &base[A+1] : &base[B]);  /* limit of live values */
             luaC_step();
           }
           L->top = ci->top;  /* restore top */
