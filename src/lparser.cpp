@@ -987,8 +987,7 @@ static void simpleexp (LexState *ls, expdesc *v) {
     }
     case TK_DOTS: {  /* vararg */
       FuncState *fs = ls->fs;
-      check_condition(ls, fs->f->is_vararg,
-                      "cannot use " LUA_QL("...") " outside a vararg function");
+      check_condition(ls, fs->f->is_vararg, "cannot use " LUA_QL("...") " outside a vararg function");
       init_exp(v, VVARARG, luaK_codeABC(fs, OP_VARARG, 0, 1, 0));
       break;
     }

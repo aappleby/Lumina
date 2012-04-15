@@ -1233,12 +1233,13 @@ void luaV_execute (lua_State *L) {
           Proto *p = cl->proto_->subprotos_[GETARG_Bx(i)];
           Closure *ncl = getcached(p, cl->ppupvals_, base);  /* cached closure */
           if (ncl == NULL)  /* no match? */
-            pushclosure(L, p, cl->ppupvals_, base, ra);  /* create a new one */
-          else
-            *ra = TValue(ncl);  /* push cashed closure */
+            pushclosure(L, p, cl->ppupvals_, base, &base[A]);  /* create a new one */
+          else {
+            base[A] = TValue(ncl);  /* push cashed closure */
+          }
 
           if(thread_G->getGCDebt() > 0) {
-            L->top = ra + 1;  /* limit of live values */
+            L->top = &base[A+1];  /* limit of live values */
             luaC_step();
             L->top = ci->top;  /* restore top */
           }
@@ -1247,17 +1248,20 @@ void luaV_execute (lua_State *L) {
 
       case OP_VARARG:
         {
-          int b = GETARG_B(i) - 1;
-          int j;
+          int b = B - 1;
+
           int n = cast_int(base - ci->func) - cl->proto_->numparams - 1;
+
           if (b < 0) {  /* B == 0? */
             b = n;  /* get all var. arguments */
             L->checkstack(n);
             base = ci->base;
+
             ra = RA(i);  /* previous call may change the stack */
             L->top = ra + n;
           }
-          for (j = 0; j < b; j++) {
+
+          for (int j = 0; j < b; j++) {
             if (j < n) {
               ra[j] = base[j-n];
             }
