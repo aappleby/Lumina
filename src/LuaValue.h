@@ -148,6 +148,8 @@ public:
   lua_State* getThread() const        { assert(isThread()); return reinterpret_cast<lua_State*>(object_); }
   lua_CFunction getLightFunction() const { assert(isLightFunction()); return callback_; }
 
+  uint64_t   getRawBytes() const { return bytes_; }
+
   //----------
 
   LuaType type() const  { return type_; }

@@ -386,46 +386,43 @@ int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
 */
 int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
   THREAD_CHECK(L);
-  if(t1->type() != t2->type()) return false;
-
-  switch (t1->type()) {
-    case LUA_TNIL: return 1;
-    case LUA_TNUMBER: {
-      // note - if you compare raw bytes, this comparison fails for positive and
-      // negative zero.
-      return t1->getNumber() == t2->getNumber();
-    }
-    case LUA_TBOOLEAN: return t1->getBool() == t2->getBool();  /* true must be 1 !! */
-    case LUA_TLIGHTUSERDATA: return t1->getLightUserdata() == t2->getLightUserdata();
-    case LUA_TLCF: return t1->getLightFunction() == t2->getLightFunction();
-    case LUA_TSTRING: return t1->getString() == t2->getString();
-
-    case LUA_TUSERDATA: {
-      if (t1->getUserdata() == t2->getUserdata()) return 1;
-      if (L == NULL) return 0;
-
-      TValue tm = get_equalTM(L, t1->getUserdata()->metatable_, t2->getUserdata()->metatable_, TM_EQ);
-      if (tm.isNone() || tm.isNil()) return 0;  /* no TM? */
-
-      callTM(L, &tm, t1, t2, L->top, 1);  /* call TM */
-      return !L->top->isFalse();
-    }
-
-    case LUA_TTABLE: {
-      if (t1->getTable() == t2->getTable()) return 1;
-      if (L == NULL) return 0;
-
-      TValue tm = get_equalTM(L, t1->getTable()->metatable, t2->getTable()->metatable, TM_EQ);
-      if (tm.isNone() || tm.isNil()) return 0;  /* no TM? */
-
-      callTM(L, &tm, t1, t2, L->top, 1);  /* call TM */
-      return !L->top->isFalse();
-    }
-
-    default:
-      assert(t1->isCollectable());
-      return t1->getObject() == t2->getObject();
+  if(t1->type() != t2->type()) {
+    return 0;
   }
+
+  if(t1->isNumber()) {
+    return t1->getNumber() == t2->getNumber();
+  }
+
+  if(t1->getRawBytes() == t2->getRawBytes()) {
+    return 1;
+  }
+
+  // Types match, raw bytes don't match. If the objects are tables or
+  // userdata, try the tag methods.
+
+  if(L == NULL) {
+    //assert(false);
+    return 0;
+  }
+
+  if(t1->isUserdata()) {
+    TValue tm = get_equalTM(L, t1->getUserdata()->metatable_, t2->getUserdata()->metatable_, TM_EQ);
+    if (tm.isNone() || tm.isNil()) return 0;  /* no TM? */
+
+    callTM(L, &tm, t1, t2, L->top, 1);  /* call TM */
+    return !L->top->isFalse();
+  }
+
+  if(t1->isTable()) {
+    TValue tm = get_equalTM(L, t1->getTable()->metatable, t2->getTable()->metatable, TM_EQ);
+    if (tm.isNone() || tm.isNil()) return 0;  /* no TM? */
+
+    callTM(L, &tm, t1, t2, L->top, 1);  /* call TM */
+    return !L->top->isFalse();
+  }
+
+  return 0;
 }
 
 // TODO(aappleby): Gaaaaah the logic in this is convoluted.
