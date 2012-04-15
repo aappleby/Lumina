@@ -698,14 +698,12 @@ void luaV_finishOp (lua_State *L) {
 
 #define RA(i)	(base+GETARG_A(i))
 /* to be used after possible stack reallocation */
-#define RB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgR, base+GETARG_B(i))
-#define RC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgR, base+GETARG_C(i))
-#define RKB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgK, \
-	ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i))
-#define RKC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgK, \
-	ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
-#define KBx(i)  \
-  (k + (GETARG_Bx(i) != 0 ? GETARG_Bx(i) - 1 : GETARG_Ax(*ci->savedpc++)))
+#define RB(i)	  check_exp(getBMode(GET_OPCODE(i)) == OpArgR, base+GETARG_B(i))
+#define RC(i)	  check_exp(getCMode(GET_OPCODE(i)) == OpArgR, base+GETARG_C(i))
+
+#define RKB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgK, ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i))
+#define RKC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgK, ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
+#define KBx(i)  (k + (GETARG_Bx(i) != 0 ? GETARG_Bx(i) - 1 : GETARG_Ax(*ci->savedpc++)))
 
 
 /* execute a jump instruction */
@@ -733,16 +731,13 @@ void luaV_finishOp (lua_State *L) {
         else { Protect(luaV_arith(L, ra, rb, rc, tm)); } }
 
 
-#define vmdispatch(o)	switch(o)
-#define vmcase(l,b)	case l: {b}  break;
-#define vmcasenb(l,b)	case l: {b}		/* nb = no break */
-
 void luaV_execute (lua_State *L) {
   THREAD_CHECK(L);
   CallInfo *ci = L->ci_;
   Closure *cl;
   TValue *k;
   StkId base;
+
  newframe:  /* reentry point when frame changes (call/return) */
   assert(ci == L->ci_);
   cl = ci->func->getLClosure();
@@ -753,6 +748,14 @@ void luaV_execute (lua_State *L) {
   /* main loop of interpreter */
   for (;;) {
     Instruction i = *(ci->savedpc++);
+    OpCode opcode = (OpCode)(i & 0x0000003F);
+
+    uint32_t A  = (i >>  6) & 0x000000FF;
+    uint32_t B  = (i >> 23) & 0x000001FF;
+    uint32_t C  = (i >> 14) & 0x000001FF;
+    uint32_t Ax = (i >>  6) & 0x03FFFFFF;
+    uint32_t Bx = (i >> 14) & 0x0003FFFF;
+
     StkId ra;
     if ((L->hookmask & (LUA_MASKLINE | LUA_MASKCOUNT)) &&
         (--L->hookcount == 0 || L->hookmask & LUA_MASKLINE)) {
@@ -766,13 +769,13 @@ void luaV_execute (lua_State *L) {
     switch(GET_OPCODE(i)) {
       case OP_MOVE:
         {
-          *ra = *RB(i);
+          base[A] = base[B];
           break;
         }
 
       case OP_LOADK:
         {
-          *ra = k[GETARG_Bx(i)];
+          base[A] = k[Bx];
           break;
         }
 
