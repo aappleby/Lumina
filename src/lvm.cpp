@@ -755,6 +755,7 @@ void luaV_execute (lua_State *L) {
     uint32_t C  = (i >> 14) & 0x000001FF;
     uint32_t Ax = (i >>  6) & 0x03FFFFFF;
     uint32_t Bx = (i >> 14) & 0x0003FFFF;
+    int32_t Bs = (int32_t)Bx - 0x1FFFF;
 
     StkId ra;
     if ((L->hookmask & (LUA_MASKLINE | LUA_MASKCOUNT)) &&
@@ -789,25 +790,23 @@ void luaV_execute (lua_State *L) {
 
       case OP_LOADBOOL:
         {
-          ra[0] = GETARG_B(i) ? true : false;
-          if (GETARG_C(i)) ci->savedpc++;  /* skip next instruction (if C) */
+          base[A] = B ? true : false;
+          if (C) ci->savedpc++;  /* skip next instruction (if C) */
           break;
         }
 
       case OP_LOADNIL: 
         {
-          int b = GETARG_B(i);
+          int b = (int)B;
           do {
-            *ra = TValue::nil;
-            ra++;
+            base[A++] = TValue::Nil();
           } while (b--);
           break;
         }
 
       case OP_GETUPVAL: 
         {
-          int b = GETARG_B(i);
-          *ra = *cl->ppupvals_[b]->v;
+          base[A] = *cl->ppupvals_[B]->v;
           break;
         }
 
