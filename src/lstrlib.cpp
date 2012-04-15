@@ -551,7 +551,7 @@ static int str_find_aux (lua_State *L, int find) {
   size_t init = posrelat(luaL_optinteger(L, 3, 1), ls);
   if (init < 1) init = 1;
   else if (init > ls + 1) {  /* start after string's end? */
-    lua_pushnil(L);  /* cannot find anything */
+    L->push(TValue::Nil());  /* cannot find anything */
     return 1;
   }
   /* explicit request or no special characters? */
@@ -589,7 +589,7 @@ static int str_find_aux (lua_State *L, int find) {
       }
     } while (s1++ < ms.src_end && !anchor);
   }
-  lua_pushnil(L);  /* not found */
+  L->push(TValue::Nil());  /* not found */
   return 1;
 }
 

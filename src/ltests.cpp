@@ -723,7 +723,7 @@ static int newstate (lua_State *L) {
     }
   }
   else
-    lua_pushnil(L);
+    L->push(TValue::Nil());
   return 1;
 }
 
@@ -788,7 +788,7 @@ static int doremote (lua_State *L) {
       const char * result = lua_tostring(L1, -1);
       {
         GLOBAL_CHANGE(L);
-        lua_pushnil(L);
+        L->push(TValue::Nil());
         lua_pushstring(L, result);
         lua_pushinteger(L, status);
       }
@@ -1046,7 +1046,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       lua_pushstring(L1, tempstring);
     }
     else if EQ("pushnil") {
-      lua_pushnil(L1);
+      L1->push(TValue::Nil());
     }
     else if EQ("pushbool") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }
@@ -1234,7 +1234,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     else if EQ("getmetatable") {
       { GLOBAL_CHANGE(L); tempindex = getindex; }
       if (lua_getmetatable(L1, tempindex) == 0)
-        lua_pushnil(L1);
+        L1->push(TValue::Nil());
     }
     else if EQ("type") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }

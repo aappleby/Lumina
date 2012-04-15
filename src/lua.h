@@ -133,7 +133,6 @@ int   (lua_compare) (lua_State *L, int idx1, int idx2, int op);
 /*
 ** push functions (C -> stack)
 */
-void        (lua_pushnil) (lua_State *L);
 void        (lua_pushnumber) (lua_State *L, lua_Number n);
 void        (lua_pushinteger) (lua_State *L, lua_Integer n);
 void        (lua_pushunsigned) (lua_State *L, lua_Unsigned n);

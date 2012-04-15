@@ -51,7 +51,7 @@ static int io_type (lua_State *L) {
   luaL_checkany(L, 1);
   p = (LStream *)luaL_testudata(L, 1, LUA_FILEHANDLE);
   if (p == NULL)
-    lua_pushnil(L);  /* not a file */
+    L->push(TValue::Nil());  /* not a file */
   else if (isclosed(p))
     lua_pushliteral(L, "closed file");
   else
@@ -267,7 +267,7 @@ static int f_lines (lua_State *L) {
 static int io_lines (lua_State *L) {
   THREAD_CHECK(L);
   int toclose;
-  if (lua_isnone(L, 1)) lua_pushnil(L);  /* at least one argument */
+  if (lua_isnone(L, 1)) L->push(TValue::Nil());  /* at least one argument */
   if (lua_isnil(L, 1)) {  /* no file name? */
     lua_getfield(L, LUA_REGISTRYINDEX, IO_INPUT);  /* get default input */
     lua_replace(L, 1);  /* put it at index 1 */
@@ -300,7 +300,7 @@ static int read_number (lua_State *L, FILE *f) {
     return 1;
   }
   else {
-   lua_pushnil(L);  /* "result" to be removed */
+   L->push(TValue::Nil());  /* "result" to be removed */
    return 0;  /* read fails */
   }
 }
@@ -416,7 +416,7 @@ static int g_read (lua_State *L, FILE *f, int first) {
     return luaL_fileresult(L, 0, NULL);
   if (!success) {
     lua_pop(L, 1);  /* remove last result */
-    lua_pushnil(L);  /* push nil instead */
+    L->push(TValue::Nil());  /* push nil instead */
   }
   return n - first;
 }
@@ -598,7 +598,7 @@ static int io_noclose (lua_State *L) {
   THREAD_CHECK(L);
   LStream *p = tolstream(L);
   p->closef = &io_noclose;  /* keep file opened */
-  lua_pushnil(L);
+  L->push(TValue::Nil());
   lua_pushliteral(L, "cannot close standard file");
   return 2;
 }

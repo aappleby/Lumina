@@ -61,7 +61,7 @@ static int tremove (lua_State *L) {
     lua_rawgeti(L, 1, pos+1);
     lua_rawseti(L, 1, pos);  /* t[pos] = t[pos+1] */
   }
-  lua_pushnil(L);
+  L->push(TValue::Nil());
   lua_rawseti(L, 1, e);  /* t[e] = nil */
   return 1;
 }

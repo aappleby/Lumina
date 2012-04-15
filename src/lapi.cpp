@@ -309,7 +309,8 @@ void lua_pushvalue (lua_State *L, int idx) {
   THREAD_CHECK(L);
   TValue v = index2addr3(L, idx);
   L->top[0] = v.isNone() ? TValue::nil : v;
-  api_incr_top(L);
+  L->top++;
+  api_check(L->top <= L->ci_->top, "stack overflow");
 }
 
 
@@ -553,17 +554,9 @@ const void *lua_topointer (lua_State *L, int idx) {
 */
 
 
-void lua_pushnil (lua_State *L) {
-  THREAD_CHECK(L);
-  L->top[0] = TValue::nil;
-  api_incr_top(L);
-}
-
-
 void lua_pushnumber (lua_State *L, lua_Number n) {
   THREAD_CHECK(L);
-  L->top[0] = n;
-  api_incr_top(L);
+  L->push(TValue(n));
 }
 
 
@@ -602,7 +595,7 @@ const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
 const char *lua_pushstring (lua_State *L, const char *s) {
   THREAD_CHECK(L);
   if (s == NULL) {
-    lua_pushnil(L);
+    L->push(TValue::Nil());
     return NULL;
   }
   else {

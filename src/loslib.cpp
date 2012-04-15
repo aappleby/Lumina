@@ -215,8 +215,10 @@ static int os_date (lua_State *L) {
   }
   else
     stm = l_localtime(&t, &tmr);
-  if (stm == NULL)  /* invalid date? */
-    lua_pushnil(L);
+  if (stm == NULL) {
+    /* invalid date? */
+    L->push(TValue::Nil());
+  }
   else if (strcmp(s, "*t") == 0) {
     lua_createtable(L, 0, 9);  /* 9 = number of fields */
     setfield(L, "sec", stm->tm_sec);
@@ -270,7 +272,7 @@ static int os_time (lua_State *L) {
     t = mktime(&ts);
   }
   if (t == (time_t)(-1))
-    lua_pushnil(L);
+    L->push(TValue::Nil());
   else
     lua_pushnumber(L, (lua_Number)t);
   return 1;

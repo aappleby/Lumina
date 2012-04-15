@@ -85,7 +85,7 @@ static int luaB_tonumber (lua_State *L) {
       }  /* else not a number */
     }  /* else not a number */
   }
-  lua_pushnil(L);  /* not a number */
+  L->push(TValue::Nil()); /* not a number */
   return 1;
 }
 
@@ -107,7 +107,7 @@ static int luaB_getmetatable (lua_State *L) {
   THREAD_CHECK(L);
   luaL_checkany(L, 1);
   if (!lua_getmetatable(L, 1)) {
-    lua_pushnil(L);
+    L->push(TValue::Nil());
     return 1;  /* no metatable */
   }
   luaL_getmetafield(L, 1, "__metatable");
@@ -217,7 +217,7 @@ static int pairsmeta (lua_State *L, const char *method, int iszero,
     lua_pushcfunction(L, iter);  /* will return generator, */
     lua_pushvalue(L, 1);  /* state, */
     if (iszero) lua_pushinteger(L, 0);  /* and initial value */
-    else lua_pushnil(L);
+    else L->push(TValue::Nil());
   }
   else {
     lua_pushvalue(L, 1);  /* argument 'self' to metamethod */
@@ -234,7 +234,7 @@ static int luaB_next (lua_State *L) {
   if (lua_next(L, 1))
     return 2;
   else {
-    lua_pushnil(L);
+    L->push(TValue::Nil());
     return 1;
   }
 }
@@ -268,7 +268,7 @@ static int load_aux (lua_State *L, int status) {
   if (status == LUA_OK)
     return 1;
   else {
-    lua_pushnil(L);
+    L->push(TValue::Nil());
     lua_insert(L, -2);  /* put before error message */
     return 2;  /* return nil plus error message */
   }
@@ -420,7 +420,7 @@ static int luaB_pcall (lua_State *L) {
   THREAD_CHECK(L);
   int status;
   luaL_checkany(L, 1);
-  lua_pushnil(L);
+  L->push(TValue::Nil());
   lua_insert(L, 1);  /* create space for status result */
   status = lua_pcallk(L, lua_gettop(L) - 2, LUA_MULTRET, 0, 0, pcallcont);
   return finishpcall(L, (status == LUA_OK));

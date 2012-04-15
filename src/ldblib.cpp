@@ -36,7 +36,7 @@ static int db_getmetatable (lua_State *L) {
   THREAD_CHECK(L);
   luaL_checkany(L, 1);
   if (!lua_getmetatable(L, 1)) {
-    lua_pushnil(L);  /* no metatable */
+    L->push(TValue::Nil());  /* no metatable */
   }
   return 1;
 }
@@ -59,7 +59,7 @@ static int db_setmetatable (lua_State *L) {
 static int db_getuservalue (lua_State *L) {
   THREAD_CHECK(L);
   if (lua_type(L, 1) != LUA_TUSERDATA)
-    lua_pushnil(L);
+    L->push(TValue::Nil());
   else
     lua_getuservalue(L, 1);
   return 1;
@@ -141,7 +141,7 @@ static int db_getinfo (lua_State *L) {
       result = lua_getstack(L1, idx, &ar);
     }
     if (!result) {
-      lua_pushnil(L);  /* level out of range */
+      L->push(TValue::Nil());  /* level out of range */
       return 1;
     }
   }
@@ -224,7 +224,7 @@ static int db_getlocal (lua_State *L) {
       return 2;
     }
     else {
-      lua_pushnil(L);  /* no name (nor value) */
+      L->push(TValue::Nil());  /* no name (nor value) */
       return 1;
     }
   }
@@ -328,7 +328,7 @@ static void hookf (lua_State *L, lua_Debug *ar) {
     lua_pushstring(L, hooknames[(int)ar->event]);
     if (ar->currentline >= 0)
       lua_pushinteger(L, ar->currentline);
-    else lua_pushnil(L);
+    else L->push(TValue::Nil());
     assert(lua_getinfo(L, "lS", ar));
     lua_call(L, 2, 0);
   }

@@ -55,7 +55,7 @@ static int findfield (lua_State *L, int objidx, int level) {
   THREAD_CHECK(L);
   if (level == 0 || !lua_istable(L, -1))
     return 0;  /* not found */
-  lua_pushnil(L);  /* start 'next' loop */
+  L->push(TValue::Nil());  /* start 'next' loop */
   while (lua_next(L, -2)) {  /* for each pair in table */
     if (lua_type(L, -2) == LUA_TSTRING) {  /* ignore non-string keys */
       if (lua_rawequal(L, objidx, -1)) {  /* found object? */
@@ -245,7 +245,7 @@ int luaL_fileresult (lua_State *L, int stat, const char *fname) {
     return 1;
   }
   else {
-    lua_pushnil(L);
+    L->push(TValue::Nil());
     if (fname)
       lua_pushfstring(L, "%s: %s", fname, strerror(en));
     else
@@ -265,7 +265,7 @@ int luaL_execresult (lua_State *L, int stat) {
     if (*what == 'e' && stat == 0)  /* successful termination? */
       lua_pushboolean(L, 1);
     else
-      lua_pushnil(L);
+      L->push(TValue::Nil());
     lua_pushstring(L, what);
     lua_pushinteger(L, stat);
     return 3;  /* return true/nil,what,code */
