@@ -1011,13 +1011,6 @@ void luaV_execute (lua_State *L) {
           TValue *rc = RKC(i);
           if (cast_int(luaV_equalobj_(L, rb, rc)) != GETARG_A(i)) {
             ci->savedpc++;
-          } else {
-            i = *ci->savedpc;
-            int a = GETARG_A(i);
-            if (a > 0) {
-              luaF_close(ci->base + a - 1);
-            }
-            ci->savedpc += GETARG_sBx(i) + 1;
           }
           break;
         }
@@ -1026,13 +1019,6 @@ void luaV_execute (lua_State *L) {
         {
           if (luaV_lessthan(L, RKB(i), RKC(i)) != GETARG_A(i)) {
             ci->savedpc++;
-          } else {
-            i = *ci->savedpc;
-            int a = GETARG_A(i);
-            if (a > 0) {
-              luaF_close(ci->base + a - 1);
-            }
-            ci->savedpc += GETARG_sBx(i) + 1;
           }
           break;
         }
@@ -1041,13 +1027,6 @@ void luaV_execute (lua_State *L) {
         {
           if (luaV_lessequal(L, RKB(i), RKC(i)) != GETARG_A(i)) {
             ci->savedpc++;
-          } else {
-            i = *ci->savedpc;
-            int a = GETARG_A(i);
-            if (a > 0) {
-              luaF_close(ci->base + a - 1);
-            }
-            ci->savedpc += GETARG_sBx(i) + 1;
           }
           break;
         }
@@ -1056,13 +1035,6 @@ void luaV_execute (lua_State *L) {
         {
           if (GETARG_C(i) ? l_isfalse(ra) : !l_isfalse(ra)) {
             ci->savedpc++;
-          } else {
-            i = *ci->savedpc;
-            int a = GETARG_A(i);
-            if (a > 0) {
-              luaF_close(ci->base + a - 1);
-            }
-            ci->savedpc += GETARG_sBx(i) + 1;
           }
           break;
         }
@@ -1074,12 +1046,6 @@ void luaV_execute (lua_State *L) {
             ci->savedpc++;
           } else {
             *ra = *rb;
-            i = *ci->savedpc;
-            int a = GETARG_A(i);
-            if (a > 0) {
-              luaF_close(ci->base + a - 1);
-            }
-            ci->savedpc += GETARG_sBx(i) + 1;
           }
           break;
         }
