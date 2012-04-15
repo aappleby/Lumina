@@ -78,6 +78,8 @@ void Memcontrol::checkLimit() {
   if(isOverLimit()) luaD_throw(LUA_ERRMEM);
 }
 
+//-----------------------------------------------------------------------------
+
 #define MARK		0x55  /* 01010101 (a nice pattern) */
 #define MARKSIZE	16  /* size of marks after each block */
 
@@ -85,8 +87,6 @@ struct Header {
   size_t size;
   int type;
 };
-
-//-----------------------------------------------------------------------------
 
 void *luaM_alloc_nocheck (size_t size) {
   uint8_t* buf = (uint8_t*)malloc(sizeof(Header) + size + MARKSIZE);
