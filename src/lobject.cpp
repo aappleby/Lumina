@@ -74,12 +74,12 @@ int luaO_ceillog2 (unsigned int x) {
 lua_Number luaO_arith (int op, lua_Number v1, lua_Number v2) {
   switch (op) {
     case LUA_OPADD: return v1 + v2;
-    case LUA_OPSUB: return luai_numsub(NULL, v1, v2);
-    case LUA_OPMUL: return luai_nummul(NULL, v1, v2);
-    case LUA_OPDIV: return luai_numdiv(NULL, v1, v2);
-    case LUA_OPMOD: return luai_nummod(NULL, v1, v2);
-    case LUA_OPPOW: return luai_numpow(NULL, v1, v2);
-    case LUA_OPUNM: return luai_numunm(NULL, v1);
+    case LUA_OPSUB: return v1 - v2;
+    case LUA_OPMUL: return v1 * v2;
+    case LUA_OPDIV: return v1 / v2;
+    case LUA_OPMOD: return v1 - floor(v1/v2)*v2;
+    case LUA_OPPOW: return pow(v1,v2);
+    case LUA_OPUNM: return -v1;
     default: assert(0); return 0;
   }
 }

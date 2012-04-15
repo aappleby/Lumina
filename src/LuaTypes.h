@@ -35,6 +35,7 @@ enum LuaResult
   LR_BAD_TABLE,
   LR_BAD_INDEX_TM,
   LR_META_LOOP,
+  LR_BAD_MATH,  // tried to do math on things that weren't numbers
 };
 
 // Whether 'val' points to a value on the Lua stack or elsewhere _does_ matter,

@@ -456,7 +456,7 @@ lua_Unsigned lua_tounsignedx (lua_State *L, int idx, int *isnum) {
 int lua_toboolean (lua_State *L, int idx) {
   THREAD_CHECK(L);
   const TValue *o = index2addr(L, idx);
-  return !o->isFalse();
+  return o->isTrue();
 }
 
 

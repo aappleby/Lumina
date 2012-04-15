@@ -235,7 +235,7 @@ int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
     luaD_hook(L, LUA_HOOKCALL, -1);
   int n = (*f)(L);  /* do the actual call */
   api_checknelems(L, n);
-  luaD_poscall(L, L->top - n);
+  luaD_postcall(L, L->top - n);
   return 1;
 }
 
@@ -258,7 +258,7 @@ int luaD_precallC(lua_State* L, StkId func, int nresults) {
 
   int n = (*f)(L);  /* do the actual call */
   api_checknelems(L, n);
-  luaD_poscall(L, L->top - n);
+  luaD_postcall(L, L->top - n);
   return 1;
 }
 
@@ -314,7 +314,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
 }
 
 
-int luaD_poscall (lua_State *L, StkId firstResult) {
+int luaD_postcall (lua_State *L, StkId firstResult) {
   THREAD_CHECK(L);
   StkId res;
   int wanted, i;
@@ -330,6 +330,7 @@ int luaD_poscall (lua_State *L, StkId firstResult) {
   res = ci->func;  /* res == final position of 1st result */
   wanted = ci->nresults;
   L->ci_ = ci = ci->previous;  /* back to caller */
+
   /* move results to correct place */
   for (i = wanted; i != 0 && firstResult < L->top; i--) {
     *res = *firstResult;
@@ -386,7 +387,7 @@ static void finishCcall (lua_State *L) {
   n = (*ci->continuation_)(L);
   api_checknelems(L, n);
   /* finish 'luaD_precall' */
-  luaD_poscall(L, L->top - n);
+  luaD_postcall(L, L->top - n);
 }
 
 
@@ -490,7 +491,7 @@ static void resume (lua_State *L, void *ud) {
         firstArg = L->top - n;  /* yield results come from continuation */
       }
       L->nCcalls--;  /* finish 'luaD_call' */
-      luaD_poscall(L, firstArg);  /* finish 'luaD_precall' */
+      luaD_postcall(L, firstArg);  /* finish 'luaD_precall' */
     }
     unroll(L, NULL);
   }

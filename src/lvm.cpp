@@ -327,7 +327,7 @@ static int call_orderTM (lua_State *L, const TValue *p1, const TValue *p2,
   if (!call_binTM(L, p1, p2, L->top, event))
     return -1;  /* no metamethod */
   else
-    return !L->top->isFalse();
+    return L->top->isTrue();
 }
 
 
@@ -411,7 +411,7 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
     if (tm.isNone() || tm.isNil()) return 0;  /* no TM? */
 
     callTM(L, &tm, t1, t2, L->top, 1);  /* call TM */
-    return !L->top->isFalse();
+    return L->top->isTrue();
   }
 
   if(t1->isTable()) {
@@ -419,7 +419,7 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
     if (tm.isNone() || tm.isNil()) return 0;  /* no TM? */
 
     callTM(L, &tm, t1, t2, L->top, 1);  /* call TM */
-    return !L->top->isFalse();
+    return L->top->isTrue();
   }
 
   return 0;
@@ -535,8 +535,7 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
 }
 
 
-void luaV_arith (lua_State *L, StkId ra, const TValue *rb,
-                 const TValue *rc, TMS op) {
+void luaV_arith (lua_State *L, StkId ra, const TValue *rb, const TValue *rc, TMS op) {
   THREAD_CHECK(L);
 
   TValue nb = rb->convertToNumber();
@@ -636,7 +635,7 @@ void luaV_finishOp (lua_State *L) {
       break;
     }
     case OP_LE: case OP_LT: case OP_EQ: {
-      int res = !L->top[-1].isFalse();
+      int res = L->top[-1].isTrue();
       L->top--;
       /* metamethod should not be called when operand is K */
       assert(!ISK(GETARG_B(inst)));
@@ -710,7 +709,6 @@ void luaV_execute (lua_State *L) {
   cl = ci->func->getLClosure();
   k = cl->proto_->constants.begin();
   base = ci->base;
-
 
   /* main loop of interpreter */
   for (;;) {
@@ -1068,9 +1066,16 @@ void luaV_execute (lua_State *L) {
         {
           int b = GETARG_B(i);
           int nresults = GETARG_C(i) - 1;
-          if (b != 0) L->top = ra+b;  /* else previous instruction set top */
+
+          if (b != 0) {
+            /* else previous instruction set top */
+            L->top = ra+b;
+          }
+
           if (luaD_precall(L, ra, nresults)) {  /* C function? */
-            if (nresults >= 0) L->top = ci->top;  /* adjust results */
+            if (nresults >= 0) {
+              L->top = ci->top;  /* adjust results */
+            }
             base = ci->base;
           }
           else {  /* Lua function */
@@ -1086,8 +1091,8 @@ void luaV_execute (lua_State *L) {
           int b = GETARG_B(i);
           if (b != 0) L->top = ra+b;  /* else previous instruction set top */
           assert(GETARG_C(i) - 1 == LUA_MULTRET);
-          if (luaD_precall(L, ra, LUA_MULTRET)) {  /* C function? */
-          } else {
+
+          if (!luaD_precall(L, ra, LUA_MULTRET)) {
             /* tail call: put called frame (n) in place of caller one (o) */
             CallInfo *nci = L->ci_;  /* called frame */
             CallInfo *oci = nci->previous;  /* caller frame */
@@ -1095,11 +1100,10 @@ void luaV_execute (lua_State *L) {
             StkId ofunc = oci->func;  /* caller function */
             /* last stack slot filled by 'precall' */
             StkId lim = nci->base + nfunc->getLClosure()->proto_->numparams;
-            int aux;
             /* close all upvalues from previous call */
             if (cl->proto_->subprotos_.size() > 0) luaF_close(oci->base);
             /* move new frame into old one */
-            for (aux = 0; nfunc + aux < lim; aux++) {
+            for (int aux = 0; nfunc + aux < lim; aux++) {
               ofunc[aux] = nfunc[aux];
             }
             oci->base = ofunc + (nci->base - nfunc);  /* correct base */
@@ -1119,9 +1123,10 @@ void luaV_execute (lua_State *L) {
           int b = GETARG_B(i);
           if (b != 0) L->top = ra+b-1;
           if (cl->proto_->subprotos_.size() > 0) luaF_close(base);
-          b = luaD_poscall(L, ra);
-          if (!(ci->callstatus & CIST_REENTRY))  /* 'ci' still the called one */
+          b = luaD_postcall(L, ra);
+          if (!(ci->callstatus & CIST_REENTRY)) {  /* 'ci' still the called one */
             return;  /* external invocation: return */
+          }
           else {  /* invocation via reentry: continue execution */
             ci = L->ci_;
             if (b) L->top = ci->top;
@@ -1131,16 +1136,22 @@ void luaV_execute (lua_State *L) {
           }
         }
 
+        // TODO(aappleby): What's the 'external index'?
+        // OP_FORLOOP comes at the _end_ of a for block. It updates the loop
+        // counter and jump back to the start of the loop if the counter has
+        // not passed the limit.
       case OP_FORLOOP:
         {
-          lua_Number step = ra[2].getNumber();
-          lua_Number idx = ra[0].getNumber() + step; /* increment index */
-          lua_Number limit = ra[1].getNumber();
-          if (luai_numlt(L, 0, step) ? luai_numle(L, idx, limit)
-                                     : luai_numle(L, limit, idx)) {
+          lua_Number index = base[A+0].getNumber();
+          lua_Number limit = base[A+1].getNumber();
+          lua_Number step  = base[A+2].getNumber();
+
+          index += step;
+
+          if ((step > 0) ? (index <= limit) : (index >= limit)) {
             ci->savedpc += GETARG_sBx(i);  /* jump back */
-            ra[0] = idx;  /* update internal index... */
-            ra[3] = idx;  /* ...and external index */
+            base[A+0] = index;  /* update internal index... */
+            base[A+3] = index;  /* ...and external index */
           }
           break;
         }
