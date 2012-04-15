@@ -754,7 +754,9 @@ void luaV_execute (lua_State *L) {
 
     uint32_t A  = (i >>  6) & 0x000000FF;
     uint32_t B  = (i >> 23) & 0x000001FF;
+    uint32_t Bk = (i >> 23) & 0x000000FF;
     uint32_t C  = (i >> 14) & 0x000001FF;
+    uint32_t Ck = (i >> 14) & 0x000000FF;
     uint32_t Ax = (i >>  6) & 0x03FFFFFF;
     uint32_t Bx = (i >> 14) & 0x0003FFFF;
     int32_t Bs = (int32_t)Bx - 0x1FFFF;
@@ -767,7 +769,7 @@ void luaV_execute (lua_State *L) {
 
     /* WARNING: several calls may realloc the stack and invalidate `ra' */
     ra = RA(i);
-    assert(base == ci->base);
+    base = ci->base;
     assert(base <= L->top && L->top < L->stack.end());
     switch(GET_OPCODE(i)) {
       case OP_MOVE:
@@ -887,12 +889,14 @@ void luaV_execute (lua_State *L) {
 
       case OP_ADD:
         {
-          TValue *rb = RKB(i);
-          TValue *rc = RKC(i);
+          TValue *rb1 = RKB(i);
+          TValue *rc1 = RKC(i);
+          TValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
+          TValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
           if (rb->isNumber() && rc->isNumber()) {
             double nb = rb->getNumber();
             double nc = rc->getNumber();
-            ra[0] = nb + nc;
+            base[A] = nb + nc;
           } else {
             luaV_arith(L, ra, rb, rc, TM_ADD);
             base = ci->base;
