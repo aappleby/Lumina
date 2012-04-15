@@ -718,6 +718,8 @@ void luaV_finishOp (lua_State *L) {
 
 #define Protect(x)	{ {x;}; base = ci->base; }
 
+#define luaC_condGC(L,c) {if (thread_G->getGCDebt() > 0) {c;};}
+
 #define checkGC(L,c)	Protect(luaC_condGC(L, c);)
 
 
@@ -820,14 +822,16 @@ void luaV_execute (lua_State *L) {
 
       case OP_GETTABLE:
         {
-          Protect(luaV_gettable(L, RB(i), RKC(i), ra));
+          luaV_gettable(L, RB(i), RKC(i), ra);
+          base = ci->base;
           break;
         }
 
       case OP_SETTABUP: 
         {
           int a = GETARG_A(i);
-          Protect(luaV_settable(L, cl->ppupvals_[a]->v, RKB(i), RKC(i)));
+          luaV_settable(L, cl->ppupvals_[a]->v, RKB(i), RKC(i));
+          base = ci->base;
           break;
         }
 
@@ -841,7 +845,8 @@ void luaV_execute (lua_State *L) {
 
       case OP_SETTABLE:
         {
-          Protect(luaV_settable(L, ra, RKB(i), RKC(i)));
+          luaV_settable(L, ra, RKB(i), RKC(i));
+          base = ci->base;
           break;
         }
 
@@ -876,16 +881,55 @@ void luaV_execute (lua_State *L) {
         {
           StkId rb = RB(i);
           ra[1] = *rb;
-          Protect(luaV_gettable(L, rb, RKC(i), ra));
+          luaV_gettable(L, rb, RKC(i), ra);
+          base = ci->base;
           break;
         }
 
-      case OP_ADD: { arith_op(luai_numadd, TM_ADD); break; }
-      case OP_SUB: { arith_op(luai_numsub, TM_SUB); break; }
-      case OP_MUL: { arith_op(luai_nummul, TM_MUL); break; }
-      case OP_DIV: { arith_op(luai_numdiv, TM_DIV); break; }
-      case OP_MOD: { arith_op(luai_nummod, TM_MOD); break; }
-      case OP_POW: { arith_op(luai_numpow, TM_POW); break; }
+      case OP_ADD:
+        {
+          TValue *rb = RKB(i);
+          TValue *rc = RKC(i);
+          if (rb->isNumber() && rc->isNumber()) {
+            double nb = rb->getNumber();
+            double nc = rc->getNumber();
+            ra[0] = nb + nc;
+          } else {
+            luaV_arith(L, ra, rb, rc, TM_ADD);
+            base = ci->base;
+          }
+          break;
+        }
+
+      case OP_SUB:
+        {
+          arith_op(luai_numsub, TM_SUB);
+          break;
+        }
+
+      case OP_MUL:
+        {
+          arith_op(luai_nummul, TM_MUL);
+          break;
+        }
+
+      case OP_DIV:
+        {
+          arith_op(luai_numdiv, TM_DIV); 
+          break;
+        }
+
+      case OP_MOD:
+        {
+          arith_op(luai_nummod, TM_MOD);
+          break;
+        }
+
+      case OP_POW:
+        {
+          arith_op(luai_numpow, TM_POW);
+          break;
+        }
 
       case OP_UNM:
         {
@@ -895,7 +939,8 @@ void luaV_execute (lua_State *L) {
             ra[0] = -nb;
           }
           else {
-            Protect(luaV_arith(L, ra, rb, rb, TM_UNM));
+            luaV_arith(L, ra, rb, rb, TM_UNM);
+            base = ci->base;
           }
           break;
         }
@@ -910,7 +955,8 @@ void luaV_execute (lua_State *L) {
 
       case OP_LEN:
         {
-          Protect(luaV_objlen(L, ra, RB(i)));
+          luaV_objlen(L, ra, RB(i));
+          base = ci->base;
           break;
         }
 
@@ -920,7 +966,8 @@ void luaV_execute (lua_State *L) {
           int c = GETARG_C(i);
           StkId rb;
           L->top = base + c + 1;  /* mark the end of concat operands */
-          Protect(luaV_concat(L, c - b + 1));
+          luaV_concat(L, c - b + 1);
+          base = ci->base;
           ra = RA(i);  /* 'luav_concat' may invoke TMs and move the stack */
           rb = b + base;
           *ra = b[base];
@@ -942,34 +989,34 @@ void luaV_execute (lua_State *L) {
         {
           TValue *rb = RKB(i);
           TValue *rc = RKC(i);
-          Protect(
-            if (cast_int(luaV_equalobj_(L, rb, rc)) != GETARG_A(i))
-              ci->savedpc++;
-            else
-              donextjump(ci);
-          )
+          if (cast_int(luaV_equalobj_(L, rb, rc)) != GETARG_A(i)) {
+            ci->savedpc++;
+          } else {
+            donextjump(ci);
+          }
+          base = ci->base;
           break;
         }
 
       case OP_LT:
         {
-          Protect(
-            if (luaV_lessthan(L, RKB(i), RKC(i)) != GETARG_A(i))
-              ci->savedpc++;
-            else
-              donextjump(ci);
-          )
+          if (luaV_lessthan(L, RKB(i), RKC(i)) != GETARG_A(i)) {
+            ci->savedpc++;
+          } else {
+            donextjump(ci);
+          }
+          base = ci->base;
           break;
         }
 
       case OP_LE:
         {
-          Protect(
-            if (luaV_lessequal(L, RKB(i), RKC(i)) != GETARG_A(i))
-              ci->savedpc++;
-            else
-              donextjump(ci);
-          )
+          if (luaV_lessequal(L, RKB(i), RKC(i)) != GETARG_A(i)) {
+            ci->savedpc++;
+          } else {
+            donextjump(ci);
+          }
+          base = ci->base;
           break;
         }
 
@@ -1103,7 +1150,8 @@ void luaV_execute (lua_State *L) {
           cb[1] = ra[1];
           cb[0] = ra[0];
           L->top = cb + 3;  /* func. + 2 args (state and index) */
-          Protect(luaD_call(L, cb, GETARG_C(i), 1));
+          luaD_call(L, cb, GETARG_C(i), 1);
+          base = ci->base;
           L->top = ci->top;
           i = *(ci->savedpc++);  /* go to next instruction */
           ra = RA(i);
