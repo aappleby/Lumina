@@ -44,9 +44,9 @@ CallInfo *luaE_extendCI (lua_State *L) {
   THREAD_CHECK(L);
   CallInfo *ci = new CallInfo();
   if(ci == NULL) luaD_throw(LUA_ERRMEM);
-  assert(L->ci_->next == NULL);
-  L->ci_->next = ci;
-  ci->previous = L->ci_;
+  assert(L->callinfo_->next == NULL);
+  L->callinfo_->next = ci;
+  ci->previous = L->callinfo_;
   ci->next = NULL;
   return ci;
 }
@@ -117,7 +117,7 @@ static void f_luaopen (lua_State *L, void *) {
 static void preinit_state (lua_State *L, global_State *g) {
   //THREAD_CHECK(L);
   L->l_G = g;
-  L->ci_ = NULL;
+  L->callinfo_ = NULL;
   L->errorJmp = NULL;
   L->nCcalls = 0;
   L->hook = NULL;
@@ -125,7 +125,7 @@ static void preinit_state (lua_State *L, global_State *g) {
   L->basehookcount = 0;
   L->allowhook = 1;
   L->hookcount = L->basehookcount;
-  L->openupval = NULL;
+  L->open_upvals_ = NULL;
   L->nonyieldable_count_ = 1;
   L->status = LUA_OK;
   L->errfunc = 0;
@@ -153,7 +153,7 @@ static void close_state (lua_State *L) {
 
   thread_G->buff.buffer.clear();
 
-  assert(L->openupval == NULL);
+  assert(L->open_upvals_ == NULL);
   delete L;
   thread_L = NULL;
 

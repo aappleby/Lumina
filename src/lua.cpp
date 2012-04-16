@@ -11,7 +11,7 @@
 #include <string.h>
 #include <conio.h>
 
-#define lua_c
+#include "LuaState.h"
 
 #include "lua.h"
 
@@ -179,7 +179,7 @@ static int docall (lua_State *L, int narg, int nres) {
   signal(SIGINT, laction);
   status = lua_pcall(L, narg, nres, base);
   signal(SIGINT, SIG_DFL);
-  lua_remove(L, base);  /* remove traceback function */
+  L->remove(base);  /* remove traceback function */
   return status;
 }
 
@@ -233,7 +233,7 @@ static int dolibrary (lua_State *L, const char *name) {
     lua_pop(L, 1);  /* remove global table */
   }
   else
-    lua_remove(L, -2);  /* remove global table (below error msg.) */
+    L->remove(-2);  /* remove global table (below error msg.) */
   return report(L, status);
 }
 
@@ -300,7 +300,7 @@ static int loadline (lua_State *L) {
     lua_concat(L, 3);  /* join them */
   }
   lua_saveline(L, 1);
-  lua_remove(L, 1);  /* remove line */
+  L->remove(1);  /* remove line */
   return status;
 }
 

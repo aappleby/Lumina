@@ -15,9 +15,8 @@ lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
   status = 0;
   top = 0;
   l_G = NULL;
-  ci_ = NULL;
+  callinfo_ = NULL;
   oldpc = NULL;
-  stack_last = NULL;
   nonyieldable_count_ = 0;
   nCcalls = 0;
   hookmask = 0;
@@ -25,7 +24,7 @@ lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
   basehookcount = 0;
   hookcount = 0;
   hook = NULL;
-  openupval = NULL;
+  open_upvals_ = NULL;
   errorJmp = NULL;
   errfunc = 0;
 }
@@ -33,7 +32,7 @@ lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
 lua_State::~lua_State() {
   if(!stack.empty()) {
     closeUpvals(stack.begin());
-    assert(openupval == NULL);
+    assert(open_upvals_ == NULL);
   }
   freestack();
 }
@@ -42,7 +41,6 @@ void lua_State::initstack() {
   stack.resize_nocheck(BASIC_STACK_SIZE);
 
   top = stack.begin();
-  stack_last = stack.end() - EXTRA_STACK;
 
   /* initialize first ci */
   CallInfo* ci = &callinfo_head_;
@@ -51,7 +49,7 @@ void lua_State::initstack() {
   ci->func = top;
   top++;
   ci->top = top + LUA_MINSTACK;
-  ci_ = ci;
+  callinfo_ = ci;
 }
 
 
@@ -62,7 +60,7 @@ void lua_State::freestack() {
   }
   
   // free the entire 'ci' list
-  ci_ = &callinfo_head_;
+  callinfo_ = &callinfo_head_;
   CallInfo *ci = callinfo_head_.next;
   while (ci != NULL) {
     CallInfo* next = ci->next;
@@ -79,8 +77,8 @@ void lua_State::freestack() {
 int lua_State::stackinuse() {
   CallInfo *temp_ci;
   StkId lim = top;
-  for (temp_ci = ci_; temp_ci != NULL; temp_ci = temp_ci->previous) {
-    assert(temp_ci->top <= stack_last);
+  for (temp_ci = callinfo_; temp_ci != NULL; temp_ci = temp_ci->previous) {
+    assert(temp_ci->top <= stack.last());
     if (lim < temp_ci->top) {
       lim = temp_ci->top;
     }
@@ -126,7 +124,7 @@ void lua_State::shrinkstack() {
 // to the correct locations.
 void lua_State::reallocstack (int newsize) {
   assert(newsize <= LUAI_MAXSTACK || newsize == ERRORSTACKSIZE);
-  assert(stack_last == stack.end() - EXTRA_STACK);
+  assert(stack.last() == stack.end() - EXTRA_STACK);
 
   // Remember where the old stack was. This will be a dangling pointer
   // after the resize, but that's OK as we only use it to fix up the
@@ -136,19 +134,18 @@ void lua_State::reallocstack (int newsize) {
   // Resize the stack array. but do not check to see if we've exceeded
   // our memory limit.
   stack.resize_nocheck(newsize);
-  stack_last = stack.end() - EXTRA_STACK;
 
   // Correct the stack top pointer.
   top = stack.begin() + (top - oldstack);
   
   // Correct all stack references in open upvalues.
-  for (LuaObject* up = openupval; up != NULL; up = up->next_) {
+  for (LuaObject* up = open_upvals_; up != NULL; up = up->next_) {
     UpVal* uv = static_cast<UpVal*>(up);
     uv->v = (uv->v - oldstack) + stack.begin();
   }
   
   // Correct all stack references in all active callinfos.
-  for (CallInfo* ci = ci_; ci != NULL; ci = ci->previous) {
+  for (CallInfo* ci = callinfo_; ci != NULL; ci = ci->previous) {
     ci->top = (ci->top - oldstack) + stack.begin();
     ci->func = (ci->func - oldstack) + stack.begin();
     if ((ci->callstatus & CIST_LUA)) {
@@ -162,18 +159,18 @@ void lua_State::reallocstack (int newsize) {
 }
 
 void lua_State::checkstack(int size) {
-  if ((stack_last - top) <= size) growstack(size);
+  if ((stack.last() - top) <= size) growstack(size);
 }
 
 void lua_State::closeUpvals(StkId level) {
   UpVal *uv;
 
-  while (openupval != NULL) {
-    uv = dynamic_cast<UpVal*>(openupval);
+  while (open_upvals_ != NULL) {
+    uv = dynamic_cast<UpVal*>(open_upvals_);
     if(uv->v < level) break;
 
     assert(!uv->isBlack() && uv->v != &uv->value);
-    openupval = uv->next_;  /* remove from `open' list */
+    open_upvals_ = uv->next_;  /* remove from `open' list */
 
     if (uv->isDead())
       delete uv;
@@ -197,7 +194,7 @@ void lua_State::closeUpvals(StkId level) {
 // Negative indices less than or equal to LUA_REGISTRYINDEX are special.
 
 TValue lua_State::at(int idx) {
-  CallInfo *ci = ci_;
+  CallInfo *ci = callinfo_;
   if (idx > 0) {
     TValue *o = ci->func + idx;
     if (o >= top) {
@@ -243,18 +240,18 @@ TValue lua_State::pop() {
 void lua_State::push(TValue v) {
   top[0] = v;
   top++;
-  assert((top <= ci_->top) && "stack overflow");
+  assert((top <= callinfo_->top) && "stack overflow");
 }
 
 void lua_State::push(const TValue* v) {
   top[0] = *v;
   top++;
-  assert((top <= ci_->top) && "stack overflow");
+  assert((top <= callinfo_->top) && "stack overflow");
 }
 
 void lua_State::remove(int index) {
   assert(index > LUA_REGISTRYINDEX);
-  TValue* p = (index > 0) ? &ci_->func[index] : &top[index];
+  TValue* p = (index > 0) ? &callinfo_->func[index] : &top[index];
   while (++p < top) {
     p[-1] = p[0];
   }

@@ -63,7 +63,7 @@ static int findfield (lua_State *L, int objidx, int level) {
         return 1;
       }
       else if (findfield(L, objidx, level - 1)) {  /* try recursively */
-        lua_remove(L, -2);  /* remove table (but keep name) */
+        L->remove(-2);  /* remove table (but keep name) */
         lua_pushliteral(L, ".");
         lua_insert(L, -2);  /* place '.' between the two names */
         lua_concat(L, 3);
@@ -102,7 +102,7 @@ static void pushfuncname (lua_State *L, lua_Debug *ar) {
   else if (*ar->what == 'C') {
     if (pushglobalfuncname(L, ar)) {
       lua_pushfstring(L, "function " LUA_QS, lua_tostring(L, -1));
-      lua_remove(L, -2);  /* remove name */
+      L->remove(-2);  /* remove name */
     }
     else
       lua_pushliteral(L, "?");
@@ -500,7 +500,7 @@ char *luaL_prepbuffsize (luaL_Buffer *B, size_t sz) {
     /* move content to new buffer */
     memcpy(newbuff, B->b, B->n * sizeof(char));
     if (buffonstack(B))
-      lua_remove(L, -2);  /* remove old buffer */
+      L->remove(-2);  /* remove old buffer */
     B->b = newbuff;
     B->size = newsize;
   }
@@ -524,7 +524,7 @@ void luaL_pushresult (luaL_Buffer *B) {
   lua_State *L = B->L;
   lua_pushlstring(L, B->b, B->n);
   if (buffonstack(B))
-    lua_remove(L, -2);  /* remove old buffer */
+    L->remove(-2);  /* remove old buffer */
 }
 
 
@@ -541,7 +541,7 @@ void luaL_addvalue (luaL_Buffer *B) {
   if (buffonstack(B))
     lua_insert(L, -2);  /* put value below buffer */
   luaL_addlstring(B, s, l);
-  lua_remove(L, (buffonstack(B)) ? -2 : -1);  /* remove value */
+  L->remove((buffonstack(B)) ? -2 : -1);  /* remove value */
 }
 
 
@@ -646,7 +646,7 @@ static int errfile (lua_State *L, const char *what, int fnameindex) {
   const char *serr = strerror(errno);
   const char *filename = lua_tostring(L, fnameindex) + 1;
   lua_pushfstring(L, "cannot %s %s: %s", what, filename, serr);
-  lua_remove(L, fnameindex);
+  L->remove(fnameindex);
   return LUA_ERRFILE;
 }
 
@@ -715,7 +715,7 @@ int luaL_loadfilex (lua_State *L, const char *filename,
     lua_settop(L, fnameindex);  /* ignore results from `lua_load' */
     return errfile(L, "read", fnameindex);
   }
-  lua_remove(L, fnameindex);
+  L->remove(fnameindex);
   return status;
 }
 
@@ -767,7 +767,7 @@ int luaL_getmetafield (lua_State *L, int obj, const char *event) {
     return 0;
   }
   else {
-    lua_remove(L, -2);  /* remove only metatable */
+    L->remove(-2);  /* remove only metatable */
     return 1;
   }
 }

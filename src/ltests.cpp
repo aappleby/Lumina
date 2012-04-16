@@ -31,7 +31,7 @@
 #include "lualib.h"
 
 
-#define obj_at(L,k)	(L->ci_->func + (k))
+#define obj_at(L,k)	(L->callinfo_->func + (k))
 
 
 static void setnameval (lua_State *L, const char *name, int val) {
@@ -196,13 +196,13 @@ static void checkstack (global_State *g, lua_State *L1) {
   CallInfo *ci;
   LuaObject *uvo;
   assert(!L1->isDead());
-  for (uvo = L1->openupval; uvo != NULL; uvo = uvo->next_) {
+  for (uvo = L1->open_upvals_; uvo != NULL; uvo = uvo->next_) {
     UpVal *uv = dynamic_cast<UpVal*>(uvo);
     assert(uv->v != &uv->value);  /* must be open */
     assert(!uvo->isBlack());  /* open upvalues cannot be black */
   }
-  for (ci = L1->ci_; ci != NULL; ci = ci->previous) {
-    assert(ci->top <= L1->stack_last);
+  for (ci = L1->callinfo_; ci != NULL; ci = ci->previous) {
+    assert(ci->top <= L1->stack.last());
     assert(lua_checkpc(ci));
   }
   if (L1->stack.size()) {
@@ -541,7 +541,7 @@ static int stacklevel (lua_State *L) {
   THREAD_CHECK(L);
   unsigned long a = 0;
   lua_pushinteger(L, (L->top - L->stack.begin()));
-  lua_pushinteger(L, (L->stack_last - L->stack.begin()));
+  lua_pushinteger(L, (L->stack.last() - L->stack.begin()));
   lua_pushinteger(L, (unsigned long)&a);
   return 5;
 }
@@ -1077,7 +1077,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("remove") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }
-      lua_remove(L1, tempnum);
+      L1->remove(tempnum);
     }
     else if EQ("insert") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }

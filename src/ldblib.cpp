@@ -117,7 +117,7 @@ static void treatstackoption (lua_State *L, lua_State *L1, const char *fname) {
   THREAD_CHECK(L);
   if (L == L1) {
     lua_pushvalue(L, -2);
-    lua_remove(L, -3);
+    L->remove(-3);
   }
   else {
     THREAD_CHANGE(L1);
@@ -399,7 +399,7 @@ static int db_gethook (lua_State *L) {
   else {
     gethooktable(L);
     lua_rawgetp(L, -1, L1);   /* get hook */
-    lua_remove(L, -2);  /* remove hook table */
+    L->remove(-2);  /* remove hook table */
   }
   lua_pushstring(L, unmakemask(mask, buff));
   int hookcount;

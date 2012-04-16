@@ -178,7 +178,7 @@ static void setprogdir (lua_State *L) {
   else {
     *lb = '\0';
     luaL_gsub(L, lua_tostring(L, -1), LUA_EXEC_DIR, buff);
-    lua_remove(L, -2);  /* remove original string */
+    L->remove(-2);  /* remove original string */
   }
 }
 
@@ -363,11 +363,11 @@ static const char *searchpath (lua_State *L, const char *name,
   while ((path = pushnexttemplate(L, path)) != NULL) {
     const char *filename = luaL_gsub(L, lua_tostring(L, -1),
                                      LUA_PATH_MARK, name);
-    lua_remove(L, -2);  /* remove path template */
+    L->remove(-2);  /* remove path template */
     if (readable(filename))  /* does file exist and is readable? */
       return filename;  /* return that file name */
     lua_pushfstring(L, "\n\tno file " LUA_QS, filename);
-    lua_remove(L, -2);  /* remove file name */
+    L->remove(-2);  /* remove file name */
     luaL_addvalue(&msg);  /* concatenate error msg. entry */
   }
   luaL_pushresult(&msg);  /* create error message */
@@ -579,7 +579,7 @@ static void setpath (lua_State *L, const char *fieldname, const char *envname1,
     path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP,
                               LUA_PATH_SEP AUXMARK LUA_PATH_SEP);
     luaL_gsub(L, path, AUXMARK, def);
-    lua_remove(L, -2);
+    L->remove(-2);
   }
   setprogdir(L);
   lua_setfield(L, -2, fieldname);

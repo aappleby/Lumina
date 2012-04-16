@@ -25,7 +25,7 @@ using std::auto_ptr;
 
 UpVal *luaF_findupval (StkId level) {
   global_State *g = thread_G;
-  LuaObject **pp = &thread_L->openupval;
+  LuaObject **pp = &thread_L->open_upvals_;
   UpVal *p;
   UpVal *uv;
   while (*pp != NULL && (p = dynamic_cast<UpVal*>(*pp))->v >= level) {
@@ -53,12 +53,12 @@ void luaF_close (StkId level) {
   UpVal *uv;
   lua_State* L = thread_L;
 
-  while (L->openupval != NULL) {
-    uv = dynamic_cast<UpVal*>(L->openupval);
+  while (L->open_upvals_ != NULL) {
+    uv = dynamic_cast<UpVal*>(L->open_upvals_);
     if(uv->v < level) break;
 
     assert(!uv->isBlack() && uv->v != &uv->value);
-    L->openupval = uv->next_;  /* remove from `open' list */
+    L->open_upvals_ = uv->next_;  /* remove from `open' list */
 
     if (uv->isDead())
       delete uv;

@@ -1,7 +1,7 @@
 #pragma once
 #include "LuaCallinfo.h"    // for base_ci
 #include "LuaObject.h"
-#include "LuaVector.h"
+#include "LuaStack.h"
 
 /* chain list of long jump buffers */
 struct lua_longjmp {
@@ -26,13 +26,12 @@ public:
   global_State *l_G;
 
   CallInfo callinfo_head_;  /* CallInfo for first level (C calling Lua) */
-  CallInfo *ci_;  /* call info for current function */
+  CallInfo* callinfo_;  /* call info for current function */
 
   const Instruction *oldpc;  /* last pc traced */
 
-  LuaVector<TValue> stack;
+  LuaStack stack;
   StkId top;  /* first free slot in the stack */
-  TValue* stack_last;  /* last free slot in the stack */
 
   unsigned short nonyieldable_count_;  /* number of non-yieldable calls in stack */
   unsigned short nCcalls;  /* number of nested C calls */
@@ -43,7 +42,7 @@ public:
   int hookcount;
   lua_Hook hook;
   
-  LuaObject *openupval;  /* list of open upvalues in this stack */
+  LuaObject *open_upvals_;  /* list of open upvalues in this stack */
   
   lua_longjmp *errorJmp;  /* current error recover point */
   ptrdiff_t errfunc;  /* current error handling function (stack index) */

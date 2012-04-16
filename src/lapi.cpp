@@ -38,7 +38,7 @@ const char lua_ident[] =
 bool isValidIndex(lua_State* L, int idx);
 
 void api_checknelems(lua_State* L, int n) {
-  api_check((n) < (L->top - L->ci_->func), "not enough elements in the stack");
+  api_check((n) < (L->top - L->callinfo_->func), "not enough elements in the stack");
 }
 
 // Positive stack indices are indexed from the current call frame.
@@ -51,21 +51,21 @@ bool isValidIndex(lua_State* L, int idx) {
 
   // Check for valid positive stack index
   if (idx > 0) {
-    return (L->ci_->func + idx) < L->top;
+    return (L->callinfo_->func + idx) < L->top;
   }
 
   // Check for valid negative stack index
   if (idx >= LUA_REGISTRYINDEX) return true;
 
   // Check for valid upvalue index
-  if (L->ci_->func->isLightFunction()) return false;
-  Closure* func = L->ci_->func->getCClosure();
+  if (L->callinfo_->func->isLightFunction()) return false;
+  Closure* func = L->callinfo_->func->getCClosure();
   return (LUA_REGISTRYINDEX - idx - 1) < func->nupvalues;
 }
 
 TValue index2addr3(lua_State* L, int idx) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->ci_;
+  CallInfo *ci = L->callinfo_;
   if (idx > 0) {
     TValue *o = ci->func + idx;
     if (o >= L->top) {
@@ -101,7 +101,7 @@ TValue index2addr3(lua_State* L, int idx) {
 
 TValue* index2addr2 (lua_State *L, int idx) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->ci_;
+  CallInfo *ci = L->callinfo_;
   if (idx > 0) {
     TValue *o = ci->func + idx;
     if (o >= L->top) {
@@ -163,8 +163,8 @@ static void growstack (lua_State *L, void *ud) {
 int lua_checkstack (lua_State *L, int size) {
   THREAD_CHECK(L);
   int res;
-  CallInfo *ci = L->ci_;
-  if (L->stack_last - L->top > size)  /* stack large enough? */
+  CallInfo *ci = L->callinfo_;
+  if (L->stack.last() - L->top > size)  /* stack large enough? */
     res = 1;  /* yes; check is OK */
   else {  /* no; need to grow stack */
     int inuse = cast_int(L->top - L->stack.begin()) + EXTRA_STACK;
@@ -185,7 +185,7 @@ void lua_xmove (lua_State *from, lua_State *to, int n) {
   if (from == to) return;
   api_checknelems(from, n);
   api_check(G(from) == G(to), "moving among independent states");
-  api_check(to->ci_->top - to->top >= n, "not enough elements to move");
+  api_check(to->callinfo_->top - to->top >= n, "not enough elements to move");
   from->top -= n;
   {
     THREAD_CHANGE(to);
@@ -227,20 +227,20 @@ int lua_absindex (lua_State *L, int idx) {
   THREAD_CHECK(L);
   return (idx > 0 || idx <= LUA_REGISTRYINDEX)
          ? idx
-         : cast_int(L->top - L->ci_->func + idx);
+         : cast_int(L->top - L->callinfo_->func + idx);
 }
 
 
 int lua_gettop (lua_State *L) {
-  return cast_int(L->top - (L->ci_->func + 1));
+  return cast_int(L->top - (L->callinfo_->func + 1));
 }
 
 
 void lua_settop (lua_State *L, int idx) {
   THREAD_CHECK(L);
-  StkId func = L->ci_->func;
+  StkId func = L->callinfo_->func;
   if (idx >= 0) {
-    api_check(idx <= L->stack_last - (func + 1), "new top too large");
+    api_check(idx <= L->stack.last() - (func + 1), "new top too large");
     while (L->top < (func + 1) + idx) {
       L->top[0] = TValue::nil;
       L->top++;
@@ -252,21 +252,6 @@ void lua_settop (lua_State *L, int idx) {
     L->top += idx+1;  /* `subtract' index (index is negative) */
   }
 }
-
-
-void lua_remove (lua_State *L, int idx) {
-  THREAD_CHECK(L);
-  /*
-  StkId p;
-  p = index2addr_checked(L, idx);
-  while (++p < L->top) {
-    p[-1] = p[0];
-  }
-  L->top--;
-  */
-  L->remove(idx);
-}
-
 
 void lua_insert (lua_State *L, int idx) {
   THREAD_CHECK(L);
@@ -285,7 +270,7 @@ static void moveto (lua_State *L, TValue *fr, int idx) {
   TValue *to = index2addr_checked(L, idx);
   *to = *fr;
   if (idx < LUA_REGISTRYINDEX) {  /* function upvalue? */
-    luaC_barrier(L->ci_->func->getCClosure(), *fr);
+    luaC_barrier(L->callinfo_->func->getCClosure(), *fr);
   }
   /* LUA_REGISTRYINDEX does not need gc barrier
      (collector revisits it before finishing collection) */
@@ -313,7 +298,7 @@ void lua_pushvalue (lua_State *L, int idx) {
   TValue v = index2addr3(L, idx);
   L->top[0] = v.isNone() ? TValue::nil : v;
   L->top++;
-  api_check(L->top <= L->ci_->top, "stack overflow");
+  api_check(L->top <= L->callinfo_->top, "stack overflow");
 }
 
 
@@ -1007,15 +992,15 @@ void lua_setuservalue (lua_State *L, int idx) {
 
 
 #define checkresults(L,na,nr) \
-     api_check((nr) == LUA_MULTRET || (L->ci_->top - L->top >= (nr) - (na)), \
+     api_check((nr) == LUA_MULTRET || (L->callinfo_->top - L->top >= (nr) - (na)), \
 	"results from function overflow current stack size")
 
 
 int lua_getctx (lua_State *L, int *ctx) {
   THREAD_CHECK(L);
-  if (L->ci_->callstatus & CIST_YIELDED) {
-    if (ctx) *ctx = L->ci_->ctx;
-    return L->ci_->status;
+  if (L->callinfo_->callstatus & CIST_YIELDED) {
+    if (ctx) *ctx = L->callinfo_->ctx;
+    return L->callinfo_->status;
   }
   else return LUA_OK;
 }
@@ -1025,15 +1010,15 @@ void lua_callk (lua_State *L, int nargs, int nresults, int ctx,
                         lua_CFunction k) {
   THREAD_CHECK(L);
   StkId func;
-  api_check(k == NULL || !isLua(L->ci_),
+  api_check(k == NULL || !isLua(L->callinfo_),
     "cannot use continuations inside hooks");
   api_checknelems(L, nargs+1);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
   checkresults(L, nargs, nresults);
   func = L->top - (nargs+1);
   if (k != NULL && L->nonyieldable_count_ == 0) {  /* need to prepare continuation? */
-    L->ci_->continuation_ = k;  /* save continuation */
-    L->ci_->ctx = ctx;  /* save context */
+    L->callinfo_->continuation_ = k;  /* save continuation */
+    L->callinfo_->ctx = ctx;  /* save context */
     luaD_call(L, func, nresults, 1);  /* do the call */
   }
   else  /* no continuation or no yieldable */
@@ -1064,7 +1049,7 @@ int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
   struct CallS c;
   int status;
   ptrdiff_t func;
-  api_check(k == NULL || !isLua(L->ci_),
+  api_check(k == NULL || !isLua(L->callinfo_),
     "cannot use continuations inside hooks");
   api_checknelems(L, nargs+1);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
@@ -1081,7 +1066,7 @@ int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
     status = luaD_pcall(L, f_call, &c, savestack(L, c.func), func);
   }
   else {  /* prepare continuation (call is already protected by 'resume') */
-    CallInfo *ci = L->ci_;
+    CallInfo *ci = L->callinfo_;
     ci->continuation_ = k;  /* save continuation */
     ci->ctx = ctx;  /* save context */
     /* save information for error recovery */

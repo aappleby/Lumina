@@ -129,7 +129,7 @@ void luaD_hook (lua_State *L, int event, int line) {
   THREAD_CHECK(L);
   lua_Hook hook = L->hook;
   if (hook && L->allowhook) {
-    CallInfo *ci = L->ci_;
+    CallInfo *ci = L->callinfo_;
     ptrdiff_t top = savestack(L, L->top);
     ptrdiff_t ci_top = savestack(L, ci->top);
     lua_Debug ar;
@@ -138,7 +138,7 @@ void luaD_hook (lua_State *L, int event, int line) {
     ar.i_ci = ci;
     L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
     ci->top = L->top + LUA_MINSTACK;
-    assert(ci->top <= L->stack_last);
+    assert(ci->top <= L->stack.last());
     L->allowhook = 0;  /* cannot call hooks inside a hook */
     ci->callstatus |= CIST_HOOKED;
     (*hook)(L, &ar);
@@ -208,12 +208,12 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
 
 
 CallInfo* next_ci(lua_State* L) {
-  if(L->ci_->next == NULL) {
-    L->ci_ = luaE_extendCI(L);
+  if(L->callinfo_->next == NULL) {
+    L->callinfo_ = luaE_extendCI(L);
   } else {
-    L->ci_ = L->ci_->next;
+    L->callinfo_ = L->callinfo_->next;
   }
-  return L->ci_;
+  return L->callinfo_;
 }
 
 int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
@@ -227,7 +227,7 @@ int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
     ci->nresults = nresults;
     ci->func = restorestack(L, funcr);
     ci->top = L->top + LUA_MINSTACK;
-    assert(ci->top <= L->stack_last);
+    assert(ci->top <= L->stack.last());
     ci->callstatus = 0;
   }
 
@@ -250,7 +250,7 @@ int luaD_precallC(lua_State* L, StkId func, int nresults) {
     ci->nresults = nresults;
     ci->func = restorestack(L, funcr);
     ci->top = L->top + LUA_MINSTACK;
-    assert(ci->top <= L->stack_last);
+    assert(ci->top <= L->stack.last());
     ci->callstatus = 0;
     if (L->hookmask & LUA_MASKCALL)
       luaD_hook(L, LUA_HOOKCALL, -1);
@@ -282,7 +282,7 @@ int luaD_precallLua(lua_State* L, StkId func, int nresults) {
     ci->func = func;
     ci->base = base;
     ci->top = base + p->maxstacksize;
-    assert(ci->top <= L->stack_last);
+    assert(ci->top <= L->stack.last());
     //ci->savedpc = p->code;  /* starting point */
     ci->savedpc = &p->code[0];
     ci->callstatus = CIST_LUA;
@@ -318,7 +318,7 @@ int luaD_postcall (lua_State *L, StkId firstResult) {
   THREAD_CHECK(L);
   StkId res;
   int wanted, i;
-  CallInfo *ci = L->ci_;
+  CallInfo *ci = L->callinfo_;
   if (L->hookmask & (LUA_MASKRET | LUA_MASKLINE)) {
     if (L->hookmask & LUA_MASKRET) {
       ptrdiff_t fr = savestack(L, firstResult);  /* hook may change stack */
@@ -329,7 +329,7 @@ int luaD_postcall (lua_State *L, StkId firstResult) {
   }
   res = ci->func;  /* res == final position of 1st result */
   wanted = ci->nresults;
-  L->ci_ = ci = ci->previous;  /* back to caller */
+  L->callinfo_ = ci = ci->previous;  /* back to caller */
 
   /* move results to correct place */
   for (i = wanted; i != 0 && firstResult < L->top; i--) {
@@ -371,7 +371,7 @@ void luaD_call (lua_State *L, StkId func, int nResults, int allowyield) {
 
 static void finishCcall (lua_State *L) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->ci_;
+  CallInfo *ci = L->callinfo_;
   int n;
   assert(ci->continuation_ != NULL);  /* must have a continuation */
   assert(L->nonyieldable_count_ == 0);
@@ -395,9 +395,9 @@ static void unroll (lua_State *L, void *ud) {
   THREAD_CHECK(L);
   UNUSED(ud);
   for (;;) {
-    if (L->ci_ == &L->callinfo_head_)  /* stack is empty? */
+    if (L->callinfo_ == &L->callinfo_head_)  /* stack is empty? */
       return;  /* coroutine finished normally */
-    if (!isLua(L->ci_))  /* C function? */
+    if (!isLua(L->callinfo_))  /* C function? */
       finishCcall(L);
     else {  /* Lua function */
       luaV_finishOp(L);  /* finish interrupted instruction */
@@ -413,7 +413,7 @@ static void unroll (lua_State *L, void *ud) {
 static CallInfo *findpcall (lua_State *L) {
   THREAD_CHECK(L);
   CallInfo *ci;
-  for (ci = L->ci_; ci != NULL; ci = ci->previous) {  /* search for a pcall */
+  for (ci = L->callinfo_; ci != NULL; ci = ci->previous) {  /* search for a pcall */
     if (ci->callstatus & CIST_YPCALL)
       return ci;
   }
@@ -430,7 +430,7 @@ static int recover (lua_State *L, int status) {
   oldtop = restorestack(L, ci->extra);
   luaF_close(oldtop);
   seterrorobj(L, status, oldtop);
-  L->ci_ = ci;
+  L->callinfo_ = ci;
   L->allowhook = ci->old_allowhook;
   L->nonyieldable_count_ = 0;  /* should be zero to be yieldable */
   L->shrinkstack();
@@ -464,7 +464,7 @@ static l_noret resume_error (lua_State *L, const char *msg, StkId firstArg) {
 static void resume (lua_State *L, void *ud) {
   THREAD_CHECK(L);
   StkId firstArg = cast(StkId, ud);
-  CallInfo *ci = L->ci_;
+  CallInfo *ci = L->callinfo_;
   if (L->nCcalls >= LUAI_MAXCCALLS)
     resume_error(L, "C stack overflow", firstArg);
   if (L->status == LUA_OK) {  /* may be starting a coroutine */
@@ -514,7 +514,7 @@ int lua_resume (lua_State *L, lua_State *from, int nargs) {
       else {  /* unrecoverable error */
         L->status = cast_byte(status);  /* mark thread as `dead' */
         seterrorobj(L, status, L->top);
-        L->ci_->top = L->top;
+        L->callinfo_->top = L->top;
         break;
       }
     }
@@ -529,7 +529,7 @@ int lua_resume (lua_State *L, lua_State *from, int nargs) {
 
 int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->ci_;
+  CallInfo *ci = L->callinfo_;
   api_checknelems(L, nresults);
   if (L->nonyieldable_count_ > 0) {
     if (L != G(L)->mainthread)
@@ -557,7 +557,7 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
                 ptrdiff_t old_top, ptrdiff_t ef) {
   THREAD_CHECK(L);
   int status;
-  CallInfo *old_ci = L->ci_;
+  CallInfo *old_ci = L->callinfo_;
   uint8_t old_allowhooks = L->allowhook;
   unsigned short old_nny = L->nonyieldable_count_;
   ptrdiff_t old_errfunc = L->errfunc;
@@ -571,7 +571,7 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
     StkId oldtop = restorestack(L, old_top);
     luaF_close(oldtop);  /* close possible pending closures */
     seterrorobj(L, status, oldtop);
-    L->ci_ = old_ci;
+    L->callinfo_ = old_ci;
     L->allowhook = old_allowhooks;
     L->nonyieldable_count_ = old_nny;
     L->shrinkstack();

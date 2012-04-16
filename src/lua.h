@@ -75,7 +75,6 @@ int   (lua_absindex) (lua_State *L, int idx);
 int   (lua_gettop) (lua_State *L);
 void  (lua_settop) (lua_State *L, int idx);
 void  (lua_pushvalue) (lua_State *L, int idx);
-void  (lua_remove) (lua_State *L, int idx);
 void  (lua_insert) (lua_State *L, int idx);
 void  (lua_replace) (lua_State *L, int idx);
 void  (lua_copy) (lua_State *L, int fromidx, int toidx);
