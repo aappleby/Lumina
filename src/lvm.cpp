@@ -103,7 +103,7 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
     L->stack_.top_[0] = *p3;  // 3rd argument
     L->stack_.top_++;
   }
-  L->checkstack(0);
+  L->stack_.reserve(0);
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - (4 - hasres), hasres, isLua(L->stack_.callinfo_));
   if (hasres) {  /* if has result, move it to its place */
@@ -123,7 +123,7 @@ static void callTM3 (lua_State *L,
   L->stack_.top_[1] = p1; // 1st argument
   L->stack_.top_[2] = p2; // 2nd argument
   L->stack_.top_ += 3;
-  L->checkstack(0);
+  L->stack_.reserve(0);
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - 3, 1, isLua(L->stack_.callinfo_));
   L->stack_.top_--;
@@ -1255,7 +1255,7 @@ void luaV_execute (lua_State *L) {
 
           if (b < 0) {  /* B == 0? */
             b = n;  /* get all var. arguments */
-            L->checkstack(n);
+            L->stack_.reserve(n);
             base = ci->base;
 
             ra = RA(i);  /* previous call may change the stack */

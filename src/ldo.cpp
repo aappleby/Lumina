@@ -136,7 +136,7 @@ void luaD_hook (lua_State *L, int event, int line) {
     ar.event = event;
     ar.currentline = line;
     ar.i_ci = ci;
-    L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
+    L->stack_.reserve(LUA_MINSTACK);  /* ensure minimum stack size */
     ci->top = L->stack_.top_ + LUA_MINSTACK;
     assert(ci->top <= L->stack_.last());
     L->allowhook = 0;  /* cannot call hooks inside a hook */
@@ -219,7 +219,7 @@ CallInfo* next_ci(lua_State* L) {
 int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
   ptrdiff_t funcr = savestack(L, func);
   lua_CFunction f = func->getLightFunction();
-  L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
+  L->stack_.reserve(LUA_MINSTACK);  /* ensure minimum stack size */
 
   {
     ScopedMemChecker c;
@@ -242,7 +242,7 @@ int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
 int luaD_precallC(lua_State* L, StkId func, int nresults) {
   ptrdiff_t funcr = savestack(L, func);
   lua_CFunction f = func->getCClosure()->cfunction_;
-  L->checkstack(LUA_MINSTACK);  /* ensure minimum stack size */
+  L->stack_.reserve(LUA_MINSTACK);  /* ensure minimum stack size */
 
   {
     ScopedMemChecker c;
@@ -266,7 +266,7 @@ int luaD_precallLua(lua_State* L, StkId func, int nresults) {
   ptrdiff_t funcr = savestack(L, func);
   StkId base;
   Proto *p = func->getLClosure()->proto_;
-  L->checkstack(p->maxstacksize);
+  L->stack_.reserve(p->maxstacksize);
   func = restorestack(L, funcr);
   int n = cast_int(L->stack_.top_ - func) - 1;  /* number of real arguments */
   for (; n < p->numparams; n++) {
@@ -433,7 +433,7 @@ static int recover (lua_State *L, int status) {
   L->stack_.callinfo_ = ci;
   L->allowhook = ci->old_allowhook;
   L->nonyieldable_count_ = 0;  /* should be zero to be yieldable */
-  L->shrinkstack();
+  L->stack_.shrink();
   L->errfunc = ci->old_errfunc;
   ci->callstatus |= CIST_STAT;  /* call has error status */
   ci->status = status;  /* (here it is) */
@@ -574,7 +574,7 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
     L->stack_.callinfo_ = old_ci;
     L->allowhook = old_allowhooks;
     L->nonyieldable_count_ = old_nny;
-    L->shrinkstack();
+    L->stack_.shrink();
 
     l_memcontrol.enableLimit();
   }

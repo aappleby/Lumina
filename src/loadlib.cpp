@@ -178,7 +178,7 @@ static void setprogdir (lua_State *L) {
   else {
     *lb = '\0';
     luaL_gsub(L, lua_tostring(L, -1), LUA_EXEC_DIR, buff);
-    L->remove(-2);  /* remove original string */
+    L->stack_.remove(-2);  /* remove original string */
   }
 }
 
@@ -315,7 +315,7 @@ static int ll_loadlib (lua_State *L) {
   if (stat == 0)  /* no errors? */
     return 1;  /* return the loaded function */
   else {  /* error; error message is on stack top */
-    L->push(TValue::Nil());
+    L->stack_.push(TValue::Nil());
     lua_insert(L, -2);
     lua_pushstring(L, (stat == ERRLIB) ?  LIB_FAIL : "init");
     return 3;  /* return nil, error message, and where */
@@ -363,11 +363,11 @@ static const char *searchpath (lua_State *L, const char *name,
   while ((path = pushnexttemplate(L, path)) != NULL) {
     const char *filename = luaL_gsub(L, lua_tostring(L, -1),
                                      LUA_PATH_MARK, name);
-    L->remove(-2);  /* remove path template */
+    L->stack_.remove(-2);  /* remove path template */
     if (readable(filename))  /* does file exist and is readable? */
       return filename;  /* return that file name */
     lua_pushfstring(L, "\n\tno file " LUA_QS, filename);
-    L->remove(-2);  /* remove file name */
+    L->stack_.remove(-2);  /* remove file name */
     luaL_addvalue(&msg);  /* concatenate error msg. entry */
   }
   luaL_pushresult(&msg);  /* create error message */
@@ -383,7 +383,7 @@ static int ll_searchpath (lua_State *L) {
                                 luaL_optstring(L, 4, LUA_DIRSEP));
   if (f != NULL) return 1;
   else {  /* error message is on top of the stack */
-    L->push(TValue::Nil());
+    L->stack_.push(TValue::Nil());
     lua_insert(L, -2);
     return 2;  /* return nil + error message */
   }
@@ -579,7 +579,7 @@ static void setpath (lua_State *L, const char *fieldname, const char *envname1,
     path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP,
                               LUA_PATH_SEP AUXMARK LUA_PATH_SEP);
     luaL_gsub(L, path, AUXMARK, def);
-    L->remove(-2);
+    L->stack_.remove(-2);
   }
   setprogdir(L);
   lua_setfield(L, -2, fieldname);

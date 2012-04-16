@@ -384,7 +384,7 @@ static void sweepthread (lua_State *L1) {
   /* should not change the stack during an emergency gc cycle */
   if (thread_G->gckind != KGC_EMERGENCY) {
     THREAD_CHANGE(L1);
-    L1->shrinkstack();
+    L1->stack_.shrink();
   }
 }
 

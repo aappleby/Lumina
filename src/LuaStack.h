@@ -23,17 +23,35 @@ public:
     return end() - EXTRA_STACK;
   }
 
-  void init();
-  void realloc(int newsize);
-  void free();
+  //----------
 
-  int countInUse();
+  TValue at(int idx);
+
+  void   push(TValue v);
+  void   push(const TValue* v);
+  TValue pop();
+  void   remove(int index);
+
+  //----------
+
+  void init();
+  void free();
+  void grow(int size);
+  void shrink();
+  void reserve(int newsize);
+
+  //----------
 
   TValue* top_;
   CallInfo callinfo_head_;  /* CallInfo for first level (C calling Lua) */
   CallInfo* callinfo_;  /* call info for current function */
 
   LuaObject *open_upvals_;  /* list of open upvalues in this stack */
+
+protected:
+
+  int countInUse();
+  void realloc(int newsize);
 };
 
 //------------------------------------------------------------------------------

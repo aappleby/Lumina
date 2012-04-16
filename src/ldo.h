@@ -13,7 +13,7 @@
 #include "lzio.h"
 
 
-#define incr_top(L) {L->stack_.top_++; L->checkstack(0);}
+#define incr_top(L) {L->stack_.top_++; L->stack_.reserve(0);}
 
 #define savestack(L,p)		((char *)(p) - (char *)L->stack_.begin())
 #define restorestack(L,n)	((TValue *)((char *)L->stack_.begin() + (n)))

@@ -55,7 +55,7 @@ static int findfield (lua_State *L, int objidx, int level) {
   THREAD_CHECK(L);
   if (level == 0 || !lua_istable(L, -1))
     return 0;  /* not found */
-  L->push(TValue::Nil());  /* start 'next' loop */
+  L->stack_.push(TValue::Nil());  /* start 'next' loop */
   while (lua_next(L, -2)) {  /* for each pair in table */
     if (lua_type(L, -2) == LUA_TSTRING) {  /* ignore non-string keys */
       if (lua_rawequal(L, objidx, -1)) {  /* found object? */
@@ -63,7 +63,7 @@ static int findfield (lua_State *L, int objidx, int level) {
         return 1;
       }
       else if (findfield(L, objidx, level - 1)) {  /* try recursively */
-        L->remove(-2);  /* remove table (but keep name) */
+        L->stack_.remove(-2);  /* remove table (but keep name) */
         lua_pushliteral(L, ".");
         lua_insert(L, -2);  /* place '.' between the two names */
         lua_concat(L, 3);
@@ -102,7 +102,7 @@ static void pushfuncname (lua_State *L, lua_Debug *ar) {
   else if (*ar->what == 'C') {
     if (pushglobalfuncname(L, ar)) {
       lua_pushfstring(L, "function " LUA_QS, lua_tostring(L, -1));
-      L->remove(-2);  /* remove name */
+      L->stack_.remove(-2);  /* remove name */
     }
     else
       lua_pushliteral(L, "?");
@@ -245,7 +245,7 @@ int luaL_fileresult (lua_State *L, int stat, const char *fname) {
     return 1;
   }
   else {
-    L->push(TValue::Nil());
+    L->stack_.push(TValue::Nil());
     if (fname)
       lua_pushfstring(L, "%s: %s", fname, strerror(en));
     else
@@ -265,7 +265,7 @@ int luaL_execresult (lua_State *L, int stat) {
     if (*what == 'e' && stat == 0)  /* successful termination? */
       lua_pushboolean(L, 1);
     else
-      L->push(TValue::Nil());
+      L->stack_.push(TValue::Nil());
     lua_pushstring(L, what);
     lua_pushinteger(L, stat);
     return 3;  /* return true/nil,what,code */
@@ -500,7 +500,7 @@ char *luaL_prepbuffsize (luaL_Buffer *B, size_t sz) {
     /* move content to new buffer */
     memcpy(newbuff, B->b, B->n * sizeof(char));
     if (buffonstack(B))
-      L->remove(-2);  /* remove old buffer */
+      L->stack_.remove(-2);  /* remove old buffer */
     B->b = newbuff;
     B->size = newsize;
   }
@@ -524,7 +524,7 @@ void luaL_pushresult (luaL_Buffer *B) {
   lua_State *L = B->L;
   lua_pushlstring(L, B->b, B->n);
   if (buffonstack(B))
-    L->remove(-2);  /* remove old buffer */
+    L->stack_.remove(-2);  /* remove old buffer */
 }
 
 
@@ -541,7 +541,7 @@ void luaL_addvalue (luaL_Buffer *B) {
   if (buffonstack(B))
     lua_insert(L, -2);  /* put value below buffer */
   luaL_addlstring(B, s, l);
-  L->remove((buffonstack(B)) ? -2 : -1);  /* remove value */
+  L->stack_.remove((buffonstack(B)) ? -2 : -1);  /* remove value */
 }
 
 
@@ -646,7 +646,7 @@ static int errfile (lua_State *L, const char *what, int fnameindex) {
   const char *serr = strerror(errno);
   const char *filename = lua_tostring(L, fnameindex) + 1;
   lua_pushfstring(L, "cannot %s %s: %s", what, filename, serr);
-  L->remove(fnameindex);
+  L->stack_.remove(fnameindex);
   return LUA_ERRFILE;
 }
 
@@ -715,7 +715,7 @@ int luaL_loadfilex (lua_State *L, const char *filename,
     lua_settop(L, fnameindex);  /* ignore results from `lua_load' */
     return errfile(L, "read", fnameindex);
   }
-  L->remove(fnameindex);
+  L->stack_.remove(fnameindex);
   return status;
 }
 
@@ -767,7 +767,7 @@ int luaL_getmetafield (lua_State *L, int obj, const char *event) {
     return 0;
   }
   else {
-    L->remove(-2);  /* remove only metatable */
+    L->stack_.remove(-2);  /* remove only metatable */
     return 1;
   }
 }

@@ -156,7 +156,7 @@ TValue* index2addr_checked(lua_State* L, int idx) {
 static void growstack (lua_State *L, void *ud) {
   THREAD_CHECK(L);
   int size = *(int *)ud;
-  L->growstack(size);
+  L->stack_.grow(size);
 }
 
 
@@ -553,7 +553,7 @@ const void *lua_topointer (lua_State *L, int idx) {
 
 void lua_pushnumber (lua_State *L, lua_Number n) {
   THREAD_CHECK(L);
-  L->push(TValue(n));
+  L->stack_.push(TValue(n));
 }
 
 
@@ -592,7 +592,7 @@ const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
 const char *lua_pushstring (lua_State *L, const char *s) {
   THREAD_CHECK(L);
   if (s == NULL) {
-    L->push(TValue::Nil());
+    L->stack_.push(TValue::Nil());
     return NULL;
   }
   else {
@@ -687,7 +687,7 @@ int lua_pushthread (lua_State *L) {
 void lua_getglobal (lua_State *L, const char *var) {
   THREAD_CHECK(L);
   TValue globals = thread_G->getRegistry()->get(TValue(LUA_RIDX_GLOBALS));
-  L->push(TValue(luaS_new(var)));
+  L->stack_.push(TValue(luaS_new(var)));
   
   TValue val;
   LuaResult r = luaV_gettable2(L, globals, L->stack_.top_[-1], val);
@@ -1226,9 +1226,9 @@ int lua_error (lua_State *L) {
 
 int lua_next (lua_State* L, int idx) {
 
-  Table* t = L->at(idx).getTable();
+  Table* t = L->stack_.at(idx).getTable();
 
-  TValue key = L->pop();
+  TValue key = L->stack_.pop();
 
   int start = -1;
   if(!key.isNil()) {
@@ -1242,8 +1242,8 @@ int lua_next (lua_State* L, int idx) {
   for(int cursor = start+1; cursor < t->getTableIndexSize(); cursor++) {
     TValue key, val;
     if(t->tableIndexToKeyVal(cursor,key,val) && !val.isNil()) {
-      L->push(key);
-      L->push(val);
+      L->stack_.push(key);
+      L->stack_.push(val);
       return 1;
     }
   }
