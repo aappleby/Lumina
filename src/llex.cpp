@@ -146,7 +146,7 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
   ls->fs->constant_map->set(s, TValue(true));
   luaC_barrierback(ls->fs->constant_map, s);
 
-  L->stack_.top_--;  /* remove string from stack */
+  L->stack_.pop();  /* remove string from stack */
   return ts;
 }
 

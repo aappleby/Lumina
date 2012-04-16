@@ -108,8 +108,7 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
   luaD_call(L, L->stack_.top_ - (4 - hasres), hasres, isLua(L->stack_.callinfo_));
   if (hasres) {  /* if has result, move it to its place */
     p3 = restorestack(L, result);
-    L->stack_.top_--;
-    *p3 = L->stack_.top_[0];
+    *p3 = L->stack_.pop();
   }
 }
 
@@ -126,8 +125,7 @@ static void callTM3 (lua_State *L,
   L->stack_.reserve(0);
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - 3, 1, isLua(L->stack_.callinfo_));
-  L->stack_.top_--;
-  result = L->stack_.top_[0];
+  result = L->stack_.pop();
 }
 
 
@@ -630,13 +628,11 @@ void luaV_finishOp (lua_State *L) {
     case OP_ADD: case OP_SUB: case OP_MUL: case OP_DIV:
     case OP_MOD: case OP_POW: case OP_UNM: case OP_LEN:
     case OP_GETTABUP: case OP_GETTABLE: case OP_SELF: {
-      L->stack_.top_--;
-      base[GETARG_A(inst)] = L->stack_.top_[0];
+      base[GETARG_A(inst)] = L->stack_.pop();
       break;
     }
     case OP_LE: case OP_LT: case OP_EQ: {
-      int res = L->stack_.top_[-1].isTrue();
-      L->stack_.top_--;
+      int res = L->stack_.pop().isTrue();
       /* metamethod should not be called when operand is K */
       assert(!ISK(GETARG_B(inst)));
       /* "<=" using "<" instead? */

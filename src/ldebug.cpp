@@ -172,7 +172,7 @@ const char *lua_setlocal (lua_State *L, const lua_Debug *ar, int n) {
   if (name) {
     pos[0] = L->stack_.top_[-1];
   }
-  L->stack_.top_--;  /* pop value */
+  L->stack_.pop();  /* pop value */
   return name;
 }
 
@@ -287,7 +287,7 @@ int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
     func = L->stack_.top_ - 1;
     api_check(func->isFunction(), "function expected");
     what++;  /* skip the '>' */
-    L->stack_.top_--;  /* pop function */
+    L->stack_.pop();  /* pop function */
   }
   else {
     ci = ar->i_ci;

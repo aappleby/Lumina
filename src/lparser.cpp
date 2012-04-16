@@ -585,9 +585,9 @@ static void close_func (LexState *ls) {
   ls->fs = fs->prev;
   /* last token read was anchored in defunct function; must re-anchor it */
   anchor_token(ls);
-  L->stack_.top_--;  /* pop table of constants */
+  L->stack_.pop();  /* pop table of constants */
   luaC_checkGC();
-  L->stack_.top_--;  /* pop prototype (after possible collection) */
+  L->stack_.pop();  /* pop prototype (after possible collection) */
 }
 
 
@@ -1634,7 +1634,7 @@ Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
   statlist(&lexstate);  /* main body */
   check(&lexstate, TK_EOS);
   close_func(&lexstate);
-  L->stack_.top_--;  /* pop name */
+  L->stack_.pop();  /* pop name */
   assert(!funcstate.prev && funcstate.num_upvals == 1 && !lexstate.fs);
   /* all scopes should be correctly finished */
   assert(dyd->actvar.n == 0 && dyd->gt.n == 0 && dyd->label.n == 0);

@@ -378,11 +378,12 @@ int luaK_numberK (FuncState *fs, lua_Number r) {
     }
 
     n = addk(fs, L->stack_.top_ - 1, &o);
-    L->stack_.top_--;
+    L->stack_.pop();
+    return n;
   }
-  else
-    n = addk(fs, &o, &o);  /* regular case */
-  return n;
+  else {
+    return addk(fs, &o, &o);  /* regular case */
+  }
 }
 
 

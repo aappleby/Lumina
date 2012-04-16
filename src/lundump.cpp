@@ -186,7 +186,9 @@ static Proto* LoadFunction(LoadState* S)
   LoadConstants(S,f);
   LoadUpvalues(S,f);
   LoadDebug(S,f);
-  S->L->stack_.top_--;
+
+  // TODO(aappleby): What exactly is getting popped here?
+  S->L->stack_.pop();
 
   return f;
 }

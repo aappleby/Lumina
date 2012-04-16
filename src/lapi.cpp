@@ -281,7 +281,7 @@ void lua_replace (lua_State *L, int idx) {
   THREAD_CHECK(L);
   api_checknelems(L, 1);
   moveto(L, L->stack_.top_ - 1, idx);
-  L->stack_.top_--;
+  L->stack_.pop();
 }
 
 
@@ -380,7 +380,7 @@ void  lua_arith (lua_State *L, int op) {
   }
   else
     luaV_arith(L, o1, o1, o2, cast(TMS, op - LUA_OPADD + TM_ADD));
-  L->stack_.top_--;
+  L->stack_.pop();
 }
 
 int lua_compare (lua_State *L, int index1, int index2, int op) {
@@ -892,7 +892,7 @@ void lua_rawseti (lua_State *L, int idx, int n) {
   api_check(t->isTable(), "table expected");
   t->getTable()->set(TValue(n), L->stack_.top_[-1]);
   luaC_barrierback(t->getObject(), L->stack_.top_[-1]);
-  L->stack_.top_--;
+  L->stack_.pop();
 }
 
 
@@ -907,7 +907,7 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
   k = TValue::LightUserdata((void*)p);
   t->getTable()->set(k, L->stack_.top_[-1]);
   luaC_barrierback(t->getObject(), L->stack_.top_[-1]);
-  L->stack_.top_--;
+  L->stack_.pop();
 }
 
 
@@ -951,7 +951,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
     }
   }
 
-  L->stack_.top_--;
+  L->stack_.pop();
   return 1;
 }
 
@@ -969,7 +969,7 @@ void lua_setuservalue (lua_State *L, int idx) {
     o->getUserdata()->env_ = L->stack_.top_[-1].getTable();
     luaC_barrier(o->getObject(), L->stack_.top_[-1]);
   }
-  L->stack_.top_--;
+  L->stack_.pop();
 }
 
 
@@ -1332,9 +1332,8 @@ const char *lua_setupvalue (lua_State *L, int funcindex, int n) {
   api_checknelems(L, 1);
   name = aux_upvalue(fi, n, &val, &owner);
   if (name) {
-    L->stack_.top_--;
-    *val = L->stack_.top_[0];
-    luaC_barrier(owner, L->stack_.top_[0]);
+    *val = L->stack_.pop();
+    luaC_barrier(owner, *val);
   }
   return name;
 }
