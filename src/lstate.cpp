@@ -94,7 +94,7 @@ static void f_luaopen (lua_State *L, void *) {
   ScopedMemChecker c;
 
   global_State *g = thread_G;
-  L->initstack();  /* init stack */
+  L->stack_.init();  /* init stack */
   init_registry(L, g);
 
   luaS_resize(MINSTRTABSIZE);  /* initial size of string table */
@@ -185,7 +185,7 @@ lua_State *lua_newthread (lua_State *L) {
   
   {
     ScopedMemChecker c;
-    L1->initstack();  /* init stack */
+    L1->stack_.init();  /* init stack */
   }
 
   return L1;

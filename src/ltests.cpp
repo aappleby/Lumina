@@ -191,7 +191,7 @@ static int lua_checkpc (pCallInfo ci) {
 }
 
 
-static void checkstack (global_State *g, lua_State *L1) {
+static void test_checkstack (global_State *g, lua_State *L1) {
   StkId o;
   CallInfo *ci;
   LuaObject *uvo;
@@ -244,7 +244,7 @@ static void checkobject (global_State *g, LuaObject *o) {
   }
 
   if(o->isThread()) {
-    checkstack(g, dynamic_cast<lua_State*>(o));
+    test_checkstack(g, dynamic_cast<lua_State*>(o));
     return;
   }
 
@@ -321,7 +321,7 @@ int lua_checkmemory (lua_State *L) {
     assert(!g->l_registry.getObject()->isWhite());
   }
   assert(!g->l_registry.getObject()->isDead());
-  checkstack(g, g->mainthread);
+  test_checkstack(g, g->mainthread);
   g->mainthread->clearTestGray();
   /* check 'allgc' list */
   markgrays(g);

@@ -41,12 +41,8 @@ public:
   lua_longjmp *errorJmp;  /* current error recover point */
   ptrdiff_t errfunc;  /* current error handling function (stack index) */
 
-  void initstack();
-  void freestack();
-  int stackinuse();
   void growstack(int size);
   void shrinkstack();
-  void reallocstack(int size);
   void checkstack(int size);
   
   void closeUpvals(StkId level);

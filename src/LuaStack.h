@@ -4,6 +4,8 @@
 #include "LuaValue.h"
 #include "LuaVector.h"
 
+//------------------------------------------------------------------------------
+
 class LuaStack : public LuaVector<TValue> {
 public:
 
@@ -21,12 +23,20 @@ public:
     return end() - EXTRA_STACK;
   }
 
+  void init();
+  void realloc(int newsize);
+  void free();
+
+  int countInUse();
+
   TValue* top_;
   CallInfo callinfo_head_;  /* CallInfo for first level (C calling Lua) */
   CallInfo* callinfo_;  /* call info for current function */
 
   LuaObject *open_upvals_;  /* list of open upvalues in this stack */
 };
+
+//------------------------------------------------------------------------------
 
 class LuaHandle {
 public:
@@ -49,3 +59,5 @@ protected:
   LuaStack* stack_;
   int index_;
 };
+
+//------------------------------------------------------------------------------

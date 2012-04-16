@@ -30,55 +30,7 @@ lua_State::~lua_State() {
   if(!stack_.empty()) {
     closeUpvals(stack_.begin());
   }
-  freestack();
-}
-
-void lua_State::initstack() {
-  stack_.resize_nocheck(BASIC_STACK_SIZE);
-
-  stack_.top_ = stack_.begin();
-
-  /* initialize first ci */
-  CallInfo* ci = &stack_.callinfo_head_;
-  ci->next = ci->previous = NULL;
-  ci->callstatus = 0;
-  ci->func = stack_.top_;
-  stack_.top_++;
-  ci->top = stack_.top_ + LUA_MINSTACK;
-}
-
-
-void lua_State::freestack() {
-  if (stack_.empty()) {
-    // Stack not completely built yet - we probably ran out of memory while trying to create a thread.
-    return;  
-  }
-  
-  // free the entire 'ci' list
-  stack_.callinfo_ = &stack_.callinfo_head_;
-  CallInfo *ci = stack_.callinfo_head_.next;
-  while (ci != NULL) {
-    CallInfo* next = ci->next;
-    luaM_free(ci);
-    ci = next;
-  }
-  stack_.callinfo_head_.next = NULL;
-
-  stack_.clear();
-}
-
-// The amount of stack "in use" includes everything up to the current
-// top of the stack _plus_ anything referenced by an active callinfo.
-int lua_State::stackinuse() {
-  CallInfo *temp_ci;
-  StkId lim = stack_.top_;
-  for (temp_ci = stack_.callinfo_; temp_ci != NULL; temp_ci = temp_ci->previous) {
-    assert(temp_ci->top <= stack_.last());
-    if (lim < temp_ci->top) {
-      lim = temp_ci->top;
-    }
-  }
-  return (int)(lim - stack_.begin()) + 1;  /* part of stack in use */
+  stack_.free();
 }
 
 // Resizes the stack so that it can hold at least 'size' more elements.
@@ -91,7 +43,7 @@ void lua_State::growstack(int size) {
   int inuse = (int)(stack_.top_ - stack_.begin());
   int needed = inuse + size + EXTRA_STACK;
   if (needed > LUAI_MAXSTACK) {  /* stack overflow? */
-    reallocstack(ERRORSTACKSIZE);
+    stack_.realloc(ERRORSTACKSIZE);
     luaG_runerror("stack overflow");
   }
 
@@ -102,54 +54,17 @@ void lua_State::growstack(int size) {
 
   int newsize = std::max(2 * (int)stack_.size(), needed);
   newsize = std::min(newsize, LUAI_MAXSTACK);
-  reallocstack(newsize);
+  stack_.realloc(newsize);
 }
 
 void lua_State::shrinkstack() {
-  size_t inuse = stackinuse();
+  size_t inuse = stack_.countInUse();
   size_t goodsize = inuse + (inuse / 8) + 2*EXTRA_STACK;
   if (goodsize > LUAI_MAXSTACK) goodsize = LUAI_MAXSTACK;
   if (inuse > LUAI_MAXSTACK || goodsize >= stack_.size()) {
   } else {
-    reallocstack((int)goodsize);  /* shrink it */
+    stack_.realloc((int)goodsize);  /* shrink it */
   }
-}
-
-// Resizes the stack and fixes up all pointers into the stack so they refer
-// to the correct locations.
-void lua_State::reallocstack (int newsize) {
-  assert(newsize <= LUAI_MAXSTACK || newsize == ERRORSTACKSIZE);
-
-  // Remember where the old stack was. This will be a dangling pointer
-  // after the resize, but that's OK as we only use it to fix up the
-  // existing pointers - it doesn't get dereferenced.
-  TValue *oldstack = stack_.begin();
-
-  // Resize the stack array. but do not check to see if we've exceeded
-  // our memory limit.
-  stack_.resize_nocheck(newsize);
-
-  // Correct the stack top pointer.
-  stack_.top_ = stack_.begin() + (stack_.top_ - oldstack);
-  
-  // Correct all stack references in open upvalues.
-  for (LuaObject* up = stack_.open_upvals_; up != NULL; up = up->next_) {
-    UpVal* uv = static_cast<UpVal*>(up);
-    uv->v = (uv->v - oldstack) + stack_.begin();
-  }
-  
-  // Correct all stack references in all active callinfos.
-  for (CallInfo* ci = stack_.callinfo_; ci != NULL; ci = ci->previous) {
-    ci->top = (ci->top - oldstack) + stack_.begin();
-    ci->func = (ci->func - oldstack) + stack_.begin();
-    if ((ci->callstatus & CIST_LUA)) {
-      ci->base = (ci->base - oldstack) + stack_.begin();
-    }
-  }
-
-  // Stack is valid again, _now_ kick off memory errors if we're over the
-  // limit.
-  l_memcontrol.checkLimit();
 }
 
 void lua_State::checkstack(int size) {
