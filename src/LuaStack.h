@@ -41,6 +41,10 @@ public:
     return stack_->begin() + index_;
   }
 
+  TValue& operator[] ( int offset ) {
+    return stack_->begin()[index_ + offset];
+  }
+
 protected:
   LuaStack* stack_;
   int index_;

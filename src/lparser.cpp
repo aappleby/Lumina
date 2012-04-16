@@ -549,7 +549,7 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
     f->linkGC(getGlobalGCHead());
 
     /* anchor prototype (to avoid being collected) */
-    L->top[0] = f;
+    L->stack_.top_[0] = f;
     incr_top(L);
 
     fs->f = f;
@@ -560,7 +560,7 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
     if(fs->constant_map == NULL) luaD_throw(LUA_ERRMEM);
     fs->constant_map->linkGC(getGlobalGCHead());
     /* anchor table of constants (to avoid being collected) */
-    L->top[0] = fs->constant_map;
+    L->stack_.top_[0] = fs->constant_map;
     incr_top(L);
   }
 
@@ -587,9 +587,9 @@ static void close_func (LexState *ls) {
   ls->fs = fs->prev;
   /* last token read was anchored in defunct function; must re-anchor it */
   anchor_token(ls);
-  L->top--;  /* pop table of constants */
+  L->stack_.top_--;  /* pop table of constants */
   luaC_checkGC();
-  L->top--;  /* pop prototype (after possible collection) */
+  L->stack_.top_--;  /* pop prototype (after possible collection) */
 }
 
 
@@ -1624,7 +1624,7 @@ Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
   {
     ScopedMemChecker c;
     tname = luaS_new(name);
-    L->top[0] = tname;  /* push name to protect it */
+    L->stack_.top_[0] = tname;  /* push name to protect it */
     incr_top(L);
   }
   lexstate.buff = buff;
@@ -1636,7 +1636,7 @@ Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
   statlist(&lexstate);  /* main body */
   check(&lexstate, TK_EOS);
   close_func(&lexstate);
-  L->top--;  /* pop name */
+  L->stack_.top_--;  /* pop name */
   assert(!funcstate.prev && funcstate.num_upvals == 1 && !lexstate.fs);
   /* all scopes should be correctly finished */
   assert(dyd->actvar.n == 0 && dyd->gt.n == 0 && dyd->label.n == 0);

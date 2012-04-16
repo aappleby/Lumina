@@ -133,7 +133,7 @@ static const char *findlocal (lua_State *L, CallInfo *ci, int n,
   else
     base = ci->func + 1;
   if (name == NULL) {  /* no 'standard' name? */
-    StkId limit = (ci == L->stack_.callinfo_) ? L->top : ci->next->func;
+    StkId limit = (ci == L->stack_.callinfo_) ? L->stack_.top_ : ci->next->func;
     if (limit - base >= n && n > 0)  /* is 'n' inside 'ci' stack? */
       name = "(*temporary)";  /* generic name for any valid slot */
     else
@@ -148,17 +148,17 @@ const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n) {
   THREAD_CHECK(L);
   const char *name;
   if (ar == NULL) {  /* information about non-active function? */
-    if (!L->top[-1].isLClosure())  /* not a Lua function? */
+    if (!L->stack_.top_[-1].isLClosure())  /* not a Lua function? */
       name = NULL;
     else  /* consider live variables at function start (parameters) */
-      name = luaF_getlocalname(L->top[-1].getLClosure()->proto_, n, 0);
+      name = luaF_getlocalname(L->stack_.top_[-1].getLClosure()->proto_, n, 0);
   }
   else {  /* active function; get information through 'ar' */
     StkId pos = 0;  /* to avoid warnings */
     name = findlocal(L, ar->i_ci, n, &pos);
     if (name) {
-      L->top[0] = pos[0];
-      L->top++;
+      L->stack_.top_[0] = pos[0];
+      L->stack_.top_++;
     }
   }
   return name;
@@ -170,9 +170,9 @@ const char *lua_setlocal (lua_State *L, const lua_Debug *ar, int n) {
   StkId pos = 0;  /* to avoid warnings */
   const char *name = findlocal(L, ar->i_ci, n, &pos);
   if (name) {
-    pos[0] = L->top[-1];
+    pos[0] = L->stack_.top_[-1];
   }
-  L->top--;  /* pop value */
+  L->stack_.top_--;  /* pop value */
   return name;
 }
 
@@ -198,7 +198,7 @@ static void funcinfo (lua_Debug *ar, Closure *cl) {
 static void collectvalidlines (lua_State *L, Closure *f) {
   THREAD_CHECK(L);
   if (f == NULL || f->isC) {
-    L->top[0] = TValue::nil;
+    L->stack_.top_[0] = TValue::nil;
     incr_top(L);
   }
   else {
@@ -211,7 +211,7 @@ static void collectvalidlines (lua_State *L, Closure *f) {
       t = new Table();  /* new table to store active lines */
       if(t == NULL) luaD_throw(LUA_ERRMEM);
       t->linkGC(getGlobalGCHead());
-      L->top[0] = t;  /* push it on stack */
+      L->stack_.top_[0] = t;  /* push it on stack */
       incr_top(L);
     }
 
@@ -286,10 +286,10 @@ int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
   StkId func;
   if (*what == '>') {
     ci = NULL;
-    func = L->top - 1;
+    func = L->stack_.top_ - 1;
     api_check(func->isFunction(), "function expected");
     what++;  /* skip the '>' */
-    L->top--;  /* pop function */
+    L->stack_.top_--;  /* pop function */
   }
   else {
     ci = ar->i_ci;
@@ -303,7 +303,7 @@ int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
 
   status = auxgetinfo(L, what, ar, cl, ci);
   if (strchr(what, 'f')) {
-    L->top[0] = *func;
+    L->stack_.top_[0] = *func;
     incr_top(L);
   }
   if (strchr(what, 'L'))
@@ -576,10 +576,10 @@ l_noret luaG_errormsg () {
   if (L->errfunc != 0) {  /* is there an error handling function? */
     StkId errfunc = restorestack(L, L->errfunc);
     if (!errfunc->isFunction()) luaD_throw(LUA_ERRERR);
-    L->top[0] = L->top[-1];  /* move argument */
-    L->top[-1] = *errfunc;  /* push function */
+    L->stack_.top_[0] = L->stack_.top_[-1];  /* move argument */
+    L->stack_.top_[-1] = *errfunc;  /* push function */
     incr_top(L);
-    luaD_call(L, L->top - 2, 1, 0);  /* call it */
+    luaD_call(L, L->stack_.top_ - 2, 1, 0);  /* call it */
   }
   luaD_throw(LUA_ERRRUN);
 }

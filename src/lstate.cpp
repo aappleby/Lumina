@@ -172,8 +172,8 @@ lua_State *lua_newthread (lua_State *L) {
     L1 = new lua_State();
     if(L1 == NULL) luaD_throw(LUA_ERRMEM);
     L1->linkGC(getGlobalGCHead());
-    L->top[0] = L1;
-    L->top++;
+    L->stack_.top_[0] = L1;
+    L->stack_.top_++;
   }
 
   preinit_state(L1, thread_G);

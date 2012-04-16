@@ -373,12 +373,12 @@ int luaK_numberK (FuncState *fs, lua_Number r) {
     
     {
       ScopedMemChecker c;
-      L->top[0] = luaS_newlstr((char *)&r, sizeof(r));
+      L->stack_.top_[0] = luaS_newlstr((char *)&r, sizeof(r));
       incr_top(L);
     }
 
-    n = addk(fs, L->top - 1, &o);
-    L->top--;
+    n = addk(fs, L->stack_.top_ - 1, &o);
+    L->stack_.top_--;
   }
   else
     n = addk(fs, &o, &o);  /* regular case */

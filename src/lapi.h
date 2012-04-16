@@ -12,13 +12,13 @@
 #include "lstate.h"
 
 inline void api_incr_top(lua_State* L) {
-  L->top++;
-  api_check(L->top <= L->stack_.callinfo_->top, "stack overflow");
+  L->stack_.top_++;
+  api_check(L->stack_.top_ <= L->stack_.callinfo_->top, "stack overflow");
 }
 
 inline void adjustresults(lua_State* L, int nres) {
-  if ((nres == LUA_MULTRET) && (L->stack_.callinfo_->top < L->top)) {
-    L->stack_.callinfo_->top = L->top;
+  if ((nres == LUA_MULTRET) && (L->stack_.callinfo_->top < L->stack_.top_)) {
+    L->stack_.callinfo_->top = L->stack_.top_;
   }
 }
 

@@ -510,7 +510,7 @@ static LuaObject *udata2finalize (global_State *g) {
 static void dothecall (lua_State *L, void *ud) {
   THREAD_CHECK(L);
   UNUSED(ud);
-  luaD_call(L, L->top - 2, 0, 0);
+  luaD_call(L, L->stack_.top_ - 2, 0, 0);
 }
 
 
@@ -533,10 +533,10 @@ static void GCTM (int propagateerrors) {
   int gcrunning  = g->gcrunning;
   g->gcrunning = 0;  // avoid GC steps
 
-  L->top[0] = tm;  // push finalizer...
-  L->top[1] = v; // ... and its argument
-  L->top += 2;  // and (next line) call the finalizer
-  int status = luaD_pcall(L, dothecall, NULL, savestack(L, L->top - 2), 0);
+  L->stack_.top_[0] = tm;  // push finalizer...
+  L->stack_.top_[1] = v; // ... and its argument
+  L->stack_.top_ += 2;  // and (next line) call the finalizer
+  int status = luaD_pcall(L, dothecall, NULL, savestack(L, L->stack_.top_ - 2), 0);
 
   L->allowhook = allowhook;  // restore hooks
   g->gcrunning = gcrunning;  // restore state

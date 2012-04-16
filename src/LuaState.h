@@ -28,7 +28,6 @@ public:
   const Instruction *oldpc;  /* last pc traced */
 
   LuaStack stack_;
-  StkId top;  /* first free slot in the stack */
 
   unsigned short nonyieldable_count_;  /* number of non-yieldable calls in stack */
   unsigned short nCcalls;  /* number of nested C calls */

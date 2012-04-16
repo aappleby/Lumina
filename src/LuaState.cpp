@@ -13,7 +13,6 @@ void luaC_checkupvalcolor (global_State *g, UpVal *uv);
 lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
   assert(l_memcontrol.limitDisabled);
   status = 0;
-  top = 0;
   l_G = NULL;
   oldpc = NULL;
   nonyieldable_count_ = 0;
@@ -37,15 +36,15 @@ lua_State::~lua_State() {
 void lua_State::initstack() {
   stack_.resize_nocheck(BASIC_STACK_SIZE);
 
-  top = stack_.begin();
+  stack_.top_ = stack_.begin();
 
   /* initialize first ci */
   CallInfo* ci = &stack_.callinfo_head_;
   ci->next = ci->previous = NULL;
   ci->callstatus = 0;
-  ci->func = top;
-  top++;
-  ci->top = top + LUA_MINSTACK;
+  ci->func = stack_.top_;
+  stack_.top_++;
+  ci->top = stack_.top_ + LUA_MINSTACK;
 }
 
 
@@ -72,7 +71,7 @@ void lua_State::freestack() {
 // top of the stack _plus_ anything referenced by an active callinfo.
 int lua_State::stackinuse() {
   CallInfo *temp_ci;
-  StkId lim = top;
+  StkId lim = stack_.top_;
   for (temp_ci = stack_.callinfo_; temp_ci != NULL; temp_ci = temp_ci->previous) {
     assert(temp_ci->top <= stack_.last());
     if (lim < temp_ci->top) {
@@ -89,7 +88,7 @@ void lua_State::growstack(int size) {
     luaD_throw(LUA_ERRERR);
 
   // Asking for more space than could possibly fit on the stack is an error.
-  int inuse = (int)(top - stack_.begin());
+  int inuse = (int)(stack_.top_ - stack_.begin());
   int needed = inuse + size + EXTRA_STACK;
   if (needed > LUAI_MAXSTACK) {  /* stack overflow? */
     reallocstack(ERRORSTACKSIZE);
@@ -131,7 +130,7 @@ void lua_State::reallocstack (int newsize) {
   stack_.resize_nocheck(newsize);
 
   // Correct the stack top pointer.
-  top = stack_.begin() + (top - oldstack);
+  stack_.top_ = stack_.begin() + (stack_.top_ - oldstack);
   
   // Correct all stack references in open upvalues.
   for (LuaObject* up = stack_.open_upvals_; up != NULL; up = up->next_) {
@@ -154,7 +153,7 @@ void lua_State::reallocstack (int newsize) {
 }
 
 void lua_State::checkstack(int size) {
-  if ((stack_.last() - top) <= size) growstack(size);
+  if ((stack_.last() - stack_.top_) <= size) growstack(size);
 }
 
 void lua_State::closeUpvals(StkId level) {
@@ -189,10 +188,9 @@ void lua_State::closeUpvals(StkId level) {
 // Negative indices less than or equal to LUA_REGISTRYINDEX are special.
 
 TValue lua_State::at(int idx) {
-  CallInfo *ci = stack_.callinfo_;
   if (idx > 0) {
-    TValue *o = ci->func + idx;
-    if (o >= top) {
+    TValue *o = stack_.callinfo_->func + idx;
+    if (o >= stack_.top_) {
       assert(false);
       return TValue::None();
     }
@@ -200,7 +198,7 @@ TValue lua_State::at(int idx) {
   }
 
   if (idx > LUA_REGISTRYINDEX) {
-    return top[idx];
+    return stack_.top_[idx];
   }
 
   if (idx == LUA_REGISTRYINDEX) {
@@ -209,14 +207,14 @@ TValue lua_State::at(int idx) {
 
 
   // Light C functions have no upvals
-  if (ci->func->isLightFunction()) {
+  if (stack_.callinfo_->func->isLightFunction()) {
     assert(false);
     return TValue::None();
   }
 
   idx = LUA_REGISTRYINDEX - idx - 1;
 
-  Closure* func = ci->func->getCClosure();
+  Closure* func = stack_.callinfo_->func->getCClosure();
   if(idx < func->nupvalues) {
     return func->pupvals_[idx];
   }
@@ -228,29 +226,29 @@ TValue lua_State::at(int idx) {
 
 
 TValue lua_State::pop() {
-  top--;
-  return *top;
+  stack_.top_--;
+  return *stack_.top_;
 }
 
 void lua_State::push(TValue v) {
-  top[0] = v;
-  top++;
-  assert((top <= stack_.callinfo_->top) && "stack overflow");
+  stack_.top_[0] = v;
+  stack_.top_++;
+  assert((stack_.top_ <= stack_.callinfo_->top) && "stack overflow");
 }
 
 void lua_State::push(const TValue* v) {
-  top[0] = *v;
-  top++;
-  assert((top <= stack_.callinfo_->top) && "stack overflow");
+  stack_.top_[0] = *v;
+  stack_.top_++;
+  assert((stack_.top_ <= stack_.callinfo_->top) && "stack overflow");
 }
 
 void lua_State::remove(int index) {
   assert(index > LUA_REGISTRYINDEX);
-  TValue* p = (index > 0) ? &stack_.callinfo_->func[index] : &top[index];
-  while (++p < top) {
+  TValue* p = (index > 0) ? &stack_.callinfo_->func[index] : &stack_.top_[index];
+  while (++p < stack_.top_) {
     p[-1] = p[0];
   }
-  top--;
+  stack_.top_--;
 }
 
 //-----------------------------------------------------------------------------
@@ -271,7 +269,7 @@ int lua_State::PropagateGC(GCVisitor& visitor) {
   }
 
   TValue* v = stack_.begin();
-  for (; v < top; v++) {
+  for (; v < stack_.top_; v++) {
     visitor.MarkValue(*v);
   }
 
@@ -281,7 +279,7 @@ int lua_State::PropagateGC(GCVisitor& visitor) {
 
   // why do threads go on the 'grayagain' list?
   visitor.PushGrayAgain(this);
-  return TRAVCOST + int(top - stack_.begin());
+  return TRAVCOST + int(stack_.top_ - stack_.begin());
 }
 
 //-----------------------------------------------------------------------------

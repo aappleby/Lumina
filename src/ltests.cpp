@@ -44,8 +44,8 @@ static void setnameval (lua_State *L, const char *name, int val) {
 
 static void pushobject (lua_State *L, const TValue *o) {
   THREAD_CHECK(L);
-  L->top[0] = *o;
-  L->top++;
+  L->stack_.top_[0] = *o;
+  L->stack_.top_++;
 }
 
 
@@ -206,7 +206,7 @@ static void checkstack (global_State *g, lua_State *L1) {
     assert(lua_checkpc(ci));
   }
   if (L1->stack_.size()) {
-    for (o = L1->stack_.begin(); o < L1->top; o++) {
+    for (o = L1->stack_.begin(); o < L1->stack_.top_; o++) {
       o->sanityCheck();
     }
   }
@@ -541,7 +541,7 @@ static int gc_state (lua_State *L) {
 static int stacklevel (lua_State *L) {
   THREAD_CHECK(L);
   unsigned long a = 0;
-  lua_pushinteger(L, (L->top - L->stack_.begin()));
+  lua_pushinteger(L, (L->stack_.top_ - L->stack_.begin()));
   lua_pushinteger(L, (L->stack_.last() - L->stack_.begin()));
   lua_pushinteger(L, (unsigned long)&a);
   return 5;
@@ -595,7 +595,7 @@ static int string_query (lua_State *L) {
     LuaObject *ts;
     int n = 0;
     for (ts = tb->hash_[s]; ts; ts = ts->next_) {
-      L->top[0] = dynamic_cast<TString*>(ts);
+      L->stack_.top_[0] = dynamic_cast<TString*>(ts);
       incr_top(L);
       n++;
     }
