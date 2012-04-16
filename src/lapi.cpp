@@ -35,34 +35,6 @@ const char lua_ident[] =
   "$LuaAuthors: " LUA_AUTHORS " $";
 
 
-bool isValidIndex(lua_State* L, int idx);
-
-void api_checknelems(lua_State* L, int n) {
-  api_check((n) < (L->stack_.top_ - L->stack_.callinfo_->func), "not enough elements in the stack");
-}
-
-// Positive stack indices are indexed from the current call frame.
-// The first item in a call frame is the closure for the current function.
-// Negative stack indices are indexed from the stack top.
-// Negative indices less than or equal to LUA_REGISTRYINDEX are special.
-
-bool isValidIndex(lua_State* L, int idx) {
-  THREAD_CHECK(L);
-
-  // Check for valid positive stack index
-  if (idx > 0) {
-    return (L->stack_.callinfo_->func + idx) < L->stack_.top_;
-  }
-
-  // Check for valid negative stack index
-  if (idx >= LUA_REGISTRYINDEX) return true;
-
-  // Check for valid upvalue index
-  if (L->stack_.callinfo_->func->isLightFunction()) return false;
-  Closure* func = L->stack_.callinfo_->func->getCClosure();
-  return (LUA_REGISTRYINDEX - idx - 1) < func->nupvalues;
-}
-
 TValue index2addr3(lua_State* L, int idx) {
   THREAD_CHECK(L);
   CallInfo *ci = L->stack_.callinfo_;
@@ -183,15 +155,14 @@ void lua_xmove (lua_State *from, lua_State *to, int n) {
   THREAD_CHECK(from);
   int i;
   if (from == to) return;
-  api_checknelems(from, n);
+  from->stack_.checkArgs(n);
+
   api_check(G(from) == G(to), "moving among independent states");
   api_check(to->stack_.callinfo_->top - to->stack_.top_ >= n, "not enough elements to move");
   from->stack_.top_ -= n;
-  {
-    THREAD_CHANGE(to);
-    for (i = 0; i < n; i++) {
-      to->stack_.push(from->stack_.top_[i]);
-    }
+
+  for (i = 0; i < n; i++) {
+    to->stack_.push(from->stack_.top_[i]);
   }
 }
 
@@ -277,7 +248,7 @@ static void moveto (lua_State *L, TValue *fr, int idx) {
 
 void lua_replace (lua_State *L, int idx) {
   THREAD_CHECK(L);
-  api_checknelems(L, 1);
+  L->stack_.checkArgs(1);
   moveto(L, L->stack_.top_ - 1, idx);
   L->stack_.pop();
 }
@@ -365,9 +336,9 @@ void  lua_arith (lua_State *L, int op) {
   StkId o1;  /* 1st operand */
   StkId o2;  /* 2nd operand */
   if (op != LUA_OPUNM) /* all other operations expect two operands */
-    api_checknelems(L, 2);
+    L->stack_.checkArgs(2);
   else {  /* for unary minus, add fake 2nd operand */
-    api_checknelems(L, 1);
+    L->stack_.checkArgs(1);
     L->stack_.push(L->stack_.top_[-1]);
   }
   o1 = L->stack_.top_ - 2;
@@ -631,7 +602,7 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
     return;
   }
 
-  api_checknelems(L, n);
+  L->stack_.checkArgs(n);
   api_check(n <= MAXUPVAL, "upvalue index too large");
   luaC_checkGC();
 
@@ -824,7 +795,7 @@ void lua_getuservalue (lua_State *L, int idx) {
 
 void lua_setglobal (lua_State *L, const char *var) {
   THREAD_CHECK(L);
-  api_checknelems(L, 1);
+  L->stack_.checkArgs(1);
 
   TValue globals = thread_G->l_registry.getTable()->get(TValue(LUA_RIDX_GLOBALS));
 
@@ -842,7 +813,7 @@ void lua_setglobal (lua_State *L, const char *var) {
 void lua_settable (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId t;
-  api_checknelems(L, 2);
+  L->stack_.checkArgs(2);
   t = index2addr_checked(L, idx);
   luaV_settable(L, t, L->stack_.top_ - 2, L->stack_.top_ - 1);
   L->stack_.top_ -= 2;  /* pop index and value */
@@ -852,7 +823,7 @@ void lua_settable (lua_State *L, int idx) {
 void lua_setfield (lua_State *L, int idx, const char *k) {
   THREAD_CHECK(L);
   StkId t;
-  api_checknelems(L, 1);
+  L->stack_.checkArgs(1);
   t = index2addr_checked(L, idx);
 
   {
@@ -869,7 +840,7 @@ void lua_setfield (lua_State *L, int idx, const char *k) {
 void lua_rawset (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId t;
-  api_checknelems(L, 2);
+  L->stack_.checkArgs(2);
   t = index2addr(L, idx);
   assert(t);
   api_check(t->isTable(), "table expected");
@@ -883,7 +854,7 @@ void lua_rawset (lua_State *L, int idx) {
 void lua_rawseti (lua_State *L, int idx, int n) {
   THREAD_CHECK(L);
   StkId t;
-  api_checknelems(L, 1);
+  L->stack_.checkArgs(1);
   t = index2addr(L, idx);
   assert(t);
   api_check(t->isTable(), "table expected");
@@ -897,7 +868,7 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
   THREAD_CHECK(L);
   StkId t;
   TValue k;
-  api_checknelems(L, 1);
+  L->stack_.checkArgs(1);
   t = index2addr(L, idx);
   assert(t);
   api_check(t->isTable(), "table expected");
@@ -912,7 +883,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
   THREAD_CHECK(L);
   TValue *obj;
   Table *mt;
-  api_checknelems(L, 1);
+  L->stack_.checkArgs(1);
   obj = index2addr_checked(L, objindex);
   if (L->stack_.top_[-1].isNil()) {
     mt = NULL;
@@ -956,7 +927,7 @@ int lua_setmetatable (lua_State *L, int objindex) {
 void lua_setuservalue (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o;
-  api_checknelems(L, 1);
+  L->stack_.checkArgs(1);
   o = index2addr_checked(L, idx);
   api_check(o->isUserdata(), "userdata expected");
   if (L->stack_.top_[-1].isNil())
@@ -996,7 +967,7 @@ void lua_callk (lua_State *L, int nargs, int nresults, int ctx,
   StkId func;
   api_check(k == NULL || !isLua(L->stack_.callinfo_),
     "cannot use continuations inside hooks");
-  api_checknelems(L, nargs+1);
+  L->stack_.checkArgs(nargs+1);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
   checkresults(L, nargs, nresults);
   func = L->stack_.top_ - (nargs+1);
@@ -1035,7 +1006,7 @@ int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
   ptrdiff_t func;
   api_check(k == NULL || !isLua(L->stack_.callinfo_),
     "cannot use continuations inside hooks");
-  api_checknelems(L, nargs+1);
+  L->stack_.checkArgs(nargs+1);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
   checkresults(L, nargs, nresults);
   if (errfunc == 0)
@@ -1097,7 +1068,7 @@ int lua_dump (lua_State *L, lua_Writer writer, void *data) {
   THREAD_CHECK(L);
   int status;
   TValue *o;
-  api_checknelems(L, 1);
+  L->stack_.checkArgs(1);
   o = L->stack_.top_ - 1;
   if (o->isLClosure())
     status = luaU_dump(L, o->getLClosure()->proto_, writer, data, 0);
@@ -1201,7 +1172,7 @@ int lua_gc (lua_State *L, int what, int data) {
 
 int lua_error (lua_State *L) {
   THREAD_CHECK(L);
-  api_checknelems(L, 1);
+  L->stack_.checkArgs(1);
   luaG_errormsg();
   return 0;  /* to avoid warnings */
 }
@@ -1235,7 +1206,7 @@ int lua_next (lua_State* L, int idx) {
 
 void lua_concat (lua_State *L, int n) {
   THREAD_CHECK(L);
-  api_checknelems(L, n);
+  L->stack_.checkArgs(n);
   if (n >= 2) {
     luaC_checkGC();
     luaV_concat(L, n);
@@ -1326,7 +1297,7 @@ const char *lua_setupvalue (lua_State *L, int funcindex, int n) {
   StkId fi;
   fi = index2addr(L, funcindex);
   assert(fi);
-  api_checknelems(L, 1);
+  L->stack_.checkArgs(1);
   name = aux_upvalue(fi, n, &val, &owner);
   if (name) {
     *val = L->stack_.pop();

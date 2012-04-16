@@ -233,7 +233,7 @@ int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
   if (L->hookmask & LUA_MASKCALL)
     luaD_hook(L, LUA_HOOKCALL, -1);
   int n = (*f)(L);  /* do the actual call */
-  api_checknelems(L, n);
+  L->stack_.checkArgs(n);
   luaD_postcall(L, L->stack_.top_ - n);
   return 1;
 }
@@ -256,7 +256,7 @@ int luaD_precallC(lua_State* L, StkId func, int nresults) {
   }
 
   int n = (*f)(L);  /* do the actual call */
-  api_checknelems(L, n);
+  L->stack_.checkArgs(n);
   luaD_postcall(L, L->stack_.top_ - n);
   return 1;
 }
@@ -383,7 +383,7 @@ static void finishCcall (lua_State *L) {
   assert(ci->status != LUA_OK);
   ci->callstatus = (ci->callstatus & ~(CIST_YPCALL | CIST_STAT)) | CIST_YIELDED;
   n = (*ci->continuation_)(L);
-  api_checknelems(L, n);
+  L->stack_.checkArgs(n);
   /* finish 'luaD_precall' */
   luaD_postcall(L, L->stack_.top_ - n);
 }
@@ -487,7 +487,7 @@ static void resume (lua_State *L, void *ud) {
         ci->status = LUA_YIELD;  /* 'default' status */
         ci->callstatus |= CIST_YIELDED;
         n = (*ci->continuation_)(L);  /* call continuation */
-        api_checknelems(L, n);
+        L->stack_.checkArgs(n);
         firstArg = L->stack_.top_ - n;  /* yield results come from continuation */
       }
       L->nCcalls--;  /* finish 'luaD_call' */
@@ -503,7 +503,7 @@ int lua_resume (lua_State *L, lua_State *from, int nargs) {
   int status;
   L->nCcalls = (from) ? from->nCcalls + 1 : 1;
   L->nonyieldable_count_ = 0;  /* allow yields */
-  api_checknelems(L, (L->status == LUA_OK) ? nargs + 1 : nargs);
+  L->stack_.checkArgs((L->status == LUA_OK) ? nargs + 1 : nargs);
   status = luaD_rawrunprotected(L, resume, L->stack_.top_ - nargs);
   if (status == -1)  /* error calling 'lua_resume'? */
     status = LUA_ERRRUN;
@@ -530,7 +530,7 @@ int lua_resume (lua_State *L, lua_State *from, int nargs) {
 int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   THREAD_CHECK(L);
   CallInfo *ci = L->stack_.callinfo_;
-  api_checknelems(L, nresults);
+  L->stack_.checkArgs(nresults);
   if (L->nonyieldable_count_ > 0) {
     if (L != G(L)->mainthread)
       luaG_runerror("attempt to yield across metamethod/C-call boundary");

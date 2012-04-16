@@ -22,7 +22,4 @@ inline void adjustresults(lua_State* L, int nres) {
   }
 }
 
-void api_checknelems(lua_State* L, int n);
-
-
 #endif

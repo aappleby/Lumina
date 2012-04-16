@@ -35,6 +35,13 @@ public:
   TValue pop();
   void   remove(int index);
 
+  int  getTopIndex();
+  void setTopIndex(int index);
+
+  //----------
+
+  void checkArgs(int count);
+
   //----------
 
   void init();

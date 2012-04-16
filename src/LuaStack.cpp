@@ -224,6 +224,23 @@ TValue LuaStack::pop() {
   return *top_;
 }
 
+// Moves the item on the top of the stack to 'idx'.
+// TODO(aappleby): Not sure if this works in all cases, and it would
+// be better if it took the value as an arg...
+
+/*
+void LuaStack::insert(int idx) {
+  THREAD_CHECK(L);
+  StkId p;
+  StkId q;
+  p = index2addr_checked(L, idx);
+  for (q = top_; q>p; q--) {
+    q[0] = q[-1];
+  }
+  p[0] = top_[0];
+}
+*/
+
 void LuaStack::remove(int index) {
   assert(index > LUA_REGISTRYINDEX);
   TValue* p = (index > 0) ? &callinfo_->func[index] : &top_[index];
@@ -231,6 +248,36 @@ void LuaStack::remove(int index) {
     p[-1] = p[0];
   }
   top_--;
+}
+
+//------------------------------------------------------------------------------
+
+int LuaStack::getTopIndex() {
+  return (top_ - callinfo_->func) - 1;
+}
+
+
+void LuaStack::setTopIndex(int idx) {
+  StkId func = callinfo_->func;
+
+  if (idx >= 0) {
+    assert((idx <= last() - (func + 1)) && "new top too large");
+    while (top_ < (func + 1) + idx) {
+      push(TValue::nil);
+    }
+    top_ = (func + 1) + idx;
+  }
+  else {
+    assert((-(idx+1) <= (top_ - (func + 1))) && "invalid new top");
+    top_ += idx+1;  /* `subtract' index (index is negative) */
+  }
+}
+
+//------------------------------------------------------------------------------
+
+void LuaStack::checkArgs(int count) {
+  int actual = (top_ - callinfo_->func) - 1;
+  assert((count <= actual) && "not enough elements in the stack");
 }
 
 //------------------------------------------------------------------------------
