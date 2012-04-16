@@ -174,7 +174,7 @@ static Proto* LoadFunction(LoadState* S)
     f = new Proto();
     if(f == NULL) luaD_throw(LUA_ERRMEM);
     f->linkGC(getGlobalGCHead());
-    S->L->stack_.top_[0] = f; incr_top(S->L);
+    S->L->stack_.push_reserve(TValue(f));
   }
 
   f->linedefined=LoadInt(S);

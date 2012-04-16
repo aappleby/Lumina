@@ -595,8 +595,7 @@ static int string_query (lua_State *L) {
     LuaObject *ts;
     int n = 0;
     for (ts = tb->hash_[s]; ts; ts = ts->next_) {
-      L->stack_.top_[0] = dynamic_cast<TString*>(ts);
-      incr_top(L);
+      L->stack_.push_reserve(TValue(ts));
       n++;
     }
     return n;

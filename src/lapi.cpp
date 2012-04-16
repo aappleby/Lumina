@@ -559,17 +559,13 @@ void lua_pushnumber (lua_State *L, lua_Number n) {
 
 void lua_pushinteger (lua_State *L, lua_Integer n) {
   THREAD_CHECK(L);
-  L->stack_.top_[0] = n;
-  api_incr_top(L);
+  L->stack_.push_reserve(TValue(n));
 }
 
 
 void lua_pushunsigned (lua_State *L, lua_Unsigned u) {
   THREAD_CHECK(L);
-  lua_Number n;
-  n = lua_unsigned2number(u);
-  L->stack_.top_[0] = n;
-  api_incr_top(L);
+  L->stack_.push_reserve(TValue(u));
 }
 
 

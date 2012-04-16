@@ -198,8 +198,7 @@ static void funcinfo (lua_Debug *ar, Closure *cl) {
 static void collectvalidlines (lua_State *L, Closure *f) {
   THREAD_CHECK(L);
   if (f == NULL || f->isC) {
-    L->stack_.top_[0] = TValue::nil;
-    incr_top(L);
+    L->stack_.push_reserve(TValue::Nil());
   }
   else {
     int i;
@@ -211,8 +210,7 @@ static void collectvalidlines (lua_State *L, Closure *f) {
       t = new Table();  /* new table to store active lines */
       if(t == NULL) luaD_throw(LUA_ERRMEM);
       t->linkGC(getGlobalGCHead());
-      L->stack_.top_[0] = t;  /* push it on stack */
-      incr_top(L);
+      L->stack_.push_reserve(TValue(t));
     }
 
     v = true;
@@ -303,8 +301,7 @@ int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
 
   status = auxgetinfo(L, what, ar, cl, ci);
   if (strchr(what, 'f')) {
-    L->stack_.top_[0] = *func;
-    incr_top(L);
+    L->stack_.push_reserve(*func);
   }
   if (strchr(what, 'L'))
     collectvalidlines(L, cl);

@@ -451,8 +451,10 @@ static l_noret resume_error (lua_State *L, const char *msg, StkId firstArg) {
   {
     ScopedMemChecker c;
     L->stack_.top_ = firstArg;  /* remove args from the stack */
-    L->stack_.top_[0] = luaS_new(msg);  /* push error message */
-    incr_top(L);
+
+    /* push error message */
+    TString* s = luaS_new(msg);
+    L->stack_.push_reserve(TValue(s));
   }
   luaD_throw(-1);  /* jump back to 'lua_resume' */
 }
@@ -621,8 +623,9 @@ static void f_parser (lua_State *L, void *ud) {
     checkmode(L, p->mode, "text");
     tf = luaY_parser(L, p->z, &p->buff, &p->dyd, p->name, c);
   }
-  L->stack_.top_[0] = tf;
-  incr_top(L);
+  
+  L->stack_.push_reserve(TValue(tf));
+
   {
     ScopedMemChecker c;
     cl = new Closure(tf, (int)tf->upvalues.size());

@@ -170,10 +170,9 @@ int luaO_str2d (const char *s, size_t len, lua_Number *result) {
 
 static void pushstr (lua_State *L, const char *str, size_t l) {
   THREAD_CHECK(L);
-
   ScopedMemChecker c;
-  L->stack_.top_[0] = luaS_newlstr(str, l);
-  incr_top(L);
+  TString* s = luaS_newlstr(str, l);
+  L->stack_.push_reserve(TValue(s));
 }
 
 
@@ -187,8 +186,8 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
 
     {
       ScopedMemChecker c;
-      L->stack_.top_[0] = luaS_newlstr(fmt, e-fmt);
-      incr_top(L);
+      TString* s = luaS_newlstr(fmt, e-fmt);
+      L->stack_.push_reserve(TValue(s));
     }
 
     switch (*(e+1)) {
@@ -205,13 +204,11 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
         break;
       }
       case 'd': {
-        L->stack_.top_[0] = va_arg(argp, int);
-        incr_top(L);
+        L->stack_.push_reserve( TValue(va_arg(argp, int)) );
         break;
       }
       case 'f': {
-        L->stack_.top_[0] = va_arg(argp, lua_Number);
-        incr_top(L);
+        L->stack_.push_reserve( TValue(va_arg(argp, lua_Number)) );
         break;
       }
       case 'p': {
