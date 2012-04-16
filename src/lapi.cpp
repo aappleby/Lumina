@@ -577,8 +577,7 @@ const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
   {
     ScopedMemChecker c;
     ts = luaS_newlstr(s, len);
-    L->stack_.top_[0] = ts;
-    api_incr_top(L);
+    L->stack_.push(TValue(ts));
   }
 
   return ts->c_str();
@@ -598,8 +597,7 @@ const char *lua_pushstring (lua_State *L, const char *s) {
     {
       ScopedMemChecker c;
       ts = luaS_new(s);
-      L->stack_.top_[0] = ts;
-      api_incr_top(L);
+      L->stack_.push(TValue(ts));
     }
 
     return ts->c_str();
@@ -632,8 +630,7 @@ const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
 void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
   THREAD_CHECK(L);
   if (n == 0) {
-    L->stack_.top_[0] = TValue::LightFunction(fn);
-    api_incr_top(L);
+    L->stack_.push(TValue::LightFunction(fn));
     return;
   }
 
@@ -647,29 +644,25 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
   while (n--) {
     cl->pupvals_[n] = L->stack_.top_[n];
   }
-  L->stack_.top_[0] = TValue(cl);
-  api_incr_top(L);
+  L->stack_.push(TValue(cl));
 }
 
 
 void lua_pushboolean (lua_State *L, int b) {
   THREAD_CHECK(L);
-  L->stack_.top_[0] = (b ? true : false);
-  api_incr_top(L);
+  L->stack_.push(TValue(b ? true : false));
 }
 
 
 void lua_pushlightuserdata (lua_State *L, void *p) {
   THREAD_CHECK(L);
-  L->stack_.top_[0] = TValue::LightUserdata((void*)p);
-  api_incr_top(L);
+  L->stack_.push(TValue::LightUserdata((void*)p));
 }
 
 
 int lua_pushthread (lua_State *L) {
   THREAD_CHECK(L);
-  L->stack_.top_[0] = L;
-  api_incr_top(L);
+  L->stack_.push(TValue(L));
   return (G(L)->mainthread == L);
 }
 
@@ -719,8 +712,8 @@ void lua_getfield (lua_State *L, int idx, const char *k) {
 
   {
     ScopedMemChecker c;
-    L->stack_.top_[0] = luaS_new(k);
-    api_incr_top(L);
+    TString* s = luaS_new(k);
+    L->stack_.push(TValue(s));
   }
 
   TValue val;
@@ -752,8 +745,8 @@ void lua_rawgeti (lua_State *L, int idx, int n) {
   api_check(t->isTable(), "table expected");
 
   TValue result = t->getTable()->get(TValue(n));
-  L->stack_.top_[0] = (result.isNone() || result.isNil()) ? TValue::Nil() : result;
-  api_incr_top(L);
+  if(result.isNone()) result = TValue::Nil();
+  L->stack_.push(result);
 }
 
 
@@ -764,8 +757,8 @@ void lua_rawgetp (lua_State *L, int idx, const void *p) {
   api_check(t->isTable(), "table expected");
   
   TValue result = t->getTable()->get( TValue::LightUserdata(p) );
-  L->stack_.top_[0] = (result.isNone() || result.isNil()) ? TValue::Nil() : result;
-  api_incr_top(L);
+  if(result.isNone()) result = TValue::Nil();
+  L->stack_.push(result);
 }
 
 
@@ -779,8 +772,7 @@ void lua_createtable (lua_State *L, int narray, int nrec) {
     t = new Table();
     if(t == NULL) luaD_throw(LUA_ERRMEM);
     t->linkGC(getGlobalGCHead());
-    L->stack_.top_[0] = t;
-    api_incr_top(L);
+    L->stack_.push(TValue(t));
   }
 
   if (narray > 0 || nrec > 0) {
@@ -808,8 +800,7 @@ int lua_getmetatable (lua_State *L, int objindex) {
   if (mt == NULL)
     res = 0;
   else {
-    L->stack_.top_[0] = mt;
-    api_incr_top(L);
+    L->stack_.push(TValue(mt));
     res = 1;
   }
   return res;
@@ -822,11 +813,9 @@ void lua_getuservalue (lua_State *L, int idx) {
   o = index2addr_checked(L, idx);
   api_check(o->isUserdata(), "userdata expected");
   if (o->getUserdata()->env_) {
-    L->stack_.top_[0] = o->getUserdata()->env_;
-    api_incr_top(L);
+    L->stack_.push(TValue(o->getUserdata()->env_));
   } else {
-    L->stack_.top_[0] = TValue::nil;
-    api_incr_top(L);
+    L->stack_.push(TValue::Nil());
   }
 }
 
@@ -1255,8 +1244,8 @@ void lua_concat (lua_State *L, int n) {
     luaV_concat(L, n);
   }
   else if (n == 0) {  /* push empty string */
-    L->stack_.top_[0] = luaS_newlstr("", 0);
-    api_incr_top(L);
+    TString* s = luaS_newlstr("", 0);
+    L->stack_.push(TValue(s));
   }
   /* else n == 1; nothing to do */
 }
@@ -1285,8 +1274,7 @@ void *lua_newuserdata (lua_State *L, size_t size) {
     ScopedMemChecker c;
     u = new Udata(size);
     assert(u);
-    L->stack_.top_[0] = u;
-    api_incr_top(L);
+    L->stack_.push(TValue(u));
   }
 
   return u->buf_;
@@ -1327,8 +1315,7 @@ const char *lua_getupvalue (lua_State *L, int funcindex, int n) {
   if(val2 == NULL) return NULL;
   name = aux_upvalue(val2, n, &val, NULL);
   if (name) {
-    L->stack_.top_[0] = *val;
-    api_incr_top(L);
+    L->stack_.push(*val);
   }
   return name;
 }
