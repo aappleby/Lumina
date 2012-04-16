@@ -256,12 +256,15 @@ void lua_settop (lua_State *L, int idx) {
 
 void lua_remove (lua_State *L, int idx) {
   THREAD_CHECK(L);
+  /*
   StkId p;
   p = index2addr_checked(L, idx);
   while (++p < L->top) {
     p[-1] = p[0];
   }
   L->top--;
+  */
+  L->remove(idx);
 }
 
 

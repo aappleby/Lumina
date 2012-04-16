@@ -252,6 +252,15 @@ void lua_State::push(const TValue* v) {
   assert((top <= ci_->top) && "stack overflow");
 }
 
+void lua_State::remove(int index) {
+  assert(index > LUA_REGISTRYINDEX);
+  TValue* p = (index > 0) ? &ci_->func[index] : &top[index];
+  while (++p < top) {
+    p[-1] = p[0];
+  }
+  top--;
+}
+
 //-----------------------------------------------------------------------------
 
 void lua_State::VisitGC(GCVisitor& visitor) {

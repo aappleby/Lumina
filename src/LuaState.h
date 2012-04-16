@@ -62,5 +62,6 @@ public:
   void   push(TValue v);
   void   push(const TValue* v);
   TValue pop();
+  void   remove(int index);
 };
 
