@@ -86,8 +86,7 @@ l_noret luaD_throw (int errcode) {
   else {  // thread has no error handler
     L->status = cast_byte(errcode);  // mark it as dead
     if (thread_G->mainthread->errorJmp) {  // main thread has a handler?
-      thread_G->mainthread->stack_.top_[0] = L->stack_.top_[-1];  // copy error obj.
-      thread_G->mainthread->stack_.top_++;
+      thread_G->mainthread->stack_.push(L->stack_.top_[-1]);  // copy error obj.
       {
         THREAD_CHANGE(G(L)->mainthread);
         luaD_throw(errcode);  /* re-throw in main thread */
@@ -270,8 +269,7 @@ int luaD_precallLua(lua_State* L, StkId func, int nresults) {
   func = restorestack(L, funcr);
   int n = cast_int(L->stack_.top_ - func) - 1;  /* number of real arguments */
   for (; n < p->numparams; n++) {
-    L->stack_.top_[0] = TValue::nil;  /* complete missing arguments */
-    L->stack_.top_++;
+    L->stack_.push_nocheck(TValue::Nil());  /* complete missing arguments */
   }
   base = (!p->is_vararg) ? func + 1 : adjust_varargs(L, p, n);
   CallInfo* ci = NULL;

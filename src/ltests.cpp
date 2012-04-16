@@ -44,8 +44,7 @@ static void setnameval (lua_State *L, const char *name, int val) {
 
 static void pushobject (lua_State *L, const TValue *o) {
   THREAD_CHECK(L);
-  L->stack_.top_[0] = *o;
-  L->stack_.top_++;
+  L->stack_.push(*o);
 }
 
 

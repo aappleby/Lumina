@@ -157,8 +157,7 @@ const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n) {
     StkId pos = 0;  /* to avoid warnings */
     name = findlocal(L, ar->i_ci, n, &pos);
     if (name) {
-      L->stack_.top_[0] = pos[0];
-      L->stack_.top_++;
+      L->stack_.push(pos[0]);
     }
   }
   return name;

@@ -190,8 +190,7 @@ void lua_xmove (lua_State *from, lua_State *to, int n) {
   {
     THREAD_CHANGE(to);
     for (i = 0; i < n; i++) {
-      to->stack_.top_[0] = from->stack_.top_[i];
-      to->stack_.top_++;
+      to->stack_.push(from->stack_.top_[i]);
     }
   }
 }
@@ -242,8 +241,7 @@ void lua_settop (lua_State *L, int idx) {
   if (idx >= 0) {
     api_check(idx <= L->stack_.last() - (func + 1), "new top too large");
     while (L->stack_.top_ < (func + 1) + idx) {
-      L->stack_.top_[0] = TValue::nil;
-      L->stack_.top_++;
+      L->stack_.push(TValue::nil);
     }
     L->stack_.top_ = (func + 1) + idx;
   }
@@ -296,8 +294,8 @@ void lua_copy (lua_State *L, int fromidx, int toidx) {
 void lua_pushvalue (lua_State *L, int idx) {
   THREAD_CHECK(L);
   TValue v = index2addr3(L, idx);
-  L->stack_.top_[0] = v.isNone() ? TValue::nil : v;
-  L->stack_.top_++;
+  if(v.isNone()) v = TValue::Nil();
+  L->stack_.push(v);
   api_check(L->stack_.top_ <= L->stack_.callinfo_->top, "stack overflow");
 }
 
@@ -370,8 +368,7 @@ void  lua_arith (lua_State *L, int op) {
     api_checknelems(L, 2);
   else {  /* for unary minus, add fake 2nd operand */
     api_checknelems(L, 1);
-    L->stack_.top_[0] = L->stack_.top_[-1];
-    L->stack_.top_++;
+    L->stack_.push(L->stack_.top_[-1]);
   }
   o1 = L->stack_.top_ - 2;
   o2 = L->stack_.top_ - 1;
@@ -833,8 +830,8 @@ void lua_setglobal (lua_State *L, const char *var) {
 
   {
     ScopedMemChecker c;
-    L->stack_.top_[0] = luaS_new(var);
-    L->stack_.top_++;
+    TString* s = luaS_new(var);
+    L->stack_.push(TValue(s));
   }
 
   luaV_settable(L, &globals, L->stack_.top_ - 1, L->stack_.top_ - 2);
@@ -860,8 +857,8 @@ void lua_setfield (lua_State *L, int idx, const char *k) {
 
   {
     ScopedMemChecker c;
-    L->stack_.top_[0] = luaS_new(k);
-    L->stack_.top_++;
+    TString* s = luaS_new(k);
+    L->stack_.push(TValue(s));
   }
 
   luaV_settable(L, t, L->stack_.top_ - 1, L->stack_.top_ - 2);

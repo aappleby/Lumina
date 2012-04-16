@@ -136,8 +136,7 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
   {
     ScopedMemChecker c;
     ts = luaS_newlstr(str, l);  /* create new string */
-    L->stack_.top_[0] = ts;  /* temporarily anchor it in stack */
-    L->stack_.top_++;
+    L->stack_.push_nocheck(TValue(ts));  /* temporarily anchor it in stack */
   }
 
   // TODO(aappleby): Save string in 'ls->fs->h'. Why it does so exactly this way, I don't

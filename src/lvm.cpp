@@ -93,15 +93,11 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
                     const TValue *p2, TValue *p3, int hasres) {
   THREAD_CHECK(L);
   ptrdiff_t result = savestack(L, p3);
-  L->stack_.top_[0] = *f; // push function
-  L->stack_.top_++;
-  L->stack_.top_[0] = *p1; // 1st argument
-  L->stack_.top_++;
-  L->stack_.top_[0] = *p2; // 2nd argument
-  L->stack_.top_++;
+  L->stack_.push_nocheck(*f); // push function
+  L->stack_.push_nocheck(*p1); // 1st argument
+  L->stack_.push_nocheck(*p2); // 2nd argument
   if (!hasres) { // no result? 'p3' is third argument
-    L->stack_.top_[0] = *p3;  // 3rd argument
-    L->stack_.top_++;
+    L->stack_.push_nocheck(*p3);  // 3rd argument
   }
   L->stack_.reserve(0);
   /* metamethod may yield only when called from Lua code */
@@ -118,10 +114,9 @@ static void callTM3 (lua_State *L,
                      TValue p2,
                      TValue& result) {
   THREAD_CHECK(L);
-  L->stack_.top_[0] = f; // push function
-  L->stack_.top_[1] = p1; // 1st argument
-  L->stack_.top_[2] = p2; // 2nd argument
-  L->stack_.top_ += 3;
+  L->stack_.push_nocheck(f); // push function
+  L->stack_.push_nocheck(p1); // 1st argument
+  L->stack_.push_nocheck(p2); // 2nd argument
   L->stack_.reserve(0);
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - 3, 1, isLua(L->stack_.callinfo_));
@@ -135,11 +130,11 @@ static void callTM0 (lua_State *L,
                      const TValue* arg2,
                      const TValue* arg3) {
   THREAD_CHECK(L);
-  L->stack_.top_[0] = *func;
-  L->stack_.top_[1] = *arg1;
-  L->stack_.top_[2] = *arg2;
-  L->stack_.top_[3] = *arg3;
-  L->stack_.top_ += 4;
+  L->stack_.push_nocheck(*func);
+  L->stack_.push_nocheck(*arg1);
+  L->stack_.push_nocheck(*arg2);
+  L->stack_.push_nocheck(*arg3);
+  L->stack_.reserve(0);
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - 4, 0, isLua(L->stack_.callinfo_));
 }
@@ -150,11 +145,11 @@ static void callTM1 (lua_State *L,
                      TValue arg2,
                      TValue arg3) {
   THREAD_CHECK(L);
-  L->stack_.top_[0] = func;
-  L->stack_.top_[1] = arg1;
-  L->stack_.top_[2] = arg2;
-  L->stack_.top_[3] = arg3;
-  L->stack_.top_ += 4;
+  L->stack_.push_nocheck(func);
+  L->stack_.push_nocheck(arg1);
+  L->stack_.push_nocheck(arg2);
+  L->stack_.push_nocheck(arg3);
+  L->stack_.reserve(0);
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - 4, 0, isLua(L->stack_.callinfo_));
 }

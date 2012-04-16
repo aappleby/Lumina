@@ -214,6 +214,11 @@ void LuaStack::push_reserve(TValue v) {
   reserve(0);
 }
 
+void LuaStack::push_nocheck(TValue v) {
+  top_[0] = v;
+  top_++;
+}
+
 TValue LuaStack::pop() {
   top_--;
   return *top_;

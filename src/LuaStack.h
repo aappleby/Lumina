@@ -30,6 +30,7 @@ public:
   void   push(TValue v);
   void   push(const TValue* v);
   void   push_reserve(TValue v);
+  void   push_nocheck(TValue v);
 
   TValue pop();
   void   remove(int index);
