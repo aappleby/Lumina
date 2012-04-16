@@ -15,8 +15,8 @@
 
 #define incr_top(L) {L->top++; L->checkstack(0);}
 
-#define savestack(L,p)		((char *)(p) - (char *)L->stack.begin())
-#define restorestack(L,n)	((TValue *)((char *)L->stack.begin() + (n)))
+#define savestack(L,p)		((char *)(p) - (char *)L->stack_.begin())
+#define restorestack(L,n)	((TValue *)((char *)L->stack_.begin() + (n)))
 
 
 /* type of protected functions, to be ran by `runprotected' */

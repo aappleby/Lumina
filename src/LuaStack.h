@@ -1,5 +1,6 @@
 #pragma once
 
+#include "LuaCallinfo.h"
 #include "LuaValue.h"
 #include "LuaVector.h"
 
@@ -8,6 +9,7 @@ public:
 
   LuaStack() {
     top_ = NULL;
+    callinfo_ = &callinfo_head_;
   }
 
   TValue* last() {
@@ -15,6 +17,8 @@ public:
   }
 
   TValue* top_;
+  CallInfo callinfo_head_;  /* CallInfo for first level (C calling Lua) */
+  CallInfo* callinfo_;  /* call info for current function */
 };
 
 class LuaHandle {

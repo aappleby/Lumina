@@ -66,7 +66,7 @@ int luaV_tostring (TValue* v) {
 
 static void traceexec (lua_State *L) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->callinfo_;
+  CallInfo *ci = L->stack_.callinfo_;
   uint8_t mask = L->hookmask;
   if ((mask & LUA_MASKCOUNT) && L->hookcount == 0) {
     L->hookcount = L->basehookcount;
@@ -105,7 +105,7 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
   }
   L->checkstack(0);
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->top - (4 - hasres), hasres, isLua(L->callinfo_));
+  luaD_call(L, L->top - (4 - hasres), hasres, isLua(L->stack_.callinfo_));
   if (hasres) {  /* if has result, move it to its place */
     p3 = restorestack(L, result);
     L->top--;
@@ -125,7 +125,7 @@ static void callTM3 (lua_State *L,
   L->top += 3;
   L->checkstack(0);
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->top - 3, 1, isLua(L->callinfo_));
+  luaD_call(L, L->top - 3, 1, isLua(L->stack_.callinfo_));
   L->top--;
   result = L->top[0];
 }
@@ -143,7 +143,7 @@ static void callTM0 (lua_State *L,
   L->top[3] = *arg3;
   L->top += 4;
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->top - 4, 0, isLua(L->callinfo_));
+  luaD_call(L, L->top - 4, 0, isLua(L->stack_.callinfo_));
 }
 
 static void callTM1 (lua_State *L,
@@ -158,7 +158,7 @@ static void callTM1 (lua_State *L,
   L->top[3] = arg3;
   L->top += 4;
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->top - 4, 0, isLua(L->callinfo_));
+  luaD_call(L, L->top - 4, 0, isLua(L->stack_.callinfo_));
 }
 
 LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outResult) {
@@ -222,13 +222,13 @@ LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outRe
 void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId outResult) {
   THREAD_CHECK(L);
 
-  int stackIndex = outResult - L->stack.begin();
+  int stackIndex = outResult - L->stack_.begin();
 
   TValue result;
   LuaResult r = luaV_gettable2(L, *source, *key, result);
 
   if(r == LR_OK) {
-    L->stack[stackIndex] = result;
+    L->stack_[stackIndex] = result;
   } else {
     handleError(r, source);
   }
@@ -622,7 +622,7 @@ static void pushclosure (lua_State *L,
 */
 void luaV_finishOp (lua_State *L) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->callinfo_;
+  CallInfo *ci = L->stack_.callinfo_;
   StkId base = ci->base;
   Instruction inst = *(ci->savedpc - 1);  /* interrupted instruction */
   OpCode op = GET_OPCODE(inst);
@@ -699,13 +699,13 @@ void luaV_finishOp (lua_State *L) {
 
 void luaV_execute (lua_State *L) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->callinfo_;
+  CallInfo *ci = L->stack_.callinfo_;
   Closure *cl;
   TValue *k;
   StkId base;
 
  newframe:  /* reentry point when frame changes (call/return) */
-  assert(ci == L->callinfo_);
+  assert(ci == L->stack_.callinfo_);
   cl = ci->func->getLClosure();
   k = cl->proto_->constants.begin();
   base = ci->base;
@@ -733,7 +733,7 @@ void luaV_execute (lua_State *L) {
       base = ci->base;
     }
 
-    assert(base <= L->top && L->top < L->stack.end());
+    assert(base <= L->top && L->top < L->stack_.end());
     StkId ra = &base[A];
 
     switch(GET_OPCODE(i)) {
@@ -1079,7 +1079,7 @@ void luaV_execute (lua_State *L) {
             base = ci->base;
           }
           else {  /* Lua function */
-            ci = L->callinfo_;
+            ci = L->stack_.callinfo_;
             ci->callstatus |= CIST_REENTRY;
             goto newframe;  /* restart luaV_execute over new Lua function */
           }
@@ -1094,7 +1094,7 @@ void luaV_execute (lua_State *L) {
 
           if (!luaD_precall(L, ra, LUA_MULTRET)) {
             /* tail call: put called frame (n) in place of caller one (o) */
-            CallInfo *nci = L->callinfo_;  /* called frame */
+            CallInfo *nci = L->stack_.callinfo_;  /* called frame */
             CallInfo *oci = nci->previous;  /* caller frame */
             StkId nfunc = nci->func;  /* called function */
             StkId ofunc = oci->func;  /* caller function */
@@ -1110,7 +1110,7 @@ void luaV_execute (lua_State *L) {
             oci->top = L->top = ofunc + (L->top - nfunc);  /* correct top */
             oci->savedpc = nci->savedpc;
             oci->callstatus |= CIST_TAIL;  /* function was tail called */
-            ci = L->callinfo_ = oci;  /* remove new frame */
+            ci = L->stack_.callinfo_ = oci;  /* remove new frame */
             assert(L->top == oci->base + ofunc->getLClosure()->proto_->maxstacksize);
             goto newframe;  /* restart luaV_execute over new Lua function */
           }
@@ -1128,7 +1128,7 @@ void luaV_execute (lua_State *L) {
             return;  /* external invocation: return */
           }
           else {  /* invocation via reentry: continue execution */
-            ci = L->callinfo_;
+            ci = L->stack_.callinfo_;
             if (b) L->top = ci->top;
             assert(isLua(ci));
             assert(GET_OPCODE(*((ci)->savedpc - 1)) == OP_CALL);

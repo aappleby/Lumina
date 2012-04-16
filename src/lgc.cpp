@@ -369,11 +369,11 @@ static LuaObject **sweeplist (LuaObject **p, size_t count);
 */
 
 static void sweepthread (lua_State *L1) {
-  if (L1->stack.empty()) return;  /* stack not completely built yet */
+  if (L1->stack_.empty()) return;  /* stack not completely built yet */
   sweeplist(&L1->open_upvals_, MAX_LUMEM);  /* sweep open upvalues */
   {
     THREAD_CHANGE(L1);
-    CallInfo *ci = L1->callinfo_;
+    CallInfo *ci = L1->stack_.callinfo_;
     CallInfo *next = ci->next;
     ci->next = NULL;
     while ((ci = next) != NULL) {

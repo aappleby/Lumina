@@ -44,9 +44,9 @@ CallInfo *luaE_extendCI (lua_State *L) {
   THREAD_CHECK(L);
   CallInfo *ci = new CallInfo();
   if(ci == NULL) luaD_throw(LUA_ERRMEM);
-  assert(L->callinfo_->next == NULL);
-  L->callinfo_->next = ci;
-  ci->previous = L->callinfo_;
+  assert(L->stack_.callinfo_->next == NULL);
+  L->stack_.callinfo_->next = ci;
+  ci->previous = L->stack_.callinfo_;
   ci->next = NULL;
   return ci;
 }
@@ -117,7 +117,6 @@ static void f_luaopen (lua_State *L, void *) {
 static void preinit_state (lua_State *L, global_State *g) {
   //THREAD_CHECK(L);
   L->l_G = g;
-  L->callinfo_ = NULL;
   L->errorJmp = NULL;
   L->nCcalls = 0;
   L->hook = NULL;
@@ -137,7 +136,7 @@ static void close_state (lua_State *L) {
 
   thread_G->isShuttingDown = true;
 
-  luaF_close(L->stack.begin());  /* close all upvalues for this thread */
+  luaF_close(L->stack_.begin());  /* close all upvalues for this thread */
 
   // TODO(aappleby): grayagain_ and grayhead_ still have objects in them during destruction?
   thread_G->grayhead_.Clear();

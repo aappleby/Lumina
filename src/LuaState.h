@@ -25,12 +25,9 @@ public:
   uint8_t status;
   global_State *l_G;
 
-  CallInfo callinfo_head_;  /* CallInfo for first level (C calling Lua) */
-  CallInfo* callinfo_;  /* call info for current function */
-
   const Instruction *oldpc;  /* last pc traced */
 
-  LuaStack stack;
+  LuaStack stack_;
   StkId top;  /* first free slot in the stack */
 
   unsigned short nonyieldable_count_;  /* number of non-yieldable calls in stack */

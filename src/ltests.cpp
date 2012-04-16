@@ -31,7 +31,7 @@
 #include "lualib.h"
 
 
-#define obj_at(L,k)	(L->callinfo_->func + (k))
+#define obj_at(L,k)	(L->stack_.callinfo_->func + (k))
 
 
 static void setnameval (lua_State *L, const char *name, int val) {
@@ -201,15 +201,16 @@ static void checkstack (global_State *g, lua_State *L1) {
     assert(uv->v != &uv->value);  /* must be open */
     assert(!uvo->isBlack());  /* open upvalues cannot be black */
   }
-  for (ci = L1->callinfo_; ci != NULL; ci = ci->previous) {
-    assert(ci->top <= L1->stack.last());
+  for (ci = L1->stack_.callinfo_; ci != NULL; ci = ci->previous) {
+    assert(ci->top <= L1->stack_.last());
     assert(lua_checkpc(ci));
   }
-  if (L1->stack.size()) {
-    for (o = L1->stack.begin(); o < L1->top; o++)
+  if (L1->stack_.size()) {
+    for (o = L1->stack_.begin(); o < L1->top; o++) {
       o->sanityCheck();
+    }
   }
-  else assert(L1->stack.empty());
+  else assert(L1->stack_.empty());
 }
 
 
@@ -540,8 +541,8 @@ static int gc_state (lua_State *L) {
 static int stacklevel (lua_State *L) {
   THREAD_CHECK(L);
   unsigned long a = 0;
-  lua_pushinteger(L, (L->top - L->stack.begin()));
-  lua_pushinteger(L, (L->stack.last() - L->stack.begin()));
+  lua_pushinteger(L, (L->top - L->stack_.begin()));
+  lua_pushinteger(L, (L->stack_.last() - L->stack_.begin()));
   lua_pushinteger(L, (unsigned long)&a);
   return 5;
 }
