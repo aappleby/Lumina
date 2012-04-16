@@ -10,6 +10,11 @@ public:
   LuaStack() {
     top_ = NULL;
     callinfo_ = &callinfo_head_;
+    open_upvals_ = NULL;
+  }
+
+  ~LuaStack() {
+    assert(open_upvals_ == NULL);
   }
 
   TValue* last() {
@@ -19,6 +24,8 @@ public:
   TValue* top_;
   CallInfo callinfo_head_;  /* CallInfo for first level (C calling Lua) */
   CallInfo* callinfo_;  /* call info for current function */
+
+  LuaObject *open_upvals_;  /* list of open upvalues in this stack */
 };
 
 class LuaHandle {

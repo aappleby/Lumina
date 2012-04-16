@@ -196,7 +196,7 @@ static void checkstack (global_State *g, lua_State *L1) {
   CallInfo *ci;
   LuaObject *uvo;
   assert(!L1->isDead());
-  for (uvo = L1->open_upvals_; uvo != NULL; uvo = uvo->next_) {
+  for (uvo = L1->stack_.open_upvals_; uvo != NULL; uvo = uvo->next_) {
     UpVal *uv = dynamic_cast<UpVal*>(uvo);
     assert(uv->v != &uv->value);  /* must be open */
     assert(!uvo->isBlack());  /* open upvalues cannot be black */

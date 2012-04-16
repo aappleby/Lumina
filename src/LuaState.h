@@ -39,8 +39,6 @@ public:
   int hookcount;
   lua_Hook hook;
   
-  LuaObject *open_upvals_;  /* list of open upvalues in this stack */
-  
   lua_longjmp *errorJmp;  /* current error recover point */
   ptrdiff_t errfunc;  /* current error handling function (stack index) */
 

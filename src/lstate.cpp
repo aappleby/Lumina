@@ -124,7 +124,6 @@ static void preinit_state (lua_State *L, global_State *g) {
   L->basehookcount = 0;
   L->allowhook = 1;
   L->hookcount = L->basehookcount;
-  L->open_upvals_ = NULL;
   L->nonyieldable_count_ = 1;
   L->status = LUA_OK;
   L->errfunc = 0;
@@ -152,7 +151,7 @@ static void close_state (lua_State *L) {
 
   thread_G->buff.buffer.clear();
 
-  assert(L->open_upvals_ == NULL);
+  assert(L->stack_.open_upvals_ == NULL);
   delete L;
   thread_L = NULL;
 

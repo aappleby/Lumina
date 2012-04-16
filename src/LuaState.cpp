@@ -23,7 +23,6 @@ lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
   basehookcount = 0;
   hookcount = 0;
   hook = NULL;
-  open_upvals_ = NULL;
   errorJmp = NULL;
   errfunc = 0;
 }
@@ -31,7 +30,6 @@ lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
 lua_State::~lua_State() {
   if(!stack_.empty()) {
     closeUpvals(stack_.begin());
-    assert(open_upvals_ == NULL);
   }
   freestack();
 }
@@ -136,7 +134,7 @@ void lua_State::reallocstack (int newsize) {
   top = stack_.begin() + (top - oldstack);
   
   // Correct all stack references in open upvalues.
-  for (LuaObject* up = open_upvals_; up != NULL; up = up->next_) {
+  for (LuaObject* up = stack_.open_upvals_; up != NULL; up = up->next_) {
     UpVal* uv = static_cast<UpVal*>(up);
     uv->v = (uv->v - oldstack) + stack_.begin();
   }
@@ -162,12 +160,12 @@ void lua_State::checkstack(int size) {
 void lua_State::closeUpvals(StkId level) {
   UpVal *uv;
 
-  while (open_upvals_ != NULL) {
-    uv = dynamic_cast<UpVal*>(open_upvals_);
+  while (stack_.open_upvals_ != NULL) {
+    uv = dynamic_cast<UpVal*>(stack_.open_upvals_);
     if(uv->v < level) break;
 
     assert(!uv->isBlack() && uv->v != &uv->value);
-    open_upvals_ = uv->next_;  /* remove from `open' list */
+    stack_.open_upvals_ = uv->next_;  /* remove from `open' list */
 
     if (uv->isDead())
       delete uv;
