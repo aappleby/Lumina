@@ -196,11 +196,6 @@ TValue LuaStack::at(int idx) {
 
 //------------------------------------------------------------------------------
 
-TValue LuaStack::pop() {
-  top_--;
-  return *top_;
-}
-
 void LuaStack::push(TValue v) {
   top_[0] = v;
   top_++;
@@ -211,6 +206,17 @@ void LuaStack::push(const TValue* v) {
   top_[0] = *v;
   top_++;
   assert((top_ <= callinfo_->top) && "stack overflow");
+}
+
+void LuaStack::push_reserve(TValue v) {
+  top_[0] = v;
+  top_++;
+  reserve(0);
+}
+
+TValue LuaStack::pop() {
+  top_--;
+  return *top_;
 }
 
 void LuaStack::remove(int index) {
