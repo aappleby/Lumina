@@ -117,7 +117,8 @@ static int luaB_getmetatable (lua_State *L) {
 
 static int luaB_setmetatable (lua_State *L) {
   THREAD_CHECK(L);
-  TValue v2 = *index2addr(L, 2);
+  TValue* pv2 = index2addr(L, 2);
+  TValue v2 = pv2 ? *pv2 : TValue::Nil();
   luaL_checkIsTable(L, 1);
   luaL_argcheck(L,
                 v2.isNil() ||

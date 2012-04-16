@@ -700,7 +700,8 @@ static int str_gsub (lua_State *L) {
   size_t srcl, lp;
   const char *src = luaL_checklstring(L, 1, &srcl);
   const char *p = luaL_checklstring(L, 2, &lp);
-  TValue v = *index2addr(L, 3);
+  TValue* pv = index2addr(L, 3); 
+  TValue v = pv ? *pv : TValue::Nil();
   size_t max_s = luaL_optinteger(L, 4, srcl+1);
   int anchor = (*p == '^');
   size_t n = 0;

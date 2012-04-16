@@ -363,7 +363,9 @@ void luaL_checkstack (lua_State *L, int space, const char *msg) {
 
 void luaL_checkIsFunction(lua_State *L, int narg) {
   THREAD_CHECK(L);
-  TValue v = *index2addr(L, narg);
+  TValue* pv = index2addr(L, narg);
+  assert(pv);
+  TValue v = *pv;
   if(v.isFunction()) return;
   const char* actualType = v.typeName();
   const char *msg = lua_pushfstring(L, "Expected a function, got a %s", actualType);
@@ -798,7 +800,9 @@ int luaL_len (lua_State *L, int idx) {
 const char *luaL_tolstring (lua_State *L, int idx, size_t *len) {
   THREAD_CHECK(L);
   if (!luaL_callmeta(L, idx, "__tostring")) {  /* no metafield? */
-    TValue v = *index2addr(L, idx);
+    TValue* pv = index2addr(L, idx); 
+    assert(pv);
+    TValue v = *pv;
 
     if(v.isNumber() || v.isString()) {
       lua_pushvalue(L, idx);

@@ -7,8 +7,6 @@
 
 #include <algorithm>
 
-extern const TValue luaO_nilobject_;
-
 l_noret luaG_runerror (const char *fmt, ...);
 void luaC_checkupvalcolor (global_State *g, UpVal *uv);
 

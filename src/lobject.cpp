@@ -26,9 +26,6 @@
 
 
 
-const TValue luaO_nilobject_;
-
-
 /*
 ** converts an integer to a "floating point byte", represented as
 ** (eeeeexxx), where the real value is (1xxx) * 2^(eeeee - 1) if

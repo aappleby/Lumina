@@ -283,14 +283,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\lctype.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\lctype.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\ldo.cpp"
 				>
 			</File>
@@ -406,6 +398,14 @@
 		<Filter
 			Name="Utils"
 			>
+			<File
+				RelativePath="..\src\lctype.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lctype.h"
+				>
+			</File>
 			<File
 				RelativePath="..\src\ldebug.cpp"
 				>

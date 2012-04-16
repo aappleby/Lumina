@@ -138,7 +138,7 @@ TValue* index2addr2 (lua_State *L, int idx) {
 TValue *index2addr (lua_State *L, int idx) {
   THREAD_CHECK(L);
   TValue* result = index2addr2(L,idx);
-  return result ? result : (TValue*)luaO_nilobject;
+  return result;
 }
 
 TValue* index2addr_checked(lua_State* L, int idx) {
@@ -336,14 +336,15 @@ const char *lua_typename (lua_State *L, int t) {
 
 int lua_iscfunction (lua_State *L, int idx) {
   THREAD_CHECK(L);
-  StkId o = index2addr(L, idx);
-  return (o->isLightFunction() || o->isCClosure());
+  StkId o = index2addr2(L, idx);
+  return o && (o->isLightFunction() || o->isCClosure());
 }
 
 // To determine if a string can be converted to a number, we convert it to a number. :)
 int lua_isNumberable (lua_State *L, int idx) {
   THREAD_CHECK(L);
-  const TValue *v1 = index2addr(L, idx);
+  const TValue *v1 = index2addr2(L, idx);
+  if(v1 == NULL) return 0;
   TValue v2 = v1->convertToNumber();
   return v2.isNone() ? 0 : 1;
 }
@@ -351,15 +352,15 @@ int lua_isNumberable (lua_State *L, int idx) {
 
 int lua_isStringable (lua_State *L, int idx) {
   THREAD_CHECK(L);
-  TValue* v = index2addr(L,idx);
-  return v->isString() || v->isNumber();
+  TValue* v = index2addr2(L,idx);
+  return v && (v->isString() || v->isNumber());
 }
 
 
 int lua_isuserdata (lua_State *L, int idx) {
   THREAD_CHECK(L);
   const TValue *o = index2addr(L, idx);
-  return (o->isUserdata() || o->isLightUserdata());
+  return o && (o->isUserdata() || o->isLightUserdata());
 }
 
 
@@ -457,13 +458,15 @@ lua_Unsigned lua_tounsignedx (lua_State *L, int idx, int *isnum) {
 int lua_toboolean (lua_State *L, int idx) {
   THREAD_CHECK(L);
   const TValue *o = index2addr(L, idx);
-  return o->isTrue();
+  return o && o->isTrue();
 }
 
 
 const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
+
+  if(o == NULL) return NULL;
 
   if(o->isString()) {
     if (len != NULL) *len = o->getString()->getLen();
@@ -487,6 +490,7 @@ const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
   luaC_checkGC();
 
   o = index2addr(L, idx);  /* luaC_checkGC may reallocate the stack */
+  if(o == NULL) return NULL;
   if (len != NULL) *len = o->getString()->getLen();
   return o->getString()->c_str();
 }
@@ -494,6 +498,7 @@ const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
 size_t lua_rawlen (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
+  if(o == NULL) return NULL;
   switch (o->type()) {
     case LUA_TSTRING: return o->getString()->getLen();
     case LUA_TUSERDATA: return o->getUserdata()->len_;
@@ -506,6 +511,7 @@ size_t lua_rawlen (lua_State *L, int idx) {
 lua_CFunction lua_tocfunction (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
+  if(o == NULL) return NULL;
   if (o->isLightFunction()) return o->getLightFunction();
   else if (o->isCClosure())
     return o->getCClosure()->cfunction_;
@@ -516,6 +522,7 @@ lua_CFunction lua_tocfunction (lua_State *L, int idx) {
 void *lua_touserdata (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
+  if(o == NULL) return NULL;
   switch (o->type()) {
     case LUA_TUSERDATA: return (o->getUserdata()->buf_);
     case LUA_TLIGHTUSERDATA: return o->getLightUserdata();
@@ -527,6 +534,7 @@ void *lua_touserdata (lua_State *L, int idx) {
 lua_State *lua_tothread (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
+  if(o == NULL) return NULL;
   return (!o->isThread()) ? NULL : o->getThread();
 }
 
@@ -534,6 +542,7 @@ lua_State *lua_tothread (lua_State *L, int idx) {
 const void *lua_topointer (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
+  if(o == NULL) return NULL;
   switch (o->type()) {
     case LUA_TTABLE: return o->getTable();
     case LUA_TLCL: return o->getLClosure();
@@ -744,6 +753,7 @@ void lua_getfield (lua_State *L, int idx, const char *k) {
 void lua_rawget (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId t = index2addr(L, idx);
+  assert(t);
   api_check(t->isTable(), "table expected");
 
   TValue result = t->getTable()->get(L->top[-1]);
@@ -754,6 +764,7 @@ void lua_rawget (lua_State *L, int idx) {
 void lua_rawgeti (lua_State *L, int idx, int n) {
   THREAD_CHECK(L);
   StkId t = index2addr(L, idx);
+  assert(t);
   api_check(t->isTable(), "table expected");
 
   TValue result = t->getTable()->get(TValue(n));
@@ -765,6 +776,7 @@ void lua_rawgeti (lua_State *L, int idx, int n) {
 void lua_rawgetp (lua_State *L, int idx, const void *p) {
   THREAD_CHECK(L);
   StkId t = index2addr(L, idx);
+  assert(t);
   api_check(t->isTable(), "table expected");
   
   TValue result = t->getTable()->get( TValue::LightUserdata(p) );
@@ -807,6 +819,7 @@ int lua_getmetatable (lua_State *L, int objindex) {
   const TValue *obj;
   int res;
   obj = index2addr(L, objindex);
+  if(obj == NULL) return 0;
   Table* mt = lua_getmetatable(*obj);
   if (mt == NULL)
     res = 0;
@@ -887,6 +900,7 @@ void lua_rawset (lua_State *L, int idx) {
   StkId t;
   api_checknelems(L, 2);
   t = index2addr(L, idx);
+  assert(t);
   api_check(t->isTable(), "table expected");
   t->getTable()->set(L->top[-2], L->top[-1]);
   luaC_barrierback(t->getObject(), L->top[-1]);
@@ -900,6 +914,7 @@ void lua_rawseti (lua_State *L, int idx, int n) {
   StkId t;
   api_checknelems(L, 1);
   t = index2addr(L, idx);
+  assert(t);
   api_check(t->isTable(), "table expected");
   t->getTable()->set(TValue(n),L->top[-1]);
   luaC_barrierback(t->getObject(), L->top[-1]);
@@ -913,6 +928,7 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
   TValue k;
   api_checknelems(L, 1);
   t = index2addr(L, idx);
+  assert(t);
   api_check(t->isTable(), "table expected");
   k = TValue::LightUserdata((void*)p);
   t->getTable()->set(k, L->top[-1]);
@@ -1264,6 +1280,7 @@ void lua_len (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId t;
   t = index2addr(L, idx);
+  assert(t);
   luaV_objlen(L, L->top, t);
   api_incr_top(L);
 }
@@ -1320,7 +1337,9 @@ const char *lua_getupvalue (lua_State *L, int funcindex, int n) {
   THREAD_CHECK(L);
   const char *name;
   TValue *val = NULL;  /* to avoid warnings */
-  name = aux_upvalue(index2addr(L, funcindex), n, &val, NULL);
+  TValue* val2 = index2addr(L, funcindex);
+  if(val2 == NULL) return NULL;
+  name = aux_upvalue(val2, n, &val, NULL);
   if (name) {
     L->top[0] = *val;
     api_incr_top(L);
@@ -1336,6 +1355,7 @@ const char *lua_setupvalue (lua_State *L, int funcindex, int n) {
   LuaObject *owner = NULL;  /* to avoid warnings */
   StkId fi;
   fi = index2addr(L, funcindex);
+  assert(fi);
   api_checknelems(L, 1);
   name = aux_upvalue(fi, n, &val, &owner);
   if (name) {
@@ -1351,6 +1371,7 @@ static UpVal **getupvalref (lua_State *L, int fidx, int n, Closure **pf) {
   THREAD_CHECK(L);
   Closure *f;
   StkId fi = index2addr(L, fidx);
+  assert(fi);
   api_check(fi->isLClosure(), "Lua function expected");
   f = fi->getLClosure();
   api_check((1 <= n && n <= (int)f->proto_->upvalues.size()), "invalid upvalue index");
@@ -1362,6 +1383,7 @@ static UpVal **getupvalref (lua_State *L, int fidx, int n, Closure **pf) {
 void *lua_upvalueid (lua_State *L, int fidx, int n) {
   THREAD_CHECK(L);
   StkId fi = index2addr(L, fidx);
+  assert(fi);
   switch (fi->type()) {
     case LUA_TLCL: {  /* lua closure */
       return *getupvalref(L, fidx, n, NULL);
