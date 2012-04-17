@@ -25,7 +25,9 @@ public:
 
   //----------
 
-  TValue at(int idx);
+  TValue at(int index);
+
+  void   copy(int index);
 
   void   push(TValue v);
   void   push(const TValue* v);

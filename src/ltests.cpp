@@ -607,7 +607,7 @@ static int tref (lua_State *L) {
   THREAD_CHECK(L);
   int level = L->stack_.getTopIndex();
   luaL_checkany(L, 1);
-  lua_pushvalue(L, 1);
+  L->stack_.copy(1);
   lua_pushinteger(L, luaL_ref(L, LUA_REGISTRYINDEX));
   assert(L->stack_.getTopIndex() == level+1);  /* +1 for result */
   return 1;
@@ -1064,7 +1064,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("pushvalue") {
       { GLOBAL_CHANGE(L); tempindex = getindex; }
-      lua_pushvalue(L1, tempindex);
+      L1->stack_.copy(tempindex);
     }
     else if EQ("pushcclosure") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }
@@ -1377,7 +1377,7 @@ static void sethookaux (lua_State *L, int mask, int count, const char *scpt) {
   if (!lua_istable(L, -1)) {  /* no hook table? */
     L->stack_.pop();  /* remove previous value */
     lua_newtable(L);  /* create new C_HOOK table */
-    lua_pushvalue(L, -1);
+    L->stack_.copy(-1);
     lua_setfield(L, LUA_REGISTRYINDEX, "C_HOOK");  /* register it */
   }
   lua_pushlightuserdata(L, L);

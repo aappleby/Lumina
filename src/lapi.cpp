@@ -245,7 +245,6 @@ void lua_pushvalue (lua_State *L, int idx) {
   TValue v = index2addr3(L, idx);
   if(v.isNone()) v = TValue::Nil();
   L->stack_.push(v);
-  api_check(L->stack_.top_ <= L->stack_.callinfo_->top, "stack overflow");
 }
 
 

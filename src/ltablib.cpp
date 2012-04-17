@@ -112,7 +112,7 @@ static int pack (lua_State *L) {
   lua_setfield(L, -2, "n");  /* t.n = number of elements */
   if (n > 0) {  /* at least one element? */
     int i;
-    lua_pushvalue(L, 1);
+    L->stack_.copy(1);
     lua_rawseti(L, -2, 1);  /* insert first element */
     lua_replace(L, 1);  /* move table into index 1 */
     for (i = n; i >= 2; i--)  /* assign other elements */
@@ -161,9 +161,9 @@ static int sort_comp (lua_State *L, int a, int b) {
   THREAD_CHECK(L);
   if (!lua_isnil(L, 2)) {  /* function? */
     int res;
-    lua_pushvalue(L, 2);
-    lua_pushvalue(L, a-1);  /* -1 to compensate function */
-    lua_pushvalue(L, b-2);  /* -2 to compensate function and `a' */
+    L->stack_.copy(2);
+    L->stack_.copy(a-1);  /* -1 to compensate function */
+    L->stack_.copy(b-2);  /* -2 to compensate function and `a' */
     lua_call(L, 2, 1);
     res = lua_toboolean(L, -1);
     L->stack_.pop();
@@ -200,7 +200,7 @@ static void auxsort (lua_State *L, int l, int u) {
     }
     if (u-l == 2) break;  /* only 3 elements */
     lua_rawgeti(L, 1, i);  /* Pivot */
-    lua_pushvalue(L, -1);
+    L->stack_.copy(-1);
     lua_rawgeti(L, 1, u-1);
     set2(L, i, u-1);
     /* a[l] <= P == a[u-1] <= a[u], only need to sort from l+1 to u-2 */

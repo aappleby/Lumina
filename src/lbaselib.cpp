@@ -30,8 +30,8 @@ static int luaB_print (lua_State *L) {
   for (i=1; i<=n; i++) {
     const char *s;
     size_t l;
-    lua_pushvalue(L, -1);  /* function to be called */
-    lua_pushvalue(L, i);   /* value to print */
+    L->stack_.copy(-1);  /* function to be called */
+    L->stack_.copy(i);   /* value to print */
     lua_call(L, 1, 1);
     s = lua_tolstring(L, -1, &l);  /* get result */
     if (s == NULL)
@@ -96,7 +96,7 @@ static int luaB_error (lua_State *L) {
   L->stack_.setTopIndex(1);
   if (lua_isStringable(L, 1) && level > 0) {  /* add extra information? */
     luaL_where(L, level);
-    lua_pushvalue(L, 1);
+    L->stack_.copy(1);
     lua_concat(L, 2);
   }
   return lua_error(L);
@@ -216,12 +216,12 @@ static int pairsmeta (lua_State *L, const char *method, int iszero,
   if (!luaL_getmetafield(L, 1, method)) {  /* no metamethod? */
     luaL_checktype(L, 1, LUA_TTABLE);  /* argument must be a table */
     lua_pushcfunction(L, iter);  /* will return generator, */
-    lua_pushvalue(L, 1);  /* state, */
+    L->stack_.copy(1);  /* state, */
     if (iszero) lua_pushinteger(L, 0);  /* and initial value */
     else L->stack_.push(TValue::Nil());
   }
   else {
-    lua_pushvalue(L, 1);  /* argument 'self' to metamethod */
+    L->stack_.copy(1);  /* argument 'self' to metamethod */
     lua_call(L, 1, 3);  /* get 3 values from metamethod */
   }
   return 3;
@@ -283,7 +283,7 @@ static int luaB_loadfile (lua_State *L) {
   int env = !lua_isnone(L, 3);  /* 'env' parameter? */
   int status = luaL_loadfilex(L, fname, mode);
   if (status == LUA_OK && env) {  /* 'env' parameter? */
-    lua_pushvalue(L, 3);
+    L->stack_.copy(3);
     lua_setupvalue(L, -2, 1);  /* set it as 1st upvalue of loaded chunk */
   }
   return load_aux(L, status);
@@ -315,7 +315,7 @@ static const char *generic_reader (lua_State *L, void *ud, size_t *size) {
   THREAD_CHECK(L);
   (void)(ud);  /* not used */
   luaL_checkstack(L, 2, "too many nested functions");
-  lua_pushvalue(L, 1);  /* get function */
+  L->stack_.copy(1);  /* get function */
   lua_call(L, 0, 1);  /* call it */
   if (lua_isnil(L, -1)) {
     *size = 0;
@@ -346,7 +346,7 @@ static int luaB_load (lua_State *L) {
     status = lua_load(L, generic_reader, NULL, chunkname, mode);
   }
   if (status == LUA_OK && top >= 4) {  /* is there an 'env' argument */
-    lua_pushvalue(L, 4);  /* environment for loaded function */
+    L->stack_.copy(4);  /* environment for loaded function */
     lua_setupvalue(L, -2, 1);  /* set it as 1st upvalue */
   }
   return load_aux(L, status);
@@ -433,7 +433,7 @@ static int luaB_xpcall (lua_State *L) {
   int status;
   int n = L->stack_.getTopIndex();
   luaL_argcheck(L, n >= 2, 2, "value expected");
-  lua_pushvalue(L, 1);  /* exchange function... */
+  L->stack_.copy(1);  /* exchange function... */
   lua_copy(L, 2, 1);  /* ...and error handler */
   lua_replace(L, 2);
   status = lua_pcallk(L, n - 2, LUA_MULTRET, 1, 0, pcallcont);

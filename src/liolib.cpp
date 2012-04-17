@@ -217,7 +217,7 @@ static int g_iofile (lua_State *L, const char *f, const char *mode) {
       opencheck(L, filename, mode);
     else {
       tofile(L);  /* check that it's a valid file handle */
-      lua_pushvalue(L, 1);
+      L->stack_.copy(1);
     }
     lua_setfield(L, LUA_REGISTRYINDEX, f);
   }
@@ -248,10 +248,10 @@ static void aux_lines (lua_State *L, int toclose) {
   int n = L->stack_.getTopIndex() - 1;  /* number of arguments to read */
   /* ensure that arguments will fit here and into 'io_readline' stack */
   luaL_argcheck(L, n <= LUA_MINSTACK - 3, LUA_MINSTACK - 3, "too many options");
-  lua_pushvalue(L, 1);  /* file handle */
+  L->stack_.copy(1);  /* file handle */
   lua_pushinteger(L, n);  /* number of arguments to read */
   lua_pushboolean(L, toclose);  /* close/not close file when finished */
-  for (i = 1; i <= n; i++) lua_pushvalue(L, i + 1);  /* copy arguments */
+  for (i = 1; i <= n; i++) L->stack_.copy(i + 1);  /* copy arguments */
   lua_pushcclosure(L, io_readline, 3 + n);
 }
 
@@ -443,7 +443,7 @@ static int io_readline (lua_State *L) {
     return luaL_error(L, "file is already closed");
   L->stack_.setTopIndex(1);
   for (i = 1; i <= n; i++)  /* push arguments to 'g_read' */
-    lua_pushvalue(L, lua_upvalueindex(3 + i));
+    L->stack_.copy(lua_upvalueindex(3 + i));
   n = g_read(L, p->f, 2);  /* 'n' is number of results */
   assert(n > 0);  /* should return at least a nil */
   if (!lua_isnil(L, -n))  /* read at least one value? */
@@ -455,7 +455,7 @@ static int io_readline (lua_State *L) {
     }
     if (lua_toboolean(L, lua_upvalueindex(3))) {  /* generator created file? */
       L->stack_.setTopIndex(0);
-      lua_pushvalue(L, lua_upvalueindex(1));
+      L->stack_.copy(lua_upvalueindex(1));
       aux_close(L);  /* close it */
     }
     return 0;
@@ -495,7 +495,7 @@ static int io_write (lua_State *L) {
 static int f_write (lua_State *L) {
   THREAD_CHECK(L);
   FILE *f = tofile(L);
-  lua_pushvalue(L, 1);  /* push file at the stack top (to be returned) */
+  L->stack_.copy(1);  /* push file at the stack top (to be returned) */
   return g_write(L, f, 2);
 }
 
@@ -584,7 +584,7 @@ static const luaL_Reg flib[] = {
 static void createmeta (lua_State *L) {
   THREAD_CHECK(L);
   luaL_newmetatable(L, LUA_FILEHANDLE);  /* create metatable for file handles */
-  lua_pushvalue(L, -1);  /* push metatable */
+  L->stack_.copy(-1);  /* push metatable */
   lua_setfield(L, -2, "__index");  /* metatable.__index = metatable */
   luaL_setfuncs(L, flib, 0);  /* add file methods to new metatable */
   L->stack_.pop();  /* pop new metatable */
@@ -611,7 +611,7 @@ static void createstdfile (lua_State *L, FILE *f, const char *k,
   p->f = f;
   p->closef = &io_noclose;
   if (k != NULL) {
-    lua_pushvalue(L, -1);
+    L->stack_.copy(-1);
     lua_setfield(L, LUA_REGISTRYINDEX, k);  /* add file to registry */
   }
   lua_setfield(L, -2, fname);  /* add file to module */

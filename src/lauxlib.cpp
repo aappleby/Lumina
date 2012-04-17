@@ -288,7 +288,7 @@ int luaL_newmetatable (lua_State *L, const char *tname) {
     return 0;  /* leave previous value on top, but return 0 */
   L->stack_.pop();
   lua_newtable(L);  /* create metatable */
-  lua_pushvalue(L, -1);
+  L->stack_.copy(-1);
   lua_setfield(L, LUA_REGISTRYINDEX, tname);  /* registry.name = metatable */
   return 1;
 }
@@ -778,7 +778,7 @@ int luaL_callmeta (lua_State *L, int obj, const char *event) {
   obj = lua_absindex(L, obj);
   if (!luaL_getmetafield(L, obj, event))  /* no metafield? */
     return 0;
-  lua_pushvalue(L, obj);
+  L->stack_.copy(obj);
   lua_call(L, 1, 1);
   return 1;
 }
@@ -805,7 +805,7 @@ const char *luaL_tolstring (lua_State *L, int idx, size_t *len) {
     TValue v = *pv;
 
     if(v.isNumber() || v.isString()) {
-      lua_pushvalue(L, idx);
+      L->stack_.copy(idx);
     } else if(v.isBool()) {
       lua_pushstring(L, (lua_toboolean(L, idx) ? "true" : "false"));
     } else if(v.isNil()) {
@@ -831,8 +831,10 @@ void luaL_setfuncs (lua_State *L, const luaL_Reg *l, int nup) {
   luaL_checkstack(L, nup, "too many upvalues");
   for (; l->name != NULL; l++) {  /* fill the table with given functions */
     int i;
-    for (i = 0; i < nup; i++)  /* copy upvalues to the top */
-      lua_pushvalue(L, -nup);
+    for (i = 0; i < nup; i++) {
+      /* copy upvalues to the top */
+      L->stack_.copy(-nup);
+    }
     lua_pushcclosure(L, l->func, nup);  /* closure with those upvalues */
     lua_setfield(L, -(nup + 2), l->name);
   }
@@ -852,7 +854,7 @@ int luaL_getsubtable (lua_State *L, int idx, const char *fname) {
     idx = lua_absindex(L, idx);
     L->stack_.pop();  /* remove previous result */
     lua_newtable(L);
-    lua_pushvalue(L, -1);  /* copy to be left at top */
+    L->stack_.copy(-1);  /* copy to be left at top */
     lua_setfield(L, idx, fname);  /* assign new table to field */
     return 0;  /* false, because did not find table there */
   }
@@ -872,12 +874,12 @@ void luaL_requiref (lua_State *L, const char *modname,
   lua_pushstring(L, modname);  /* argument to open function */
   lua_call(L, 1, 1);  /* open module */
   luaL_getsubtable(L, LUA_REGISTRYINDEX, "_LOADED");
-  lua_pushvalue(L, -2);  /* make copy of module (call result) */
+  L->stack_.copy(-2);  /* make copy of module (call result) */
   lua_setfield(L, -2, modname);  /* _LOADED[modname] = module */
   L->stack_.pop();  /* remove _LOADED table */
   if (glb) {
     lua_pushglobaltable(L);
-    lua_pushvalue(L, -2);  /* copy of 'mod' */
+    L->stack_.copy(-2);  /* copy of 'mod' */
     lua_setfield(L, -2, modname);  /* _G[modname] = module */
     L->stack_.pop();  /* remove _G table */
   }

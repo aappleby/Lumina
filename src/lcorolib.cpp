@@ -109,7 +109,7 @@ static int luaB_cocreate (lua_State *L) {
   THREAD_CHECK(L);
   lua_State *NL = lua_newthread(L);
   luaL_checkIsFunction(L, 1);
-  lua_pushvalue(L, 1);  /* move function to top */
+  L->stack_.copy(1);  /* move function to top */
   lua_xmove(L, NL, 1);  /* move function from L to NL */
   return 1;
 }

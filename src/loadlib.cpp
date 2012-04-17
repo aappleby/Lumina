@@ -268,7 +268,7 @@ static void **ll_register (lua_State *L, const char *path) {
     *plib = NULL;
     luaL_setmetatable(L, "_LOADLIB");
     lua_pushfstring(L, "%s%s", LIBPREFIX, path);
-    lua_pushvalue(L, -2);
+    L->stack_.copy(-2);
     lua_settable(L, LUA_REGISTRYINDEX);
   }
   return plib;
@@ -539,7 +539,7 @@ static int ll_require (lua_State *L) {
   lua_getfield(L, 2, name);
   if (lua_isnil(L, -1)) {   /* module did not set a value? */
     lua_pushboolean(L, 1);  /* use true as result */
-    lua_pushvalue(L, -1);  /* extra copy to be returned */
+    L->stack_.copy(-1);  /* extra copy to be returned */
     lua_setfield(L, 2, name);  /* _LOADED[name] = true */
   }
   return 1;
@@ -622,12 +622,12 @@ int luaopen_package (lua_State *L) {
   lua_createtable(L, sizeof(searchers)/sizeof(searchers[0]) - 1, 0);
   /* fill it with pre-defined searchers */
   for (i=0; searchers[i] != NULL; i++) {
-    lua_pushvalue(L, -2);  /* set 'package' as upvalue for all searchers */
+    L->stack_.copy(-2);  /* set 'package' as upvalue for all searchers */
     lua_pushcclosure(L, searchers[i], 1);
     lua_rawseti(L, -2, i+1);
   }
 #if defined(LUA_COMPAT_LOADERS)
-  lua_pushvalue(L, -1);  /* make a copy of 'searchers' table */
+  L->stack_.copy(-1);  /* make a copy of 'searchers' table */
   lua_setfield(L, -3, "loaders");  /* put it in field `loaders' */
 #endif
   lua_setfield(L, -2, "searchers");  /* put it in field 'searchers' */
@@ -646,7 +646,7 @@ int luaopen_package (lua_State *L) {
   luaL_getsubtable(L, LUA_REGISTRYINDEX, "_PRELOAD");
   lua_setfield(L, -2, "preload");
   lua_pushglobaltable(L);
-  lua_pushvalue(L, -2);  /* set 'package' as upvalue for next lib */
+  L->stack_.copy(-2);  /* set 'package' as upvalue for next lib */
   luaL_setfuncs(L, ll_funcs, 1);  /* open lib into global table */
   L->stack_.pop();  /* pop global table */
   return 1;  /* return 'package' table */

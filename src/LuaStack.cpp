@@ -178,7 +178,9 @@ TValue LuaStack::at(int idx) {
 
   // Light C functions have no upvals
   if (callinfo_->func->isLightFunction()) {
-    assert(false);
+    // can't assert here, some test code is intentionally trying to do this and
+    // expecting to fail.
+    //assert(false);
     return TValue::None();
   }
 
@@ -192,6 +194,14 @@ TValue LuaStack::at(int idx) {
   // Invalid stack index.
   assert(false);
   return TValue::None();
+}
+
+//------------------------------------------------------------------------------
+
+void LuaStack::copy(int index) {
+  TValue v = at(index);
+  if(v.isNone()) v = TValue::Nil();
+  push(v);
 }
 
 //------------------------------------------------------------------------------

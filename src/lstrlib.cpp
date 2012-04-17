@@ -676,7 +676,7 @@ static void add_value (MatchState *ms, luaL_Buffer *b, const char *s,
   lua_State *L = ms->L;
   if(v.isFunction()) {
     int n;
-    lua_pushvalue(L, 3);
+    L->stack_.copy(3);
     n = push_captures(ms, s, e);
     lua_call(L, n, 1);
   } else if(v.isTable()) {
@@ -969,10 +969,10 @@ static void createmetatable (lua_State *L) {
   THREAD_CHECK(L);
   lua_createtable(L, 0, 1);  /* table to be metatable for strings */
   lua_pushliteral(L, "");  /* dummy string */
-  lua_pushvalue(L, -2);  /* copy table */
+  L->stack_.copy(-2);  /* copy table */
   lua_setmetatable(L, -2);  /* set table as metatable for strings */
   L->stack_.pop();  /* pop dummy string */
-  lua_pushvalue(L, -2);  /* get string library */
+  L->stack_.copy(-2);  /* get string library */
   lua_setfield(L, -2, "__index");  /* metatable.__index = string */
   L->stack_.pop();  /* pop metatable */
 }
