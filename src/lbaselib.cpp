@@ -24,7 +24,7 @@
 
 static int luaB_print (lua_State *L) {
   THREAD_CHECK(L);
-  int n = lua_gettop(L);  /* number of arguments */
+  int n = L->stack_.getTopIndex();  /* number of arguments */
   int i;
   lua_getglobal(L, "tostring");
   for (i=1; i<=n; i++) {
@@ -332,7 +332,7 @@ static int luaB_load (lua_State *L) {
   THREAD_CHECK(L);
   int status;
   size_t l;
-  int top = lua_gettop(L);
+  int top = L->stack_.getTopIndex();
   const char *s = lua_tolstring(L, 1, &l);
   const char *mode = luaL_optstring(L, 3, "bt");
   if (s != NULL) {  /* loading a string? */
@@ -357,7 +357,7 @@ static int luaB_load (lua_State *L) {
 
 static int dofilecont (lua_State *L) {
   THREAD_CHECK(L);
-  return lua_gettop(L) - 1;
+  return L->stack_.getTopIndex() - 1;
 }
 
 
@@ -375,13 +375,13 @@ static int luaB_assert (lua_State *L) {
   THREAD_CHECK(L);
   if (!lua_toboolean(L, 1))
     return luaL_error(L, "%s", luaL_optstring(L, 2, "assertion failed!"));
-  return lua_gettop(L);
+  return L->stack_.getTopIndex();
 }
 
 
 static int luaB_select (lua_State *L) {
   THREAD_CHECK(L);
-  int n = lua_gettop(L);
+  int n = L->stack_.getTopIndex();
   if (lua_type(L, 1) == LUA_TSTRING && *lua_tostring(L, 1) == '#') {
     lua_pushinteger(L, n-1);
     return 1;
@@ -406,7 +406,7 @@ static int finishpcall (lua_State *L, int status) {
   }
   lua_pushboolean(L, status);  /* first result (status) */
   lua_replace(L, 1);  /* put first result in first slot */
-  return lua_gettop(L);
+  return L->stack_.getTopIndex();
 }
 
 
@@ -423,7 +423,7 @@ static int luaB_pcall (lua_State *L) {
   luaL_checkany(L, 1);
   L->stack_.push(TValue::Nil());
   lua_insert(L, 1);  /* create space for status result */
-  status = lua_pcallk(L, lua_gettop(L) - 2, LUA_MULTRET, 0, 0, pcallcont);
+  status = lua_pcallk(L, L->stack_.getTopIndex() - 2, LUA_MULTRET, 0, 0, pcallcont);
   return finishpcall(L, (status == LUA_OK));
 }
 
@@ -431,7 +431,7 @@ static int luaB_pcall (lua_State *L) {
 static int luaB_xpcall (lua_State *L) {
   THREAD_CHECK(L);
   int status;
-  int n = lua_gettop(L);
+  int n = L->stack_.getTopIndex();
   luaL_argcheck(L, n >= 2, 2, "value expected");
   lua_pushvalue(L, 1);  /* exchange function... */
   lua_copy(L, 2, 1);  /* ...and error handler */

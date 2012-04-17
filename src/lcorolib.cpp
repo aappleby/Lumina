@@ -33,7 +33,7 @@ static int auxresume (lua_State *L, lua_State *co, int narg) {
     lua_pushliteral(L, "too many arguments to resume");
     return -1;  /* error flag */
   }
-  if (lua_status(co) == LUA_OK && lua_gettop(co) == 0) {
+  if (lua_status(co) == LUA_OK && co->stack_.getTopIndex() == 0) {
     lua_pushliteral(L, "cannot resume dead coroutine");
     return -1;  /* error flag */
   }
@@ -46,7 +46,7 @@ static int auxresume (lua_State *L, lua_State *co, int narg) {
     int nres;
     {
       THREAD_CHANGE(co);
-      nres = lua_gettop(co);
+      nres = co->stack_.getTopIndex();
     }
     if (!lua_checkstack(L, nres + 1)) {
       {
@@ -75,7 +75,7 @@ static int luaB_coresume (lua_State *L) {
   lua_State *co = lua_tothread(L, 1);
   int r;
   luaL_argcheck(L, co, 1, "coroutine expected");
-  r = auxresume(L, co, lua_gettop(L) - 1);
+  r = auxresume(L, co, L->stack_.getTopIndex() - 1);
   if (r < 0) {
     lua_pushboolean(L, 0);
     lua_insert(L, -2);
@@ -92,7 +92,7 @@ static int luaB_coresume (lua_State *L) {
 static int luaB_auxwrap (lua_State *L) {
   THREAD_CHECK(L);
   lua_State *co = lua_tothread(L, lua_upvalueindex(1));
-  int r = auxresume(L, co, lua_gettop(L));
+  int r = auxresume(L, co, L->stack_.getTopIndex());
   if (r < 0) {
     if (lua_isStringable(L, -1)) {  /* error object is a string? */
       luaL_where(L, 1);  /* add extra info */
@@ -125,7 +125,7 @@ static int luaB_cowrap (lua_State *L) {
 
 static int luaB_yield (lua_State *L) {
   THREAD_CHECK(L);
-  return lua_yield(L, lua_gettop(L));
+  return lua_yield(L, L->stack_.getTopIndex());
 }
 
 
@@ -146,7 +146,7 @@ static int luaB_costatus (lua_State *L) {
           THREAD_CHANGE(L);
           lua_pushliteral(L, "normal");  /* it is running */
         }
-        else if (lua_gettop(co) == 0) {
+        else if (co->stack_.getTopIndex() == 0) {
           THREAD_CHANGE(L);
           lua_pushliteral(L, "dead");
         }

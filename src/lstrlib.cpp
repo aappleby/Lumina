@@ -158,7 +158,7 @@ static int str_byte (lua_State *L) {
 
 static int str_char (lua_State *L) {
   THREAD_CHECK(L);
-  int n = lua_gettop(L);  /* number of arguments */
+  int n = L->stack_.getTopIndex();  /* number of arguments */
   int i;
   luaL_Buffer b;
   char *p = luaL_buffinitsize(L, &b, n);
@@ -863,7 +863,7 @@ static void addlenmod (char *form, const char *lenmod) {
 
 static int str_format (lua_State *L) {
   THREAD_CHECK(L);
-  int top = lua_gettop(L);
+  int top = L->stack_.getTopIndex();
   int arg = 1;
   size_t sfl;
   const char *strfrmt = luaL_checklstring(L, arg, &sfl);

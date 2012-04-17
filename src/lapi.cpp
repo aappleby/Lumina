@@ -201,11 +201,6 @@ int lua_absindex (lua_State *L, int idx) {
 }
 
 
-int lua_gettop (lua_State *L) {
-  return cast_int(L->stack_.top_ - (L->stack_.callinfo_->func + 1));
-}
-
-
 void lua_settop (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId func = L->stack_.callinfo_->func;

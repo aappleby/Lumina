@@ -78,7 +78,7 @@ static int findfield (lua_State *L, int objidx, int level) {
 
 static int pushglobalfuncname (lua_State *L, lua_Debug *ar) {
   THREAD_CHECK(L);
-  int top = lua_gettop(L);
+  int top = L->stack_.getTopIndex();
   lua_getinfo(L, "f", ar);  /* push function */
   lua_pushglobaltable(L);
   if (findfield(L, top + 1, 2)) {
@@ -132,7 +132,7 @@ void luaL_traceback (lua_State *L, lua_State *L1,
                                 const char *msg, int level) {
   THREAD_CHECK(L);
   lua_Debug ar;
-  int top = lua_gettop(L);
+  int top = L->stack_.getTopIndex();
   int numlevels;
   {
     THREAD_CHANGE(L1);
@@ -162,12 +162,12 @@ void luaL_traceback (lua_State *L, lua_State *L1,
           pushfuncname(L, &ar);
           if (ar.istailcall)
             lua_pushliteral(L, "\n\t(...tail calls...)");
-          lua_concat(L, lua_gettop(L) - top);
+          lua_concat(L, L->stack_.getTopIndex() - top);
         }
       }
     }
   }
-  lua_concat(L, lua_gettop(L) - top);
+  lua_concat(L, L->stack_.getTopIndex() - top);
 }
 
 /* }====================================================== */
@@ -689,7 +689,7 @@ int luaL_loadfilex (lua_State *L, const char *filename,
   LoadF lf;
   int status, readstatus;
   int c;
-  int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
+  int fnameindex = L->stack_.getTopIndex() + 1;  /* index of filename on the stack */
   if (filename == NULL) {
     lua_pushliteral(L, "=stdin");
     lf.f = stdin;

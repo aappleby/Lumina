@@ -172,7 +172,7 @@ static int traceback (lua_State *L) {
 
 static int docall (lua_State *L, int narg, int nres) {
   int status;
-  int base = lua_gettop(L) - narg;  /* function index */
+  int base = L->stack_.getTopIndex() - narg;  /* function index */
   lua_pushcfunction(L, traceback);  /* push traceback function */
   lua_insert(L, base);  /* put it under chunk and args */
   globalL = L;  /* to be available to 'laction' */
@@ -312,11 +312,11 @@ static void dotty (lua_State *L) {
   while ((status = loadline(L)) != -1) {
     if (status == LUA_OK) status = docall(L, 0, LUA_MULTRET);
     report(L, status);
-    if (status == LUA_OK && lua_gettop(L) > 0) {  /* any result to print? */
+    if (status == LUA_OK && L->stack_.getTopIndex() > 0) {  /* any result to print? */
       luaL_checkstack(L, LUA_MINSTACK, "too many results to print");
       lua_getglobal(L, "print");
       lua_insert(L, 1);
-      if (lua_pcall(L, lua_gettop(L)-1, 0, 0) != LUA_OK)
+      if (lua_pcall(L, L->stack_.getTopIndex()-1, 0, 0) != LUA_OK)
         l_message(progname, lua_pushfstring(L,
                                "error calling " LUA_QL("print") " (%s)",
                                lua_tostring(L, -1)));

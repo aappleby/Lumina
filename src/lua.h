@@ -72,7 +72,6 @@ const lua_Number *(lua_version) (lua_State *L);
 ** basic stack manipulation
 */
 int   (lua_absindex) (lua_State *L, int idx);
-int   (lua_gettop) (lua_State *L);
 void  (lua_settop) (lua_State *L, int idx);
 void  (lua_pushvalue) (lua_State *L, int idx);
 void  (lua_insert) (lua_State *L, int idx);

@@ -38,7 +38,7 @@ typedef lua_Unsigned b_uint;
 
 static b_uint andaux (lua_State *L) {
   THREAD_CHECK(L);
-  int i, n = lua_gettop(L);
+  int i, n = L->stack_.getTopIndex();
   b_uint r = ~(b_uint)0;
   for (i = 1; i <= n; i++)
     r &= luaL_checkunsigned(L, i);
@@ -64,7 +64,7 @@ static int b_test (lua_State *L) {
 
 static int b_or (lua_State *L) {
   THREAD_CHECK(L);
-  int i, n = lua_gettop(L);
+  int i, n = L->stack_.getTopIndex();
   b_uint r = 0;
   for (i = 1; i <= n; i++)
     r |= luaL_checkunsigned(L, i);
@@ -75,7 +75,7 @@ static int b_or (lua_State *L) {
 
 static int b_xor (lua_State *L) {
   THREAD_CHECK(L);
-  int i, n = lua_gettop(L);
+  int i, n = L->stack_.getTopIndex();
   b_uint r = 0;
   for (i = 1; i <= n; i++)
     r ^= luaL_checkunsigned(L, i);

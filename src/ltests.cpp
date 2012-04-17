@@ -605,27 +605,27 @@ static int string_query (lua_State *L) {
 
 static int tref (lua_State *L) {
   THREAD_CHECK(L);
-  int level = lua_gettop(L);
+  int level = L->stack_.getTopIndex();
   luaL_checkany(L, 1);
   lua_pushvalue(L, 1);
   lua_pushinteger(L, luaL_ref(L, LUA_REGISTRYINDEX));
-  assert(lua_gettop(L) == level+1);  /* +1 for result */
+  assert(L->stack_.getTopIndex() == level+1);  /* +1 for result */
   return 1;
 }
 
 static int getref (lua_State *L) {
   THREAD_CHECK(L);
-  int level = lua_gettop(L);
+  int level = L->stack_.getTopIndex();
   lua_rawgeti(L, LUA_REGISTRYINDEX, luaL_checkint(L, 1));
-  assert(lua_gettop(L) == level+1);
+  assert(L->stack_.getTopIndex() == level+1);
   return 1;
 }
 
 static int unref (lua_State *L) {
   THREAD_CHECK(L);
-  int level = lua_gettop(L);
+  int level = L->stack_.getTopIndex();
   luaL_unref(L, LUA_REGISTRYINDEX, luaL_checkint(L, 1));
-  assert(lua_gettop(L) == level);
+  assert(L->stack_.getTopIndex() == level);
   return 0;
 }
 
@@ -1026,7 +1026,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       return n;
     }
     else if EQ("gettop") {
-      lua_pushinteger(L1, lua_gettop(L1));
+      lua_pushinteger(L1, L1->stack_.getTopIndex());
     }
     else if EQ("settop") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }
@@ -1138,7 +1138,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       }
       else {
         int i;
-        n = lua_gettop(L1);
+        n = L1->stack_.getTopIndex();
         for (i = 1; i <= n; i++) {
           printf("%s  ", luaL_tolstring(L1, i, NULL));
           lua_pop(L1, 1);
@@ -1209,7 +1209,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       lua_State *ts = (t == 0) ? L1 : lua_tothread(L1, t);
       if (n == 0) {
         GLOBAL_CHANGE(fs);
-        n = lua_gettop(fs);
+        n = fs->stack_.getTopIndex();
       }
       {
         GLOBAL_CHANGE(fs);
@@ -1332,7 +1332,7 @@ static int Cfunck (lua_State *L) {
 static int makeCfunc (lua_State *L) {
   THREAD_CHECK(L);
   luaL_checkstring(L, 1);
-  lua_pushcclosure(L, Cfunc, lua_gettop(L));
+  lua_pushcclosure(L, Cfunc, L->stack_.getTopIndex());
   return 1;
 }
 

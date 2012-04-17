@@ -245,7 +245,7 @@ static int io_readline (lua_State *L);
 static void aux_lines (lua_State *L, int toclose) {
   THREAD_CHECK(L);
   int i;
-  int n = lua_gettop(L) - 1;  /* number of arguments to read */
+  int n = L->stack_.getTopIndex() - 1;  /* number of arguments to read */
   /* ensure that arguments will fit here and into 'io_readline' stack */
   luaL_argcheck(L, n <= LUA_MINSTACK - 3, LUA_MINSTACK - 3, "too many options");
   lua_pushvalue(L, 1);  /* file handle */
@@ -373,7 +373,7 @@ static int read_chars (lua_State *L, FILE *f, size_t n) {
 
 static int g_read (lua_State *L, FILE *f, int first) {
   THREAD_CHECK(L);
-  int nargs = lua_gettop(L) - 1;
+  int nargs = L->stack_.getTopIndex() - 1;
   int success;
   int n;
   clearerr(f);
@@ -467,7 +467,7 @@ static int io_readline (lua_State *L) {
 
 static int g_write (lua_State *L, FILE *f, int arg) {
   THREAD_CHECK(L);
-  int nargs = lua_gettop(L) - arg;
+  int nargs = L->stack_.getTopIndex() - arg;
   int status = 1;
   for (; nargs--; arg++) {
     if (lua_type(L, arg) == LUA_TNUMBER) {

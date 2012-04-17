@@ -26,7 +26,7 @@ static int tinsert (lua_State *L) {
   THREAD_CHECK(L);
   int e = aux_getn(L, 1) + 1;  /* first empty element */
   int pos;  /* where to insert new element */
-  switch (lua_gettop(L)) {
+  switch (L->stack_.getTopIndex()) {
     case 2: {  /* called with only 2 arguments */
       pos = e;  /* insert new element at the end */
       break;
@@ -106,7 +106,7 @@ static int tconcat (lua_State *L) {
 
 static int pack (lua_State *L) {
   THREAD_CHECK(L);
-  int n = lua_gettop(L);  /* number of elements to pack */
+  int n = L->stack_.getTopIndex();  /* number of elements to pack */
   lua_createtable(L, n, 1);  /* create result table */
   lua_pushinteger(L, n);
   lua_setfield(L, -2, "n");  /* t.n = number of elements */
