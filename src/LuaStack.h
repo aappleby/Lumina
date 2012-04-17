@@ -9,7 +9,7 @@
 class LuaStack : public LuaVector<TValue> {
 public:
 
-  LuaStack() {
+  LuaStack() : callinfo_head_(this) {
     top_ = NULL;
     callinfo_ = &callinfo_head_;
     open_upvals_ = NULL;

@@ -54,10 +54,10 @@ LuaGlobalScope::LuaGlobalScope(lua_State* L) {
   //assert(thread_G != L->l_G);
   oldState = thread_L;
   thread_L = L;
-  thread_G = (thread_L) ? thread_L->l_G : NULL;
+  thread_G = L ? L->l_G : NULL;
 }
 
 LuaGlobalScope::~LuaGlobalScope() {
   thread_L = oldState;
-  thread_G = thread_L ? thread_L->l_G : NULL;
+  thread_G = oldState ? oldState->l_G : NULL;
 }

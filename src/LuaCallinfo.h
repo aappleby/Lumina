@@ -2,20 +2,22 @@
 #include "LuaBase.h"
 #include "LuaTypes.h"
 
+class LuaStack;
+
 /*
 ** information about a call
 */
 class CallInfo : public LuaBase {
 public:
 
-  CallInfo() {
-    func_ = NULL;
-    top_ = NULL;
+  CallInfo(LuaStack* stack) {
+    func_index_ = 0;
+    top_index_ = 0;
     previous = NULL;
     next = NULL;
     nresults = 0;
     callstatus = 0;
-    base_ = NULL;
+    base_index_ = 0;
     savedpc = NULL;
     ctx = 0;
     continuation_ = NULL;
@@ -23,17 +25,16 @@ public:
     extra = 0;
     old_allowhook = 0;
     status = 0;
+    stack_ = stack;
   }
   ~CallInfo() {}
 
-  const StkId getFunc() const { return func_; }
-  void  setFunc(StkId func) { func_ = func; }
-
-  const StkId getTop() const { return top_; }
-  void  setTop(StkId top) { top_ = top; }
-
-  const StkId getBase() const { return base_; }
-  void  setBase(StkId base) { base_ = base; }
+  const StkId getFunc() const;
+  void  setFunc(StkId func);
+  const StkId getTop() const;
+  void  setTop(StkId top);
+  const StkId getBase() const;
+  void  setBase(StkId base);
 
   CallInfo* previous;
   CallInfo* next;  /* dynamic call link */
@@ -54,8 +55,15 @@ public:
 
 protected:
 
-  StkId func_;  /* function index in the stack */
-  StkId	top_;  /* top for this function */
-  StkId base_;  /* base for this function */
+  LuaStack* stack_;
+
+  //StkId func_;  /* function index in the stack */
+  int func_index_;
+
+  //StkId	top_;  /* top for this function */
+  int top_index_;
+  
+  //StkId base_;  /* base for this function */
+  int base_index_;
 };
 

@@ -52,6 +52,7 @@ void LuaStack::realloc (int newsize) {
   }
   
   // Correct all stack references in all active callinfos.
+  /*
   for (CallInfo* ci = callinfo_; ci != NULL; ci = ci->previous) {
     ci->setTop( (ci->getTop() - oldstack) + begin() );
     ci->setFunc( (ci->getFunc() - oldstack) + begin() );
@@ -59,6 +60,7 @@ void LuaStack::realloc (int newsize) {
       ci->setBase( (ci->getBase() - oldstack) + begin() );
     }
   }
+  */
 
   // Stack is valid again, _now_ kick off memory errors if we're over the
   // limit.

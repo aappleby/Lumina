@@ -42,7 +42,7 @@
 
 CallInfo *luaE_extendCI (lua_State *L) {
   THREAD_CHECK(L);
-  CallInfo *ci = new CallInfo();
+  CallInfo *ci = new CallInfo(&L->stack_);
   if(ci == NULL) luaD_throw(LUA_ERRMEM);
   assert(L->stack_.callinfo_->next == NULL);
   L->stack_.callinfo_->next = ci;
@@ -183,6 +183,7 @@ lua_State *lua_newthread (lua_State *L) {
   L1->hookcount = L1->basehookcount;
   
   {
+    THREAD_CHANGE(L1);
     ScopedMemChecker c;
     L1->stack_.init();  /* init stack */
   }

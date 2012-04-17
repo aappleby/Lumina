@@ -84,22 +84,22 @@ void Memcontrol::checkLimit() {
 #define MARKSIZE	16  /* size of marks after each block */
 
 struct Header {
-  size_t size;
-  int type;
+  uint64_t size;
+  uint64_t type;
 };
 
 void *luaM_alloc_nocheck (size_t size) {
-  uint8_t* buf = (uint8_t*)malloc(sizeof(Header) + size + MARKSIZE);
+  uint8_t* buf = (uint8_t*)malloc(16 + size + MARKSIZE);
   if (buf == NULL) return NULL;
 
-  Header *block = reinterpret_cast<Header*>(buf);
-  block->size = size;
-  memset(buf + sizeof(Header), -MARK, size);
-  memset(buf + sizeof(Header) + size, MARK, MARKSIZE);
-
+  memset(buf + 16, -MARK, size);
+  memset(buf + 16 + size, MARK, MARKSIZE);
   l_memcontrol.alloc(size);
 
   if(thread_G) thread_G->incTotalBytes((int)size);
+
+  Header *block = reinterpret_cast<Header*>(buf);
+  block->size = size;
 
   return block + 1;
 }
@@ -108,15 +108,15 @@ void luaM_free(void * blob) {
   if(blob == NULL) return;
   Header* block = reinterpret_cast<Header*>(blob) - 1;
   
-  l_memcontrol.free(block->size);
+  l_memcontrol.free((size_t)block->size);
 
   if(thread_G) thread_G->incTotalBytes(-(int)block->size);
 
   uint8_t* buf = reinterpret_cast<uint8_t*>(block);
-  uint8_t* mark = buf + sizeof(Header) + block->size;
+  uint8_t* mark = buf + 16 + block->size;
   for (int i = 0; i < MARKSIZE; i++) assert(mark[i] == MARK);
   
-  memset(buf, -MARK, sizeof(Header) + block->size + MARKSIZE);
+  memset(buf, -MARK, 16 + (size_t)block->size + MARKSIZE);
 
   free(block);
 }
