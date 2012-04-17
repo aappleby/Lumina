@@ -285,7 +285,7 @@ static int pushline (lua_State *L, int firstline) {
 
 static int loadline (lua_State *L) {
   int status;
-  lua_settop(L, 0);
+  L->stack_.setTopIndex(0);
   if (!pushline(L, 1))
     return -1;  /* no input */
   for (;;) {  /* repeat until gets a complete line */
@@ -322,7 +322,7 @@ static void dotty (lua_State *L) {
                                lua_tostring(L, -1)));
     }
   }
-  lua_settop(L, 0);  /* clear stack */
+  L->stack_.setTopIndex(0);  /* clear stack */
   luai_writeline();
   progname = oldprogname;
 }

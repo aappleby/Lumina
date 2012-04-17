@@ -50,7 +50,7 @@ static int db_setmetatable (lua_State *L) {
                 v.isTable(),
                 2,
                 "nil or table expected");
-  lua_settop(L, 2);
+  L->stack_.setTopIndex(2);
   lua_setmetatable(L, 1);
   return 1;  /* return 1st argument */
 }
@@ -73,7 +73,7 @@ static int db_setuservalue (lua_State *L) {
   luaL_checktype(L, 1, LUA_TUSERDATA);
   if (!lua_isnoneornil(L, 2))
     luaL_checktype(L, 2, LUA_TTABLE);
-  lua_settop(L, 2);
+  L->stack_.setTopIndex(2);
   lua_setuservalue(L, 1);
   return 1;
 }
@@ -245,7 +245,7 @@ static int db_setlocal (lua_State *L) {
   if (!result)  /* out of range? */
     return luaL_argerror(L, arg+1, "level out of range");
   luaL_checkany(L, arg+3);
-  lua_settop(L, arg+3);
+  L->stack_.setTopIndex(arg+3);
   lua_xmove(L, L1, 1);
   idx = luaL_checkint(L, arg+2);
   const char * result2;
@@ -361,7 +361,7 @@ static int db_sethook (lua_State *L) {
   lua_Hook func;
   lua_State *L1 = getthread(L, &arg);
   if (lua_isnoneornil(L, arg+1)) {
-    lua_settop(L, arg+1);
+    L->stack_.setTopIndex(arg+1);
     func = NULL; mask = 0; count = 0;  /* turn off hooks */
   }
   else {
@@ -423,7 +423,7 @@ static int db_debug (lua_State *L) {
     if (luaL_loadbuffer(L, buffer, strlen(buffer), "=(debug command)") ||
         lua_pcall(L, 0, 0, 0))
       luai_writestringerror("%s\n", lua_tostring(L, -1));
-    lua_settop(L, 0);  /* remove eventual returns */
+    L->stack_.setTopIndex(0);  /* remove eventual returns */
   }
 }
 

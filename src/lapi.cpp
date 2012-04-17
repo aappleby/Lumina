@@ -200,23 +200,6 @@ int lua_absindex (lua_State *L, int idx) {
          : cast_int(L->stack_.top_ - L->stack_.callinfo_->func + idx);
 }
 
-
-void lua_settop (lua_State *L, int idx) {
-  THREAD_CHECK(L);
-  StkId func = L->stack_.callinfo_->func;
-  if (idx >= 0) {
-    api_check(idx <= L->stack_.last() - (func + 1), "new top too large");
-    while (L->stack_.top_ < (func + 1) + idx) {
-      L->stack_.push(TValue::nil);
-    }
-    L->stack_.top_ = (func + 1) + idx;
-  }
-  else {
-    api_check(-(idx+1) <= (L->stack_.top_ - (func + 1)), "invalid new top");
-    L->stack_.top_ += idx+1;  /* `subtract' index (index is negative) */
-  }
-}
-
 void lua_insert (lua_State *L, int idx) {
   THREAD_CHECK(L);
   StkId p;

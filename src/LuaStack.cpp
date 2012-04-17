@@ -1,7 +1,7 @@
 #include "LuaStack.h"
 
 #include "LuaClosure.h"
-#include "LuaGlobals.h"
+#include "LuaGlobals.h" // for thread_G->l_registry
 #include "LuaUpval.h"
 
 #include <assert.h>

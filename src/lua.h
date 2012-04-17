@@ -72,7 +72,6 @@ const lua_Number *(lua_version) (lua_State *L);
 ** basic stack manipulation
 */
 int   (lua_absindex) (lua_State *L, int idx);
-void  (lua_settop) (lua_State *L, int idx);
 void  (lua_pushvalue) (lua_State *L, int idx);
 void  (lua_insert) (lua_State *L, int idx);
 void  (lua_replace) (lua_State *L, int idx);
@@ -244,7 +243,7 @@ void  (lua_len)    (lua_State *L, int idx);
 #define lua_tointeger(L,i)	lua_tointegerx(L,i,NULL)
 #define lua_tounsigned(L,i)	lua_tounsignedx(L,i,NULL)
 
-#define lua_pop(L,n)		lua_settop(L, -(n)-1)
+#define lua_pop(L,n)		L->stack_.setTopIndex(-(n)-1)
 
 #define lua_newtable(L)		lua_createtable(L, 0, 0)
 

@@ -87,7 +87,7 @@ static int pushglobalfuncname (lua_State *L, lua_Debug *ar) {
     return 1;
   }
   else {
-    lua_settop(L, top);  /* remove function and global table */
+    L->stack_.setTopIndex(top);  /* remove function and global table */
     return 0;
   }
 }
@@ -712,7 +712,7 @@ int luaL_loadfilex (lua_State *L, const char *filename,
   readstatus = ferror(lf.f);
   if (filename) fclose(lf.f);  /* close file (even in case of errors) */
   if (readstatus) {
-    lua_settop(L, fnameindex);  /* ignore results from `lua_load' */
+    L->stack_.setTopIndex(fnameindex);  /* ignore results from `lua_load' */
     return errfile(L, "read", fnameindex);
   }
   L->stack_.remove(fnameindex);

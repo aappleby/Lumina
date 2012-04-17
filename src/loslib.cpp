@@ -261,7 +261,7 @@ static int os_time (lua_State *L) {
   else {
     struct tm ts;
     luaL_checktype(L, 1, LUA_TTABLE);
-    lua_settop(L, 1);  /* make sure table is at the top */
+    L->stack_.setTopIndex(1);  /* make sure table is at the top */
     ts.tm_sec = getfield(L, "sec", 0);
     ts.tm_min = getfield(L, "min", 0);
     ts.tm_hour = getfield(L, "hour", 12);

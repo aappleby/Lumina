@@ -779,7 +779,7 @@ static int doremote (lua_State *L) {
   int status;
   {
     GLOBAL_CHANGE(L1);
-    lua_settop(L1, 0);
+    L1->stack_.setTopIndex(0);
     status = luaL_loadbuffer(L1, code, lcode, code);
     if (status == LUA_OK)
       status = lua_pcall(L1, 0, LUA_MULTRET, 0);
@@ -1030,7 +1030,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("settop") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }
-      lua_settop(L1, tempnum);
+      L1->stack_.setTopIndex(tempnum);
     }
     else if EQ("pop") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }

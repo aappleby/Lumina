@@ -441,7 +441,7 @@ static int io_readline (lua_State *L) {
   int n = (int)lua_tointeger(L, lua_upvalueindex(2));
   if (isclosed(p))  /* file is already closed? */
     return luaL_error(L, "file is already closed");
-  lua_settop(L , 1);
+  L->stack_.setTopIndex(1);
   for (i = 1; i <= n; i++)  /* push arguments to 'g_read' */
     lua_pushvalue(L, lua_upvalueindex(3 + i));
   n = g_read(L, p->f, 2);  /* 'n' is number of results */
@@ -454,7 +454,7 @@ static int io_readline (lua_State *L) {
       return luaL_error(L, "%s", lua_tostring(L, -n + 1));
     }
     if (lua_toboolean(L, lua_upvalueindex(3))) {  /* generator created file? */
-      lua_settop(L, 0);
+      L->stack_.setTopIndex(0);
       lua_pushvalue(L, lua_upvalueindex(1));
       aux_close(L);  /* close it */
     }

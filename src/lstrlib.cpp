@@ -184,7 +184,7 @@ static int str_dump (lua_State *L) {
   THREAD_CHECK(L);
   luaL_Buffer b;
   luaL_checkIsFunction(L, 1);
-  lua_settop(L, 1);
+  L->stack_.setTopIndex(1);
   luaL_buffinit(L,&b);
   if (lua_dump(L, writer, &b) != 0)
     return luaL_error(L, "unable to dump given function");
@@ -638,7 +638,7 @@ static int gmatch (lua_State *L) {
   THREAD_CHECK(L);
   luaL_checkstring(L, 1);
   luaL_checkstring(L, 2);
-  lua_settop(L, 2);
+  L->stack_.setTopIndex(2);
   lua_pushinteger(L, 0);
   lua_pushcclosure(L, gmatch_aux, 3);
   return 1;

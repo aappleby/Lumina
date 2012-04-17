@@ -93,7 +93,7 @@ static int luaB_tonumber (lua_State *L) {
 static int luaB_error (lua_State *L) {
   THREAD_CHECK(L);
   int level = luaL_optint(L, 2, 1);
-  lua_settop(L, 1);
+  L->stack_.setTopIndex(1);
   if (lua_isStringable(L, 1) && level > 0) {  /* add extra information? */
     luaL_where(L, level);
     lua_pushvalue(L, 1);
@@ -127,7 +127,7 @@ static int luaB_setmetatable (lua_State *L) {
                 "nil or table expected");
   if (luaL_getmetafield(L, 1, "__metatable"))
     return luaL_error(L, "cannot change a protected metatable");
-  lua_settop(L, 2);
+  L->stack_.setTopIndex(2);
   lua_setmetatable(L, 1);
   return 1;
 }
@@ -156,7 +156,7 @@ static int luaB_rawget (lua_State *L) {
   THREAD_CHECK(L);
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_checkany(L, 2);
-  lua_settop(L, 2);
+  L->stack_.setTopIndex(2);
   lua_rawget(L, 1);
   return 1;
 }
@@ -166,7 +166,7 @@ static int luaB_rawset (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_checkany(L, 2);
   luaL_checkany(L, 3);
-  lua_settop(L, 3);
+  L->stack_.setTopIndex(3);
   lua_rawset(L, 1);
   return 1;
 }
@@ -231,7 +231,7 @@ static int pairsmeta (lua_State *L, const char *method, int iszero,
 static int luaB_next (lua_State *L) {
   THREAD_CHECK(L);
   luaL_checktype(L, 1, LUA_TTABLE);
-  lua_settop(L, 2);  /* create a 2nd argument if there isn't one */
+  L->stack_.setTopIndex(2);  /* create a 2nd argument if there isn't one */
   if (lua_next(L, 1))
     return 2;
   else {
@@ -342,7 +342,7 @@ static int luaB_load (lua_State *L) {
   else {  /* loading from a reader function */
     const char *chunkname = luaL_optstring(L, 2, "=(load)");
     luaL_checkIsFunction(L, 1);
-    lua_settop(L, RESERVEDSLOT);  /* create reserved slot */
+    L->stack_.setTopIndex(RESERVEDSLOT);  /* create reserved slot */
     status = lua_load(L, generic_reader, NULL, chunkname, mode);
   }
   if (status == LUA_OK && top >= 4) {  /* is there an 'env' argument */
@@ -364,7 +364,7 @@ static int dofilecont (lua_State *L) {
 static int luaB_dofile (lua_State *L) {
   THREAD_CHECK(L);
   const char *fname = luaL_optstring(L, 1, NULL);
-  lua_settop(L, 1);
+  L->stack_.setTopIndex(1);
   if (luaL_loadfile(L, fname) != LUA_OK) lua_error(L);
   lua_callk(L, 0, LUA_MULTRET, 0, dofilecont);
   return dofilecont(L);
@@ -399,7 +399,7 @@ static int luaB_select (lua_State *L) {
 static int finishpcall (lua_State *L, int status) {
   THREAD_CHECK(L);
   if (!lua_checkstack(L, 1)) {  /* no space for extra boolean? */
-    lua_settop(L, 0);  /* create space for return values */
+    L->stack_.setTopIndex(0);  /* create space for return values */
     lua_pushboolean(L, 0);
     lua_pushstring(L, "stack overflow");
     return 2;  /* return false, msg */

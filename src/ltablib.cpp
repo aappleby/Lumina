@@ -245,7 +245,7 @@ static int sort (lua_State *L) {
     /* is there a 2nd argument? */
     luaL_checkIsFunction(L, 2);
   }
-  lua_settop(L, 2);  /* make sure there is two arguments */
+  L->stack_.setTopIndex(2);  /* make sure there is two arguments */
   auxsort(L, 1, n);
   return 0;
 }
