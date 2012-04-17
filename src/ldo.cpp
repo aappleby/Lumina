@@ -130,20 +130,20 @@ void luaD_hook (lua_State *L, int event, int line) {
   if (hook && L->allowhook) {
     CallInfo *ci = L->stack_.callinfo_;
     ptrdiff_t top = savestack(L, L->stack_.top_);
-    ptrdiff_t ci_top = savestack(L, ci->top);
+    ptrdiff_t ci_top = savestack(L, ci->getTop());
     lua_Debug ar;
     ar.event = event;
     ar.currentline = line;
     ar.i_ci = ci;
     L->stack_.reserve(LUA_MINSTACK);  /* ensure minimum stack size */
-    ci->top = L->stack_.top_ + LUA_MINSTACK;
-    assert(ci->top <= L->stack_.last());
+    ci->setTop( L->stack_.top_ + LUA_MINSTACK );
+    assert(ci->getTop() <= L->stack_.last());
     L->allowhook = 0;  /* cannot call hooks inside a hook */
     ci->callstatus |= CIST_HOOKED;
     (*hook)(L, &ar);
     assert(!L->allowhook);
     L->allowhook = 1;
-    ci->top = restorestack(L, ci_top);
+    ci->setTop( restorestack(L, ci_top) );
     L->stack_.top_ = restorestack(L, top);
     ci->callstatus &= ~CIST_HOOKED;
   }
@@ -224,9 +224,9 @@ int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
     ScopedMemChecker c;
     CallInfo* ci = next_ci(L);  /* now 'enter' new function */
     ci->nresults = nresults;
-    ci->func = restorestack(L, funcr);
-    ci->top = L->stack_.top_ + LUA_MINSTACK;
-    assert(ci->top <= L->stack_.last());
+    ci->setFunc( restorestack(L, funcr) );
+    ci->setTop( L->stack_.top_ + LUA_MINSTACK );
+    assert(ci->getTop() <= L->stack_.last());
     ci->callstatus = 0;
   }
 
@@ -247,9 +247,9 @@ int luaD_precallC(lua_State* L, StkId func, int nresults) {
     ScopedMemChecker c;
     CallInfo* ci = next_ci(L);  /* now 'enter' new function */
     ci->nresults = nresults;
-    ci->func = restorestack(L, funcr);
-    ci->top = L->stack_.top_ + LUA_MINSTACK;
-    assert(ci->top <= L->stack_.last());
+    ci->setFunc(restorestack(L, funcr));
+    ci->setTop(L->stack_.top_ + LUA_MINSTACK);
+    assert(ci->getTop() <= L->stack_.last());
     ci->callstatus = 0;
     if (L->hookmask & LUA_MASKCALL)
       luaD_hook(L, LUA_HOOKCALL, -1);
@@ -277,14 +277,14 @@ int luaD_precallLua(lua_State* L, StkId func, int nresults) {
     ScopedMemChecker c;
     ci = next_ci(L);  /* now 'enter' new function */
     ci->nresults = nresults;
-    ci->func = func;
-    ci->base = base;
-    ci->top = base + p->maxstacksize;
-    assert(ci->top <= L->stack_.last());
+    ci->setFunc(func);
+    ci->setBase(base);
+    ci->setTop(base + p->maxstacksize);
+    assert(ci->getTop() <= L->stack_.last());
     //ci->savedpc = p->code;  /* starting point */
     ci->savedpc = &p->code[0];
     ci->callstatus = CIST_LUA;
-    L->stack_.top_ = ci->top;
+    L->stack_.top_ = ci->getTop();
   }
   if (L->hookmask & LUA_MASKCALL)
     callhook(L, ci);
@@ -325,7 +325,7 @@ int luaD_postcall (lua_State *L, StkId firstResult) {
     }
     L->oldpc = ci->previous->savedpc;  /* 'oldpc' for caller function */
   }
-  res = ci->func;  /* res == final position of 1st result */
+  res = ci->getFunc();  /* res == final position of 1st result */
   wanted = ci->nresults;
   L->stack_.callinfo_ = ci = ci->previous;  /* back to caller */
 
@@ -481,7 +481,7 @@ static void resume (lua_State *L, void *ud) {
     if (isLua(ci))  /* yielded inside a hook? */
       luaV_execute(L);  /* just continue running Lua code */
     else {  /* 'common' yield */
-      ci->func = restorestack(L, ci->extra);
+      ci->setFunc(restorestack(L, ci->extra));
       if (ci->continuation_ != NULL) {  /* does it have a continuation? */
         int n;
         ci->status = LUA_YIELD;  /* 'default' status */
@@ -514,7 +514,7 @@ int lua_resume (lua_State *L, lua_State *from, int nargs) {
       else {  /* unrecoverable error */
         L->status = cast_byte(status);  /* mark thread as `dead' */
         seterrorobj(L, status, L->stack_.top_);
-        L->stack_.callinfo_->top = L->stack_.top_;
+        L->stack_.callinfo_->setTop(L->stack_.top_);
         break;
       }
     }
@@ -544,8 +544,8 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   else {
     if ((ci->continuation_ = k) != NULL)  /* is there a continuation? */
       ci->ctx = ctx;  /* save context */
-    ci->extra = savestack(L, ci->func);  /* save current 'func' */
-    ci->func = L->stack_.top_ - nresults - 1;  /* protect stack below results */
+    ci->extra = savestack(L, ci->getFunc());  /* save current 'func' */
+    ci->setFunc(L->stack_.top_ - nresults - 1);  /* protect stack below results */
     luaD_throw(LUA_YIELD);
   }
   assert(ci->callstatus & CIST_HOOKED);  /* must be inside a hook */

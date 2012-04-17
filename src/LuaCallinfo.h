@@ -9,13 +9,13 @@ class CallInfo : public LuaBase {
 public:
 
   CallInfo() {
-    func = NULL;
-    top = NULL;
+    func_ = NULL;
+    top_ = NULL;
     previous = NULL;
     next = NULL;
     nresults = 0;
     callstatus = 0;
-    base = NULL;
+    base_ = NULL;
     savedpc = NULL;
     ctx = 0;
     continuation_ = NULL;
@@ -26,15 +26,21 @@ public:
   }
   ~CallInfo() {}
 
-  StkId func;  /* function index in the stack */
-  StkId	top;  /* top for this function */
+  const StkId getFunc() const { return func_; }
+  void  setFunc(StkId func) { func_ = func; }
+
+  const StkId getTop() const { return top_; }
+  void  setTop(StkId top) { top_ = top; }
+
+  const StkId getBase() const { return base_; }
+  void  setBase(StkId base) { base_ = base; }
+
   CallInfo* previous;
   CallInfo* next;  /* dynamic call link */
   short nresults;  /* expected number of results from this function */
   uint8_t callstatus;
 
   // only for Lua functions
-  StkId base;  /* base for this function */
   const Instruction *savedpc;
 
   // only for C functions
@@ -45,5 +51,11 @@ public:
   ptrdiff_t extra;
   uint8_t old_allowhook;
   uint8_t status;
+
+protected:
+
+  StkId func_;  /* function index in the stack */
+  StkId	top_;  /* top for this function */
+  StkId base_;  /* base for this function */
 };
 

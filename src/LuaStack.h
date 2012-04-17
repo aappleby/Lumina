@@ -25,6 +25,8 @@ public:
 
   //----------
 
+  StkId getTop() { return top_; }
+
   TValue at(int index);
 
   void   copy(int index);

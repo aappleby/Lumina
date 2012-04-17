@@ -31,7 +31,7 @@
 #include "lualib.h"
 
 
-#define obj_at(L,k)	(L->stack_.callinfo_->func + (k))
+#define obj_at(L,k)	(L->stack_.callinfo_->getFunc() + (k))
 
 
 static void setnameval (lua_State *L, const char *name, int val) {
@@ -183,7 +183,7 @@ typedef CallInfo* pCallInfo;
 static int lua_checkpc (pCallInfo ci) {
   if (!isLua(ci)) return 1;
   else {
-    Proto *p = ci_func(ci)->proto_;
+    Proto *p = ci->getFunc()->getLClosure()->proto_;
     return &p->code[0] <= ci->savedpc &&
            ci->savedpc <= &p->code[0] + p->code.size();
   }
@@ -201,7 +201,7 @@ static void test_checkstack (global_State *g, lua_State *L1) {
     assert(!uvo->isBlack());  /* open upvalues cannot be black */
   }
   for (ci = L1->stack_.callinfo_; ci != NULL; ci = ci->previous) {
-    assert(ci->top <= L1->stack_.last());
+    assert(ci->getTop() <= L1->stack_.last());
     assert(lua_checkpc(ci));
   }
   if (L1->stack_.size()) {

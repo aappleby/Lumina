@@ -73,7 +73,7 @@ static void traceexec (lua_State *L) {
     luaD_hook(L, LUA_HOOKCOUNT, -1);
   }
   if (mask & LUA_MASKLINE) {
-    Proto *p = ci_func(ci)->proto_;
+    Proto *p = ci->getFunc()->getLClosure()->proto_;
     int npc = pcRel(ci->savedpc, p);
     int newline = getfuncline(p, npc);
     if (npc == 0 ||  /* call linehook when enter a new function, */
@@ -616,7 +616,7 @@ static void pushclosure (lua_State *L,
 void luaV_finishOp (lua_State *L) {
   THREAD_CHECK(L);
   CallInfo *ci = L->stack_.callinfo_;
-  StkId base = ci->base;
+  StkId base = ci->getBase();
   Instruction inst = *(ci->savedpc - 1);  /* interrupted instruction */
   OpCode op = GET_OPCODE(inst);
   switch (op) {  /* finish its execution */
@@ -652,18 +652,18 @@ void luaV_finishOp (lua_State *L) {
         luaV_concat(L, total);  /* concat them (may yield again) */
       }
       /* move final result to final position */
-      ci->base[GETARG_A(inst)] = L->stack_.top_[-1];
-      L->stack_.top_ = ci->top;  /* restore top */
+      ci->getBase()[GETARG_A(inst)] = L->stack_.top_[-1];
+      L->stack_.top_ = ci->getTop();  /* restore top */
       break;
     }
     case OP_TFORCALL: {
       assert(GET_OPCODE(*ci->savedpc) == OP_TFORLOOP);
-      L->stack_.top_ = ci->top;  /* correct top */
+      L->stack_.top_ = ci->getTop();  /* correct top */
       break;
     }
     case OP_CALL: {
       if (GETARG_C(inst) - 1 >= 0)  /* nresults >= 0? */
-        L->stack_.top_ = ci->top;  /* adjust results */
+        L->stack_.top_ = ci->getTop();  /* adjust results */
       break;
     }
     case OP_TAILCALL: case OP_SETTABUP:  case OP_SETTABLE:
@@ -697,9 +697,9 @@ void luaV_execute (lua_State *L) {
 
  newframe:  /* reentry point when frame changes (call/return) */
   assert(ci == L->stack_.callinfo_);
-  cl = ci->func->getLClosure();
+  cl = ci->getFunc()->getLClosure();
   k = cl->proto_->constants.begin();
-  base = ci->base;
+  base = ci->getBase();
 
   /* main loop of interpreter */
   for (;;) {
@@ -716,12 +716,12 @@ void luaV_execute (lua_State *L) {
     int32_t Bs = (int32_t)Bx - 0x1FFFF;
 
     /* WARNING: several calls may realloc the stack and invalidate `ra' */
-    base = ci->base;
+    base = ci->getBase();
 
     if ((L->hookmask & (LUA_MASKLINE | LUA_MASKCOUNT)) &&
         (--L->hookcount == 0 || L->hookmask & LUA_MASKLINE)) {
       traceexec(L);
-      base = ci->base;
+      base = ci->getBase();
     }
 
     assert(base <= L->stack_.top_ && L->stack_.top_ < L->stack_.end());
@@ -824,7 +824,7 @@ void luaV_execute (lua_State *L) {
             // TODO(aappleby): GC can invalidate the top pointer? That shouldn't be happening...
             L->stack_.top_ = &base[A] + 1;  /* limit of live values */
             luaC_step();
-            L->stack_.top_ = ci->top;  /* restore top */
+            L->stack_.top_ = ci->getTop();  /* restore top */
           }
 
           break;
@@ -982,14 +982,14 @@ void luaV_execute (lua_State *L) {
           luaV_concat(L, C - B + 1);
 
           // concat may realloc the stack
-          base = ci->base;
+          base = ci->getBase();
           base[A] = base[B];
 
           if(thread_G->getGCDebt() > 0) {
             L->stack_.top_ = (A >= B ? &base[A+1] : &base[B]);  /* limit of live values */
             luaC_step();
           }
-          L->stack_.top_ = ci->top;  /* restore top */
+          L->stack_.top_ = ci->getTop();  /* restore top */
           break;
         }
 
@@ -1066,9 +1066,9 @@ void luaV_execute (lua_State *L) {
 
           if (luaD_precall(L, ra, nresults)) {  /* C function? */
             if (nresults >= 0) {
-              L->stack_.top_ = ci->top;  /* adjust results */
+              L->stack_.top_ = ci->getTop();  /* adjust results */
             }
-            base = ci->base;
+            base = ci->getBase();
           }
           else {  /* Lua function */
             ci = L->stack_.callinfo_;
@@ -1088,22 +1088,23 @@ void luaV_execute (lua_State *L) {
             /* tail call: put called frame (n) in place of caller one (o) */
             CallInfo *nci = L->stack_.callinfo_;  /* called frame */
             CallInfo *oci = nci->previous;  /* caller frame */
-            StkId nfunc = nci->func;  /* called function */
-            StkId ofunc = oci->func;  /* caller function */
+            StkId nfunc = nci->getFunc();  /* called function */
+            StkId ofunc = oci->getFunc();  /* caller function */
             /* last stack slot filled by 'precall' */
-            StkId lim = nci->base + nfunc->getLClosure()->proto_->numparams;
+            StkId lim = nci->getBase() + nfunc->getLClosure()->proto_->numparams;
             /* close all upvalues from previous call */
-            if (cl->proto_->subprotos_.size() > 0) luaF_close(oci->base);
+            if (cl->proto_->subprotos_.size() > 0) luaF_close(oci->getBase());
             /* move new frame into old one */
             for (int aux = 0; nfunc + aux < lim; aux++) {
               ofunc[aux] = nfunc[aux];
             }
-            oci->base = ofunc + (nci->base - nfunc);  /* correct base */
-            oci->top = L->stack_.top_ = ofunc + (L->stack_.top_ - nfunc);  /* correct top */
+            oci->setBase( ofunc + (nci->getBase() - nfunc) );  /* correct base */
+            L->stack_.top_ = ofunc + (L->stack_.top_ - nfunc);  /* correct top */
+            oci->setTop( L->stack_.top_ );
             oci->savedpc = nci->savedpc;
             oci->callstatus |= CIST_TAIL;  /* function was tail called */
             ci = L->stack_.callinfo_ = oci;  /* remove new frame */
-            assert(L->stack_.top_ == oci->base + ofunc->getLClosure()->proto_->maxstacksize);
+            assert(L->stack_.top_ == oci->getBase() + ofunc->getLClosure()->proto_->maxstacksize);
             goto newframe;  /* restart luaV_execute over new Lua function */
           }
           break;
@@ -1121,7 +1122,7 @@ void luaV_execute (lua_State *L) {
           }
           else {  /* invocation via reentry: continue execution */
             ci = L->stack_.callinfo_;
-            if (b) L->stack_.top_ = ci->top;
+            if (b) L->stack_.top_ = ci->getTop();
             assert(isLua(ci));
             assert(GET_OPCODE(*((ci)->savedpc - 1)) == OP_CALL);
             goto newframe;  /* restart luaV_execute over new Lua function */
@@ -1175,7 +1176,7 @@ void luaV_execute (lua_State *L) {
 
           L->stack_.top_ = cb + 3;  /* func. + 2 args (state and index) */
           luaD_call(L, cb, C, 1);
-          L->stack_.top_ = ci->top;
+          L->stack_.top_ = ci->getTop();
           
           break;
         }
@@ -1216,7 +1217,7 @@ void luaV_execute (lua_State *L) {
             h->set(TValue(last--), ra[n]);
             luaC_barrierback(h, ra[n]);
           }
-          L->stack_.top_ = ci->top;  /* correct top (in case of previous open call) */
+          L->stack_.top_ = ci->getTop();  /* correct top (in case of previous open call) */
           break;
         }
 
@@ -1233,7 +1234,7 @@ void luaV_execute (lua_State *L) {
           if(thread_G->getGCDebt() > 0) {
             L->stack_.top_ = &base[A+1];  /* limit of live values */
             luaC_step();
-            L->stack_.top_ = ci->top;  /* restore top */
+            L->stack_.top_ = ci->getTop();  /* restore top */
           }
           break;
         }
@@ -1242,12 +1243,12 @@ void luaV_execute (lua_State *L) {
         {
           int b = B - 1;
 
-          int n = cast_int(base - ci->func) - cl->proto_->numparams - 1;
+          int n = cast_int(base - ci->getFunc()) - cl->proto_->numparams - 1;
 
           if (b < 0) {  /* B == 0? */
             b = n;  /* get all var. arguments */
             L->stack_.reserve(n);
-            base = ci->base;
+            base = ci->getBase();
 
             ra = RA(i);  /* previous call may change the stack */
             L->stack_.top_ = ra + n;

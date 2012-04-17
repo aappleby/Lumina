@@ -39,7 +39,7 @@ TValue index2addr3(lua_State* L, int idx) {
   THREAD_CHECK(L);
   CallInfo *ci = L->stack_.callinfo_;
   if (idx > 0) {
-    TValue *o = ci->func + idx;
+    TValue *o = ci->getFunc() + idx;
     if (o >= L->stack_.top_) {
       return TValue::None();
     }
@@ -56,13 +56,13 @@ TValue index2addr3(lua_State* L, int idx) {
 
 
   // Light C functions have no upvals
-  if (ci->func->isLightFunction()) {
+  if (ci->getFunc()->isLightFunction()) {
     return TValue::None();
   }
 
   idx = LUA_REGISTRYINDEX - idx - 1;
 
-  Closure* func = ci->func->getCClosure();
+  Closure* func = ci->getFunc()->getCClosure();
   if(idx < func->nupvalues) {
     return func->pupvals_[idx];
   }
@@ -75,7 +75,7 @@ TValue* index2addr2 (lua_State *L, int idx) {
   THREAD_CHECK(L);
   CallInfo *ci = L->stack_.callinfo_;
   if (idx > 0) {
-    TValue *o = ci->func + idx;
+    TValue *o = ci->getFunc() + idx;
     if (o >= L->stack_.top_) {
       return NULL;
     }
@@ -92,13 +92,13 @@ TValue* index2addr2 (lua_State *L, int idx) {
 
 
   // Light C functions have no upvals
-  if (ci->func->isLightFunction()) {
+  if (ci->getFunc()->isLightFunction()) {
     return NULL;
   }
 
   idx = LUA_REGISTRYINDEX - idx - 1;
 
-  Closure* func = ci->func->getCClosure();
+  Closure* func = ci->getFunc()->getCClosure();
   if(idx < func->nupvalues) {
     return &func->pupvals_[idx];
   }
@@ -145,8 +145,10 @@ int lua_checkstack (lua_State *L, int size) {
     else  /* try to grow stack */
       res = (luaD_rawrunprotected(L, &growstack, &size) == LUA_OK);
   }
-  if (res && ci->top < L->stack_.top_ + size)
-    ci->top = L->stack_.top_ + size;  /* adjust frame top */
+  if (res && ci->getTop() < L->stack_.top_ + size) {
+    // adjust frame top
+    ci->setTop( L->stack_.top_ + size );
+  }
   return res;
 }
 
@@ -158,7 +160,7 @@ void lua_xmove (lua_State *from, lua_State *to, int n) {
   from->stack_.checkArgs(n);
 
   api_check(G(from) == G(to), "moving among independent states");
-  api_check(to->stack_.callinfo_->top - to->stack_.top_ >= n, "not enough elements to move");
+  api_check(to->stack_.callinfo_->getTop() - to->stack_.top_ >= n, "not enough elements to move");
   from->stack_.top_ -= n;
 
   for (i = 0; i < n; i++) {
@@ -197,7 +199,7 @@ int lua_absindex (lua_State *L, int idx) {
   THREAD_CHECK(L);
   return (idx > 0 || idx <= LUA_REGISTRYINDEX)
          ? idx
-         : cast_int(L->stack_.top_ - L->stack_.callinfo_->func + idx);
+         : cast_int(L->stack_.top_ - L->stack_.callinfo_->getFunc() + idx);
 }
 
 void lua_insert (lua_State *L, int idx) {
@@ -217,7 +219,7 @@ static void moveto (lua_State *L, TValue *fr, int idx) {
   TValue *to = index2addr_checked(L, idx);
   *to = *fr;
   if (idx < LUA_REGISTRYINDEX) {  /* function upvalue? */
-    luaC_barrier(L->stack_.callinfo_->func->getCClosure(), *fr);
+    luaC_barrier(L->stack_.callinfo_->getFunc()->getCClosure(), *fr);
   }
   /* LUA_REGISTRYINDEX does not need gc barrier
      (collector revisits it before finishing collection) */
@@ -924,7 +926,7 @@ void lua_setuservalue (lua_State *L, int idx) {
 
 
 #define checkresults(L,na,nr) \
-     api_check((nr) == LUA_MULTRET || (L->stack_.callinfo_->top - L->stack_.top_ >= (nr) - (na)), \
+     api_check((nr) == LUA_MULTRET || (L->stack_.callinfo_->getTop() - L->stack_.top_ >= (nr) - (na)), \
 	"results from function overflow current stack size")
 
 

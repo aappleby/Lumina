@@ -21,9 +21,9 @@ void LuaStack::init() {
   CallInfo* ci = &callinfo_head_;
   ci->next = ci->previous = NULL;
   ci->callstatus = 0;
-  ci->func = top_;
+  ci->setFunc(getTop());
   top_++;
-  ci->top =top_ + LUA_MINSTACK;
+  ci->setTop(getTop() + LUA_MINSTACK);
 }
 
 //------------------------------------------------------------------------------
@@ -53,10 +53,10 @@ void LuaStack::realloc (int newsize) {
   
   // Correct all stack references in all active callinfos.
   for (CallInfo* ci = callinfo_; ci != NULL; ci = ci->previous) {
-    ci->top = (ci->top - oldstack) + begin();
-    ci->func = (ci->func - oldstack) + begin();
+    ci->setTop( (ci->getTop() - oldstack) + begin() );
+    ci->setFunc( (ci->getFunc() - oldstack) + begin() );
     if ((ci->callstatus & CIST_LUA)) {
-      ci->base = (ci->base - oldstack) + begin();
+      ci->setBase( (ci->getBase() - oldstack) + begin() );
     }
   }
 
@@ -143,9 +143,9 @@ int LuaStack::countInUse() {
   CallInfo *temp_ci;
   StkId lim = top_;
   for (temp_ci = callinfo_; temp_ci != NULL; temp_ci = temp_ci->previous) {
-    assert(temp_ci->top <= last());
-    if (lim < temp_ci->top) {
-      lim = temp_ci->top;
+    assert(temp_ci->getTop() <= last());
+    if (lim < temp_ci->getTop()) {
+      lim = temp_ci->getTop();
     }
   }
   return (int)(lim - begin()) + 1;  /* part of stack in use */
@@ -159,7 +159,7 @@ int LuaStack::countInUse() {
 
 TValue LuaStack::at(int idx) {
   if (idx > 0) {
-    TValue *o = callinfo_->func + idx;
+    TValue *o = callinfo_->getFunc() + idx;
     if (o >= top_) {
       assert(false);
       return TValue::None();
@@ -177,7 +177,7 @@ TValue LuaStack::at(int idx) {
 
 
   // Light C functions have no upvals
-  if (callinfo_->func->isLightFunction()) {
+  if (callinfo_->getFunc()->isLightFunction()) {
     // can't assert here, some test code is intentionally trying to do this and
     // expecting to fail.
     //assert(false);
@@ -186,7 +186,7 @@ TValue LuaStack::at(int idx) {
 
   idx = LUA_REGISTRYINDEX - idx - 1;
 
-  Closure* func = callinfo_->func->getCClosure();
+  Closure* func = callinfo_->getFunc()->getCClosure();
   if(idx < func->nupvalues) {
     return func->pupvals_[idx];
   }
@@ -209,13 +209,13 @@ void LuaStack::copy(int index) {
 void LuaStack::push(TValue v) {
   top_[0] = v;
   top_++;
-  assert((top_ <= callinfo_->top) && "stack overflow");
+  assert((top_ <= callinfo_->getTop()) && "stack overflow");
 }
 
 void LuaStack::push(const TValue* v) {
   top_[0] = *v;
   top_++;
-  assert((top_ <= callinfo_->top) && "stack overflow");
+  assert((top_ <= callinfo_->getTop()) && "stack overflow");
 }
 
 void LuaStack::push_reserve(TValue v) {
@@ -257,7 +257,7 @@ void LuaStack::insert(int idx) {
 
 void LuaStack::remove(int index) {
   assert(index > LUA_REGISTRYINDEX);
-  TValue* p = (index > 0) ? &callinfo_->func[index] : &top_[index];
+  TValue* p = (index > 0) ? &callinfo_->getFunc()[index] : &top_[index];
   while (++p < top_) {
     p[-1] = p[0];
   }
@@ -267,12 +267,12 @@ void LuaStack::remove(int index) {
 //------------------------------------------------------------------------------
 
 int LuaStack::getTopIndex() {
-  return (int)(top_ - callinfo_->func) - 1;
+  return (int)(top_ - callinfo_->getFunc()) - 1;
 }
 
 
 void LuaStack::setTopIndex(int idx) {
-  StkId func = callinfo_->func;
+  StkId func = callinfo_->getFunc();
 
   if (idx >= 0) {
     assert((idx <= last() - (func + 1)) && "new top too large");
@@ -290,7 +290,7 @@ void LuaStack::setTopIndex(int idx) {
 //------------------------------------------------------------------------------
 
 void LuaStack::checkArgs(int count) {
-  int actual = (int)(top_ - callinfo_->func) - 1;
+  int actual = (int)(top_ - callinfo_->getFunc()) - 1;
   assert((count <= actual) && "not enough elements in the stack");
 }
 
