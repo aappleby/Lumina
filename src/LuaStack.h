@@ -33,6 +33,7 @@ public:
   void   push_nocheck(TValue v);
 
   TValue pop();
+  void   pop(int count);
   void   remove(int index);
 
   int  getTopIndex();

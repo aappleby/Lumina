@@ -35,7 +35,7 @@ static TString *newlstr (const char *str, size_t l, unsigned int h) {
     luaS_resize(tb->size_ * 2);  /* too crowded */
   }
   
-  TString* ts = new TString(h, str, l);
+  TString* ts = new TString(h, str, (int)l);
 
   LuaObject** list = &tb->hash_[h & (tb->size_ - 1)];
   ts->linkGC(list);

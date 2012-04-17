@@ -215,7 +215,7 @@ LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outRe
 void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId outResult) {
   THREAD_CHECK(L);
 
-  int stackIndex = outResult - L->stack_.begin();
+  int stackIndex = (int)(outResult - L->stack_.begin());
 
   TValue result;
   LuaResult r = luaV_gettable2(L, *source, *key, result);
@@ -590,7 +590,7 @@ static void pushclosure (lua_State *L,
   ScopedMemChecker c;
   THREAD_CHECK(L);
 
-  Closure *ncl = new Closure(p, p->upvalues.size());
+  Closure *ncl = new Closure(p, (int)p->upvalues.size());
   if(ncl == NULL) luaD_throw(LUA_ERRMEM);
 
   *ra = TValue(ncl);  /* anchor new closure in stack */

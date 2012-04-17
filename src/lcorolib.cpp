@@ -51,7 +51,7 @@ static int auxresume (lua_State *L, lua_State *co, int narg) {
     if (!lua_checkstack(L, nres + 1)) {
       {
         THREAD_CHANGE(co);
-        lua_pop(co, nres);  /* remove results anyway */
+        co->stack_.pop(nres);  /* remove results anyway */
       }
       lua_pushliteral(L, "too many results to resume");
       return -1;  /* error flag */

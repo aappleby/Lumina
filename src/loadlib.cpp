@@ -263,7 +263,7 @@ static void **ll_register (lua_State *L, const char *path) {
   if (!lua_isnil(L, -1))  /* is there an entry? */
     plib = (void **)lua_touserdata(L, -1);
   else {  /* no entry yet; create one */
-    lua_pop(L, 1);  /* remove result from gettable */
+    L->stack_.pop();  /* remove result from gettable */
     plib = (void **)lua_newuserdata(L, sizeof(const void *));
     *plib = NULL;
     luaL_setmetatable(L, "_LOADLIB");
@@ -501,7 +501,7 @@ static void findloader (lua_State *L, const char *name) {
   for (i = 1; ; i++) {
     lua_rawgeti(L, 3, i);  /* get a seacher */
     if (lua_isnil(L, -1)) {  /* no more searchers? */
-      lua_pop(L, 1);  /* remove nil */
+      L->stack_.pop();  /* remove nil */
       luaL_pushresult(&msg);  /* create error message */
       luaL_error(L, "module " LUA_QS " not found:%s",
                     name, lua_tostring(L, -1));
@@ -511,11 +511,11 @@ static void findloader (lua_State *L, const char *name) {
     if (lua_isfunction(L, -2))  /* did it find a loader? */
       return;  /* module loader found */
     else if (lua_isStringable(L, -2)) {  /* searcher returned error message? */
-      lua_pop(L, 1);  /* remove extra return */
+      L->stack_.pop();  /* remove extra return */
       luaL_addvalue(&msg);  /* concatenate error message */
     }
     else
-      lua_pop(L, 2);  /* remove both returns */
+      L->stack_.pop(2);  /* remove both returns */
   }
 }
 
@@ -529,7 +529,7 @@ static int ll_require (lua_State *L) {
   if (lua_toboolean(L, -1))  /* is it there? */
     return 1;  /* package is already loaded */
   /* else must load package */
-  lua_pop(L, 1);  /* remove 'getfield' result */
+  L->stack_.pop();  /* remove 'getfield' result */
   findloader(L, name);
   lua_pushstring(L, name);  /* pass name as argument to module loader */
   lua_insert(L, -2);  /* name is 1st argument (before search data) */
@@ -561,7 +561,7 @@ static int noenv (lua_State *L) {
   int b;
   lua_getfield(L, LUA_REGISTRYINDEX, "LUA_NOENV");
   b = lua_toboolean(L, -1);
-  lua_pop(L, 1);  /* remove value */
+  L->stack_.pop();  /* remove value */
   return b;
 }
 
@@ -648,7 +648,7 @@ int luaopen_package (lua_State *L) {
   lua_pushglobaltable(L);
   lua_pushvalue(L, -2);  /* set 'package' as upvalue for next lib */
   luaL_setfuncs(L, ll_funcs, 1);  /* open lib into global table */
-  lua_pop(L, 1);  /* pop global table */
+  L->stack_.pop();  /* pop global table */
   return 1;  /* return 'package' table */
 }
 

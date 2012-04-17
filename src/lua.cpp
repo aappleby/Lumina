@@ -138,7 +138,7 @@ static int report (lua_State *L, int status) {
     const char *msg = lua_tostring(L, -1);
     if (msg == NULL) msg = "(error object is not a string)";
     l_message(progname, msg);
-    lua_pop(L, 1);
+    L->stack_.pop();
     /* force a complete garbage collection in case of errors */
     lua_gc(L, LUA_GCCOLLECT, 0);
   }
@@ -153,7 +153,7 @@ static void finalreport (lua_State *L, int status) {
                                                        : NULL;
     if (msg == NULL) msg = "(error object is not a string)";
     l_message(progname, msg);
-    lua_pop(L, 1);
+    L->stack_.pop();
   }
 }
 
@@ -230,7 +230,7 @@ static int dolibrary (lua_State *L, const char *name) {
   status = docall(L, 1, 1);
   if (status == LUA_OK) {
     lua_setfield(L, -2, name);  /* global[name] = require return */
-    lua_pop(L, 1);  /* remove global table */
+    L->stack_.pop();  /* remove global table */
   }
   else
     L->stack_.remove(-2);  /* remove global table (below error msg.) */
@@ -243,7 +243,7 @@ static const char *get_prompt (lua_State *L, int firstline) {
   lua_getglobal(L, firstline ? "_PROMPT" : "_PROMPT2");
   p = lua_tostring(L, -1);
   if (p == NULL) p = (firstline ? LUA_PROMPT : LUA_PROMPT2);
-  lua_pop(L, 1);  /* remove global */
+  L->stack_.pop();  /* remove global */
   return p;
 }
 
@@ -256,7 +256,7 @@ static int incomplete (lua_State *L, int status) {
     size_t lmsg;
     const char *msg = lua_tolstring(L, -1, &lmsg);
     if (lmsg >= marklen && strcmp(msg + lmsg - marklen, EOFMARK) == 0) {
-      lua_pop(L, 1);
+      L->stack_.pop();
       return 1;
     }
   }
@@ -341,7 +341,7 @@ static int handle_script (lua_State *L, char **argv, int n) {
   if (status == LUA_OK)
     status = docall(L, narg, LUA_MULTRET);
   else
-    lua_pop(L, narg);
+    L->stack_.pop(narg);
   return report(L, status);
 }
 

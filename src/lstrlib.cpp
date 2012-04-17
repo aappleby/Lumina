@@ -687,7 +687,7 @@ static void add_value (MatchState *ms, luaL_Buffer *b, const char *s,
     return;
   }
   if (!lua_toboolean(L, -1)) {  /* nil or false? */
-    lua_pop(L, 1);
+    L->stack_.pop();
     lua_pushlstring(L, s, e - s);  /* keep original text */
   }
   else if (!lua_isStringable(L, -1))
@@ -927,7 +927,7 @@ static int str_format (lua_State *L) {
           }
           else {
             nb = sprintf(buff, form, s);
-            lua_pop(L, 1);  /* remove result from 'luaL_tolstring' */
+            L->stack_.pop();  /* remove result from 'luaL_tolstring' */
             break;
           }
         }
@@ -971,10 +971,10 @@ static void createmetatable (lua_State *L) {
   lua_pushliteral(L, "");  /* dummy string */
   lua_pushvalue(L, -2);  /* copy table */
   lua_setmetatable(L, -2);  /* set table as metatable for strings */
-  lua_pop(L, 1);  /* pop dummy string */
+  L->stack_.pop();  /* pop dummy string */
   lua_pushvalue(L, -2);  /* get string library */
   lua_setfield(L, -2, "__index");  /* metatable.__index = string */
-  lua_pop(L, 1);  /* pop metatable */
+  L->stack_.pop();  /* pop metatable */
 }
 
 

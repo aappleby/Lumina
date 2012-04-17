@@ -43,8 +43,8 @@ public:
   //----------
   // Test support, not used in actual VM
 
-  int getArraySize() { return array.size(); }
-  int getHashSize()  { return hashtable.size(); }
+  int getArraySize() { return (int)array.size(); }
+  int getHashSize()  { return (int)hashtable.size(); }
 
   void getArrayElement ( int index, TValue& outVal ) {
     outVal = array[index];

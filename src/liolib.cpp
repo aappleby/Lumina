@@ -415,7 +415,7 @@ static int g_read (lua_State *L, FILE *f, int first) {
   if (ferror(f))
     return luaL_fileresult(L, 0, NULL);
   if (!success) {
-    lua_pop(L, 1);  /* remove last result */
+    L->stack_.pop();  /* remove last result */
     L->stack_.push(TValue::Nil());  /* push nil instead */
   }
   return n - first;
@@ -587,7 +587,7 @@ static void createmeta (lua_State *L) {
   lua_pushvalue(L, -1);  /* push metatable */
   lua_setfield(L, -2, "__index");  /* metatable.__index = metatable */
   luaL_setfuncs(L, flib, 0);  /* add file methods to new metatable */
-  lua_pop(L, 1);  /* pop new metatable */
+  L->stack_.pop();  /* pop new metatable */
 }
 
 

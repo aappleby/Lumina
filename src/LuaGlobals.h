@@ -21,7 +21,7 @@ public:
 
   void incTotalBytes(int size);
   void setGCDebt(size_t debt);
-  int  getGCDebt() { return GCdebt_; }
+  int  getGCDebt() { return (int)GCdebt_; }
   void incGCDebt(int debt);
 
   stringtable* strings_;  /* hash table for strings */
@@ -76,7 +76,7 @@ public:
 private:
 
   size_t totalbytes_;  /* number of bytes currently allocated - GCdebt */
-  l_mem GCdebt_;  /* bytes allocated not yet compensated by the collector */
+  ptrdiff_t GCdebt_;  /* bytes allocated not yet compensated by the collector */
 };
 
 

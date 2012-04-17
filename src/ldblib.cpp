@@ -373,7 +373,7 @@ static int db_sethook (lua_State *L) {
   gethooktable(L);
   lua_pushvalue(L, arg+1);
   lua_rawsetp(L, -2, L1);  /* set new hook */
-  lua_pop(L, 1);  /* remove hook table */
+  L->stack_.pop();  /* remove hook table */
   {
     THREAD_CHANGE(L1);
     lua_sethook(L1, func, mask, count);  /* set hooks */

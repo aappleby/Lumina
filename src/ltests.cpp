@@ -802,7 +802,7 @@ static int doremote (lua_State *L) {
           lua_pushstring(L, result);
         }
       }
-      lua_pop(L1, i-1);
+      L1->stack_.pop(i-1);
       return i-1;
     }
   }
@@ -850,7 +850,7 @@ static int getnum_aux (lua_State *L, lua_State *L1, const char **pc) {
     {
       GLOBAL_CHANGE(L1);
       res = (int)lua_tointeger(L1, -1);
-      lua_pop(L1, 1);
+      L1->stack_.pop();
     }
     (*pc)++;
     return res;
@@ -1034,7 +1034,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("pop") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }
-      lua_pop(L1, tempnum);
+      L1->stack_.pop(tempnum);
     }
     else if EQ("pushnum") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }
@@ -1134,14 +1134,14 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       { GLOBAL_CHANGE(L); n = getnum; }
       if (n != 0) {
         printf("%s\n", luaL_tolstring(L1, n, NULL));
-        lua_pop(L1, 1);
+        L1->stack_.pop();
       }
       else {
         int i;
         n = L1->stack_.getTopIndex();
         for (i = 1; i <= n; i++) {
           printf("%s  ", luaL_tolstring(L1, i, NULL));
-          lua_pop(L1, 1);
+          L1->stack_.pop();
         }
         printf("\n");
       }
@@ -1357,7 +1357,7 @@ static void Chook (lua_State *L, lua_Debug *ar) {
   lua_pushlightuserdata(L, L);
   lua_gettable(L, -2);  /* get C_HOOK[L] (script saved by sethookaux) */
   scpt = lua_tostring(L, -1);  /* not very religious (string will be popped) */
-  lua_pop(L, 2);  /* remove C_HOOK and script */
+  L->stack_.pop(2);  /* remove C_HOOK and script */
   lua_pushstring(L, events[ar->event]);  /* may be used by script */
   lua_pushinteger(L, ar->currentline);  /* may be used by script */
   runC(L, L, scpt);  /* run script from C_HOOK[L] */
@@ -1375,7 +1375,7 @@ static void sethookaux (lua_State *L, int mask, int count, const char *scpt) {
   }
   lua_getfield(L, LUA_REGISTRYINDEX, "C_HOOK");  /* get C_HOOK table */
   if (!lua_istable(L, -1)) {  /* no hook table? */
-    lua_pop(L, 1);  /* remove previous value */
+    L->stack_.pop();  /* remove previous value */
     lua_newtable(L);  /* create new C_HOOK table */
     lua_pushvalue(L, -1);
     lua_setfield(L, LUA_REGISTRYINDEX, "C_HOOK");  /* register it */

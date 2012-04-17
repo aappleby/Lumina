@@ -59,7 +59,7 @@ static int findfield (lua_State *L, int objidx, int level) {
   while (lua_next(L, -2)) {  /* for each pair in table */
     if (lua_type(L, -2) == LUA_TSTRING) {  /* ignore non-string keys */
       if (lua_rawequal(L, objidx, -1)) {  /* found object? */
-        lua_pop(L, 1);  /* remove value (but keep name) */
+        L->stack_.pop();  /* remove value (but keep name) */
         return 1;
       }
       else if (findfield(L, objidx, level - 1)) {  /* try recursively */
@@ -70,7 +70,7 @@ static int findfield (lua_State *L, int objidx, int level) {
         return 1;
       }
     }
-    lua_pop(L, 1);  /* remove value */
+    L->stack_.pop();  /* remove value */
   }
   return 0;  /* not found */
 }
@@ -83,7 +83,7 @@ static int pushglobalfuncname (lua_State *L, lua_Debug *ar) {
   lua_pushglobaltable(L);
   if (findfield(L, top + 1, 2)) {
     lua_copy(L, -1, top + 1);  /* move name to proper place */
-    lua_pop(L, 2);  /* remove pushed values */
+    L->stack_.pop(2);  /* remove pushed values */
     return 1;
   }
   else {
@@ -286,7 +286,7 @@ int luaL_newmetatable (lua_State *L, const char *tname) {
   luaL_getmetatable(L, tname);  /* try to get metatable */
   if (!lua_isnil(L, -1))  /* name already in use? */
     return 0;  /* leave previous value on top, but return 0 */
-  lua_pop(L, 1);
+  L->stack_.pop();
   lua_newtable(L);  /* create metatable */
   lua_pushvalue(L, -1);
   lua_setfield(L, LUA_REGISTRYINDEX, tname);  /* registry.name = metatable */
@@ -309,7 +309,7 @@ void *luaL_testudata (lua_State *L, int ud, const char *tname) {
       luaL_getmetatable(L, tname);  /* get correct metatable */
       if (!lua_rawequal(L, -1, -2))  /* not the same? */
         p = NULL;  /* value is a userdata with wrong metatable */
-      lua_pop(L, 2);  /* remove both metatables */
+      L->stack_.pop(2);  /* remove both metatables */
       return p;
     }
   }
@@ -578,12 +578,12 @@ int luaL_ref (lua_State *L, int t) {
   int ref;
   t = lua_absindex(L, t);
   if (lua_isnil(L, -1)) {
-    lua_pop(L, 1);  /* remove from stack */
+    L->stack_.pop();  /* remove from stack */
     return LUA_REFNIL;  /* `nil' has a unique fixed reference */
   }
   lua_rawgeti(L, t, freelist);  /* get first free element */
   ref = (int)lua_tointeger(L, -1);  /* ref = t[freelist] */
-  lua_pop(L, 1);  /* remove it from stack */
+  L->stack_.pop();  /* remove it from stack */
   if (ref != 0) {  /* any free element? */
     lua_rawgeti(L, t, ref);  /* remove it from list */
     lua_rawseti(L, t, freelist);  /* (t[freelist] = t[ref]) */
@@ -763,7 +763,7 @@ int luaL_getmetafield (lua_State *L, int obj, const char *event) {
   lua_pushstring(L, event);
   lua_rawget(L, -2);
   if (lua_isnil(L, -1)) {
-    lua_pop(L, 2);  /* remove metatable and metafield */
+    L->stack_.pop(2);  /* remove metatable and metafield */
     return 0;
   }
   else {
@@ -792,7 +792,7 @@ int luaL_len (lua_State *L, int idx) {
   l = (int)lua_tointegerx(L, -1, &isnum);
   if (!isnum)
     luaL_error(L, "object length is not a number");
-  lua_pop(L, 1);  /* remove object */
+  L->stack_.pop();  /* remove object */
   return l;
 }
 
@@ -836,7 +836,7 @@ void luaL_setfuncs (lua_State *L, const luaL_Reg *l, int nup) {
     lua_pushcclosure(L, l->func, nup);  /* closure with those upvalues */
     lua_setfield(L, -(nup + 2), l->name);
   }
-  lua_pop(L, nup);  /* remove upvalues */
+  L->stack_.pop(nup);  /* remove upvalues */
 }
 
 
@@ -850,7 +850,7 @@ int luaL_getsubtable (lua_State *L, int idx, const char *fname) {
   if (lua_istable(L, -1)) return 1;  /* table already there */
   else {
     idx = lua_absindex(L, idx);
-    lua_pop(L, 1);  /* remove previous result */
+    L->stack_.pop();  /* remove previous result */
     lua_newtable(L);
     lua_pushvalue(L, -1);  /* copy to be left at top */
     lua_setfield(L, idx, fname);  /* assign new table to field */
@@ -874,12 +874,12 @@ void luaL_requiref (lua_State *L, const char *modname,
   luaL_getsubtable(L, LUA_REGISTRYINDEX, "_LOADED");
   lua_pushvalue(L, -2);  /* make copy of module (call result) */
   lua_setfield(L, -2, modname);  /* _LOADED[modname] = module */
-  lua_pop(L, 1);  /* remove _LOADED table */
+  L->stack_.pop();  /* remove _LOADED table */
   if (glb) {
     lua_pushglobaltable(L);
     lua_pushvalue(L, -2);  /* copy of 'mod' */
     lua_setfield(L, -2, modname);  /* _G[modname] = module */
-    lua_pop(L, 1);  /* remove _G table */
+    L->stack_.pop();  /* remove _G table */
   }
 }
 
@@ -934,6 +934,6 @@ void luaL_checkversion_ (lua_State *L, lua_Number ver) {
       lua_tounsigned(L, -1) != (lua_Unsigned)-0x1234)
     luaL_error(L, "bad conversion number->int;"
                   " must recompile Lua with proper settings");
-  lua_pop(L, 1);
+  L->stack_.pop();
 }
 

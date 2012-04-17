@@ -166,7 +166,7 @@ static int sort_comp (lua_State *L, int a, int b) {
     lua_pushvalue(L, b-2);  /* -2 to compensate function and `a' */
     lua_call(L, 2, 1);
     res = lua_toboolean(L, -1);
-    lua_pop(L, 1);
+    L->stack_.pop();
     return res;
   }
   else  /* a < b? */
@@ -183,7 +183,7 @@ static void auxsort (lua_State *L, int l, int u) {
     if (sort_comp(L, -1, -2))  /* a[u] < a[l]? */
       set2(L, l, u);  /* swap a[l] - a[u] */
     else
-      lua_pop(L, 2);
+      L->stack_.pop(2);
     if (u-l == 1) break;  /* only 2 elements */
     i = (l+u)/2;
     lua_rawgeti(L, 1, i);
@@ -191,12 +191,12 @@ static void auxsort (lua_State *L, int l, int u) {
     if (sort_comp(L, -2, -1))  /* a[i]<a[l]? */
       set2(L, i, l);
     else {
-      lua_pop(L, 1);  /* remove a[l] */
+      L->stack_.pop();  /* remove a[l] */
       lua_rawgeti(L, 1, u);
       if (sort_comp(L, -1, -2))  /* a[u]<a[i]? */
         set2(L, i, u);
       else
-        lua_pop(L, 2);
+        L->stack_.pop(2);
     }
     if (u-l == 2) break;  /* only 3 elements */
     lua_rawgeti(L, 1, i);  /* Pivot */
@@ -209,15 +209,15 @@ static void auxsort (lua_State *L, int l, int u) {
       /* repeat ++i until a[i] >= P */
       while (lua_rawgeti(L, 1, ++i), sort_comp(L, -1, -2)) {
         if (i>=u) luaL_error(L, "invalid order function for sorting");
-        lua_pop(L, 1);  /* remove a[i] */
+        L->stack_.pop();  /* remove a[i] */
       }
       /* repeat --j until a[j] <= P */
       while (lua_rawgeti(L, 1, --j), sort_comp(L, -3, -1)) {
         if (j<=l) luaL_error(L, "invalid order function for sorting");
-        lua_pop(L, 1);  /* remove a[j] */
+        L->stack_.pop();  /* remove a[j] */
       }
       if (j<i) {
-        lua_pop(L, 3);  /* pop pivot, a[i], a[j] */
+        L->stack_.pop(3);  /* pop pivot, a[i], a[j] */
         break;
       }
       set2(L, i, j);

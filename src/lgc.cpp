@@ -49,7 +49,7 @@
 ** standard negative debt for GC; a reasonable "time" to wait before
 ** starting a new cycle
 */
-#define stddebt(g)	(-cast(l_mem, g->getTotalBytes()/100) * g->gcpause)
+#define stddebt(g)	(-cast(ptrdiff_t, g->getTotalBytes()/100) * g->gcpause)
 
 
 static void markobject (LuaObject *o);
@@ -759,7 +759,7 @@ static void atomic () {
 }
 
 
-static l_mem singlestep () {
+static ptrdiff_t singlestep () {
   global_State *g = thread_G;
   switch (g->gcstate) {
     case GCSpause: {
@@ -853,7 +853,7 @@ static void generationalcollection () {
 
 static void step () {
   global_State *g = thread_G;
-  l_mem lim = g->gcstepmul;  /* how much to work */
+  ptrdiff_t lim = g->gcstepmul;  /* how much to work */
   do {  /* always perform at least one single step */
     lim -= singlestep();
   } while (lim > 0 && g->gcstate != GCSpause);

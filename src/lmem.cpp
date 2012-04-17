@@ -99,7 +99,7 @@ void *luaM_alloc_nocheck (size_t size) {
 
   l_memcontrol.alloc(size);
 
-  if(thread_G) thread_G->incTotalBytes(size);
+  if(thread_G) thread_G->incTotalBytes((int)size);
 
   return block + 1;
 }

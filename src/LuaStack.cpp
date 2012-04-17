@@ -224,6 +224,10 @@ TValue LuaStack::pop() {
   return *top_;
 }
 
+void LuaStack::pop(int count) {
+  top_ -= count;
+}
+
 // Moves the item on the top of the stack to 'idx'.
 // TODO(aappleby): Not sure if this works in all cases, and it would
 // be better if it took the value as an arg...
@@ -253,7 +257,7 @@ void LuaStack::remove(int index) {
 //------------------------------------------------------------------------------
 
 int LuaStack::getTopIndex() {
-  return (top_ - callinfo_->func) - 1;
+  return (int)(top_ - callinfo_->func) - 1;
 }
 
 
@@ -276,7 +280,7 @@ void LuaStack::setTopIndex(int idx) {
 //------------------------------------------------------------------------------
 
 void LuaStack::checkArgs(int count) {
-  int actual = (top_ - callinfo_->func) - 1;
+  int actual = (int)(top_ - callinfo_->func) - 1;
   assert((count <= actual) && "not enough elements in the stack");
 }
 

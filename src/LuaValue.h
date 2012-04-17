@@ -23,8 +23,10 @@ public:
   //static TValue CClosure(Closure* c);
 
   explicit TValue(bool v)     { type_ = LUA_TBOOLEAN; bytes_ = v ? 1 : 0; }
-  explicit TValue(int v)      { type_ = LUA_TNUMBER; number_ = v; }
+  explicit TValue(int32_t v)  { type_ = LUA_TNUMBER; number_ = v; }
+  explicit TValue(int64_t v)  { type_ = LUA_TNUMBER; number_ = (double)v; }
   explicit TValue(uint32_t v) { type_ = LUA_TNUMBER; number_ = v; }
+  explicit TValue(uint64_t v) { type_ = LUA_TNUMBER; number_ = (double)v; }
   explicit TValue(double v)   { type_ = LUA_TNUMBER; number_ = v; }
   explicit TValue(TString* v);
   explicit TValue(LuaObject* o);

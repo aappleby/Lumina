@@ -23,7 +23,6 @@ typedef int (*lua_CFunction) (lua_State *L);
 typedef double lua_Number;
 typedef ptrdiff_t lua_Integer;
 typedef uint32_t lua_Unsigned;
-typedef ptrdiff_t l_mem;
 typedef uint32_t Instruction;
 
 
