@@ -371,16 +371,7 @@ static LuaObject **sweeplist (LuaObject **p, size_t count);
 static void sweepthread (lua_State *L1) {
   if (L1->stack_.empty()) return;  /* stack not completely built yet */
   sweeplist(&L1->stack_.open_upvals_, MAX_LUMEM);  /* sweep open upvalues */
-  {
-    THREAD_CHANGE(L1);
-    CallInfo *ci = L1->stack_.callinfo_;
-    CallInfo *next = ci->next;
-    ci->next = NULL;
-    while ((ci = next) != NULL) {
-      next = ci->next;
-      delete ci;
-    }
-  }
+  L1->stack_.sweepCallinfo();
   /* should not change the stack during an emergency gc cycle */
   if (thread_G->gckind != KGC_EMERGENCY) {
     THREAD_CHANGE(L1);

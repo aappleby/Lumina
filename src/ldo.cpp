@@ -206,15 +206,6 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
 
 
 
-CallInfo* next_ci(lua_State* L) {
-  if(L->stack_.callinfo_->next == NULL) {
-    L->stack_.callinfo_ = luaE_extendCI(L);
-  } else {
-    L->stack_.callinfo_ = L->stack_.callinfo_->next;
-  }
-  return L->stack_.callinfo_;
-}
-
 int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
   ptrdiff_t funcr = savestack(L, func);
   lua_CFunction f = func->getLightFunction();
@@ -222,7 +213,7 @@ int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
 
   {
     ScopedMemChecker c;
-    CallInfo* ci = next_ci(L);  /* now 'enter' new function */
+    CallInfo* ci = L->stack_.nextCallinfo();  /* now 'enter' new function */
     ci->nresults = nresults;
     ci->setFunc( restorestack(L, funcr) );
     ci->setTop( L->stack_.top_ + LUA_MINSTACK );
@@ -245,7 +236,7 @@ int luaD_precallC(lua_State* L, StkId func, int nresults) {
 
   {
     ScopedMemChecker c;
-    CallInfo* ci = next_ci(L);  /* now 'enter' new function */
+    CallInfo* ci = L->stack_.nextCallinfo();  /* now 'enter' new function */
     ci->nresults = nresults;
     ci->setFunc(restorestack(L, funcr));
     ci->setTop(L->stack_.top_ + LUA_MINSTACK);
@@ -275,7 +266,7 @@ int luaD_precallLua(lua_State* L, StkId func, int nresults) {
   CallInfo* ci = NULL;
   {
     ScopedMemChecker c;
-    ci = next_ci(L);  /* now 'enter' new function */
+    ci = L->stack_.nextCallinfo();  /* now 'enter' new function */
     ci->nresults = nresults;
     ci->setFunc(func);
     ci->setBase(base);
@@ -393,7 +384,7 @@ static void unroll (lua_State *L, void *ud) {
   THREAD_CHECK(L);
   UNUSED(ud);
   for (;;) {
-    if (L->stack_.callinfo_ == &L->stack_.callinfo_head_)  /* stack is empty? */
+    if (L->stack_.callinfoEmpty())  /* stack is empty? */
       return;  /* coroutine finished normally */
     if (!isLua(L->stack_.callinfo_))  /* C function? */
       finishCcall(L);
@@ -464,11 +455,10 @@ static l_noret resume_error (lua_State *L, const char *msg, StkId firstArg) {
 static void resume (lua_State *L, void *ud) {
   THREAD_CHECK(L);
   StkId firstArg = cast(StkId, ud);
-  CallInfo *ci = L->stack_.callinfo_;
   if (L->nCcalls >= LUAI_MAXCCALLS)
     resume_error(L, "C stack overflow", firstArg);
   if (L->status == LUA_OK) {  /* may be starting a coroutine */
-    if (ci != &L->stack_.callinfo_head_)  /* not in base level? */
+    if (L->stack_.callinfo_ != &L->stack_.callinfo_head_)  /* not in base level? */
       resume_error(L, "cannot resume non-suspended coroutine", firstArg);
     /* coroutine is in base level; start running it */
     if (!luaD_precall(L, firstArg - 1, LUA_MULTRET))  /* Lua function? */
@@ -478,15 +468,15 @@ static void resume (lua_State *L, void *ud) {
     resume_error(L, "cannot resume dead coroutine", firstArg);
   else {  /* resuming from previous yield */
     L->status = LUA_OK;
-    if (isLua(ci))  /* yielded inside a hook? */
+    if (isLua(L->stack_.callinfo_))  /* yielded inside a hook? */
       luaV_execute(L);  /* just continue running Lua code */
     else {  /* 'common' yield */
-      ci->setFunc(restorestack(L, ci->extra));
-      if (ci->continuation_ != NULL) {  /* does it have a continuation? */
+      L->stack_.callinfo_->setFunc(restorestack(L, L->stack_.callinfo_->extra));
+      if (L->stack_.callinfo_->continuation_ != NULL) {  /* does it have a continuation? */
         int n;
-        ci->status = LUA_YIELD;  /* 'default' status */
-        ci->callstatus |= CIST_YIELDED;
-        n = (*ci->continuation_)(L);  /* call continuation */
+        L->stack_.callinfo_->status = LUA_YIELD;  /* 'default' status */
+        L->stack_.callinfo_->callstatus |= CIST_YIELDED;
+        n = (*L->stack_.callinfo_->continuation_)(L);  /* call continuation */
         L->stack_.checkArgs(n);
         firstArg = L->stack_.top_ - n;  /* yield results come from continuation */
       }

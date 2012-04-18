@@ -24,29 +24,14 @@
 using std::auto_ptr;
 
 UpVal *luaF_findupval (StkId level) {
-  global_State *g = thread_G;
-  LuaObject **pp = &thread_L->stack_.open_upvals_;
-  UpVal *p;
-  UpVal *uv;
-  while (*pp != NULL && (p = dynamic_cast<UpVal*>(*pp))->v >= level) {
-    assert(p->v != &p->value);
-    if (p->v == level) {  /* found a corresponding upvalue? */
-      if (p->isDead())  /* is it dead? */
-        p->makeLive();  /* resurrect it */
-      return p;
-    }
-    p->clearOld();  /* may create a newer upval after this one */
-    pp = &(p->next_);
+  UpVal* p = thread_L->stack_.createUpvalFor(level);
+  // Resurrect the upvalue if necessary.
+  // TODO(aappleby): The upval is supposedly on the stack, how in the heck
+  // could it be dead?
+  if (p->isDead()) {
+    p->makeLive();
   }
-  /* not found: create a new one */
-  uv = new UpVal(pp);
-  uv->v = level;  /* current value lives in the stack */
-  uv->uprev = &g->uvhead;  /* double link it in `uvhead' list */
-  uv->unext = g->uvhead.unext;
-  uv->unext->uprev = uv;
-  g->uvhead.unext = uv;
-  assert(uv->unext->uprev == uv && uv->uprev->unext == uv);
-  return uv;
+  return p;
 }
 
 void luaF_close (StkId level) {

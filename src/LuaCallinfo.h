@@ -10,25 +10,6 @@ class LuaStack;
 class CallInfo : public LuaBase {
 public:
 
-  CallInfo(LuaStack* stack) {
-    func_index_ = 0;
-    top_index_ = 0;
-    previous = NULL;
-    next = NULL;
-    nresults = 0;
-    callstatus = 0;
-    base_index_ = 0;
-    savedpc = NULL;
-    ctx = 0;
-    continuation_ = NULL;
-    old_errfunc = 0;
-    extra = 0;
-    old_allowhook = 0;
-    status = 0;
-    stack_ = stack;
-  }
-  ~CallInfo() {}
-
   const StkId getFunc() const;
   void  setFunc(StkId func);
   const StkId getTop() const;
@@ -54,6 +35,27 @@ public:
   uint8_t status;
 
 protected:
+
+  CallInfo() {
+    stack_ = NULL;
+    func_index_ = 0;
+    top_index_ = 0;
+    previous = NULL;
+    next = NULL;
+    nresults = 0;
+    callstatus = 0;
+    base_index_ = 0;
+    savedpc = NULL;
+    ctx = 0;
+    continuation_ = NULL;
+    old_errfunc = 0;
+    extra = 0;
+    old_allowhook = 0;
+    status = 0;
+  }
+  ~CallInfo() {}
+
+  friend class LuaStack;
 
   LuaStack* stack_;
 

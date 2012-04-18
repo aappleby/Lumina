@@ -40,18 +40,6 @@
 #define MEMERRMSG       "not enough memory"
 
 
-CallInfo *luaE_extendCI (lua_State *L) {
-  THREAD_CHECK(L);
-  CallInfo *ci = new CallInfo(&L->stack_);
-  if(ci == NULL) luaD_throw(LUA_ERRMEM);
-  assert(L->stack_.callinfo_->next == NULL);
-  L->stack_.callinfo_->next = ci;
-  ci->previous = L->stack_.callinfo_;
-  ci->next = NULL;
-  return ci;
-}
-
-
 /*
 ** Create registry table and its predefined values
 */

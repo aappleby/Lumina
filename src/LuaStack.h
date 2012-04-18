@@ -9,7 +9,8 @@
 class LuaStack : public LuaVector<TValue> {
 public:
 
-  LuaStack() : callinfo_head_(this) {
+  LuaStack() {
+    callinfo_head_.stack_ = this;
     top_ = NULL;
     callinfo_ = &callinfo_head_;
     open_upvals_ = NULL;
@@ -25,7 +26,12 @@ public:
 
   //----------
 
-  StkId getTop() { return top_; }
+  TValue* getTop() { return top_; }
+  void    setTop(TValue* newtop) { top_ = newtop; }
+
+  int  getTopIndex();
+  void setTopIndex(int index);
+
 
   TValue at(int index);
 
@@ -40,12 +46,20 @@ public:
   void   pop(int count);
   void   remove(int index);
 
-  int  getTopIndex();
-  void setTopIndex(int index);
+  void checkArgs(int count);
 
   //----------
 
-  void checkArgs(int count);
+  CallInfo* nextCallinfo();
+  void sweepCallinfo();
+  bool callinfoEmpty() {
+    return callinfo_ == &callinfo_head_;
+  }
+
+  //----------
+  // Upvalue support
+
+  UpVal* createUpvalFor(StkId level);
 
   //----------
 
@@ -58,12 +72,15 @@ public:
   //----------
 
   TValue* top_;
-  CallInfo callinfo_head_;  /* CallInfo for first level (C calling Lua) */
   CallInfo* callinfo_;  /* call info for current function */
 
   LuaObject *open_upvals_;  /* list of open upvalues in this stack */
 
+  CallInfo callinfo_head_;  /* CallInfo for first level (C calling Lua) */
+
 protected:
+
+  CallInfo* extendCallinfo();
 
   int countInUse();
   void realloc(int newsize);

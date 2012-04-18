@@ -297,3 +297,62 @@ void LuaStack::checkArgs(int count) {
 }
 
 //------------------------------------------------------------------------------
+
+CallInfo* LuaStack::extendCallinfo() {
+  CallInfo *ci = new CallInfo();
+  if(ci == NULL) luaD_throw(LUA_ERRMEM);
+
+  ci->stack_ = this;
+  assert(callinfo_->next == NULL);
+  callinfo_->next = ci;
+  ci->previous = callinfo_;
+  ci->next = NULL;
+  return ci;
+}
+
+CallInfo* LuaStack::nextCallinfo() {
+  if(callinfo_->next == NULL) {
+    callinfo_ = extendCallinfo();
+  } else {
+    callinfo_ = callinfo_->next;
+  }
+  return callinfo_;
+}
+
+void LuaStack::sweepCallinfo() {
+  CallInfo *ci = callinfo_;
+  CallInfo *next = ci->next;
+  ci->next = NULL;
+  while ((ci = next) != NULL) {
+    next = ci->next;
+    delete ci;
+  }
+}
+
+//------------------------------------------------------------------------------
+
+UpVal* LuaStack::createUpvalFor(StkId level) {
+  LuaObject **pp = &open_upvals_;
+  UpVal *p;
+  UpVal *uv;
+  while (*pp != NULL && (p = dynamic_cast<UpVal*>(*pp))->v >= level) {
+    assert(p->v != &p->value);
+    if (p->v == level) return p;
+    p->clearOld();  /* may create a newer upval after this one */
+    pp = &(p->next_);
+  }
+  /* not found: create a new one */
+  uv = new UpVal(pp);
+  uv->v = level;  /* current value lives in the stack */
+
+  // TODO(aappleby): Is there any way to break this dependency on the global state?  
+  uv->uprev = &thread_G->uvhead;  /* double link it in `uvhead' list */
+  uv->unext = thread_G->uvhead.unext;
+  uv->unext->uprev = uv;
+  thread_G->uvhead.unext = uv;
+
+  assert(uv->unext->uprev == uv && uv->uprev->unext == uv);
+  return uv;
+}
+
+//------------------------------------------------------------------------------
