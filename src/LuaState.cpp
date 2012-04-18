@@ -8,7 +8,6 @@
 #include <algorithm>
 
 l_noret luaG_runerror (const char *fmt, ...);
-void luaC_checkupvalcolor (global_State *g, UpVal *uv);
 
 lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
   assert(l_memcontrol.limitDisabled);
@@ -28,35 +27,9 @@ lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
 
 lua_State::~lua_State() {
   if(!stack_.empty()) {
-    closeUpvals(stack_.begin());
+    stack_.closeUpvals(stack_.begin());
   }
   stack_.free();
-}
-
-void lua_State::closeUpvals(StkId level) {
-  UpVal *uv;
-
-  while (stack_.open_upvals_ != NULL) {
-    uv = dynamic_cast<UpVal*>(stack_.open_upvals_);
-    if(uv->v < level) break;
-
-    assert(!uv->isBlack() && uv->v != &uv->value);
-    stack_.open_upvals_ = uv->next_;  /* remove from `open' list */
-
-    if (uv->isDead())
-      delete uv;
-    else {
-      uv->unlink();  /* remove upvalue from 'uvhead' list */
-
-      uv->value = *uv->v;  /* move value to upvalue slot */
-      uv->v = &uv->value;  /* now current value lives here */
-      
-      uv->next_ = thread_G->allgc;  /* link upvalue into 'allgc' list */
-      thread_G->allgc = uv;
-
-      luaC_checkupvalcolor(thread_G, uv);
-    }
-  }
 }
 
 //-----------------------------------------------------------------------------

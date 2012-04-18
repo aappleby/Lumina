@@ -123,7 +123,8 @@ static void close_state (lua_State *L) {
 
   thread_G->isShuttingDown = true;
 
-  luaF_close(L->stack_.begin());  /* close all upvalues for this thread */
+  // close all upvalues for this thread
+  L->stack_.closeUpvals(L->stack_.begin());
 
   // TODO(aappleby): grayagain_ and grayhead_ still have objects in them during destruction?
   thread_G->grayhead_.Clear();

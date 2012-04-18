@@ -52,17 +52,6 @@
 
 
 
-/*
-** Possible states of the Garbage Collector
-*/
-#define GCSpropagate	0
-#define GCSatomic	1
-#define GCSsweepstring	2
-#define GCSsweepudata	3
-#define GCSsweep	4
-#define GCSpause	5
-
-
 #define issweepphase(g) (GCSsweepstring <= (g)->gcstate && (g)->gcstate <= GCSsweep)
 
 #define isgenerational(g)	(g->gckind == KGC_GEN)
@@ -96,7 +85,6 @@ void luaC_barrierback(LuaObject *o, TValue v);
 
 void luaC_barrierproto (Proto *p, Closure *c);
 void luaC_checkfinalizer (LuaObject *o, Table *mt);
-void luaC_checkupvalcolor (global_State *g, UpVal *uv);
 void luaC_changemode (lua_State *L, int mode);
 
 #endif

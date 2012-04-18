@@ -5,6 +5,23 @@
 #include "LuaUpval.h" // for uvhead
 #include "LuaValue.h" // for l_registry
 
+/* kinds of Garbage Collection */
+#define KGC_NORMAL	0
+#define KGC_EMERGENCY	1	/* gc was forced by an allocation failure */
+#define KGC_GEN		2	/* generational collection */
+
+
+/*
+** Possible states of the Garbage Collector
+*/
+#define GCSpropagate	0
+#define GCSatomic	1
+#define GCSsweepstring	2
+#define GCSsweepudata	3
+#define GCSsweep	4
+#define GCSpause	5
+
+
 /*
 ** `global state', shared by all threads of this state
 */
@@ -19,10 +36,36 @@ public:
     return totalbytes_;
   }
 
+  /*
+  ** macro to tell when main invariant (white objects cannot point to black
+  ** ones) must be kept. During a non-generational collection, the sweep
+  ** phase may break the invariant, as objects turned white may point to
+  ** still-black objects. The invariant is restored when sweep ends and
+  ** all objects are white again. During a generational collection, the
+  ** invariant must be kept all times.
+  */
+
+  //----------
+
+  bool isSweepPhase() {
+    return (GCSsweepstring <= gcstate) && (gcstate <= GCSsweep);
+  }
+
+  bool keepInvariant() {
+    return (gckind == KGC_GEN) || (gcstate <= GCSatomic);
+  }
+
+  void markValue(TValue* v);
+  void markObject(LuaObject* o);
+
+  //----------
+
   void incTotalBytes(int size);
   void setGCDebt(size_t debt);
   int  getGCDebt() { return (int)GCdebt_; }
   void incGCDebt(int debt);
+
+  //----------
 
   stringtable* strings_;  /* hash table for strings */
 

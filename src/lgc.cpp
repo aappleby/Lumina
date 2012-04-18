@@ -132,27 +132,6 @@ void luaC_barrierproto (Proto *p, Closure *c) {
 }
 
 
-/*
-** check color (and invariants) for an upvalue that was closed,
-** i.e., moved into the 'allgc' list
-*/
-void luaC_checkupvalcolor (global_State *g, UpVal *uv) {
-  // open upvalues are never black
-  assert(!uv->isBlack());
-
-  if (uv->isGray()) {
-    if (keepinvariant(g)) {
-      uv->clearOld();  /* see MOVE OLD rule */
-      uv->grayToBlack();  /* it is being visited now */
-      markvalue(uv->v);
-    }
-    else {
-      assert(issweepphase(g));
-      uv->makeLive();
-    }
-  }
-}
-
 /* }====================================================== */
 
 

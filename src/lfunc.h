@@ -13,8 +13,6 @@
 
 UpVal* luaF_findupval (StkId level);
 
-void luaF_close       (StkId level);
-
 const char *luaF_getlocalname (const Proto *func, int local_number, int pc);
 
 

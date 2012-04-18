@@ -34,34 +34,6 @@ UpVal *luaF_findupval (StkId level) {
   return p;
 }
 
-void luaF_close (StkId level) {
-  UpVal *uv;
-  lua_State* L = thread_L;
-
-  while (L->stack_.open_upvals_ != NULL) {
-    uv = dynamic_cast<UpVal*>(L->stack_.open_upvals_);
-    if(uv->v < level) break;
-
-    assert(!uv->isBlack() && uv->v != &uv->value);
-    L->stack_.open_upvals_ = uv->next_;  /* remove from `open' list */
-
-    if (uv->isDead())
-      delete uv;
-    else {
-      uv->unlink();  /* remove upvalue from 'uvhead' list */
-
-      uv->value = *uv->v;  /* move value to upvalue slot */
-      uv->v = &uv->value;  /* now current value lives here */
-      
-      uv->next_ = thread_G->allgc;  /* link upvalue into 'allgc' list */
-      thread_G->allgc = uv;
-
-      luaC_checkupvalcolor(thread_G, uv);
-    }
-  }
-}
-
-
 /*
 ** Look for n-th local variable at line `line' in function `func'.
 ** Returns NULL if not found.

@@ -355,6 +355,47 @@ UpVal* LuaStack::createUpvalFor(StkId level) {
   return uv;
 }
 
+void LuaStack::closeUpvals(StkId level) {
+  UpVal *uv;
+
+  while (open_upvals_ != NULL) {
+    uv = dynamic_cast<UpVal*>(open_upvals_);
+    if(uv->v < level) break;
+
+    assert(!uv->isBlack() && uv->v != &uv->value);
+    open_upvals_ = uv->next_;  /* remove from `open' list */
+
+    if (uv->isDead())
+      delete uv;
+    else {
+      uv->unlink();  /* remove upvalue from 'uvhead' list */
+
+      uv->value = *uv->v;  /* move value to upvalue slot */
+      uv->v = &uv->value;  /* now current value lives here */
+      
+      uv->next_ = thread_G->allgc;  /* link upvalue into 'allgc' list */
+      thread_G->allgc = uv;
+
+      // check color (and invariants) for an upvalue that was closed,
+      // i.e., moved into the 'allgc' list
+      // open upvalues are never black
+      assert(!uv->isBlack());
+
+      if (uv->isGray()) {
+        if (thread_G->keepInvariant()) {
+          uv->clearOld();  /* see MOVE OLD rule */
+          uv->grayToBlack();  /* it is being visited now */
+          thread_G->markValue(uv->v);
+        }
+        else {
+          assert(thread_G->isSweepPhase());
+          uv->makeLive();
+        }
+      }
+    }
+  }
+}
+
 //------------------------------------------------------------------------------
 
 void LuaStack::sanityCheck() {

@@ -417,7 +417,7 @@ static int recover (lua_State *L, int status) {
   if (ci == NULL) return 0;  /* no recovery point */
   /* "finish" luaD_pcall */
   oldtop = restorestack(L, ci->extra);
-  luaF_close(oldtop);
+  L->stack_.closeUpvals(oldtop);
   seterrorobj(L, status, oldtop);
   L->stack_.callinfo_ = ci;
   L->allowhook = ci->old_allowhook;
@@ -559,7 +559,7 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
     l_memcontrol.disableLimit();
 
     StkId oldtop = restorestack(L, old_top);
-    luaF_close(oldtop);  /* close possible pending closures */
+    L->stack_.closeUpvals(oldtop);  /* close possible pending closures */
     seterrorobj(L, status, oldtop);
     L->stack_.callinfo_ = old_ci;
     L->allowhook = old_allowhooks;

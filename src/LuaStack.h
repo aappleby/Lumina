@@ -60,6 +60,7 @@ public:
   // Upvalue support
 
   UpVal* createUpvalFor(StkId level);
+  void closeUpvals(StkId level);
 
   //----------
 

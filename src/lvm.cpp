@@ -996,7 +996,7 @@ void luaV_execute (lua_State *L) {
       case OP_JMP:
         {
           if (A > 0) {
-            luaF_close(&base[A-1]);
+            L->stack_.closeUpvals(&base[A-1]);
           }
           ci->savedpc += GETARG_sBx(i);
           break;
@@ -1093,7 +1093,7 @@ void luaV_execute (lua_State *L) {
             /* last stack slot filled by 'precall' */
             StkId lim = nci->getBase() + nfunc->getLClosure()->proto_->numparams;
             /* close all upvalues from previous call */
-            if (cl->proto_->subprotos_.size() > 0) luaF_close(oci->getBase());
+            if (cl->proto_->subprotos_.size() > 0) L->stack_.closeUpvals(oci->getBase());
             /* move new frame into old one */
             for (int aux = 0; nfunc + aux < lim; aux++) {
               ofunc[aux] = nfunc[aux];
@@ -1115,7 +1115,7 @@ void luaV_execute (lua_State *L) {
         {
           int b = GETARG_B(i);
           if (b != 0) L->stack_.top_ = ra+b-1;
-          if (cl->proto_->subprotos_.size() > 0) luaF_close(base);
+          if (cl->proto_->subprotos_.size() > 0) L->stack_.closeUpvals(base);
           b = luaD_postcall(L, ra);
           if (!(ci->callstatus & CIST_REENTRY)) {  /* 'ci' still the called one */
             return;  /* external invocation: return */

@@ -39,11 +39,6 @@
 
 
 
-/* kinds of Garbage Collection */
-#define KGC_NORMAL	0
-#define KGC_EMERGENCY	1	/* gc was forced by an allocation failure */
-#define KGC_GEN		2	/* generational collection */
-
 
 
 /*
