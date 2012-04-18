@@ -6,7 +6,6 @@
 /* chain list of long jump buffers */
 struct lua_longjmp {
   lua_longjmp *previous;
-  int b;
   volatile int status;  /* error code */
 };
 

@@ -38,19 +38,6 @@
 ** =======================================================
 */
 
-/*
-** LUAI_THROW/LUAI_TRY define how Lua does exception handling. By
-** default, Lua handles errors with exceptions when compiling as
-** C++ code, with _longjmp/_setjmp when asked to use them, and with
-** longjmp/setjmp otherwise.
-*/
-/* C++ exceptions */
-#define LUAI_THROW(L,c)		throw(c)
-#define LUAI_TRY(L,c,a) \
-	try { a } catch(...) { if ((c)->status == 0) (c)->status = -1; }
-
-
-
 static void seterrorobj (lua_State *L, int errcode, StkId oldtop) {
   THREAD_CHECK(L);
   switch (errcode) {
@@ -73,33 +60,38 @@ static void seterrorobj (lua_State *L, int errcode, StkId oldtop) {
 
 l_noret luaD_throw (int errcode) {
 
+  // Throwing errors while we're in the middle of constructing an object
+  // is forbidden, as that can break things badly in C++.
   if(l_memcontrol.limitDisabled) {
+    assert(false);
     printf("xxx");
   }
 
+  // If the current thread has an error handler, throw the error here.
   lua_State* L = thread_L;
-  if (L->errorJmp) {  // thread has an error handler?
-    L->errorJmp->status = errcode;  // set status
-    LUAI_THROW(L, L->errorJmp);  // jump to it
+  if (L->errorJmp) {
+    L->errorJmp->status = errcode;
+    throw(L->errorJmp);
   }
-  else {  // thread has no error handler
-    L->status = cast_byte(errcode);  // mark it as dead
-    if (thread_G->mainthread->errorJmp) {  // main thread has a handler?
-      thread_G->mainthread->stack_.push(L->stack_.top_[-1]);  // copy error obj.
-      {
-        THREAD_CHANGE(G(L)->mainthread);
-        luaD_throw(errcode);  /* re-throw in main thread */
-      }
-    }
-    else {  /* no handler at all; abort */
-      if (G(L)->panic) {  /* panic function? */
-        G(L)->panic(L);  /* call it (last chance to jump out) */
-      }
-      abort();
-    }
-  }
-}
 
+  // Current thread has no error handler - kill the thread and try to throw
+  // the error in the main thread.
+
+  L->status = cast_byte(errcode);
+  if (thread_G->mainthread->errorJmp) {
+    thread_G->mainthread->stack_.push(L->stack_.top_[-1]);
+    {
+      THREAD_CHANGE(G(L)->mainthread);
+      luaD_throw(errcode);  /* re-throw in main thread */
+    }
+  }
+  
+  // Otherwise, there's an error and there are no handlers anywhere - panic!
+  if (G(L)->panic) {  /* panic function? */
+    G(L)->panic(L);  /* call it (last chance to jump out) */
+  }
+  abort();
+}
 
 int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
   THREAD_CHECK(L);
@@ -128,23 +120,34 @@ void luaD_hook (lua_State *L, int event, int line) {
   lua_Hook hook = L->hook;
   if (hook && L->allowhook) {
     CallInfo *ci = L->stack_.callinfo_;
-    ptrdiff_t top = savestack(L, L->stack_.top_);
-    ptrdiff_t ci_top = savestack(L, ci->getTop());
+
     lua_Debug ar;
     ar.event = event;
     ar.currentline = line;
     ar.i_ci = ci;
-    L->stack_.reserve(LUA_MINSTACK);  /* ensure minimum stack size */
+
+    // Save the stack and callinfo tops.
+    ptrdiff_t top = savestack(L, L->stack_.top_);
+    ptrdiff_t ci_top = savestack(L, ci->getTop());
+    
+    // Make sure the stack can hold enough values for a C call
+    L->stack_.reserve(LUA_MINSTACK);
     ci->setTop( L->stack_.top_ + LUA_MINSTACK );
     assert(ci->getTop() <= L->stack_.last());
-    L->allowhook = 0;  /* cannot call hooks inside a hook */
+
+    // Disable hooks, run the hook callback, reenable hooks.
+    L->allowhook = 0;
     ci->callstatus |= CIST_HOOKED;
+
     (*hook)(L, &ar);
     assert(!L->allowhook);
+
     L->allowhook = 1;
+    ci->callstatus &= ~CIST_HOOKED;
+
+    // Clean up - restore the callinfo & stack tops.
     ci->setTop( restorestack(L, ci_top) );
     L->stack_.top_ = restorestack(L, top);
-    ci->callstatus &= ~CIST_HOOKED;
   }
 }
 
@@ -162,26 +165,6 @@ static void callhook (lua_State *L, CallInfo *ci) {
   ci->savedpc--;  /* correct 'pc' */
 }
 
-
-void movestack(int start, int count, int dest) {
-  lua_State *L = thread_L;
-  for (int i=0; i < count; i++) {
-    L->stack_.top_[dest + i] = L->stack_.top_[start + i];
-    L->stack_.top_[start + i].clear();
-  }
-}
-
-static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
-  THREAD_CHECK(L);
-  assert(actual >= p->numparams);
-  
-  movestack(-actual, p->numparams, 0);
-
-  StkId oldtop = L->stack_.top_;
-  L->stack_.top_ += p->numparams;
-  
-  return oldtop;
-}
 
 
 static StkId tryfuncTM (lua_State *L, StkId func) {
@@ -240,13 +223,26 @@ int luaD_precallLua(lua_State* L, StkId func, int nresults) {
   L->stack_.reserve(p->maxstacksize);
   func = restorestack(L, funcr);
 
-  int n = cast_int(L->stack_.top_ - func) - 1;  /* number of real arguments */
-  for (; n < p->numparams; n++) {
+  int nargs = cast_int(L->stack_.top_ - func) - 1;  /* number of real arguments */
+  for (; nargs < p->numparams; nargs++) {
     L->stack_.push_nocheck(TValue::Nil());  /* complete missing arguments */
   }
 
-  StkId base = (!p->is_vararg) ? func + 1 : adjust_varargs(L, p, n);
+  StkId base = func + 1;
+  
+  if(p->is_vararg) {
+
+    for (int i=0; i < p->numparams; i++) {
+      L->stack_.top_[i] = L->stack_.top_[i - nargs];
+      L->stack_.top_[i - nargs].clear();
+    }
+
+    base = L->stack_.top_;
+    L->stack_.top_ += p->numparams;
+  }
+
   CallInfo* ci = NULL;
+
   {
     ScopedMemChecker c;
     ci = L->stack_.nextCallinfo();  /* now 'enter' new function */
@@ -255,8 +251,7 @@ int luaD_precallLua(lua_State* L, StkId func, int nresults) {
     ci->setBase(base);
     ci->setTop(base + p->maxstacksize);
     assert(ci->getTop() <= L->stack_.last());
-    //ci->savedpc = p->code;  /* starting point */
-    ci->savedpc = &p->code[0];
+    ci->savedpc = p->code.begin();
     ci->callstatus = CIST_LUA;
     L->stack_.top_ = ci->getTop();
   }
