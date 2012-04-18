@@ -356,3 +356,26 @@ UpVal* LuaStack::createUpvalFor(StkId level) {
 }
 
 //------------------------------------------------------------------------------
+
+void LuaStack::sanityCheck() {
+
+  // All open upvals must be open and must be non-black.
+  for (LuaObject* uvo = open_upvals_; uvo != NULL; uvo = uvo->next_) {
+    UpVal *uv = dynamic_cast<UpVal*>(uvo);
+    assert(uv->v != &uv->value);
+    assert(!uvo->isBlack());
+  }
+
+  for (CallInfo* ci = callinfo_; ci != NULL; ci = ci->previous) {
+    assert(ci->getTop() <= last());
+    ci->sanityCheck();
+  }
+
+  for(int i = 0; i < (int)size(); i++) {
+    TValue* v = &buf_[i];
+    if(v == top_) break;
+    v->sanityCheck();
+  }
+}
+
+//------------------------------------------------------------------------------

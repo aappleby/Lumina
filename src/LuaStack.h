@@ -70,6 +70,11 @@ public:
   void reserve(int newsize);
 
   //----------
+  // Utilities
+
+  void sanityCheck();
+
+  //----------
 
   TValue* top_;
   CallInfo* callinfo_;  /* call info for current function */

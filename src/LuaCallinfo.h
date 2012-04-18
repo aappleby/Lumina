@@ -1,5 +1,7 @@
 #pragma once
+
 #include "LuaBase.h"
+#include "LuaDefines.h"
 #include "LuaTypes.h"
 
 class LuaStack;
@@ -9,6 +11,12 @@ class LuaStack;
 */
 class CallInfo : public LuaBase {
 public:
+
+  void sanityCheck();
+
+  bool isLua() const {
+    return callstatus & CIST_LUA ? true : false;
+  }
 
   const StkId getFunc() const;
   void  setFunc(StkId func);

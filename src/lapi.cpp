@@ -944,7 +944,7 @@ void lua_callk (lua_State *L, int nargs, int nresults, int ctx,
                         lua_CFunction k) {
   THREAD_CHECK(L);
   StkId func;
-  api_check(k == NULL || !isLua(L->stack_.callinfo_),
+  api_check(k == NULL || !L->stack_.callinfo_->isLua(),
     "cannot use continuations inside hooks");
   L->stack_.checkArgs(nargs+1);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
@@ -983,7 +983,7 @@ int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
   struct CallS c;
   int status;
   ptrdiff_t func;
-  api_check(k == NULL || !isLua(L->stack_.callinfo_),
+  api_check(k == NULL || !L->stack_.callinfo_->isLua(),
     "cannot use continuations inside hooks");
   L->stack_.checkArgs(nargs+1);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");

@@ -154,7 +154,7 @@ static void callhook (lua_State *L, CallInfo *ci) {
   THREAD_CHECK(L);
   int hook = LUA_HOOKCALL;
   ci->savedpc++;  /* hooks assume 'pc' is already incremented */
-  if (isLua(ci->previous) &&
+  if (ci->previous->isLua() &&
       GET_OPCODE(*(ci->previous->savedpc - 1)) == OP_TAILCALL) {
     ci->callstatus |= CIST_TAIL;
     hook = LUA_HOOKTAILCALL;
@@ -386,7 +386,7 @@ static void unroll (lua_State *L, void *ud) {
   for (;;) {
     if (L->stack_.callinfoEmpty())  /* stack is empty? */
       return;  /* coroutine finished normally */
-    if (!isLua(L->stack_.callinfo_))  /* C function? */
+    if (!L->stack_.callinfo_->isLua())  /* C function? */
       finishCcall(L);
     else {  /* Lua function */
       luaV_finishOp(L);  /* finish interrupted instruction */
@@ -468,7 +468,7 @@ static void resume (lua_State *L, void *ud) {
     resume_error(L, "cannot resume dead coroutine", firstArg);
   else {  /* resuming from previous yield */
     L->status = LUA_OK;
-    if (isLua(L->stack_.callinfo_))  /* yielded inside a hook? */
+    if (L->stack_.callinfo_->isLua())  /* yielded inside a hook? */
       luaV_execute(L);  /* just continue running Lua code */
     else {  /* 'common' yield */
       L->stack_.callinfo_->setFunc(restorestack(L, L->stack_.callinfo_->extra));
@@ -528,7 +528,7 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
       luaG_runerror("attempt to yield from outside a coroutine");
   }
   L->status = LUA_YIELD;
-  if (isLua(ci)) {  /* inside a hook? */
+  if (ci->isLua()) {  /* inside a hook? */
     api_check(k == NULL, "hooks cannot continue after yielding");
   }
   else {

@@ -19,9 +19,6 @@ struct lua_longjmp;  /* defined in ldo.c */
 
 
 
-#define isLua(ci)	((ci)->callstatus & CIST_LUA)
-
-
 #define G(L)	(L->l_G)
 
 #include "LuaObject.h"

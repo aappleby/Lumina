@@ -177,42 +177,6 @@ static void checkLClosure (global_State *g, Closure *cl) {
   }
 }
 
-
-typedef CallInfo* pCallInfo;
-
-static int lua_checkpc (pCallInfo ci) {
-  if (!isLua(ci)) return 1;
-  else {
-    Proto *p = ci->getFunc()->getLClosure()->proto_;
-    return &p->code[0] <= ci->savedpc &&
-           ci->savedpc <= &p->code[0] + p->code.size();
-  }
-}
-
-
-static void test_checkstack (global_State *g, lua_State *L1) {
-  StkId o;
-  CallInfo *ci;
-  LuaObject *uvo;
-  assert(!L1->isDead());
-  for (uvo = L1->stack_.open_upvals_; uvo != NULL; uvo = uvo->next_) {
-    UpVal *uv = dynamic_cast<UpVal*>(uvo);
-    assert(uv->v != &uv->value);  /* must be open */
-    assert(!uvo->isBlack());  /* open upvalues cannot be black */
-  }
-  for (ci = L1->stack_.callinfo_; ci != NULL; ci = ci->previous) {
-    assert(ci->getTop() <= L1->stack_.last());
-    assert(lua_checkpc(ci));
-  }
-  if (L1->stack_.size()) {
-    for (o = L1->stack_.begin(); o < L1->stack_.top_; o++) {
-      o->sanityCheck();
-    }
-  }
-  else assert(L1->stack_.empty());
-}
-
-
 static void checkobject (global_State *g, LuaObject *o) {
   if (o->isDead()) {
     assert(issweepphase(g));
@@ -243,7 +207,8 @@ static void checkobject (global_State *g, LuaObject *o) {
   }
 
   if(o->isThread()) {
-    test_checkstack(g, dynamic_cast<lua_State*>(o));
+    lua_State* l = dynamic_cast<lua_State*>(o);
+    l->sanityCheck();
     return;
   }
 
@@ -320,7 +285,7 @@ int lua_checkmemory (lua_State *L) {
     assert(!g->l_registry.getObject()->isWhite());
   }
   assert(!g->l_registry.getObject()->isDead());
-  test_checkstack(g, g->mainthread);
+  g->mainthread->sanityCheck();
   g->mainthread->clearTestGray();
   /* check 'allgc' list */
   markgrays(g);

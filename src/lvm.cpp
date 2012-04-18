@@ -101,7 +101,7 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
   }
   L->stack_.reserve(0);
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->stack_.top_ - (4 - hasres), hasres, isLua(L->stack_.callinfo_));
+  luaD_call(L, L->stack_.top_ - (4 - hasres), hasres, L->stack_.callinfo_->isLua());
   if (hasres) {  /* if has result, move it to its place */
     p3 = restorestack(L, result);
     *p3 = L->stack_.pop();
@@ -119,7 +119,7 @@ static void callTM3 (lua_State *L,
   L->stack_.push_nocheck(p2); // 2nd argument
   L->stack_.reserve(0);
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->stack_.top_ - 3, 1, isLua(L->stack_.callinfo_));
+  luaD_call(L, L->stack_.top_ - 3, 1, L->stack_.callinfo_->isLua());
   result = L->stack_.pop();
 }
 
@@ -136,7 +136,7 @@ static void callTM0 (lua_State *L,
   L->stack_.push_nocheck(*arg3);
   L->stack_.reserve(0);
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->stack_.top_ - 4, 0, isLua(L->stack_.callinfo_));
+  luaD_call(L, L->stack_.top_ - 4, 0, L->stack_.callinfo_->isLua());
 }
 
 static void callTM1 (lua_State *L,
@@ -151,7 +151,7 @@ static void callTM1 (lua_State *L,
   L->stack_.push_nocheck(arg3);
   L->stack_.reserve(0);
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->stack_.top_ - 4, 0, isLua(L->stack_.callinfo_));
+  luaD_call(L, L->stack_.top_ - 4, 0, L->stack_.callinfo_->isLua());
 }
 
 LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outResult) {
@@ -1123,7 +1123,7 @@ void luaV_execute (lua_State *L) {
           else {  /* invocation via reentry: continue execution */
             ci = L->stack_.callinfo_;
             if (b) L->stack_.top_ = ci->getTop();
-            assert(isLua(ci));
+            assert(ci->isLua());
             assert(GET_OPCODE(*((ci)->savedpc - 1)) == OP_CALL);
             goto newframe;  /* restart luaV_execute over new Lua function */
           }

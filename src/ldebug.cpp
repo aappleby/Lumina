@@ -36,7 +36,7 @@ static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name);
 
 
 static int currentpc (CallInfo *ci) {
-  assert(isLua(ci));
+  assert(ci->isLua());
   return pcRel(ci->savedpc, ci->getFunc()->getLClosure()->proto_);
 }
 
@@ -55,7 +55,7 @@ int lua_sethook (lua_State *L, lua_Hook func, int mask, int count) {
     mask = 0;
     func = NULL;
   }
-  if (isLua(L->stack_.callinfo_))
+  if (L->stack_.callinfo_->isLua())
     L->oldpc = L->stack_.callinfo_->savedpc;
   L->hook = func;
   L->basehookcount = count;
@@ -122,7 +122,7 @@ static const char *findlocal (lua_State *L, CallInfo *ci, int n,
   THREAD_CHECK(L);
   const char *name = NULL;
   StkId base;
-  if (isLua(ci)) {
+  if (ci->isLua()) {
     if (n < 0)  /* access to vararg values? */
       return findvararg(ci, -n, pos);
     else {
@@ -233,7 +233,7 @@ static int auxgetinfo (lua_State *L, const char *what, lua_Debug *ar,
         break;
       }
       case 'l': {
-        ar->currentline = (ci && isLua(ci)) ? currentline(ci) : -1;
+        ar->currentline = (ci && ci->isLua()) ? currentline(ci) : -1;
         break;
       }
       case 'u': {
@@ -254,7 +254,7 @@ static int auxgetinfo (lua_State *L, const char *what, lua_Debug *ar,
       }
       case 'n': {
         /* calling function is a known Lua function? */
-        if (ci && !(ci->callstatus & CIST_TAIL) && isLua(ci->previous))
+        if (ci && !(ci->callstatus & CIST_TAIL) && ci->previous->isLua())
           ar->namewhat = getfuncname(L, ci->previous, &ar->name);
         else
           ar->namewhat = NULL;
@@ -518,7 +518,7 @@ l_noret luaG_typeerror (const TValue *o, const char *op) {
   const char *name = NULL;
   const char *t = objtypename(o);
   const char *kind = NULL;
-  if (isLua(ci)) {
+  if (ci->isLua()) {
     kind = getupvalname(ci, o, &name);  /* check whether 'o' is an upvalue */
     if (!kind && isinstack(ci, o)) {
       /* no? try a register */
@@ -553,7 +553,7 @@ l_noret luaG_ordererror (const TValue *p1, const TValue *p2) {
 static void addinfo (const char *msg) {
   lua_State* L = thread_L;
   CallInfo *ci = L->stack_.callinfo_;
-  if (isLua(ci)) {  /* is Lua code? */
+  if (ci->isLua()) {  /* is Lua code? */
     char buff[LUA_IDSIZE];  /* add file:line information */
     int line = currentline(ci);
     TString *src = ci->getFunc()->getLClosure()->proto_->source;
