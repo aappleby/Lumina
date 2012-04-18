@@ -34,6 +34,9 @@ public:
   virtual void VisitGC(GCVisitor& visitor);
   virtual int  PropagateGC(GCVisitor& visitor);
 
+  const char* getLocalName(int local_number, int pc) const;
+  const char* getUpvalName(int upval_number) const;
+
   LuaVector<TValue> constants;
   LuaVector<Instruction> code;
   LuaVector<int> lineinfo;

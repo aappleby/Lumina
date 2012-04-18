@@ -337,7 +337,15 @@ UpVal* LuaStack::createUpvalFor(StkId level) {
   UpVal *uv;
   while (*pp != NULL && (p = dynamic_cast<UpVal*>(*pp))->v >= level) {
     assert(p->v != &p->value);
-    if (p->v == level) return p;
+    if (p->v == level) {
+      // Resurrect the upvalue if necessary.
+      // TODO(aappleby): The upval is supposedly on the stack, how in the heck
+      // could it be dead?
+      if (p->isDead()) {
+        p->makeLive();
+      }
+      return p;
+    }
     p->clearOld();  /* may create a newer upval after this one */
     pp = &(p->next_);
   }
@@ -394,6 +402,33 @@ void LuaStack::closeUpvals(StkId level) {
       }
     }
   }
+}
+
+//------------------------------------------------------------------------------
+
+CallInfo* LuaStack::findProtectedCall() {
+  CallInfo *ci;
+  for (ci = callinfo_; ci != NULL; ci = ci->previous) {  /* search for a pcall */
+    if (ci->callstatus & CIST_YPCALL)
+      return ci;
+  }
+  return NULL;  /* no pending pcall */
+}
+
+void LuaStack::createCCall(StkId func, int nresults, int nstack)
+{
+  // ensure minimum stack size
+  ptrdiff_t func_index = func - begin();
+  reserve(nstack);
+  func = begin() + func_index;
+
+  ScopedMemChecker c;
+  CallInfo* ci = nextCallinfo();  /* now 'enter' new function */
+  ci->nresults = nresults;
+  ci->setFunc(func);
+  ci->setTop(top_ + nstack);
+  assert(ci->getTop() <= last());
+  ci->callstatus = 0;
 }
 
 //------------------------------------------------------------------------------

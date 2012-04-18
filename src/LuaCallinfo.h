@@ -27,6 +27,7 @@ public:
 
   CallInfo* previous;
   CallInfo* next;  /* dynamic call link */
+
   short nresults;  /* expected number of results from this function */
   uint8_t callstatus;
 

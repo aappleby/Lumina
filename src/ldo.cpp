@@ -20,7 +20,6 @@
 #include "lapi.h"
 #include "ldebug.h"
 #include "ldo.h"
-#include "lfunc.h"
 #include "lgc.h"
 #include "lmem.h"
 #include "lobject.h"
@@ -207,62 +206,46 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
 
 
 int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
-  ptrdiff_t funcr = savestack(L, func);
   lua_CFunction f = func->getLightFunction();
-  L->stack_.reserve(LUA_MINSTACK);  /* ensure minimum stack size */
 
-  {
-    ScopedMemChecker c;
-    CallInfo* ci = L->stack_.nextCallinfo();  /* now 'enter' new function */
-    ci->nresults = nresults;
-    ci->setFunc( restorestack(L, funcr) );
-    ci->setTop( L->stack_.top_ + LUA_MINSTACK );
-    assert(ci->getTop() <= L->stack_.last());
-    ci->callstatus = 0;
-  }
+  L->stack_.createCCall(func, nresults, LUA_MINSTACK);
 
-  if (L->hookmask & LUA_MASKCALL)
-    luaD_hook(L, LUA_HOOKCALL, -1);
+  if (L->hookmask & LUA_MASKCALL) luaD_hook(L, LUA_HOOKCALL, -1);
   int n = (*f)(L);  /* do the actual call */
+
   L->stack_.checkArgs(n);
+
   luaD_postcall(L, L->stack_.top_ - n);
   return 1;
 }
 
 int luaD_precallC(lua_State* L, StkId func, int nresults) {
-  ptrdiff_t funcr = savestack(L, func);
   lua_CFunction f = func->getCClosure()->cfunction_;
-  L->stack_.reserve(LUA_MINSTACK);  /* ensure minimum stack size */
 
-  {
-    ScopedMemChecker c;
-    CallInfo* ci = L->stack_.nextCallinfo();  /* now 'enter' new function */
-    ci->nresults = nresults;
-    ci->setFunc(restorestack(L, funcr));
-    ci->setTop(L->stack_.top_ + LUA_MINSTACK);
-    assert(ci->getTop() <= L->stack_.last());
-    ci->callstatus = 0;
-    if (L->hookmask & LUA_MASKCALL)
-      luaD_hook(L, LUA_HOOKCALL, -1);
-  }
+  L->stack_.createCCall(func, nresults, LUA_MINSTACK);
 
+  if (L->hookmask & LUA_MASKCALL) luaD_hook(L, LUA_HOOKCALL, -1);
   int n = (*f)(L);  /* do the actual call */
+
   L->stack_.checkArgs(n);
+
   luaD_postcall(L, L->stack_.top_ - n);
   return 1;
 }
 
 int luaD_precallLua(lua_State* L, StkId func, int nresults) {
-  ptrdiff_t funcr = savestack(L, func);
-  StkId base;
   Proto *p = func->getLClosure()->proto_;
+
+  ptrdiff_t funcr = savestack(L, func);
   L->stack_.reserve(p->maxstacksize);
   func = restorestack(L, funcr);
+
   int n = cast_int(L->stack_.top_ - func) - 1;  /* number of real arguments */
   for (; n < p->numparams; n++) {
     L->stack_.push_nocheck(TValue::Nil());  /* complete missing arguments */
   }
-  base = (!p->is_vararg) ? func + 1 : adjust_varargs(L, p, n);
+
+  StkId base = (!p->is_vararg) ? func + 1 : adjust_varargs(L, p, n);
   CallInfo* ci = NULL;
   {
     ScopedMemChecker c;
@@ -277,8 +260,8 @@ int luaD_precallLua(lua_State* L, StkId func, int nresults) {
     ci->callstatus = CIST_LUA;
     L->stack_.top_ = ci->getTop();
   }
-  if (L->hookmask & LUA_MASKCALL)
-    callhook(L, ci);
+
+  if (L->hookmask & LUA_MASKCALL) callhook(L, ci);
   return 0;
 }
 
@@ -295,7 +278,6 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
     // Not a function.
     default:
       {
-        ptrdiff_t funcr = savestack(L, func);
         func = tryfuncTM(L, func);  /* retry with 'function' tag method */
         return luaD_precall(L, func, nresults);  /* now it must be a function */
       }
@@ -396,24 +378,10 @@ static void unroll (lua_State *L, void *ud) {
 }
 
 
-/*
-** check whether thread has a suspended protected call
-*/
-static CallInfo *findpcall (lua_State *L) {
-  THREAD_CHECK(L);
-  CallInfo *ci;
-  for (ci = L->stack_.callinfo_; ci != NULL; ci = ci->previous) {  /* search for a pcall */
-    if (ci->callstatus & CIST_YPCALL)
-      return ci;
-  }
-  return NULL;  /* no pending pcall */
-}
-
-
 static int recover (lua_State *L, int status) {
   THREAD_CHECK(L);
   StkId oldtop;
-  CallInfo *ci = findpcall(L);
+  CallInfo *ci = L->stack_.findProtectedCall();
   if (ci == NULL) return 0;  /* no recovery point */
   /* "finish" luaD_pcall */
   oldtop = restorestack(L, ci->extra);

@@ -56,6 +56,10 @@ public:
     return callinfo_ == &callinfo_head_;
   }
 
+  CallInfo* findProtectedCall();
+
+  void createCCall(StkId func, int nresults, int nstack);
+
   //----------
   // Upvalue support
 

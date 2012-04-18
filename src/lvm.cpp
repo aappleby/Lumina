@@ -20,7 +20,6 @@
 
 #include "ldebug.h"
 #include "ldo.h"
-#include "lfunc.h"
 #include "lgc.h"
 #include "lobject.h"
 #include "lopcodes.h"
@@ -597,7 +596,7 @@ static void pushclosure (lua_State *L,
   for (int i = 0; i < (int)p->upvalues.size(); i++) {  /* fill in its upvalues */
     if (p->upvalues[i].instack) {
       /* upvalue refers to local variable? */
-      ncl->ppupvals_[i] = luaF_findupval(base + p->upvalues[i].idx);
+      ncl->ppupvals_[i] = thread_L->stack_.createUpvalFor(base + p->upvalues[i].idx);
     }
     else {
       /* get upvalue from enclosing function */

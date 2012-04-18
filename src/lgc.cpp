@@ -16,7 +16,6 @@
 
 #include "ldebug.h"
 #include "ldo.h"
-#include "lfunc.h"
 #include "lgc.h"
 #include "lmem.h"
 #include "lobject.h"

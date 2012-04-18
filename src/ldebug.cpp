@@ -22,7 +22,6 @@
 #include "lcode.h"
 #include "ldebug.h"
 #include "ldo.h"
-#include "lfunc.h"
 #include "lobject.h"
 #include "lopcodes.h"
 #include "lstate.h"
@@ -99,13 +98,6 @@ int lua_getstack (lua_State *L, int level, lua_Debug *ar) {
 }
 
 
-static const char *upvalname (Proto *p, int uv) {
-  TString *s = check_exp(uv < (int)p->upvalues.size(), p->upvalues[uv].name);
-  if (s == NULL) return "?";
-  else return s->c_str();
-}
-
-
 static const char *findvararg (CallInfo *ci, int n, StkId *pos) {
   int nparams = ci->getFunc()->getLClosure()->proto_->numparams;
   if (n >= ci->getBase() - ci->getFunc() - nparams)
@@ -127,7 +119,7 @@ static const char *findlocal (lua_State *L, CallInfo *ci, int n,
       return findvararg(ci, -n, pos);
     else {
       base = ci->getBase();
-      name = luaF_getlocalname(ci->getFunc()->getLClosure()->proto_, n, currentpc(ci));
+      name = ci->getFunc()->getLClosure()->proto_->getLocalName(n, currentpc(ci));
     }
   }
   else
@@ -151,7 +143,7 @@ const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n) {
     if (!L->stack_.top_[-1].isLClosure())  /* not a Lua function? */
       name = NULL;
     else  /* consider live variables at function start (parameters) */
-      name = luaF_getlocalname(L->stack_.top_[-1].getLClosure()->proto_, n, 0);
+      name = L->stack_.top_[-1].getLClosure()->proto_->getLocalName(n, 0);
   }
   else {  /* active function; get information through 'ar' */
     StkId pos = 0;  /* to avoid warnings */
@@ -392,7 +384,7 @@ static int findsetreg (Proto *p, int lastpc, int reg) {
 static const char *getobjname (Proto *p, int lastpc, int reg,
                                const char **name) {
   int pc;
-  *name = luaF_getlocalname(p, reg + 1, lastpc);
+  *name = p->getLocalName(reg + 1, lastpc);
   if (*name)  /* is a local? */
     return "local";
   /* else try symbolic execution */
@@ -412,13 +404,13 @@ static const char *getobjname (Proto *p, int lastpc, int reg,
         int k = GETARG_C(i);  /* key index */
         int t = GETARG_B(i);  /* table index */
         const char *vn = (op == OP_GETTABLE)  /* name of indexed variable */
-                         ? luaF_getlocalname(p, t + 1, pc)
-                         : upvalname(p, t);
+                         ? p->getLocalName(t + 1, pc)
+                         : p->getUpvalName(t);
         kname(p, pc, k, name);
         return (vn && strcmp(vn, LUA_ENV) == 0) ? "global" : "field";
       }
       case OP_GETUPVAL: {
-        *name = upvalname(p, GETARG_B(i));
+        *name = p->getUpvalName(GETARG_B(i));
         return "upvalue";
       }
       case OP_LOADK:
@@ -492,19 +484,19 @@ static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name) {
 */
 static int isinstack (CallInfo *ci, const TValue *o) {
   StkId p;
-  for (p = ci->getBase(); p < ci->getTop(); p++)
+  for (p = ci->getBase(); p < ci->getTop(); p++) {
     if (o == p) return 1;
+  }
   return 0;
 }
 
 
-static const char *getupvalname (CallInfo *ci, const TValue *o,
-                                 const char **name) {
+static const char *getupvalname (CallInfo *ci, const TValue *o, const char **name) {
   Closure *c = ci->getFunc()->getLClosure();
   int i;
   for (i = 0; i < c->nupvalues; i++) {
     if (c->ppupvals_[i]->v == o) {
-      *name = upvalname(c->proto_, i);
+      *name = c->proto_->getUpvalName(i);
       return "upvalue";
     }
   }

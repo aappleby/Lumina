@@ -55,3 +55,23 @@ int Proto::PropagateGC(GCVisitor& visitor) {
          (int)subprotos_.size() +
          (int)locvars.size();
 }
+
+const char* Proto::getLocalName(int local_number, int pc) const {
+  for (int i = 0; i<(int)locvars.size() && locvars[i].startpc <= pc; i++) {
+    if (pc < locvars[i].endpc) {  /* is variable active? */
+      local_number--;
+      if (local_number == 0)
+        return locvars[i].varname->c_str();
+    }
+  }
+  return NULL;  /* not found */
+}
+
+const char* Proto::getUpvalName(int upval_number) const {
+  assert(upval_number < (int)upvalues.size());
+  TString *s = upvalues[upval_number].name;
+  if (s == NULL) return "?";
+  else return s->c_str();
+}
+
+

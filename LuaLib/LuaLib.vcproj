@@ -643,14 +643,6 @@
 			Name="_Done"
 			>
 			<File
-				RelativePath="..\src\lfunc.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\lfunc.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\lstring.cpp"
 				>
 			</File>
