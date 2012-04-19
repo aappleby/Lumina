@@ -942,20 +942,23 @@ int lua_getctx (lua_State *L, int *ctx) {
 void lua_callk (lua_State *L, int nargs, int nresults, int ctx,
                         lua_CFunction k) {
   THREAD_CHECK(L);
-  StkId func;
-  api_check(k == NULL || !L->stack_.callinfo_->isLua(),
-    "cannot use continuations inside hooks");
-  L->stack_.checkArgs(nargs+1);
+  api_check(k == NULL || !L->stack_.callinfo_->isLua(), "cannot use continuations inside hooks");
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
+
+  L->stack_.checkArgs(nargs+1);
   checkresults(L, nargs, nresults);
-  func = L->stack_.top_ - (nargs+1);
+
   if (k != NULL && L->nonyieldable_count_ == 0) {  /* need to prepare continuation? */
     L->stack_.callinfo_->continuation_ = k;  /* save continuation */
     L->stack_.callinfo_->ctx = ctx;  /* save context */
+    StkId func = L->stack_.top_ - (nargs+1);
     luaD_call(L, func, nresults, 1);  /* do the call */
   }
-  else  /* no continuation or no yieldable */
+  else {
+    /* no continuation or no yieldable */
+    StkId func = L->stack_.top_ - (nargs+1);
     luaD_call(L, func, nresults, 0);  /* just do the call */
+  }
   adjustresults(L, nresults);
 }
 
@@ -975,12 +978,34 @@ static void f_call (lua_State *L, void *ud) {
   luaD_call(L, c->func, c->nresults, 0);
 }
 
+int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc) {
+  THREAD_CHECK(L);
+
+  struct CallS c;
+  ptrdiff_t func;
+  L->stack_.checkArgs(nargs+1);
+  api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
+  checkresults(L, nargs, nresults);
+  if (errfunc == 0)
+    func = 0;
+  else {
+    StkId o = index2addr_checked(L, errfunc);
+    func = savestack(L, o);
+  }
+  c.func = L->stack_.top_ - (nargs+1);  /* function to be called */
+  c.nresults = nresults;  /* do a 'conventional' protected call */
+
+  int status = luaD_pcall(L, f_call, &c, savestack(L, c.func), func);
+
+  adjustresults(L, nresults);
+  return status;
+}
+
 int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
                         int ctx, lua_CFunction k) {
   THREAD_CHECK(L);
 
   struct CallS c;
-  int status;
   ptrdiff_t func;
   api_check(k == NULL || !L->stack_.callinfo_->isLua(),
     "cannot use continuations inside hooks");
@@ -994,9 +1019,12 @@ int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
     func = savestack(L, o);
   }
   c.func = L->stack_.top_ - (nargs+1);  /* function to be called */
+
   if (k == NULL || L->nonyieldable_count_ > 0) {  /* no continuation or no yieldable? */
     c.nresults = nresults;  /* do a 'conventional' protected call */
-    status = luaD_pcall(L, f_call, &c, savestack(L, c.func), func);
+    int status = luaD_pcall(L, f_call, &c, savestack(L, c.func), func);
+    adjustresults(L, nresults);
+    return status;
   }
   else {  /* prepare continuation (call is already protected by 'resume') */
     CallInfo *ci = L->stack_.callinfo_;
@@ -1009,13 +1037,15 @@ int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
     L->errfunc = func;
     /* mark that function may do error recovery */
     ci->callstatus |= CIST_YPCALL;
+
     luaD_call(L, c.func, nresults, 1);  /* do the call */
+
     ci->callstatus &= ~CIST_YPCALL;
     L->errfunc = ci->old_errfunc;
-    status = LUA_OK;  /* if it is here, there were no errors */
+
+    adjustresults(L, nresults);
+    return LUA_OK;
   }
-  adjustresults(L, nresults);
-  return status;
 }
 
 

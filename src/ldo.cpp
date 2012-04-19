@@ -315,18 +315,21 @@ void luaD_call (lua_State *L, StkId func, int nResults, int allowyield) {
 static void finishCcall (lua_State *L) {
   THREAD_CHECK(L);
   CallInfo *ci = L->stack_.callinfo_;
-  int n;
   assert(ci->continuation_ != NULL);  /* must have a continuation */
   assert(L->nonyieldable_count_ == 0);
   /* finish 'luaD_call' */
   /* finish 'lua_callk' */
   adjustresults(L, ci->nresults);
   /* call continuation function */
-  if (!(ci->callstatus & CIST_STAT))  /* no call status? */
+  if (!(ci->callstatus & CIST_STAT)) {
+    /* no call status? */
     ci->status = LUA_YIELD;  /* 'default' status */
+  }
   assert(ci->status != LUA_OK);
   ci->callstatus = (ci->callstatus & ~(CIST_YPCALL | CIST_STAT)) | CIST_YIELDED;
-  n = (*ci->continuation_)(L);
+  
+  int n = (*ci->continuation_)(L);
+
   L->stack_.checkArgs(n);
   /* finish 'luaD_precall' */
   luaD_postcall(L, L->stack_.top_ - n);
@@ -406,30 +409,38 @@ static void resume (lua_State *L, void *ud) {
     if (!luaD_precall(L, firstArg - 1, LUA_MULTRET)) {
       luaV_execute(L);
     }
+    return;
   }
-  else if (L->status != LUA_YIELD) {
+
+  if (L->status != LUA_YIELD) {
     resume_error(L, "cannot resume dead coroutine", firstArg);
+    return;
   }
-  else {  /* resuming from previous yield */
-    L->status = LUA_OK;
-    if (L->stack_.callinfo_->isLua())  /* yielded inside a hook? */
-      luaV_execute(L);  /* just continue running Lua code */
-    else {  /* 'common' yield */
-      L->stack_.callinfo_->setFunc(restorestack(L, L->stack_.callinfo_->extra));
-      if (L->stack_.callinfo_->continuation_ != NULL) {  /* does it have a continuation? */
-        int n;
-        L->stack_.callinfo_->status = LUA_YIELD;  /* 'default' status */
-        L->stack_.callinfo_->callstatus |= CIST_YIELDED;
-        n = (*L->stack_.callinfo_->continuation_)(L);  /* call continuation */
-        L->stack_.checkArgs(n);
-        firstArg = L->stack_.top_ - n;  /* yield results come from continuation */
-      }
-      /* finish 'luaD_call' */
-      /* finish 'luaD_precall' */
-      luaD_postcall(L, firstArg);  
-    }
+
+  /* resuming from previous yield */
+  L->status = LUA_OK;
+
+  if (L->stack_.callinfo_->isLua()) {
+    /* yielded inside a hook? */
+    luaV_execute(L);  /* just continue running Lua code */
     unroll(L, NULL);
+    return;
   }
+
+  // 'common' yield
+  L->stack_.callinfo_->setFunc(restorestack(L, L->stack_.callinfo_->extra));
+  if (L->stack_.callinfo_->continuation_ != NULL) {  /* does it have a continuation? */
+    int n;
+    L->stack_.callinfo_->status = LUA_YIELD;  /* 'default' status */
+    L->stack_.callinfo_->callstatus |= CIST_YIELDED;
+    n = (*L->stack_.callinfo_->continuation_)(L);  /* call continuation */
+    L->stack_.checkArgs(n);
+    firstArg = L->stack_.top_ - n;  /* yield results come from continuation */
+  }
+  /* finish 'luaD_call' */
+  /* finish 'luaD_precall' */
+  luaD_postcall(L, firstArg);  
+  unroll(L, NULL);
 }
 
 
@@ -478,6 +489,31 @@ int lua_resume (lua_State *L, lua_State *from, int nargs) {
 }
 
 
+int lua_yield (lua_State *L, int nresults) {
+  THREAD_CHECK(L);
+  CallInfo *ci = L->stack_.callinfo_;
+  L->stack_.checkArgs(nresults);
+  if (L->nonyieldable_count_ > 0) {
+    if (L != G(L)->mainthread)
+      luaG_runerror("attempt to yield across metamethod/C-call boundary");
+    else
+      luaG_runerror("attempt to yield from outside a coroutine");
+  }
+
+  L->status = LUA_YIELD;
+
+  if (ci->isLua()) {  /* inside a hook? */
+  }
+  else {
+    ci->continuation_ = NULL;
+    ci->extra = savestack(L, ci->getFunc());  /* save current 'func' */
+    ci->setFunc(L->stack_.top_ - nresults - 1);  /* protect stack below results */
+    luaD_throw(LUA_YIELD);
+  }
+  assert(ci->callstatus & CIST_HOOKED);  /* must be inside a hook */
+  return 0;  /* return to 'luaD_hook' */
+}
+
 int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   THREAD_CHECK(L);
   CallInfo *ci = L->stack_.callinfo_;
@@ -488,7 +524,9 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
     else
       luaG_runerror("attempt to yield from outside a coroutine");
   }
+
   L->status = LUA_YIELD;
+
   if (ci->isLua()) {  /* inside a hook? */
     api_check(k == NULL, "hooks cannot continue after yielding");
   }

@@ -182,7 +182,9 @@ int   (lua_getctx) (lua_State *L, int *ctx);
 
 int   (lua_pcallk) (lua_State *L, int nargs, int nresults, int errfunc,
                             int ctx, lua_CFunction k);
-#define lua_pcall(L,n,r,f)	lua_pcallk(L, (n), (r), (f), 0, NULL)
+
+int   (lua_pcall) (lua_State *L, int nargs, int nresults, int errfunc);
+//#define lua_pcall(L,n,r,f)	lua_pcallk(L, (n), (r), (f), 0, NULL)
 
 int   (lua_load) (lua_State *L, lua_Reader reader, void *dt,
                                         const char *chunkname,
@@ -196,7 +198,10 @@ int (lua_dump) (lua_State *L, lua_Writer writer, void *data);
 */
 int  (lua_yieldk) (lua_State *L, int nresults, int ctx,
                            lua_CFunction k);
-#define lua_yield(L,n)		lua_yieldk(L, (n), 0, NULL)
+
+int  (lua_yield)  (lua_State *L, int nresults);
+
+//#define lua_yield(L,n)		lua_yieldk(L, (n), 0, NULL)
 int  (lua_resume) (lua_State *L, lua_State *from, int narg);
 int  (lua_status) (lua_State *L);
 
