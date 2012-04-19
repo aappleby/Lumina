@@ -9,20 +9,30 @@
 
 l_noret luaG_runerror (const char *fmt, ...);
 
+//-----------------------------------------------------------------------------
+
+ScopedCallDepth::ScopedCallDepth(lua_State* state) : state_(state) {
+  state_->l_G->call_depth_++;
+}
+
+ScopedCallDepth::~ScopedCallDepth() {
+  state_->l_G->call_depth_--;
+}
+
+//-----------------------------------------------------------------------------
+
 lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
   assert(l_memcontrol.limitDisabled);
   status = 0;
   l_G = NULL;
   oldpc = NULL;
   nonyieldable_count_ = 0;
-  nCcalls = 0;
   hookmask = 0;
   allowhook = 0;
   basehookcount = 0;
   hookcount = 0;
   hook = NULL;
   errfunc = 0;
-  handler_count_ = 0;
 }
 
 lua_State::~lua_State() {

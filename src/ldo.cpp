@@ -72,7 +72,6 @@ l_noret luaD_throw (int errcode) {
 
 int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
   THREAD_CHECK(L);
-  unsigned short oldnCcalls = L->nCcalls;
 
   int result = LUA_OK;
 
@@ -84,7 +83,6 @@ int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
     result = error;
   }
 
-  L->nCcalls = oldnCcalls;
   return result;
 }
 
@@ -162,36 +160,49 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
 }
 
 
-
-int luaD_precallLightC(lua_State* L, StkId func, int nresults) {
+void luaD_precallLightC(lua_State* L, StkId func, int nresults) {
   lua_CFunction f = func->getLightFunction();
 
   L->stack_.createCCall(func, nresults, LUA_MINSTACK);
 
   if (L->hookmask & LUA_MASKCALL) luaD_hook(L, LUA_HOOKCALL, -1);
+
+  ScopedCallDepth d(L);
+  if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
+    luaG_runerror("C stack overflow");
+  } else if (L->l_G->call_depth_ >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3))) {
+    luaD_throw(LUA_ERRERR);
+  }
+
   int n = (*f)(L);  /* do the actual call */
 
   L->stack_.checkArgs(n);
 
   luaD_postcall(L, L->stack_.top_ - n);
-  return 1;
 }
 
-int luaD_precallC(lua_State* L, StkId func, int nresults) {
+void luaD_precallC(lua_State* L, StkId func, int nresults) {
   lua_CFunction f = func->getCClosure()->cfunction_;
 
   L->stack_.createCCall(func, nresults, LUA_MINSTACK);
 
   if (L->hookmask & LUA_MASKCALL) luaD_hook(L, LUA_HOOKCALL, -1);
+
+  ScopedCallDepth d(L);
+  if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
+    luaG_runerror("C stack overflow");
+  } else if (L->l_G->call_depth_ >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3))) {
+    luaD_throw(LUA_ERRERR);
+  }
+
   int n = (*f)(L);  /* do the actual call */
 
   L->stack_.checkArgs(n);
 
   luaD_postcall(L, L->stack_.top_ - n);
-  return 1;
 }
 
-int luaD_precallLua(lua_State* L, StkId func, int nresults) {
+void luaD_precallLua(lua_State* L, StkId func, int nresults) {
   Proto *p = func->getLClosure()->proto_;
 
   ptrdiff_t funcr = savestack(L, func);
@@ -232,7 +243,6 @@ int luaD_precallLua(lua_State* L, StkId func, int nresults) {
   }
 
   if (L->hookmask & LUA_MASKCALL) callhook(L, ci);
-  return 0;
 }
 
 /*
@@ -241,9 +251,21 @@ int luaD_precallLua(lua_State* L, StkId func, int nresults) {
 int luaD_precall (lua_State *L, StkId func, int nresults) {
   THREAD_CHECK(L);
   switch (func->type()) {
-    case LUA_TLCF: return luaD_precallLightC(L,func,nresults);
-    case LUA_TCCL: return luaD_precallC(L,func,nresults);
-    case LUA_TLCL: return luaD_precallLua(L,func,nresults);
+    case LUA_TLCF:
+      {
+        luaD_precallLightC(L,func,nresults);
+        return 1;
+      }
+    case LUA_TCCL:
+      {
+        luaD_precallC(L,func,nresults);
+        return 1;
+      }
+    case LUA_TLCL:
+      {
+        luaD_precallLua(L,func,nresults);
+        return 0;
+      }
     
     // Not a function.
     default:
@@ -295,17 +317,13 @@ int luaD_postcall (lua_State *L, StkId firstResult) {
 */
 void luaD_call (lua_State *L, StkId func, int nResults, int allowyield) {
   THREAD_CHECK(L);
-  if (++L->nCcalls >= LUAI_MAXCCALLS) {
-    if (L->nCcalls == LUAI_MAXCCALLS)
-      luaG_runerror("C stack overflow");
-    else if (L->nCcalls >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3)))
-      luaD_throw(LUA_ERRERR);  /* error while handing stack error */
-  }
+
   if (!allowyield) L->nonyieldable_count_++;
-  if (!luaD_precall(L, func, nResults))  /* is a Lua function? */
+  if (!luaD_precall(L, func, nResults)) {
+    /* is a Lua function? */
     luaV_execute(L);  /* call it */
+  }
   if (!allowyield) L->nonyieldable_count_--;
-  L->nCcalls--;
   luaC_checkGC();
 }
 
@@ -317,7 +335,6 @@ static void finishCcall (lua_State *L) {
   assert(ci->continuation_ != NULL);  /* must have a continuation */
   assert(L->nonyieldable_count_ == 0);
   /* finish 'luaD_call' */
-  L->nCcalls--;
   /* finish 'lua_callk' */
   adjustresults(L, ci->nresults);
   /* call continuation function */
@@ -393,8 +410,7 @@ static l_noret resume_error (lua_State *L, const char *msg, StkId firstArg) {
 static void resume (lua_State *L, void *ud) {
   THREAD_CHECK(L);
   StkId firstArg = cast(StkId, ud);
-  if (L->nCcalls >= LUAI_MAXCCALLS)
-    resume_error(L, "C stack overflow", firstArg);
+
   if (L->status == LUA_OK) {  /* may be starting a coroutine */
     if (L->stack_.callinfo_ != &L->stack_.callinfo_head_)  /* not in base level? */
       resume_error(L, "cannot resume non-suspended coroutine", firstArg);
@@ -418,8 +434,9 @@ static void resume (lua_State *L, void *ud) {
         L->stack_.checkArgs(n);
         firstArg = L->stack_.top_ - n;  /* yield results come from continuation */
       }
-      L->nCcalls--;  /* finish 'luaD_call' */
-      luaD_postcall(L, firstArg);  /* finish 'luaD_precall' */
+      /* finish 'luaD_call' */
+      /* finish 'luaD_precall' */
+      luaD_postcall(L, firstArg);  
     }
     unroll(L, NULL);
   }
@@ -429,7 +446,6 @@ static void resume (lua_State *L, void *ud) {
 int lua_resume (lua_State *L, lua_State *from, int nargs) {
   THREAD_CHECK(L);
   int status;
-  L->nCcalls = (from) ? from->nCcalls + 1 : 1;
   L->nonyieldable_count_ = 0;  /* allow yields */
   L->stack_.checkArgs((L->status == LUA_OK) ? nargs + 1 : nargs);
   status = luaD_rawrunprotected(L, resume, L->stack_.top_ - nargs);
@@ -449,8 +465,6 @@ int lua_resume (lua_State *L, lua_State *from, int nargs) {
     assert(status == L->status);
   }
   L->nonyieldable_count_ = 1;  /* do not allow yields */
-  L->nCcalls--;
-  assert(L->nCcalls == ((from) ? from->nCcalls : 0));
   return status;
 }
 

@@ -110,6 +110,8 @@ public:
 
   uint8_t isShuttingDown;
 
+  int call_depth_;
+
   void PushGray(LuaObject* o);
   void PushGrayAgain(LuaObject* o);
   void PushWeak(LuaObject* o);

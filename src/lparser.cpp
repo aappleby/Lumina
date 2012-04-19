@@ -333,15 +333,6 @@ static void adjust_assign (LexState *ls, int nvars, int nexps, expdesc *e) {
 }
 
 
-static void enterlevel (LexState *ls) {
-  lua_State *L = ls->L;
-  ++L->nCcalls;
-  checklimit(ls->fs, L->nCcalls, LUAI_MAXCCALLS, "C levels");
-}
-
-
-#define leavelevel(ls)	((ls)->L->nCcalls--)
-
 
 static void closegoto (LexState *ls, int g, Labeldesc *label) {
   int i;
@@ -1057,19 +1048,25 @@ static const struct {
 ** where `binop' is any binary operator with a priority higher than `limit'
 */
 static BinOpr subexpr (LexState *ls, expdesc *v, int limit) {
-  BinOpr op;
-  UnOpr uop;
-  enterlevel(ls);
-  uop = getunopr(ls->t.token);
+  ScopedCallDepth d(ls->L);
+
+  if (ls->L->l_G->call_depth_ > LUAI_MAXCCALLS) {
+    errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
+  }
+
+  UnOpr uop = getunopr(ls->t.token);
   if (uop != OPR_NOUNOPR) {
     int line = ls->linenumber;
     luaX_next(ls);
     subexpr(ls, v, UNARY_PRIORITY);
     luaK_prefix(ls->fs, uop, v, line);
   }
-  else simpleexp(ls, v);
+  else {
+    simpleexp(ls, v);
+  }
+
   /* expand while operators have priorities higher than `limit' */
-  op = getbinopr(ls->t.token);
+  BinOpr op = getbinopr(ls->t.token);
   while (op != OPR_NOBINOPR && priority[op].left > limit) {
     expdesc v2;
     BinOpr nextop;
@@ -1081,7 +1078,7 @@ static BinOpr subexpr (LexState *ls, expdesc *v, int limit) {
     luaK_posfix(ls->fs, op, v, &v2, line);
     op = nextop;
   }
-  leavelevel(ls);
+
   return op;  /* return first untreated operator */
 }
 
@@ -1164,8 +1161,13 @@ static void assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
     primaryexp(ls, &nv.v);
     if (nv.v.k != VINDEXED)
       check_conflict(ls, lh, &nv.v);
-    checklimit(ls->fs, nvars + ls->L->nCcalls, LUAI_MAXCCALLS,
-                    "C levels");
+
+    // Because this operates recursively, having the left hand side of an expression be
+    // "a,a,a,a,a,.......,a,a = 100" with too many A's could overflow the stack
+    if ((nvars + ls->L->l_G->call_depth_) > LUAI_MAXCCALLS) {
+      errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
+    }
+
     assignment(ls, &nv, nvars+1);
   }
   else {  /* assignment -> `=' explist */
@@ -1541,8 +1543,15 @@ static void retstat (LexState *ls) {
 
 
 static void statement (LexState *ls) {
+  ScopedCallDepth d(ls->L);
+
+  if (ls->L->l_G->call_depth_ > LUAI_MAXCCALLS) {
+    errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
+  }
+
+
   int line = ls->linenumber;  /* may be needed for error messages */
-  enterlevel(ls);
+
   switch (ls->t.token) {
     case ';': {  /* stat -> ';' (empty statement) */
       luaX_next(ls);  /* skip ';' */
@@ -1605,7 +1614,6 @@ static void statement (LexState *ls) {
   assert(ls->fs->f->maxstacksize >= ls->fs->freereg &&
              ls->fs->freereg >= ls->fs->nactvar);
   ls->fs->freereg = ls->fs->nactvar;  /* free registers */
-  leavelevel(ls);
 }
 
 /* }====================================================================== */

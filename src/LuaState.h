@@ -29,17 +29,23 @@ public:
   LuaStack stack_;
 
   unsigned short nonyieldable_count_;  /* number of non-yieldable calls in stack */
-  unsigned short nCcalls;  /* number of nested C calls */
-  
+
   uint8_t hookmask;
   uint8_t allowhook;
   int basehookcount;
   int hookcount;
   lua_Hook hook;
   
-  int handler_count_;
   ptrdiff_t errfunc;  /* current error handling function (stack index) */
 
   void closeUpvals(StkId level);
+};
+
+struct ScopedCallDepth
+{
+  ScopedCallDepth(lua_State* state);
+  ~ScopedCallDepth();
+
+  lua_State* state_;
 };
 
