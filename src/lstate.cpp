@@ -72,49 +72,6 @@ static void init_registry (lua_State *L, global_State *g) {
 }
 
 
-/*
-** open parts of the state that may cause memory-allocation errors
-*/
-static void f_luaopen (lua_State *L, void *) {
-  THREAD_CHECK(L);
-
-  ScopedMemChecker c;
-
-  global_State *g = thread_G;
-  L->stack_.init();  /* init stack */
-  init_registry(L, g);
-
-  luaS_resize(MINSTRTABSIZE);  /* initial size of string table */
-
-  luaT_init();
-  luaX_init(L);
-
-  /* pre-create memory-error message */
-  g->memerrmsg = luaS_newliteral(MEMERRMSG);
-  g->memerrmsg->setFixed();  /* it should never be collected */
-
-  g->gcrunning = 1;  /* allow gc */
-}
-
-
-/*
-** preinitialize a state with consistent values without allocating
-** any memory (to avoid errors)
-*/
-static void preinit_state (lua_State *L, global_State *g) {
-  //THREAD_CHECK(L);
-  L->l_G = g;
-  L->hook = NULL;
-  L->hookmask = 0;
-  L->basehookcount = 0;
-  L->allowhook = 1;
-  L->hookcount = L->basehookcount;
-  L->nonyieldable_count_ = 1;
-  L->status = LUA_OK;
-  L->errfunc = 0;
-}
-
-
 static void close_state (lua_State *L) {
   THREAD_CHECK(L);
 
@@ -161,8 +118,16 @@ lua_State *lua_newthread (lua_State *L) {
     L->stack_.push(TValue(L1));
   }
 
-  preinit_state(L1, thread_G);
-  
+  L1->l_G = thread_G;
+  L1->hook = NULL;
+  L1->hookmask = 0;
+  L1->basehookcount = 0;
+  L1->allowhook = 1;
+  L1->hookcount = L->basehookcount;
+  L1->nonyieldable_count_ = 1;
+  L1->status = LUA_OK;
+  L1->errfunc = 0;
+
   L1->hookmask = L->hookmask;
   L1->basehookcount = L->basehookcount;
   L1->hook = L->hook;
@@ -207,7 +172,17 @@ lua_State *lua_newstate () {
     g->deadcolor = LuaObject::colorB;
     L->makeLive();
     g->gckind = KGC_NORMAL;
-    preinit_state(L, g);
+    
+    L->l_G = g;
+    L->hook = NULL;
+    L->hookmask = 0;
+    L->basehookcount = 0;
+    L->allowhook = 1;
+    L->hookcount = L->basehookcount;
+    L->nonyieldable_count_ = 1;
+    L->status = LUA_OK;
+    L->errfunc = 0;
+    
     g->mainthread = L;
     g->uvhead.uprev = &g->uvhead;
     g->uvhead.unext = &g->uvhead;
@@ -226,8 +201,27 @@ lua_State *lua_newstate () {
     g->gcstepmul = LUAI_GCMUL;
     for (i=0; i < LUA_NUMTAGS; i++) g->base_metatables_[i] = NULL;
 
-    if (luaD_rawrunprotected(L, f_luaopen, NULL) != LUA_OK) {
-      /* memory allocation error: free partial state */
+    try {
+      THREAD_CHECK(L);
+
+      ScopedMemChecker c;
+
+      global_State *g = thread_G;
+      L->stack_.init();  /* init stack */
+      init_registry(L, g);
+
+      luaS_resize(MINSTRTABSIZE);  /* initial size of string table */
+
+      luaT_init();
+      luaX_init(L);
+
+      /* pre-create memory-error message */
+      g->memerrmsg = luaS_newliteral(MEMERRMSG);
+      g->memerrmsg->setFixed();  /* it should never be collected */
+
+      g->gcrunning = 1;  /* allow gc */
+    }
+    catch(...) {
       close_state(L);
       L = NULL;
     }

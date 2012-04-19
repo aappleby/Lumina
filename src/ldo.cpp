@@ -70,22 +70,6 @@ l_noret luaD_throw (int errcode) {
   throw(errcode);
 }
 
-int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
-  THREAD_CHECK(L);
-
-  int result = LUA_OK;
-
-  try {
-    (*f)(L, ud); 
-  }
-  catch(int error) { 
-    THREAD_CHANGE(L);
-    result = error;
-  }
-
-  return result;
-}
-
 /* }====================================================== */
 
 void luaD_hook (lua_State *L, int event, int line) {
@@ -412,14 +396,20 @@ static void resume (lua_State *L, void *ud) {
   StkId firstArg = cast(StkId, ud);
 
   if (L->status == LUA_OK) {  /* may be starting a coroutine */
-    if (L->stack_.callinfo_ != &L->stack_.callinfo_head_)  /* not in base level? */
+    if (L->stack_.callinfo_ != &L->stack_.callinfo_head_) {
+      /* not in base level? */
       resume_error(L, "cannot resume non-suspended coroutine", firstArg);
+    }
+
     /* coroutine is in base level; start running it */
-    if (!luaD_precall(L, firstArg - 1, LUA_MULTRET))  /* Lua function? */
-      luaV_execute(L);  /* call it */
+    // Lua function? call it.
+    if (!luaD_precall(L, firstArg - 1, LUA_MULTRET)) {
+      luaV_execute(L);
+    }
   }
-  else if (L->status != LUA_YIELD)
+  else if (L->status != LUA_YIELD) {
     resume_error(L, "cannot resume dead coroutine", firstArg);
+  }
   else {  /* resuming from previous yield */
     L->status = LUA_OK;
     if (L->stack_.callinfo_->isLua())  /* yielded inside a hook? */
@@ -445,25 +435,44 @@ static void resume (lua_State *L, void *ud) {
 
 int lua_resume (lua_State *L, lua_State *from, int nargs) {
   THREAD_CHECK(L);
-  int status;
   L->nonyieldable_count_ = 0;  /* allow yields */
   L->stack_.checkArgs((L->status == LUA_OK) ? nargs + 1 : nargs);
-  status = luaD_rawrunprotected(L, resume, L->stack_.top_ - nargs);
-  if (status == -1)  /* error calling 'lua_resume'? */
-    status = LUA_ERRRUN;
-  else {  /* yield or regular error */
-    while (status != LUA_OK && status != LUA_YIELD) {  /* error? */
-      if (recover(L, status))  /* recover point? */
-        status = luaD_rawrunprotected(L, unroll, NULL);  /* run continuation */
-      else {  /* unrecoverable error */
-        L->status = cast_byte(status);  /* mark thread as `dead' */
-        seterrorobj(L, status, L->stack_.top_);
-        L->stack_.callinfo_->setTop(L->stack_.top_);
-        break;
+
+  int status = LUA_OK;
+  try {
+    resume(L, L->stack_.top_ - nargs);
+  }
+  catch (int error) {
+    status = error;
+  }
+  
+  // error calling 'lua_resume'?
+  if (status == -1) {
+    /* do not allow yields */
+    L->nonyieldable_count_ = 1;  
+    return LUA_ERRRUN;
+  }
+
+  /* yield or regular error */
+  while (status != LUA_OK && status != LUA_YIELD) {  /* error? */
+    /* recover point? */
+    if (recover(L, status)) {
+      status = LUA_OK;
+      try {
+        unroll(L, NULL);
+      } catch(int error) {
+        status = error;
       }
     }
-    assert(status == L->status);
+    else {  /* unrecoverable error */
+      L->status = cast_byte(status);  /* mark thread as `dead' */
+      seterrorobj(L, status, L->stack_.top_);
+      L->stack_.callinfo_->setTop(L->stack_.top_);
+      break;
+    }
   }
+
+  assert(status == L->status);
   L->nonyieldable_count_ = 1;  /* do not allow yields */
   return status;
 }
@@ -498,13 +507,20 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
 int luaD_pcall (lua_State *L, Pfunc func, void *u,
                 ptrdiff_t old_top, ptrdiff_t ef) {
   THREAD_CHECK(L);
-  int status;
   CallInfo *old_ci = L->stack_.callinfo_;
   uint8_t old_allowhooks = L->allowhook;
   unsigned short old_nny = L->nonyieldable_count_;
   ptrdiff_t old_errfunc = L->errfunc;
   L->errfunc = ef;
-  status = luaD_rawrunprotected(L, func, u);
+
+  int status = LUA_OK;
+  try {
+    func(L, u);
+  }
+  catch(int error) {
+    status = error;
+  }
+
   if (status != LUA_OK) {  /* an error occurred? */
     // Error handling gets an exemption from the memory limit. Not doing so would mean that
     // reporting an out-of-memory error could itself cause another out-of-memory error, ad infinitum.

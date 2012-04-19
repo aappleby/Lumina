@@ -32,7 +32,6 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
 int luaD_postcall (lua_State *L, StkId firstResult);
 
 l_noret luaD_throw (int errcode);
-int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud);
 
 #endif
 
