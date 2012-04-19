@@ -67,29 +67,7 @@ l_noret luaD_throw (int errcode) {
     printf("xxx");
   }
 
-  // If the current thread has an error handler, throw the error here.
-  lua_State* L = thread_L;
-  if (L->handler_count_) {
-    throw(errcode);
-  }
-
-  // Current thread has no error handler - kill the thread and try to throw
-  // the error in the main thread.
-
-  L->status = cast_byte(errcode);
-  if (thread_G->mainthread->handler_count_) {
-    thread_G->mainthread->stack_.push(L->stack_.top_[-1]);
-    {
-      THREAD_CHANGE(G(L)->mainthread);
-      luaD_throw(errcode);  /* re-throw in main thread */
-    }
-  }
-  
-  // Otherwise, there's an error and there are no handlers anywhere - panic!
-  if (G(L)->panic) {  /* panic function? */
-    G(L)->panic(L);  /* call it (last chance to jump out) */
-  }
-  abort();
+  throw(errcode);
 }
 
 int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
@@ -98,16 +76,13 @@ int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
 
   int result = LUA_OK;
 
-  L->handler_count_++;
-
   try {
     (*f)(L, ud); 
   }
   catch(int error) { 
+    THREAD_CHANGE(L);
     result = error;
   }
-
-  L->handler_count_--;
 
   L->nCcalls = oldnCcalls;
   return result;
