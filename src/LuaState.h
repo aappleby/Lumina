@@ -37,7 +37,7 @@ public:
   int hookcount;
   lua_Hook hook;
   
-  lua_longjmp *errorJmp;  /* current error recover point */
+  int handler_count_;
   ptrdiff_t errfunc;  /* current error handling function (stack index) */
 
   void closeUpvals(StkId level);

@@ -104,7 +104,6 @@ static void f_luaopen (lua_State *L, void *) {
 static void preinit_state (lua_State *L, global_State *g) {
   //THREAD_CHECK(L);
   L->l_G = g;
-  L->errorJmp = NULL;
   L->nCcalls = 0;
   L->hook = NULL;
   L->hookmask = 0;

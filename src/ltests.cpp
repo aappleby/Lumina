@@ -1242,13 +1242,8 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       sethookaux(L1, mask, count, tempstring);
     }
     else if EQ("throw") {
-#if defined(__cplusplus)
-static struct X { int x; } x;
-      throw x;
-#else
-      luaL_error(L1, "C++");
-#endif
-      break;
+      int error = 1;
+      throw error;
     }
     else {
       GLOBAL_CHANGE(L);

@@ -14,11 +14,6 @@
 #include "lzio.h"
 
 
-struct lua_longjmp;  /* defined in ldo.c */
-
-
-
-
 #define G(L)	(L->l_G)
 
 #include "LuaObject.h"

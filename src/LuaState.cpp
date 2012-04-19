@@ -21,8 +21,8 @@ lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
   basehookcount = 0;
   hookcount = 0;
   hook = NULL;
-  errorJmp = NULL;
   errfunc = 0;
+  handler_count_ = 0;
 }
 
 lua_State::~lua_State() {
