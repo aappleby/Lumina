@@ -120,29 +120,29 @@ TValue* index2addr_checked(lua_State* L, int idx) {
 }
 
 
-/*
-** to be called by 'lua_checkstack' in protected mode, to grow stack
-** capturing memory errors
-*/
-static void growstack (lua_State *L, void *ud) {
-  THREAD_CHECK(L);
-  int size = *(int *)ud;
-  L->stack_.grow(size);
-}
-
-
 int lua_checkstack (lua_State *L, int size) {
   THREAD_CHECK(L);
-  int res;
+  int res = 1;
   CallInfo *ci = L->stack_.callinfo_;
-  if (L->stack_.last() - L->stack_.top_ > size)  /* stack large enough? */
+  /* stack large enough? */
+  if (L->stack_.last() - L->stack_.top_ > size) {
     res = 1;  /* yes; check is OK */
+  }
   else {  /* no; need to grow stack */
     int inuse = cast_int(L->stack_.top_ - L->stack_.begin()) + EXTRA_STACK;
-    if (inuse > LUAI_MAXSTACK - size)  /* can grow without overflow? */
+    /* can grow without overflow? */
+    if (inuse > LUAI_MAXSTACK - size) {
       res = 0;  /* no */
+    }
     else  /* try to grow stack */
-      res = (luaD_rawrunprotected(L, &growstack, &size) == LUA_OK);
+    {
+      try {
+        L->stack_.grow(size);
+      }
+      catch(...) { 
+        res = 0;
+      }
+    }
   }
   if (res && ci->getTop() < L->stack_.top_ + size) {
     // adjust frame top
