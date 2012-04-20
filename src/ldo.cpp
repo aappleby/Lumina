@@ -582,70 +582,59 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u, ptrdiff_t old_top, ptrdiff_t 
 /*
 ** Execute a protected parser.
 */
-struct SParser {  /* data to `f_parser' */
-  ZIO *z;
-  Mbuffer buff;  /* dynamic structure used by the scanner */
-  Dyndata dyd;  /* dynamic structures used by the parser */
-  const char *mode;
-  const char *name;
-};
-
 
 static void checkmode (lua_State *L, const char *mode, const char *x) {
   THREAD_CHECK(L);
   if (mode && strchr(mode, x[0]) == NULL) {
-    luaO_pushfstring(L,
-       "attempt to load a %s chunk (mode is " LUA_QS ")", x, mode);
+    luaO_pushfstring(L, "attempt to load a %s chunk (mode is " LUA_QS ")", x, mode);
     luaD_throw(LUA_ERRSYNTAX);
   }
 }
 
 
-static void f_parser (lua_State *L, void *ud) {
+int luaD_protectedparser (lua_State *L, ZIO *z, const char *name, const char *mode) {
   THREAD_CHECK(L);
-  int i;
-  Proto *tf;
-  Closure *cl;
-  struct SParser *p = cast(struct SParser *, ud);
-  int c = zgetc(p->z);  /* read first character */
-  if (c == LUA_SIGNATURE[0]) {
-    checkmode(L, p->mode, "binary");
-    tf = luaU_undump(L, p->z, &p->buff, p->name);
-  }
-  else {
-    checkmode(L, p->mode, "text");
-    tf = luaY_parser(L, p->z, &p->buff, &p->dyd, p->name, c);
-  }
-  
-  L->stack_.push_reserve(TValue(tf));
-
-  {
-    ScopedMemChecker c;
-    cl = new Closure(tf, (int)tf->upvalues.size());
-    if(cl == NULL) luaD_throw(LUA_ERRMEM);
-    L->stack_.top_[-1] = TValue(cl);
-    // initialize upvalues
-    for (i = 0; i < (int)tf->upvalues.size(); i++) {
-      cl->ppupvals_[i] = new UpVal(getGlobalGCHead());
-    }
-  }
-}
-
-
-int luaD_protectedparser (lua_State *L, ZIO *z, const char *name,
-                                        const char *mode) {
-  THREAD_CHECK(L);
+  LuaExecutionState s = L->saveState();
   L->nonyieldable_count_++;  /* cannot yield during parsing */
 
-  SParser p;
-  p.z = z;
-  p.name = name;
-  p.mode = mode;
+  ptrdiff_t old_top = savestack(L, L->stack_.top_);
 
-  int status = luaD_pcall(L, f_parser, &p, savestack(L, L->stack_.top_), L->errfunc);
+  try {
+    Proto *new_proto;
 
-  L->nonyieldable_count_--;
-  return status;
+    int c = zgetc(z);  /* read first character */
+    if (c == LUA_SIGNATURE[0]) {
+      checkmode(L, mode, "binary");
+      Mbuffer buff;
+      new_proto = luaU_undump(L, z, &buff, name);
+    }
+    else {
+      checkmode(L, mode, "text");
+      Mbuffer buff;
+      Dyndata dyd;
+      new_proto = luaY_parser(L, z, &buff, &dyd, name, c);
+    }
+    
+    L->stack_.push_reserve(TValue(new_proto));
+
+    {
+      ScopedMemChecker c;
+      Closure* cl = new Closure(new_proto, (int)new_proto->upvalues.size());
+      if(cl == NULL) luaD_throw(LUA_ERRMEM);
+      L->stack_.top_[-1] = TValue(cl);
+      // initialize upvalues
+      for (int i = 0; i < (int)new_proto->upvalues.size(); i++) {
+        cl->ppupvals_[i] = new UpVal(getGlobalGCHead());
+      }
+    }
+  }
+  catch(int error) {
+    handlePcallError(L,error,old_top,s);
+    return error;
+  }
+
+  L->restoreState(s);
+  return LUA_OK;
 }
 
 
