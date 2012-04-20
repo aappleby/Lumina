@@ -224,6 +224,11 @@ static void markroot (global_State *g) {
     it->makeLive();
     markobject(it);
   }
+
+  // Mark all objects anchored in the C stack
+  for(LuaAnchor* cursor = g->anchor_head_; cursor; cursor = cursor->next_) {
+    if(cursor->object_) markobject(cursor->object_);
+  }
 }
 
 /* }====================================================== */

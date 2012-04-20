@@ -21,6 +21,7 @@
 #define GCSsweep	4
 #define GCSpause	5
 
+struct LuaAnchor;
 
 /*
 ** `global state', shared by all threads of this state
@@ -118,6 +119,9 @@ public:
   void PushAllWeak(LuaObject* o);
   void PushEphemeron(LuaObject* o);
 
+  LuaAnchor* anchor_head_;
+  LuaAnchor* anchor_tail_;
+
 private:
 
   size_t totalbytes_;  /* number of bytes currently allocated - GCdebt */
@@ -126,3 +130,68 @@ private:
 
 
 stringtable* getGlobalStringtable();
+
+struct LuaAnchor {
+
+  LuaAnchor() {
+    object_ = NULL;
+    link(thread_G);
+  }
+
+  LuaAnchor(LuaObject* object) {
+    object_ = object;
+    link(thread_G);
+  }
+
+  void operator = (LuaObject* object) {
+    object_ = object;
+  }
+
+  LuaObject* operator -> () {
+    return object_;
+  }
+
+  operator bool() const {
+    return object_ != NULL;
+  }
+
+  ~LuaAnchor() {
+    unlink();
+  }
+
+  void link(global_State* state) {
+    state_ = state;
+
+    prev_ = NULL;
+    next_ = NULL;
+
+    if(state_->anchor_tail_) {
+      state->anchor_tail_->next_ = this;
+      prev_ = state->anchor_tail_;
+      state->anchor_tail_ = this;
+    }
+    else {
+      state->anchor_head_ = this;
+      state->anchor_tail_ = this;
+    }
+  }
+
+  void unlink() {
+    if(state_->anchor_head_ == this) state_->anchor_head_ = next_;
+    if(state_->anchor_tail_ == this) state_->anchor_tail_ = prev_;
+
+    if(prev_) prev_->next_ = next_;
+    if(next_) next_->prev_ = prev_;
+
+    prev_ = NULL;
+    next_ = NULL;
+    object_ = NULL;
+    state_ = NULL;
+  }
+   
+  LuaObject* object_;
+  global_State* state_;
+  LuaAnchor* prev_;
+  LuaAnchor* next_;
+};
+

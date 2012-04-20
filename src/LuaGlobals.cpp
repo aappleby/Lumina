@@ -12,9 +12,14 @@ global_State::global_State()
   isShuttingDown = false;
   totalbytes_ = sizeof(lua_State) + sizeof(global_State);
   call_depth_ = 0;
+
+  anchor_head_ = NULL;
+  anchor_tail_ = NULL;
 }
 
 global_State::~global_State() {
+  assert(anchor_head_ == NULL);
+  assert(anchor_tail_ == NULL);
 }
 
 void global_State::setGCDebt(size_t debt) {

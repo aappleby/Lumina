@@ -526,7 +526,7 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   }
 
   L->stack_.callinfo_->continuation_ = k;
-  if (k) L->stack_.callinfo_->continuation_context_ = ctx;  /* save context */
+  L->stack_.callinfo_->continuation_context_ = ctx;  /* save context */
 
   L->stack_.callinfo_->old_func_ = savestack(L, L->stack_.callinfo_->getFunc());  /* save current 'func' */
   L->stack_.callinfo_->setFunc(L->stack_.top_ - nresults - 1);  /* protect stack below results */
