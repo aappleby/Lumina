@@ -539,10 +539,13 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
 int luaD_pcall (lua_State *L, Pfunc func, void *u,
                 ptrdiff_t old_top, ptrdiff_t ef) {
   THREAD_CHECK(L);
+
+  // Save the parts of the execution state that will get modified by the call
   CallInfo *old_ci = L->stack_.callinfo_;
   uint8_t old_allowhooks = L->allowhook;
   unsigned short old_nny = L->nonyieldable_count_;
   ptrdiff_t old_errfunc = L->errfunc;
+
   L->errfunc = ef;
 
   int status = LUA_OK;
@@ -558,10 +561,15 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
     // reporting an out-of-memory error could itself cause another out-of-memory error, ad infinitum.
     l_memcontrol.disableLimit();
 
-    StkId oldtop = restorestack(L, old_top);
-    L->stack_.closeUpvals(oldtop);  /* close possible pending closures */
+    // Grab the error object off the stack
     TValue errobj = geterrorobj(L, status);
-    L->stack_.top_ = restorestack(L, old_top);
+
+    // Restore the stack to where it was before the call
+    StkId oldtop = restorestack(L, old_top);
+    L->stack_.closeUpvals(oldtop);
+    L->stack_.top_ = oldtop;
+
+    // Put the error object on the restored stack
     L->stack_.push_nocheck(errobj);
     
     L->stack_.shrink();
