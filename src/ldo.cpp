@@ -38,25 +38,19 @@
 ** =======================================================
 */
 
-static void seterrorobj (lua_State *L, int errcode, StkId oldtop) {
+static TValue geterrorobj (lua_State *L, int errcode ) {
   THREAD_CHECK(L);
-  switch (errcode) {
-    case LUA_ERRMEM: {  // memory error?
-      oldtop[0] = G(L)->memerrmsg; // reuse preregistered msg.
-      break;
-    }
-    case LUA_ERRERR: {
-      oldtop[0] = luaS_newliteral("error in error handling");
-      break;
-    }
-    default: {
-      *oldtop = L->stack_.top_[-1];  // error message on current top
-      break;
-  }
-}
-  L->stack_.top_ = oldtop + 1;
+  if(errcode == LUA_ERRMEM) return TValue(G(L)->memerrmsg);
+  if(errcode == LUA_ERRERR) return TValue(luaS_newliteral("error in error handling"));
+  return L->stack_.top_[-1];
 }
 
+static void seterrorobj (lua_State *L, int errcode, StkId oldtop) {
+  THREAD_CHECK(L);
+  TValue errobj = geterrorobj(L,errcode);
+  L->stack_.top_ = oldtop;
+  L->stack_.push_nocheck(errobj);
+}
 
 l_noret luaD_throw (int errcode) {
 
