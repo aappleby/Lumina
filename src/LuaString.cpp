@@ -2,6 +2,14 @@
 
 #include "LuaGlobals.h"
 
+#include "llimits.h"
+
+// Can't resize string table while sweeping strings, so we need to be able to
+// call this here
+void luaC_runtilstate (int statesmask);
+
+//-----------------------------------------------------------------------------
+
 uint32_t hashString(const char* str, size_t len) {
   uint32_t hash = (uint32_t)len;
 
@@ -36,6 +44,36 @@ TString::~TString() {
 
   thread_G->strings_->nuse_--;
 }
+
+//-----------------------------------------------------------------------------
+
+TString* TString::Create(const char *str) {
+  int len = strlen(str);
+
+  uint32_t hash = hashString(str,len);
+
+  TString* old_string = thread_G->strings_->find(hash, str, len);
+  if(old_string) {
+    if(old_string->isDead()) old_string->makeLive();
+    return old_string;
+  }
+
+  stringtable *tb = thread_G->strings_;
+  if ((tb->nuse_ >= (uint32_t)tb->size_) && (tb->size_ <= MAX_INT/2)) {
+    ScopedMemChecker c;
+    luaC_runtilstate(~(1 << GCSsweepstring));
+    thread_G->strings_->resize(tb->size_ * 2);
+  }
+  
+  TString* new_string = new TString(hash, str, len);
+
+  LuaObject** list = &tb->hash_[hash & (tb->size_ - 1)];
+  new_string->linkGC(list);
+  tb->nuse_++;
+  return new_string;
+}
+
+//-----------------------------------------------------------------------------
 
 void TString::VisitGC(GCVisitor&) {
   setColor(GRAY);

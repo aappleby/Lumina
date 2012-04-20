@@ -11,6 +11,8 @@ public:
   TString(uint32_t hash, const char* str, int len);
   ~TString();
 
+  static TString* Create(const char* str);
+
   size_t getLen() const { return len_; }
   void setLen(size_t len) { len_ = len; }
 

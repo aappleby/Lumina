@@ -8,6 +8,7 @@ struct LuaExecutionState {
   uint8_t    allowhook;
   uint16_t   nonyieldable_count_;
   ptrdiff_t  errfunc;
+  ptrdiff_t  old_top;
 };
 
 /*
@@ -22,8 +23,8 @@ public:
   virtual void VisitGC(GCVisitor& visitor);
   virtual int PropagateGC(GCVisitor& visitor);
 
-  LuaExecutionState saveState();
-  void restoreState(LuaExecutionState s);
+  LuaExecutionState saveState(ptrdiff_t old_top);
+  void restoreState(LuaExecutionState s, int status);
 
   uint8_t status;
   global_State *l_G;

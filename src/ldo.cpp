@@ -535,46 +535,24 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   return 0;  /* return to 'luaD_hook' */
 }
 
-void handlePcallError(lua_State* L, int error, ptrdiff_t old_top, LuaExecutionState s) {
-  // Error handling gets an exemption from the memory limit. Not doing so would mean that
-  // reporting an out-of-memory error could itself cause another out-of-memory error, ad infinitum.
-  l_memcontrol.disableLimit();
-
-  // Grab the error object off the stack
-  TValue errobj = geterrorobj(L, error);
-
-  // Restore the stack to where it was before the call
-  StkId oldtop = restorestack(L, old_top);
-  L->stack_.closeUpvals(oldtop);
-  L->stack_.top_ = oldtop;
-
-  // Put the error object on the restored stack
-  L->stack_.push_nocheck(errobj);
-  
-  L->stack_.shrink();
-
-  l_memcontrol.enableLimit();
-  L->restoreState(s);
-}
-
 int luaD_pcall (lua_State *L, Pfunc func, void *u, ptrdiff_t old_top, ptrdiff_t ef) {
   THREAD_CHECK(L);
 
   // Save the parts of the execution state that will get modified by the call
-  LuaExecutionState s = L->saveState();
+  LuaExecutionState s = L->saveState(old_top);
 
   L->errfunc = ef;
 
+  int result = LUA_OK;
   try {
     func(L, u);
   }
   catch(int error) {
-    handlePcallError(L,error,old_top,s);
-    return error;
+    result = error;
   }
 
-  L->restoreState(s);
-  return LUA_OK;
+  L->restoreState(s, result);
+  return result;
 }
 
 
@@ -594,12 +572,12 @@ static void checkmode (lua_State *L, const char *mode, const char *x) {
 
 int luaD_protectedparser (lua_State *L, ZIO *z, const char *name, const char *mode) {
   THREAD_CHECK(L);
-  LuaExecutionState s = L->saveState();
-  L->nonyieldable_count_++;  /* cannot yield during parsing */
+  LuaExecutionState s = L->saveState(savestack(L, L->stack_.top_));
 
-  ptrdiff_t old_top = savestack(L, L->stack_.top_);
-
+  int result = LUA_OK;
   try {
+    L->nonyieldable_count_++;  /* cannot yield during parsing */
+
     Proto *new_proto;
 
     int c = zgetc(z);  /* read first character */
@@ -629,12 +607,11 @@ int luaD_protectedparser (lua_State *L, ZIO *z, const char *name, const char *mo
     }
   }
   catch(int error) {
-    handlePcallError(L,error,old_top,s);
-    return error;
+    result = error;
   }
 
-  L->restoreState(s);
-  return LUA_OK;
+  L->restoreState(s, result);
+  return result;
 }
 
 
