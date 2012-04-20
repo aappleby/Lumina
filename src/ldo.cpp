@@ -560,15 +560,20 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
 
     StkId oldtop = restorestack(L, old_top);
     L->stack_.closeUpvals(oldtop);  /* close possible pending closures */
-    seterrorobj(L, status, oldtop);
-  L->stack_.callinfo_ = old_ci;
-  L->allowhook = old_allowhooks;
-  L->nonyieldable_count_ = old_nny;
+    TValue errobj = geterrorobj(L, status);
+    L->stack_.top_ = restorestack(L, old_top);
+    L->stack_.push_nocheck(errobj);
+    
     L->stack_.shrink();
 
     l_memcontrol.enableLimit();
   }
+
+  L->stack_.callinfo_ = old_ci;
+  L->allowhook = old_allowhooks;
+  L->nonyieldable_count_ = old_nny;
   L->errfunc = old_errfunc;
+
   return status;
 }
 
