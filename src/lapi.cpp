@@ -981,22 +981,32 @@ static void f_call (lua_State *L, void *ud) {
 int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc) {
   THREAD_CHECK(L);
 
-  struct CallS c;
-  ptrdiff_t errfunc_index;
   L->stack_.checkArgs(nargs+1);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
   checkresults(L, nargs, nresults);
-  if (errfunc == 0)
-    errfunc_index = 0;
-  else {
+
+  ptrdiff_t errfunc_index = 0;
+  if (errfunc) {
     StkId o = index2addr_checked(L, errfunc);
     errfunc_index = savestack(L, o);
   }
-  c.func = L->stack_.top_ - (nargs+1);  /* function to be called */
-  c.nresults = nresults;  /* do a 'conventional' protected call */
 
-  int status = luaD_pcall(L, f_call, &c, savestack(L, c.func), errfunc_index);
+  StkId func = L->stack_.top_ - (nargs+1);
 
+  // Save the parts of the execution state that will get modified by the call
+  LuaExecutionState s = L->saveState(savestack(L, func));
+
+  L->errfunc = errfunc_index;
+
+  int status = LUA_OK;
+  try {
+    luaD_call(L, func, nresults, 0);
+  }
+  catch(int error) {
+    status = error;
+  }
+
+  L->restoreState(s, status);
   adjustresults(L, nresults);
   return status;
 }
