@@ -535,54 +535,46 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   return 0;  /* return to 'luaD_hook' */
 }
 
+void handlePcallError(lua_State* L, int error, ptrdiff_t old_top, LuaExecutionState s) {
+  // Error handling gets an exemption from the memory limit. Not doing so would mean that
+  // reporting an out-of-memory error could itself cause another out-of-memory error, ad infinitum.
+  l_memcontrol.disableLimit();
 
-int luaD_pcall (lua_State *L, Pfunc func, void *u,
-                ptrdiff_t old_top, ptrdiff_t ef) {
+  // Grab the error object off the stack
+  TValue errobj = geterrorobj(L, error);
+
+  // Restore the stack to where it was before the call
+  StkId oldtop = restorestack(L, old_top);
+  L->stack_.closeUpvals(oldtop);
+  L->stack_.top_ = oldtop;
+
+  // Put the error object on the restored stack
+  L->stack_.push_nocheck(errobj);
+  
+  L->stack_.shrink();
+
+  l_memcontrol.enableLimit();
+  L->restoreState(s);
+}
+
+int luaD_pcall (lua_State *L, Pfunc func, void *u, ptrdiff_t old_top, ptrdiff_t ef) {
   THREAD_CHECK(L);
 
   // Save the parts of the execution state that will get modified by the call
-  CallInfo *old_ci = L->stack_.callinfo_;
-  uint8_t old_allowhooks = L->allowhook;
-  unsigned short old_nny = L->nonyieldable_count_;
-  ptrdiff_t old_errfunc = L->errfunc;
+  LuaExecutionState s = L->saveState();
 
   L->errfunc = ef;
 
-  int status = LUA_OK;
   try {
     func(L, u);
   }
   catch(int error) {
-    status = error;
+    handlePcallError(L,error,old_top,s);
+    return error;
   }
 
-  if (status != LUA_OK) {  /* an error occurred? */
-    // Error handling gets an exemption from the memory limit. Not doing so would mean that
-    // reporting an out-of-memory error could itself cause another out-of-memory error, ad infinitum.
-    l_memcontrol.disableLimit();
-
-    // Grab the error object off the stack
-    TValue errobj = geterrorobj(L, status);
-
-    // Restore the stack to where it was before the call
-    StkId oldtop = restorestack(L, old_top);
-    L->stack_.closeUpvals(oldtop);
-    L->stack_.top_ = oldtop;
-
-    // Put the error object on the restored stack
-    L->stack_.push_nocheck(errobj);
-    
-    L->stack_.shrink();
-
-    l_memcontrol.enableLimit();
-  }
-
-  L->stack_.callinfo_ = old_ci;
-  L->allowhook = old_allowhooks;
-  L->nonyieldable_count_ = old_nny;
-  L->errfunc = old_errfunc;
-
-  return status;
+  L->restoreState(s);
+  return LUA_OK;
 }
 
 

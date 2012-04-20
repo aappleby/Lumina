@@ -74,3 +74,23 @@ int lua_State::PropagateGC(GCVisitor& visitor) {
 }
 
 //-----------------------------------------------------------------------------
+
+LuaExecutionState lua_State::saveState() {
+  LuaExecutionState s;
+
+  s.callinfo_ = stack_.callinfo_;
+  s.allowhook = allowhook;
+  s.nonyieldable_count_ = nonyieldable_count_;
+  s.errfunc = errfunc;
+
+  return s;
+}
+
+void lua_State::restoreState(LuaExecutionState s) {
+  stack_.callinfo_ = s.callinfo_;
+  allowhook = s.allowhook;
+  nonyieldable_count_ = s.nonyieldable_count_;
+  errfunc = s.errfunc;
+}
+
+//-----------------------------------------------------------------------------

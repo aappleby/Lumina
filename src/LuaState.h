@@ -4,7 +4,10 @@
 #include "LuaStack.h"
 
 struct LuaExecutionState {
-
+  CallInfo*  callinfo_;
+  uint8_t    allowhook;
+  uint16_t   nonyieldable_count_;
+  ptrdiff_t  errfunc;
 };
 
 /*
@@ -18,6 +21,9 @@ public:
 
   virtual void VisitGC(GCVisitor& visitor);
   virtual int PropagateGC(GCVisitor& visitor);
+
+  LuaExecutionState saveState();
+  void restoreState(LuaExecutionState s);
 
   uint8_t status;
   global_State *l_G;
