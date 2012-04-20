@@ -203,7 +203,6 @@ int  (lua_yield)  (lua_State *L, int nresults);
 
 //#define lua_yield(L,n)		lua_yieldk(L, (n), 0, NULL)
 int  (lua_resume) (lua_State *L, lua_State *from, int narg);
-int  (lua_status) (lua_State *L);
 
 /*
 ** garbage-collection function and options

@@ -52,8 +52,8 @@ static void seterrorobj (lua_State *L, int errcode, StkId oldtop) {
     default: {
       *oldtop = L->stack_.top_[-1];  // error message on current top
       break;
-    }
   }
+}
   L->stack_.top_ = oldtop + 1;
 }
 
@@ -567,9 +567,9 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
     StkId oldtop = restorestack(L, old_top);
     L->stack_.closeUpvals(oldtop);  /* close possible pending closures */
     seterrorobj(L, status, oldtop);
-    L->stack_.callinfo_ = old_ci;
-    L->allowhook = old_allowhooks;
-    L->nonyieldable_count_ = old_nny;
+  L->stack_.callinfo_ = old_ci;
+  L->allowhook = old_allowhooks;
+  L->nonyieldable_count_ = old_nny;
     L->stack_.shrink();
 
     l_memcontrol.enableLimit();

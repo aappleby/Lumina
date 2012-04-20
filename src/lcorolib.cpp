@@ -33,7 +33,7 @@ static int auxresume (lua_State *L, lua_State *co, int narg) {
     lua_pushliteral(L, "too many arguments to resume");
     return -1;  /* error flag */
   }
-  if (lua_status(co) == LUA_OK && co->stack_.getTopIndex() == 0) {
+  if (co->status == LUA_OK && co->stack_.getTopIndex() == 0) {
     lua_pushliteral(L, "cannot resume dead coroutine");
     return -1;  /* error flag */
   }
@@ -135,7 +135,7 @@ static int luaB_costatus (lua_State *L) {
   luaL_argcheck(L, co, 1, "coroutine expected");
   if (L == co) lua_pushliteral(L, "running");
   else {
-    switch (lua_status(co)) {
+    switch (co->status) {
       case LUA_YIELD:
         lua_pushliteral(L, "suspended");
         break;

@@ -1006,18 +1006,18 @@ int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
   THREAD_CHECK(L);
 
   struct CallS c;
-  ptrdiff_t func;
   api_check(k == NULL || !L->stack_.callinfo_->isLua(),
     "cannot use continuations inside hooks");
   L->stack_.checkArgs(nargs+1);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
   checkresults(L, nargs, nresults);
-  if (errfunc == 0)
-    func = 0;
-  else {
+
+  ptrdiff_t func = 0;
+  if (errfunc) {
     StkId o = index2addr_checked(L, errfunc);
     func = savestack(L, o);
   }
+
   c.func = L->stack_.top_ - (nargs+1);  /* function to be called */
 
   if (k == NULL || L->nonyieldable_count_ > 0) {  /* no continuation or no yieldable? */
@@ -1083,11 +1083,6 @@ int lua_dump (lua_State *L, lua_Writer writer, void *data) {
   else
     status = 1;
   return status;
-}
-
-
-int  lua_status (lua_State *L) {
-  return L->status;
 }
 
 
@@ -1232,8 +1227,12 @@ void lua_len (lua_State *L, int idx) {
   StkId t;
   t = index2addr(L, idx);
   assert(t);
+
+  // objlen puts result on stack instead of just returning it...
   luaV_objlen(L, L->stack_.top_, t);
-  api_incr_top(L);
+  L->stack_.top_++;
+
+  api_check(L->stack_.top_ <= L->stack_.callinfo_->getTop(), "stack overflow");
 }
 
 

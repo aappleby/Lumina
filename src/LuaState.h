@@ -3,10 +3,8 @@
 #include "LuaObject.h"
 #include "LuaStack.h"
 
-/* chain list of long jump buffers */
-struct lua_longjmp {
-  lua_longjmp *previous;
-  volatile int status;  /* error code */
+struct LuaExecutionState {
+
 };
 
 /*
