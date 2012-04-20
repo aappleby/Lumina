@@ -201,7 +201,6 @@ int  (lua_yieldk) (lua_State *L, int nresults, int ctx,
 
 int  (lua_yield)  (lua_State *L, int nresults);
 
-//#define lua_yield(L,n)		lua_yieldk(L, (n), 0, NULL)
 int  (lua_resume) (lua_State *L, lua_State *from, int narg);
 
 /*

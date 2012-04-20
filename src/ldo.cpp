@@ -352,7 +352,7 @@ static int recover (lua_State *L, int status) {
   CallInfo *ci = L->stack_.findProtectedCall();
   if (ci == NULL) return 0;  /* no recovery point */
   /* "finish" luaD_pcall */
-  oldtop = restorestack(L, ci->extra);
+  oldtop = restorestack(L, ci->old_func_);
   L->stack_.closeUpvals(oldtop);
   seterrorobj(L, status, oldtop);
   L->stack_.callinfo_ = ci;
@@ -422,7 +422,7 @@ static void resume (lua_State *L, void *ud) {
   }
 
   // 'common' yield
-  L->stack_.callinfo_->setFunc(restorestack(L, L->stack_.callinfo_->extra));
+  L->stack_.callinfo_->setFunc(restorestack(L, L->stack_.callinfo_->old_func_));
   if (L->stack_.callinfo_->continuation_ != NULL) {  /* does it have a continuation? */
     int n;
     L->stack_.callinfo_->status = LUA_YIELD;  /* 'default' status */
@@ -496,11 +496,9 @@ int lua_yield (lua_State *L, int nresults) {
 
   L->status = LUA_YIELD;
 
-  if (ci->isLua()) {  /* inside a hook? */
-  }
-  else {
+  if (!ci->isLua()) {
     ci->continuation_ = NULL;
-    ci->extra = savestack(L, ci->getFunc());  /* save current 'func' */
+    ci->old_func_ = savestack(L, ci->getFunc());  /* save current 'func' */
     ci->setFunc(L->stack_.top_ - nresults - 1);  /* protect stack below results */
     luaD_throw(LUA_YIELD);
   }
@@ -510,8 +508,8 @@ int lua_yield (lua_State *L, int nresults) {
 
 int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->stack_.callinfo_;
   L->stack_.checkArgs(nresults);
+
   if (L->nonyieldable_count_ > 0) {
     if (L != G(L)->mainthread)
       luaG_runerror("attempt to yield across metamethod/C-call boundary");
@@ -521,18 +519,20 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
 
   L->status = LUA_YIELD;
 
-  if (ci->isLua()) {  /* inside a hook? */
+  if (L->stack_.callinfo_->isLua()) {  /* inside a hook? */
     api_check(k == NULL, "hooks cannot continue after yielding");
+    assert(L->stack_.callinfo_->callstatus & CIST_HOOKED);  /* must be inside a hook */
+    return 0;  /* return to 'luaD_hook' */
   }
-  else {
-    if ((ci->continuation_ = k) != NULL)  /* is there a continuation? */
-      ci->ctx = ctx;  /* save context */
-    ci->extra = savestack(L, ci->getFunc());  /* save current 'func' */
-    ci->setFunc(L->stack_.top_ - nresults - 1);  /* protect stack below results */
-    luaD_throw(LUA_YIELD);
-  }
-  assert(ci->callstatus & CIST_HOOKED);  /* must be inside a hook */
-  return 0;  /* return to 'luaD_hook' */
+
+  L->stack_.callinfo_->continuation_ = k;
+  if (k) L->stack_.callinfo_->continuation_context_ = ctx;  /* save context */
+
+  L->stack_.callinfo_->old_func_ = savestack(L, L->stack_.callinfo_->getFunc());  /* save current 'func' */
+  L->stack_.callinfo_->setFunc(L->stack_.top_ - nresults - 1);  /* protect stack below results */
+
+  luaD_throw(LUA_YIELD);
+  return 0;
 }
 
 int luaD_pcall (lua_State *L, Pfunc func, void *u, ptrdiff_t old_top, ptrdiff_t ef) {

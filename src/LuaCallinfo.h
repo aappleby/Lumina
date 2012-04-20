@@ -35,11 +35,11 @@ public:
   const Instruction *savedpc;
 
   // only for C functions
-  int ctx;  /* context info. in case of yields */
   lua_CFunction continuation_;  /* continuation in case of yields */
+  int continuation_context_;  /* context info. in case of yields */
 
+  ptrdiff_t old_func_;
   ptrdiff_t old_errfunc;
-  ptrdiff_t extra;
   uint8_t old_allowhook;
   uint8_t status;
 
@@ -55,10 +55,12 @@ protected:
     callstatus = 0;
     base_index_ = 0;
     savedpc = NULL;
-    ctx = 0;
+
     continuation_ = NULL;
+    continuation_context_ = 0;
+
+    old_func_ = 0;
     old_errfunc = 0;
-    extra = 0;
     old_allowhook = 0;
     status = 0;
   }
