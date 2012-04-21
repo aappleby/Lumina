@@ -72,10 +72,7 @@ void luaD_hook (lua_State *L, int event, int line) {
   if (hook && L->allowhook) {
     CallInfo *ci = L->stack_.callinfo_;
 
-    lua_Debug ar;
-    ar.event = event;
-    ar.currentline = line;
-    ar.i_ci = ci;
+    lua_Debug ar(event, line, ci);
 
     // Save the stack and callinfo tops.
     ptrdiff_t top = savestack(L, L->stack_.top_);

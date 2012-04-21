@@ -340,6 +340,15 @@ class CallInfo;
 
 class lua_Debug {
 public:
+
+  lua_Debug() {}
+
+  lua_Debug(int event2, int line2, CallInfo* ci2) {
+    event = event2;
+    currentline = line2;
+    i_ci = ci2;
+  }
+
   int event;
   const char *name;	/* (n) */
   const char *namewhat;	/* (n) 'global', 'local', 'field', 'method' */

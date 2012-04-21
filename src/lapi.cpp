@@ -185,12 +185,6 @@ const lua_Number *lua_version (lua_State *L) {
 }
 
 
-
-/*
-** basic stack manipulation
-*/
-
-
 /*
 ** convert an acceptable stack index into an absolute index
 */

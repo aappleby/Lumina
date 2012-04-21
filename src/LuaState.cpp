@@ -8,9 +8,9 @@
 
 #include <algorithm>
 
-l_noret luaG_runerror (const char *fmt, ...);
+#include "ldo.h"
 
-#define restorestack(L,n)	((TValue *)((char *)L->stack_.begin() + (n)))
+l_noret luaG_runerror (const char *fmt, ...);
 
 //-----------------------------------------------------------------------------
 
