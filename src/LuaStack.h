@@ -34,8 +34,10 @@ public:
 
 
   TValue at(int index);
+  TValue at_frame(int index);
 
   void   copy(int index);
+  void   copy_frame(int index);
 
   void   push(TValue v);
   void   push(const TValue* v);

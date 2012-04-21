@@ -198,12 +198,28 @@ TValue LuaStack::at(int idx) {
   return TValue::None();
 }
 
+TValue LuaStack::at_frame(int idx) {
+  assert(idx > LUA_REGISTRYINDEX);
+  assert(idx < (top_ - callinfo_->getFunc()));
+
+  if (idx > 0) {
+    return callinfo_->getFunc()[idx];
+  }
+  else {
+    return top_[idx];
+  }
+}
+
 //------------------------------------------------------------------------------
 
 void LuaStack::copy(int index) {
   TValue v = at(index);
   if(v.isNone()) v = TValue::Nil();
   push(v);
+}
+
+void LuaStack::copy_frame(int index) {
+  push(at_frame(index));
 }
 
 //------------------------------------------------------------------------------

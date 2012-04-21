@@ -330,11 +330,16 @@ static void finishCcall (lua_State *L) {
 static void unroll (lua_State *L, void *ud) {
   THREAD_CHECK(L);
   UNUSED(ud);
-  for (;;) {
+  for (int depth = 0;; depth++) {
     if (L->stack_.callinfoEmpty())  /* stack is empty? */
       return;  /* coroutine finished normally */
-    if (!L->stack_.callinfo_->isLua())  /* C function? */
+    if (!L->stack_.callinfo_->isLua()) {  /* C function? */
+      if(depth != 0) {
+        int b = 0;
+        b++;
+      }
       finishCcall(L);
+    }
     else {  /* Lua function */
       luaV_finishOp(L);  /* finish interrupted instruction */
       luaV_execute(L);  /* execute down to higher C 'boundary' */

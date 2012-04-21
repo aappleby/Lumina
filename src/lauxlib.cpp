@@ -287,7 +287,7 @@ int luaL_newmetatable (lua_State *L, const char *tname) {
   if (!lua_isnil(L, -1))  /* name already in use? */
     return 0;  /* leave previous value on top, but return 0 */
   L->stack_.pop();
-  lua_newtable(L);  /* create metatable */
+  lua_createtable(L, 0, 0);
   L->stack_.copy(-1);
   lua_setfield(L, LUA_REGISTRYINDEX, tname);  /* registry.name = metatable */
   return 1;

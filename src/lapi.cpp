@@ -235,14 +235,6 @@ void lua_copy (lua_State *L, int fromidx, int toidx) {
 }
 
 
-void lua_pushvalue (lua_State *L, int idx) {
-  THREAD_CHECK(L);
-  TValue v = index2addr3(L, idx);
-  if(v.isNone()) v = TValue::Nil();
-  L->stack_.push(v);
-}
-
-
 
 /*
 ** access functions (stack -> C)
@@ -557,12 +549,13 @@ const char *lua_pushvfstring (lua_State *L, const char *fmt,
 
 const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
   THREAD_CHECK(L);
-  const char *ret;
-  va_list argp;
   luaC_checkGC();
+
+  va_list argp;
   va_start(argp, fmt);
-  ret = luaO_pushvfstring(fmt, argp);
+  const char* ret = luaO_pushvfstring(fmt, argp);
   va_end(argp);
+
   return ret;
 }
 
