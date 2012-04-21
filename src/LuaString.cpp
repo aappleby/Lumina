@@ -47,9 +47,12 @@ TString::~TString() {
 
 //-----------------------------------------------------------------------------
 
-TString* TString::Create(const char *str) {
-  int len = strlen(str);
+TString* TString::Create( const char* str )
+{
+  return Create(str, strlen(str));
+}
 
+TString* TString::Create(const char *str, int len) {
   uint32_t hash = hashString(str,len);
 
   TString* old_string = thread_G->strings_->find(hash, str, len);
@@ -113,6 +116,10 @@ TString* stringtable::find(uint32_t hash, const char *str, size_t len) {
 }
 
 void stringtable::resize(int newsize) {
+
+  // cannot resize while GC is traversing strings
+  luaC_runtilstate(~(1 << GCSsweepstring));
+
   if (newsize > size_) {
     hash_.resize_nocheck(newsize);
   }

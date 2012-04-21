@@ -12,6 +12,7 @@ public:
   ~TString();
 
   static TString* Create(const char* str);
+  static TString* Create(const char* str, int len);
 
   size_t getLen() const { return len_; }
   void setLen(size_t len) { len_ = len; }
