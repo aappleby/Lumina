@@ -481,13 +481,6 @@ static LuaObject *udata2finalize (global_State *g) {
 }
 
 
-static void dothecall (lua_State *L, void *ud) {
-  THREAD_CHECK(L);
-  UNUSED(ud);
-  luaD_call(L, L->stack_.top_ - 2, 0, 0);
-}
-
-
 static void GCTM (int propagateerrors) {
 
   // Pop object with finalizer off the 'finobj' list
@@ -501,18 +494,31 @@ static void GCTM (int propagateerrors) {
   global_State *g = thread_G;
 
   // Call the finalizer (with a bit of difficulty)
-  uint8_t allowhook = L->allowhook;
-  L->allowhook = 0;  // stop debug hooks during GC metamethod
 
   int gcrunning  = g->gcrunning;
   g->gcrunning = 0;  // avoid GC steps
 
+  // Save the parts of the execution state that will get modified by the call
+  LuaExecutionState s = L->saveState(L->stack_.top_);
+
   L->stack_.top_[0] = tm;  // push finalizer...
   L->stack_.top_[1] = v; // ... and its argument
   L->stack_.top_ += 2;  // and (next line) call the finalizer
-  int status = luaD_pcall(L, dothecall, NULL, savestack(L, L->stack_.top_ - 2), 0);
 
-  L->allowhook = allowhook;  // restore hooks
+  L->allowhook = 0;  // stop debug hooks during GC metamethod
+
+  L->errfunc = 0;
+
+  int status = LUA_OK;
+  try {
+    luaD_call(L, L->stack_.top_ - 2, 0, 0);
+  }
+  catch(int error) {
+    status = error;
+  }
+
+  L->restoreState(s, status, 0);
+
   g->gcrunning = gcrunning;  // restore state
 
   // Report errors during finalization.

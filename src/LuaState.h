@@ -23,8 +23,8 @@ public:
   virtual void VisitGC(GCVisitor& visitor);
   virtual int PropagateGC(GCVisitor& visitor);
 
-  LuaExecutionState saveState(ptrdiff_t old_top);
-  void restoreState(LuaExecutionState s, int status);
+  LuaExecutionState saveState(StkId top);
+  void restoreState(LuaExecutionState s, int status, int nresults);
 
   uint8_t status;
   global_State *l_G;

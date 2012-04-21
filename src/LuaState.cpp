@@ -78,19 +78,19 @@ int lua_State::PropagateGC(GCVisitor& visitor) {
 
 //-----------------------------------------------------------------------------
 
-LuaExecutionState lua_State::saveState(ptrdiff_t old_top) {
+LuaExecutionState lua_State::saveState(StkId top) {
   LuaExecutionState s;
 
   s.callinfo_ = stack_.callinfo_;
   s.allowhook = allowhook;
   s.nonyieldable_count_ = nonyieldable_count_;
   s.errfunc = errfunc;
-  s.old_top = old_top;
+  s.old_top = savestack(this, top);
 
   return s;
 }
 
-void lua_State::restoreState(LuaExecutionState s, int status) {
+void lua_State::restoreState(LuaExecutionState s, int status, int nresults) {
   if(status != LUA_OK) {
     // Error handling gets an exemption from the memory limit. Not doing so would mean that
     // reporting an out-of-memory error could itself cause another out-of-memory error, ad infinitum.
@@ -126,6 +126,10 @@ void lua_State::restoreState(LuaExecutionState s, int status) {
   allowhook = s.allowhook;
   nonyieldable_count_ = s.nonyieldable_count_;
   errfunc = s.errfunc;
+
+  if ((nresults == LUA_MULTRET) && (stack_.callinfo_->getTop() < stack_.top_)) {
+    stack_.callinfo_->setTop(stack_.top_);
+  }
 }
 
 //-----------------------------------------------------------------------------

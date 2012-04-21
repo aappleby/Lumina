@@ -960,19 +960,14 @@ void lua_callk (lua_State *L, int nargs, int nresults, int ctx, lua_CFunction k)
 /*
 ** Execute a protected call.
 */
-struct CallS {  /* data to `f_call' */
-  StkId func;
-  int nresults;
-};
-
-
-static void f_call (lua_State *L, void *ud) {
-  struct CallS *c = cast(struct CallS *, ud);
-  luaD_call(L, c->func, c->nresults, 0);
-}
 
 int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc) {
   THREAD_CHECK(L);
+
+  if(nresults == LUA_MULTRET) {
+    int b = 0;
+    b++;
+  }
 
   L->stack_.checkArgs(nargs+1);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
@@ -987,20 +982,24 @@ int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc) {
   StkId func = L->stack_.top_ - (nargs+1);
 
   // Save the parts of the execution state that will get modified by the call
-  LuaExecutionState s = L->saveState(savestack(L, func));
+  LuaExecutionState s = L->saveState(func);
 
   L->errfunc = errfunc_index;
 
   int status = LUA_OK;
   try {
-    luaD_call(L, func, nresults, 0);
+    L->nonyieldable_count_++;
+    if (!luaD_precall(L, func, nresults)) {
+      luaV_execute(L);
+    }
+    luaC_checkGC();
+
   }
   catch(int error) {
     status = error;
   }
 
-  L->restoreState(s, status);
-  adjustresults(L, nresults);
+  L->restoreState(s, status, nresults);
   return status;
 }
 

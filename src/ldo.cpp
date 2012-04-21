@@ -532,28 +532,6 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   return 0;
 }
 
-int luaD_pcall (lua_State *L, Pfunc func, void *u, ptrdiff_t old_top, ptrdiff_t ef) {
-  THREAD_CHECK(L);
-
-  // Save the parts of the execution state that will get modified by the call
-  LuaExecutionState s = L->saveState(old_top);
-
-  L->errfunc = ef;
-
-  int result = LUA_OK;
-  try {
-    func(L, u);
-  }
-  catch(int error) {
-    result = error;
-  }
-
-  L->restoreState(s, result);
-  return result;
-}
-
-
-
 /*
 ** Execute a protected parser.
 */
@@ -569,12 +547,11 @@ static void checkmode (lua_State *L, const char *mode, const char *x) {
 
 int luaD_protectedparser (lua_State *L, ZIO *z, const char *name, const char *mode) {
   THREAD_CHECK(L);
-  LuaExecutionState s = L->saveState(savestack(L, L->stack_.top_));
+  LuaExecutionState s = L->saveState(L->stack_.top_);
+  L->nonyieldable_count_++;  /* cannot yield during parsing */
 
   int result = LUA_OK;
   try {
-    L->nonyieldable_count_++;  /* cannot yield during parsing */
-
     Proto *new_proto;
 
     int c = zgetc(z);  /* read first character */
@@ -607,7 +584,7 @@ int luaD_protectedparser (lua_State *L, ZIO *z, const char *name, const char *mo
     result = error;
   }
 
-  L->restoreState(s, result);
+  L->restoreState(s, result, 0);
   return result;
 }
 

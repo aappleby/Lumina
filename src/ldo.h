@@ -27,8 +27,6 @@ void luaD_hook (lua_State *L, int event, int line);
 int luaD_precall (lua_State *L, StkId func, int nresults);
 void luaD_call (lua_State *L, StkId func, int nResults,
                                         int allowyield);
-int luaD_pcall (lua_State *L, Pfunc func, void *u,
-                                        ptrdiff_t oldtop, ptrdiff_t ef);
 int luaD_postcall (lua_State *L, StkId firstResult);
 
 l_noret luaD_throw (int errcode);
