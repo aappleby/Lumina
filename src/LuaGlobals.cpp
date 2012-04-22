@@ -13,6 +13,9 @@ global_State::global_State()
   totalbytes_ = sizeof(global_State);
   call_depth_ = 0;
 
+  livecolor = LuaObject::colorA;
+  deadcolor = LuaObject::colorB;
+
   anchor_head_ = NULL;
   anchor_tail_ = NULL;
 }

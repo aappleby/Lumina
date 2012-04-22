@@ -38,44 +38,6 @@
 #define MEMERRMSG       "not enough memory"
 
 
-/*
-** Create registry table and its predefined values
-*/
-static void init_registry (lua_State *L, global_State *g) {
-  THREAD_CHECK(L);
-  TValue mt;
-  
-  /* create registry */
-  //ScopedMemChecker c;
-
-  Table* registry;
-
-  {
-    ScopedMemChecker c;
-    registry = new Table(LUA_RIDX_LAST, 0);
-    g->l_registry = registry;
-  }
-
-  /* registry[LUA_RIDX_MAINTHREAD] = L */
-  mt = L;
-  {
-    ScopedMemChecker c;
-    registry->set(TValue(LUA_RIDX_MAINTHREAD), mt);
-  }
-  luaC_barrierback(registry, mt);
-
-  // TODO(aappleby): Are barriers needed on the registry?
-
-  /* registry[LUA_RIDX_GLOBALS] = table of globals */
-  {
-    ScopedMemChecker c;
-    mt = new Table();
-    registry->set(TValue(LUA_RIDX_GLOBALS),mt);
-  }
-  luaC_barrierback(registry,mt);
-}
-
-
 static void close_state (lua_State *L) {
   THREAD_CHECK(L);
 
@@ -114,20 +76,10 @@ lua_State *lua_newthread (lua_State *L) {
   lua_State* L1 = NULL;
   {
     ScopedMemChecker c;
-    L1 = new lua_State();
+    L1 = new lua_State(thread_G);
     L1->linkGC(getGlobalGCHead());
     L->stack_.push(TValue(L1));
   }
-
-  L1->l_G = thread_G;
-  L1->hook = NULL;
-  L1->hookmask = 0;
-  L1->basehookcount = 0;
-  L1->allowhook = 1;
-  L1->hookcount = L->basehookcount;
-  L1->nonyieldable_count_ = 1;
-  L1->status = LUA_OK;
-  L1->errfunc = 0;
 
   L1->hookmask = L->hookmask;
   L1->basehookcount = L->basehookcount;
@@ -153,9 +105,8 @@ lua_State *lua_newstate () {
   global_State* g = new global_State();
   thread_G = g;
 
-  lua_State* L = new lua_State();
+  lua_State* L = new lua_State(g);
   thread_L = L;
-  L->l_G = g;
 
   l_memcontrol.enableLimit();
 
@@ -172,20 +123,8 @@ lua_State *lua_newstate () {
     L->next_ = NULL;
     //L->tt = LUA_TTHREAD;
     assert(L->type() == LUA_TTHREAD);
-    g->livecolor = LuaObject::colorA;
-    g->deadcolor = LuaObject::colorB;
     L->makeLive();
     g->gckind = KGC_NORMAL;
-    
-    L->l_G = g;
-    L->hook = NULL;
-    L->hookmask = 0;
-    L->basehookcount = 0;
-    L->allowhook = 1;
-    L->hookcount = L->basehookcount;
-    L->nonyieldable_count_ = 1;
-    L->status = LUA_OK;
-    L->errfunc = 0;
     
     g->mainthread = L;
     g->uvhead.uprev = &g->uvhead;
@@ -198,39 +137,45 @@ lua_State *lua_newstate () {
     g->gcstate = GCSpause;
     g->allgc = NULL;
     g->finobj = NULL;
-    //g->tobefnz = NULL;
 
     g->gcpause = LUAI_GCPAUSE;
     g->gcmajorinc = LUAI_GCMAJOR;
     g->gcstepmul = LUAI_GCMUL;
-    for (i=0; i < LUA_NUMTAGS; i++) g->base_metatables_[i] = NULL;
+
+    for (i=0; i < LUA_NUMTAGS; i++) {
+      g->base_metatables_[i] = NULL;
+    }
 
     try {
       THREAD_CHECK(L);
 
-      global_State *g = thread_G;
-
       {
         ScopedMemChecker c;
         L->stack_.init();  /* init stack */
-      }
 
-      init_registry(L, g);
+        Table* globals = new Table();
 
-      {
-        ScopedMemChecker c;
+        Table* registry = new Table(LUA_RIDX_LAST, 0);
+        registry->set(TValue(LUA_RIDX_MAINTHREAD), TValue(L));
+        registry->set(TValue(LUA_RIDX_GLOBALS), TValue(globals));
+
+        g->l_registry = registry;
+        
+        //luaC_barrierback(registry, TValue(L));
+        //luaC_barrierback(g->l_registry,TValue(globals));
+
         g->strings_->resize(MINSTRTABSIZE);  /* initial size of string table */
-      }
 
-      luaT_init();
-      luaX_init(L);
-
-      /* pre-create memory-error message */
-      {
-        ScopedMemChecker c;
+        // pre-create memory-error message
         g->memerrmsg = thread_G->strings_->Create(MEMERRMSG);
-        g->memerrmsg->setFixed();  /* it should never be collected */
+        g->memerrmsg->setFixed();
       }
+
+      // Create tagmethod name strings
+      luaT_init();
+
+      // Create lexer reserved word strings
+      luaX_init(L);
 
       g->gcrunning = 1;  /* allow gc */
     }

@@ -17,7 +17,7 @@ struct LuaExecutionState {
 class lua_State : public LuaObject {
 public:
 
-  lua_State();
+  lua_State(global_State* g);
   ~lua_State();
 
   virtual void VisitGC(GCVisitor& visitor);

@@ -24,18 +24,18 @@ ScopedCallDepth::~ScopedCallDepth() {
 
 //-----------------------------------------------------------------------------
 
-lua_State::lua_State() : LuaObject(LUA_TTHREAD) {
+lua_State::lua_State(global_State* g) : LuaObject(LUA_TTHREAD) {
   assert(l_memcontrol.limitDisabled);
-  status = 0;
-  l_G = NULL;
+  l_G = g;
   oldpc = NULL;
-  nonyieldable_count_ = 0;
   hookmask = 0;
-  allowhook = 0;
   basehookcount = 0;
   hookcount = 0;
   hook = NULL;
   errfunc = 0;
+  allowhook = 1;
+  nonyieldable_count_ = 1;
+  status = LUA_OK;
 }
 
 lua_State::~lua_State() {
