@@ -1204,7 +1204,6 @@ static int cond (LexState *ls) {
 
 
 static void gotostat (LexState *ls, int pc) {
-  ScopedMemChecker c;
   int line = ls->linenumber;
   TString *label;
   int g;
@@ -1212,7 +1211,10 @@ static void gotostat (LexState *ls, int pc) {
     label = str_checkname(ls);
   else {
     luaX_next(ls);  /* skip break */
-    label = thread_G->strings_->Create("break");
+    {
+      ScopedMemChecker c;
+      label = thread_G->strings_->Create("break");
+    }
   }
   g = newlabelentry(ls, &ls->dyd->gt, label, line, pc);
   findlabel(ls, g);  /* close it if label already defined */
@@ -1330,15 +1332,16 @@ static void forbody (LexState *ls, int base, int line, int nvars, int isnum) {
 
 
 static void fornum (LexState *ls, TString *varname, int line) {
-  ScopedMemChecker c;
-
   /* fornum -> NAME = exp1,exp1[,exp1] forbody */
   FuncState *fs = ls->fs;
   int base = fs->freereg;
-  new_localvarliteral(ls, "(for index)");
-  new_localvarliteral(ls, "(for limit)");
-  new_localvarliteral(ls, "(for step)");
-  new_localvar(ls, varname);
+  {
+    ScopedMemChecker c;
+    new_localvarliteral(ls, "(for index)");
+    new_localvarliteral(ls, "(for limit)");
+    new_localvarliteral(ls, "(for step)");
+    new_localvar(ls, varname);
+  }
   checknext(ls, '=');
   exp1(ls);  /* initial value */
   checknext(ls, ',');
@@ -1354,20 +1357,21 @@ static void fornum (LexState *ls, TString *varname, int line) {
 
 
 static void forlist (LexState *ls, TString *indexname) {
-  ScopedMemChecker c;
-
   /* forlist -> NAME {,NAME} IN explist forbody */
   FuncState *fs = ls->fs;
   expdesc e;
   int nvars = 4;  /* gen, state, control, plus at least one declared var */
   int line;
   int base = fs->freereg;
-  /* create control variables */
-  new_localvarliteral(ls, "(for generator)");
-  new_localvarliteral(ls, "(for state)");
-  new_localvarliteral(ls, "(for control)");
-  /* create declared variables */
-  new_localvar(ls, indexname);
+  {
+    ScopedMemChecker c;
+    /* create control variables */
+    new_localvarliteral(ls, "(for generator)");
+    new_localvarliteral(ls, "(for state)");
+    new_localvarliteral(ls, "(for control)");
+    /* create declared variables */
+    new_localvar(ls, indexname);
+  }
   while (testnext(ls, ',')) {
     new_localvar(ls, str_checkname(ls));
     nvars++;

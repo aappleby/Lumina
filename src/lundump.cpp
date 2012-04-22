@@ -70,7 +70,6 @@ static lua_Number LoadNumber(LoadState* S)
 
 static TString* LoadString(LoadState* S)
 {
-  ScopedMemChecker c;
   size_t size;
   LoadVar(S,size);
   if (size==0) {
@@ -79,15 +78,22 @@ static TString* LoadString(LoadState* S)
   else {
     char* s=luaZ_openspace(S->L,S->b,size);
     LoadBlock(S,s,size*sizeof(char));
-    return thread_G->strings_->Create(s,size-1);		/* remove trailing '\0' */
+    TString* result;
+    {
+      ScopedMemChecker c;
+      result = thread_G->strings_->Create(s,size-1); /* remove trailing '\0' */
+    }
+    return result;
   }
 }
 
 static void LoadCode(LoadState* S, Proto* f)
 {
-  ScopedMemChecker c;
   int n=LoadInt(S);
-  f->code.resize_nocheck(n);
+  {
+    ScopedMemChecker c;
+    f->code.resize_nocheck(n);
+  }
   LoadVector(S,&f->code[0],n,sizeof(Instruction));
 }
 
