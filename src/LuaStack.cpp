@@ -31,6 +31,8 @@ void LuaStack::init() {
 // to the correct locations.
 
 void LuaStack::realloc (int newsize) {
+  ScopedMemChecker c;
+
   assert(newsize <= LUAI_MAXSTACK || newsize == ERRORSTACKSIZE);
 
   // Remember where the old stack was. This will be a dangling pointer
@@ -62,9 +64,7 @@ void LuaStack::realloc (int newsize) {
   }
   */
 
-  // Stack is valid again, _now_ kick off memory errors if we're over the
-  // limit.
-  l_memcontrol.checkLimit();
+  // Stack is valid again, ScopedMemChecker will check limit on destruction.
 }
 
 //------------------------------------------------------------------------------
@@ -316,8 +316,6 @@ void LuaStack::checkArgs(int count) {
 
 CallInfo* LuaStack::extendCallinfo() {
   CallInfo *ci = new CallInfo();
-  if(ci == NULL) luaD_throw(LUA_ERRMEM);
-
   ci->stack_ = this;
   assert(callinfo_->next == NULL);
   callinfo_->next = ci;

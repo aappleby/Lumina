@@ -55,8 +55,9 @@ static void save (LexState *ls, int c) {
     if (luaZ_sizebuffer(b) >= MAX_SIZET/2)
       lexerror(ls, "lexical element too long", 0);
     newsize = luaZ_sizebuffer(b) * 2;
+
+    ScopedMemChecker c;
     b->buffer.resize_nocheck(newsize);
-    l_memcontrol.checkLimit();
   }
   b->buffer[luaZ_bufflen(b)++] = cast(char, c);
 }

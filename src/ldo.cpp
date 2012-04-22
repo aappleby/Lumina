@@ -582,7 +582,6 @@ int luaD_protectedparser (lua_State *L, ZIO *z, const char *name, const char *mo
     {
       ScopedMemChecker c;
       Closure* cl = new Closure(new_proto, (int)new_proto->upvalues.size());
-      if(cl == NULL) luaD_throw(LUA_ERRMEM);
       L->stack_.top_[-1] = TValue(cl);
       // initialize upvalues
       for (int i = 0; i < (int)new_proto->upvalues.size(); i++) {

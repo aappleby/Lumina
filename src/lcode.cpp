@@ -232,14 +232,14 @@ static int luaK_code (FuncState *fs, Instruction i) {
   dischargejpc(fs);  /* `pc' will change */
   /* put new instruction in code array */
   if(fs->pc >= (int)f->code.size()) {
+    ScopedMemChecker c;
     f->code.grow();
-    l_memcontrol.checkLimit();
   }
   f->code[fs->pc] = i;
   /* save corresponding line information */
   if(fs->pc >= (int)f->lineinfo.size()) {
+    ScopedMemChecker c;
     f->lineinfo.grow();
-    l_memcontrol.checkLimit();
   }
   f->lineinfo[fs->pc] = fs->ls->lastline;
   return fs->pc++;
@@ -340,8 +340,8 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   fs->constant_map->set(*key, TValue(k));
   
   if (k >= (int)f->constants.size()) {
+    ScopedMemChecker c;
     f->constants.grow();
-    l_memcontrol.checkLimit();
   }
   
   while (oldsize < (int)f->constants.size()) {

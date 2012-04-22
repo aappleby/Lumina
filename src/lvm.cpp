@@ -591,7 +591,6 @@ static void pushclosure (lua_State *L,
   THREAD_CHECK(L);
 
   Closure *ncl = new Closure(p, (int)p->upvalues.size());
-  if(ncl == NULL) luaD_throw(LUA_ERRMEM);
 
   *ra = TValue(ncl);  /* anchor new closure in stack */
   for (int i = 0; i < (int)p->upvalues.size(); i++) {  /* fill in its upvalues */
@@ -809,8 +808,7 @@ void luaV_execute (lua_State *L) {
 
           l_memcontrol.disableLimit();
 
-          Table *t = new Table();
-          if(t == NULL) luaD_throw(LUA_ERRMEM);
+          Table* t = new Table();
           t->linkGC(getGlobalGCHead());
           base[A] = t;
           if (b != 0 || c != 0) {

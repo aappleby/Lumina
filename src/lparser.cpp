@@ -167,8 +167,8 @@ static int registerlocalvar (LexState *ls, TString *varname) {
   Proto *f = fs->f;
   int oldsize = (int)f->locvars.size();
   if(fs->nlocvars >= (int)f->locvars.size()) {
+    ScopedMemChecker c;
     f->locvars.grow();
-    l_memcontrol.checkLimit();
   }
   
   while (oldsize < (int)f->locvars.size()) f->locvars[oldsize++].varname = NULL;
@@ -185,8 +185,8 @@ static void new_localvar (LexState *ls, TString *name) {
   checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal,
                   MAXVARS, "local variables");
   if(dyd->actvar.n+1 >= (int)dyd->actvar.arr.size()) {
+    ScopedMemChecker c;
     dyd->actvar.arr.grow();
-    l_memcontrol.checkLimit();
   }
   dyd->actvar.arr[dyd->actvar.n++].idx = cast(short, reg);
 }
@@ -238,8 +238,8 @@ static int newupvalue (FuncState *fs, TString *name, expdesc *v) {
   int oldsize = (int)f->upvalues.size();
   checklimit(fs, fs->num_upvals + 1, MAXUPVAL, "upvalues");
   if(fs->num_upvals >= f->upvalues.size()) {
+    ScopedMemChecker c;
     f->upvalues.grow();
-    l_memcontrol.checkLimit();
   }
   while (oldsize < (int)f->upvalues.size()) f->upvalues[oldsize++].name = NULL;
   f->upvalues[fs->num_upvals].instack = (v->k == VLOCAL);
@@ -383,8 +383,8 @@ static int newlabelentry (LexState *ls, Labellist *l, TString *name,
                           int line, int pc) {
   int n = l->n;
   if(n >= (int)l->arr.size()) {
+    ScopedMemChecker c;
     l->arr.grow();
-    l_memcontrol.checkLimit();
   }
   l->arr[n].name = name;
   l->arr[n].line = line;
@@ -503,8 +503,8 @@ static void codeclosure (LexState *ls, Proto *clp, expdesc *v) {
   if (fs->num_protos >= (int)f->subprotos_.size()) {
     int oldsize = (int)f->subprotos_.size();
     if(fs->num_protos >= (int)f->subprotos_.size()) {
+      ScopedMemChecker c;
       f->subprotos_.grow();
-      l_memcontrol.checkLimit();
     }
     while (oldsize < (int)f->subprotos_.size()) f->subprotos_[oldsize++] = NULL;
   }
@@ -537,7 +537,6 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   {
     ScopedMemChecker c;
     f = new Proto();
-    if(f == NULL) luaD_throw(LUA_ERRMEM);
     f->linkGC(getGlobalGCHead());
 
     /* anchor prototype (to avoid being collected) */
@@ -548,7 +547,6 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
     f->maxstacksize = 2;  /* registers 0/1 are always valid */
 
     fs->constant_map = new Table();
-    if(fs->constant_map == NULL) luaD_throw(LUA_ERRMEM);
     fs->constant_map->linkGC(getGlobalGCHead());
     /* anchor table of constants (to avoid being collected) */
     L->stack_.push_reserve(TValue(fs->constant_map));
@@ -564,12 +562,15 @@ static void close_func (LexState *ls) {
   Proto *f = fs->f;
   luaK_ret(fs, 0, 0);  /* final return */
   leaveblock(fs);
-  f->code.resize_nocheck(fs->pc);
-  f->lineinfo.resize_nocheck(fs->pc);
-  f->constants.resize_nocheck(fs->num_constants);
-  f->subprotos_.resize_nocheck(fs->num_protos);
-  f->locvars.resize_nocheck(fs->nlocvars);
-  f->upvalues.resize_nocheck(fs->num_upvals);
+  {
+    ScopedMemChecker c;
+    f->code.resize_nocheck(fs->pc);
+    f->lineinfo.resize_nocheck(fs->pc);
+    f->constants.resize_nocheck(fs->num_constants);
+    f->subprotos_.resize_nocheck(fs->num_protos);
+    f->locvars.resize_nocheck(fs->nlocvars);
+    f->upvalues.resize_nocheck(fs->num_upvals);
+  }
 
   l_memcontrol.checkLimit();
 

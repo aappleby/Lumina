@@ -198,7 +198,6 @@ static void collectvalidlines (lua_State *L, Closure *f) {
     {
       ScopedMemChecker c;
       t = new Table();  /* new table to store active lines */
-      if(t == NULL) luaD_throw(LUA_ERRMEM);
       t->linkGC(getGlobalGCHead());
       L->stack_.push_reserve(TValue(t));
     }

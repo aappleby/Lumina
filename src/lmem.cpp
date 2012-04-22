@@ -89,6 +89,8 @@ struct Header {
 };
 
 void *luaM_alloc_nocheck (size_t size) {
+  assert(l_memcontrol.limitDisabled);
+
   uint8_t* buf = (uint8_t*)malloc(16 + size + MARKSIZE);
   if (buf == NULL) return NULL;
 

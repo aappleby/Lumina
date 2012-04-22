@@ -452,8 +452,8 @@ static void checkSizes () {
   if (g->gckind != KGC_EMERGENCY) {  /* do not change sizes in emergency */
     int hs = g->strings_->size_ / 2;  /* half the size of the string table */
     if (g->strings_->nuse_ < cast(uint32_t, hs)) {  /* using less than that half? */
+      ScopedMemChecker c;
       g->strings_->resize(hs);  /* halve its size */
-      l_memcontrol.checkLimit();
     }
     g->buff.buffer.clear();
   }

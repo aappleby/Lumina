@@ -614,6 +614,7 @@ static int upvalue (lua_State *L) {
 static int newuserdata (lua_State *L) {
   THREAD_CHECK(L);
   size_t size = luaL_checkint(L, 1);
+  // TODO(aappleby): This limit of 1 gigabyte for a userdata is arbitrary.
   if(size > 1000000000) luaD_throw(LUA_ERRMEM);
   char *p = cast(char *, lua_newuserdata(L, size));
   while (size--) *p++ = '\0';

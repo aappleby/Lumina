@@ -344,6 +344,8 @@ void Table::computeOptimalSizes(TValue newkey, int& outArraySize, int& outHashSi
 // #TODO - Table resize should be effectively atomic...
 
 void Table::resize(int nasize, int nhsize) {
+  ScopedMemChecker c;
+
   int oldasize = (int)array.size();
   int oldhsize = (int)hashtable.size();
 

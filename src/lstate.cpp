@@ -48,8 +48,7 @@ static void init_registry (lua_State *L, global_State *g) {
   /* create registry */
   //ScopedMemChecker c;
 
-  Table *registry = new Table();
-  if(registry == NULL) luaD_throw(LUA_ERRMEM);
+  Table* registry = new Table();
   registry->linkGC(getGlobalGCHead());
   g->l_registry = registry;
   registry->resize(LUA_RIDX_LAST, 0);
@@ -63,7 +62,6 @@ static void init_registry (lua_State *L, global_State *g) {
 
   /* registry[LUA_RIDX_GLOBALS] = table of globals */
   Table* t = new Table();
-  if(t == NULL) luaD_throw(LUA_ERRMEM);
   t->linkGC(getGlobalGCHead());
   mt = t;
   registry->set(TValue(LUA_RIDX_GLOBALS),mt);
@@ -112,7 +110,6 @@ lua_State *lua_newthread (lua_State *L) {
   {
     ScopedMemChecker c;
     L1 = new lua_State();
-    if(L1 == NULL) luaD_throw(LUA_ERRMEM);
     L1->linkGC(getGlobalGCHead());
     L->stack_.push(TValue(L1));
   }
