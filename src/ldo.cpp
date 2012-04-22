@@ -418,7 +418,7 @@ static void resume (lua_State *L, void *ud) {
   StkId firstArg = cast(StkId, ud);
 
   if (L->status == LUA_OK) {  /* may be starting a coroutine */
-    if (L->stack_.callinfo_ != &L->stack_.callinfo_head_) {
+    if (L->stack_.callinfo_ != L->stack_.callinfo_head_) {
       /* not in base level? */
       resume_error(L, "cannot resume non-suspended coroutine", firstArg);
     }

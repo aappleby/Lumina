@@ -1,10 +1,27 @@
 #include "LuaStack.h"
 
+#include "LuaCallinfo.h"
 #include "LuaClosure.h"
 #include "LuaGlobals.h" // for thread_G->l_registry
 #include "LuaUpval.h"
 
 #include <assert.h>
+
+//------------------------------------------------------------------------------
+
+LuaStack::LuaStack() {
+  top_ = NULL;
+  callinfo_head_ = new CallInfo();
+  callinfo_head_->stack_ = this;
+  callinfo_ = callinfo_head_;
+  open_upvals_ = NULL;
+}
+
+LuaStack::~LuaStack() {
+  assert(open_upvals_ == NULL);
+  delete callinfo_head_;
+  callinfo_head_ = NULL;
+}
 
 //------------------------------------------------------------------------------
 // Set up our starting stack & callinfo.
@@ -17,7 +34,7 @@ void LuaStack::init() {
   top_ = begin();
 
   /* initialize first ci */
-  CallInfo* ci = &callinfo_head_;
+  CallInfo* ci = callinfo_head_;
   ci->next = ci->previous = NULL;
   ci->callstatus = 0;
   ci->setFunc(getTop());
@@ -75,14 +92,14 @@ void LuaStack::free() {
   }
   
   // free the entire 'ci' list
-  callinfo_ = &callinfo_head_;
-  CallInfo *ci = callinfo_head_.next;
+  callinfo_ = callinfo_head_;
+  CallInfo *ci = callinfo_head_->next;
   while (ci != NULL) {
     CallInfo* next = ci->next;
     luaM_free(ci);
     ci = next;
   }
-  callinfo_head_.next = NULL;
+  callinfo_head_->next = NULL;
 
   clear();
 }

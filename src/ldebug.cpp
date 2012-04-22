@@ -86,9 +86,9 @@ int lua_getstack (lua_State *L, int level, lua_Debug *ar) {
   int status;
   CallInfo *ci;
   if (level < 0) return 0;  /* invalid (negative) level */
-  for (ci = L->stack_.callinfo_; level > 0 && ci != &L->stack_.callinfo_head_; ci = ci->previous)
+  for (ci = L->stack_.callinfo_; level > 0 && ci != L->stack_.callinfo_head_; ci = ci->previous)
     level--;
-  if (level == 0 && ci != &L->stack_.callinfo_head_) {  /* level found? */
+  if (level == 0 && ci != L->stack_.callinfo_head_) {  /* level found? */
     status = 1;
     ar->i_ci = ci;
   }

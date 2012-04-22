@@ -76,8 +76,8 @@ public:
   
   size_t size() const { return size_; }
 
-  const T* begin() const { return &buf_[0]; }
-  T* begin() { return &buf_[0]; }
+  const T* begin() const { return buf_; }
+  T* begin() { return buf_; }
 
   const T* end() const { return begin() + size_; }
   T* end() { return begin() + size_; }

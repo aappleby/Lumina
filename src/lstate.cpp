@@ -149,21 +149,24 @@ lua_State *lua_newstate () {
   int i;
   
   l_memcontrol.disableLimit();
-  lua_State* L = new lua_State();
-  if(L == NULL) { return NULL; }
+
   global_State* g = new global_State();
-  if(g == NULL) {
-    delete L;
-    return NULL;
-  }
+  thread_G = g;
+
+  lua_State* L = new lua_State();
+  thread_L = L;
+  L->l_G = g;
+
   l_memcontrol.enableLimit();
+
   if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
+    thread_G->isShuttingDown = true;
+
     delete L;
     delete g;
     return NULL;
   }
 
-  L->l_G = g;
   {
     GLOBAL_CHANGE(L);
     L->next_ = NULL;

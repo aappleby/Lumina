@@ -1,6 +1,5 @@
 #pragma once
 
-#include "LuaCallinfo.h"
 #include "LuaValue.h"
 #include "LuaVector.h"
 
@@ -9,16 +8,8 @@
 class LuaStack : public LuaVector<TValue> {
 public:
 
-  LuaStack() {
-    callinfo_head_.stack_ = this;
-    top_ = NULL;
-    callinfo_ = &callinfo_head_;
-    open_upvals_ = NULL;
-  }
-
-  ~LuaStack() {
-    assert(open_upvals_ == NULL);
-  }
+  LuaStack();
+  ~LuaStack();
 
   TValue* last() {
     return end() - EXTRA_STACK;
@@ -55,7 +46,7 @@ public:
   CallInfo* nextCallinfo();
   void sweepCallinfo();
   bool callinfoEmpty() {
-    return callinfo_ == &callinfo_head_;
+    return callinfo_ == callinfo_head_;
   }
 
   CallInfo* findProtectedCall();
@@ -88,7 +79,7 @@ public:
 
   LuaObject *open_upvals_;  /* list of open upvalues in this stack */
 
-  CallInfo callinfo_head_;  /* CallInfo for first level (C calling Lua) */
+  CallInfo* callinfo_head_;  /* CallInfo for first level (C calling Lua) */
 
 protected:
 

@@ -10,7 +10,7 @@ global_State::global_State()
 {
   GCdebt_ = 0;
   isShuttingDown = false;
-  totalbytes_ = sizeof(lua_State) + sizeof(global_State);
+  totalbytes_ = sizeof(global_State);
   call_depth_ = 0;
 
   anchor_head_ = NULL;

@@ -2,6 +2,7 @@
 
 #include "LuaBase.h"
 #include "LuaDefines.h"
+#include "LuaStack.h"
 #include "LuaTypes.h"
 
 class LuaStack;
@@ -18,12 +19,13 @@ public:
     return callstatus & CIST_LUA ? true : false;
   }
 
-  const StkId getFunc() const;
-  void  setFunc(StkId func);
-  const StkId getTop() const;
-  void  setTop(StkId top);
-  const StkId getBase() const;
-  void  setBase(StkId base);
+  const StkId getFunc() const { return stack_->begin() + func_index_; }
+  const StkId getTop() const  { return stack_->begin() + top_index_; }
+  const StkId getBase() const { return stack_->begin() + base_index_; }
+
+  void setFunc(StkId func) { func_index_ = func - stack_->begin(); }
+  void setTop(StkId top)   { top_index_ = top - stack_->begin(); }
+  void setBase(StkId base) { base_index_ = base - stack_->begin(); }
 
   CallInfo* previous;
   CallInfo* next;  /* dynamic call link */
