@@ -4,10 +4,6 @@
 
 #include "llimits.h"
 
-// Can't resize string table while sweeping strings, so we need to be able to
-// call this here
-void luaC_runtilstate (int statesmask);
-
 //-----------------------------------------------------------------------------
 
 uint32_t hashString(const char* str, size_t len) {
@@ -86,9 +82,6 @@ TString* stringtable::find(uint32_t hash, const char *str, size_t len) {
 void stringtable::resize(int newsize) {
   assert(l_memcontrol.limitDisabled);
 
-  // cannot resize while GC is traversing strings
-  luaC_runtilstate(~(1 << GCSsweepstring));
-
   if (newsize > size_) {
     hash_.resize_nocheck(newsize);
   }
@@ -111,6 +104,8 @@ void stringtable::resize(int newsize) {
     hash_.resize_nocheck(newsize);
   }
   size_ = newsize;
+
+  sweepCursor_ = 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -132,7 +127,6 @@ TString* stringtable::Create(const char *str, int len) {
   }
 
   if ((nuse_ >= (uint32_t)size_) && (size_ <= MAX_INT/2)) {
-    luaC_runtilstate(~(1 << GCSsweepstring));
     resize(size_ * 2);
   }
   
