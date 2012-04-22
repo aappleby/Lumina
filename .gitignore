@@ -5,6 +5,7 @@ x64
 *.vcproj.*.user
 *.wwdb
 *.suo
+*.idc
 env.exe
 msys-1.0.dll
 msys-iconv-2.dll
