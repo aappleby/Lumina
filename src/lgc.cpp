@@ -668,6 +668,8 @@ void luaC_freeallobjects () {
 
 
 static void atomic () {
+  assert(!l_memcontrol.limitDisabled);
+
   global_State *g = thread_G;
 
   assert(!g->mainthread->isWhite());
@@ -737,6 +739,8 @@ static void atomic () {
 
 
 static ptrdiff_t singlestep () {
+  assert(!l_memcontrol.limitDisabled);
+
   global_State *g = thread_G;
   switch (g->gcstate) {
     case GCSpause: {
@@ -806,6 +810,8 @@ static ptrdiff_t singlestep () {
 ** by 'statemask'
 */
 void luaC_runtilstate (int statesmask) {
+  assert(!l_memcontrol.limitDisabled);
+
   global_State *g = thread_G;
   while (!(statesmask & (1 << g->gcstate)))
     singlestep();
@@ -813,6 +819,8 @@ void luaC_runtilstate (int statesmask) {
 
 
 static void generationalcollection () {
+  assert(!l_memcontrol.limitDisabled);
+
   global_State *g = thread_G;
   if (g->lastmajormem == 0) {  /* signal for another major collection? */
     luaC_fullgc(0);  /* perform a full regular collection */
@@ -829,6 +837,8 @@ static void generationalcollection () {
 
 
 static void step () {
+  assert(!l_memcontrol.limitDisabled);
+
   global_State *g = thread_G;
   ptrdiff_t lim = g->gcstepmul;  /* how much to work */
   do {  /* always perform at least one single step */
@@ -845,6 +855,8 @@ static void step () {
 ** performs a basic GC step even if the collector is stopped
 */
 void luaC_forcestep () {
+  assert(!l_memcontrol.limitDisabled);
+
   global_State *g = thread_G;
   int i;
   if (isgenerational(g)) generationalcollection();
@@ -856,6 +868,8 @@ void luaC_forcestep () {
 
 
 void luaC_checkGC() {
+  assert(!l_memcontrol.limitDisabled);
+
   if(thread_G->getGCDebt() > 0) {
     luaC_step();
   }
@@ -865,6 +879,8 @@ void luaC_checkGC() {
 ** performs a basic GC step only if collector is running
 */
 void luaC_step () {
+  assert(!l_memcontrol.limitDisabled);
+
   if (thread_G->gcrunning) luaC_forcestep();
 }
 
@@ -874,6 +890,8 @@ void luaC_step () {
 ** finalizers (which could change stack positions)
 */
 void luaC_fullgc (int isemergency) {
+  assert(!l_memcontrol.limitDisabled);
+
   lua_State *L = thread_L;
   global_State *g = G(L);
   int origkind = g->gckind;
