@@ -1016,7 +1016,7 @@ int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc) {
     luaC_checkGC();
 
   }
-  catch(int error) {
+  catch(LuaResult error) {
     status = error;
   }
 
@@ -1261,7 +1261,7 @@ void *lua_newuserdata (lua_State *L, size_t size) {
   luaC_checkGC();
 
   if(!l_memcontrol.canAlloc(size)) {
-    luaD_throw(LUA_ERRMEM);
+    throw LUA_ERRMEM;
   }
 
   Udata* u = NULL;

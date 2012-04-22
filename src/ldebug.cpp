@@ -577,7 +577,7 @@ l_noret luaG_errormsg () {
   lua_State *L = thread_L;
   if (L->errfunc != 0) {  /* is there an error handling function? */
     StkId errfunc = restorestack(L, L->errfunc);
-    if (!errfunc->isFunction()) luaD_throw(LUA_ERRERR);
+    if (!errfunc->isFunction()) throw LUA_ERRERR;
     L->stack_.top_[0] = L->stack_.top_[-1];  /* move argument */
     L->stack_.top_[-1] = *errfunc;  /* push function */
     L->stack_.top_++;
@@ -589,7 +589,7 @@ l_noret luaG_errormsg () {
     handleResult(result);
     luaD_call(L, L->stack_.top_ - 2, 1, 0);  /* call it */
   }
-  luaD_throw(LUA_ERRRUN);
+  throw LUA_ERRRUN;
 }
 
 

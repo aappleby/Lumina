@@ -72,7 +72,7 @@ void Memcontrol::checkLimit() {
 
   // If we're still over, throw the out-of-memory error.
   if(isOverLimit()) {
-    handleResult(LUA_ERRMEM);
+    throw LUA_ERRMEM;
   }
 }
 

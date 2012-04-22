@@ -51,18 +51,6 @@ static void seterrorobj (lua_State *L, int errcode, StkId oldtop) {
   L->stack_.push_nocheck(errobj);
 }
 
-l_noret luaD_throw (int errcode) {
-
-  // Throwing errors while we're in the middle of constructing an object
-  // is forbidden, as that can break things badly in C++.
-  if(l_memcontrol.limitDisabled) {
-    assert(false);
-    printf("xxx");
-  }
-
-  throw(errcode);
-}
-
 /* }====================================================== */
 
 void luaD_hook (lua_State *L, int event, int line) {
@@ -164,7 +152,7 @@ void luaD_precallLightC(lua_State* L, StkId func, int nresults) {
   if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
     luaG_runerror("C stack overflow");
   } else if (L->l_G->call_depth_ >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3))) {
-    luaD_throw(LUA_ERRERR);
+    throw LUA_ERRERR;
   }
 
   int n = (*f)(L);  /* do the actual call */
@@ -190,7 +178,7 @@ void luaD_precallC(lua_State* L, StkId func, int nresults) {
   if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
     luaG_runerror("C stack overflow");
   } else if (L->l_G->call_depth_ >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3))) {
-    luaD_throw(LUA_ERRERR);
+    throw LUA_ERRERR;
   }
 
   int n = (*f)(L);  /* do the actual call */
@@ -418,7 +406,8 @@ static l_noret resume_error (lua_State *L, const char *msg, StkId firstArg) {
     result = L->stack_.push_reserve2(TValue(s));
   }
   handleResult(result);
-  luaD_throw(-1);  /* jump back to 'lua_resume' */
+
+  throw (LuaResult)-1;  /* jump back to 'lua_resume' */
 }
 
 
@@ -484,7 +473,7 @@ int lua_resume (lua_State *L, lua_State *from, int nargs) {
   try {
     resume(L, L->stack_.top_ - nargs);
   }
-  catch (int error) {
+  catch (LuaResult error) {
     status = error;
   }
   
@@ -502,7 +491,7 @@ int lua_resume (lua_State *L, lua_State *from, int nargs) {
       status = LUA_OK;
       try {
         unroll(L, NULL);
-      } catch(int error) {
+      } catch(LuaResult error) {
         status = error;
       }
     }
@@ -537,7 +526,7 @@ int lua_yield (lua_State *L, int nresults) {
     ci->continuation_ = NULL;
     ci->old_func_ = savestack(L, ci->getFunc());  /* save current 'func' */
     ci->setFunc(L->stack_.top_ - nresults - 1);  /* protect stack below results */
-    luaD_throw(LUA_YIELD);
+    throw LUA_YIELD;
   }
   assert(ci->callstatus & CIST_HOOKED);  /* must be inside a hook */
   return 0;  /* return to 'luaD_hook' */
@@ -568,7 +557,7 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   L->stack_.callinfo_->old_func_ = savestack(L, L->stack_.callinfo_->getFunc());  /* save current 'func' */
   L->stack_.callinfo_->setFunc(L->stack_.top_ - nresults - 1);  /* protect stack below results */
 
-  luaD_throw(LUA_YIELD);
+  throw LUA_YIELD;
   return 0;
 }
 
@@ -580,7 +569,7 @@ static void checkmode (lua_State *L, const char *mode, const char *x) {
   THREAD_CHECK(L);
   if (mode && strchr(mode, x[0]) == NULL) {
     luaO_pushfstring(L, "attempt to load a %s chunk (mode is " LUA_QS ")", x, mode);
-    luaD_throw(LUA_ERRSYNTAX);
+    throw LUA_ERRSYNTAX;
   }
 }
 
@@ -624,7 +613,7 @@ int luaD_protectedparser (lua_State *L, ZIO *z, const char *name, const char *mo
       }
     }
   }
-  catch(int error) {
+  catch(LuaResult error) {
     result = error;
   }
 

@@ -509,11 +509,11 @@ static void GCTM (int propagateerrors) {
 
   L->errfunc = 0;
 
-  int status = LUA_OK;
+  LuaResult status = LUA_OK;
   try {
     luaD_call(L, L->stack_.top_ - 2, 0, 0);
   }
-  catch(int error) {
+  catch(LuaResult error) {
     status = error;
   }
 
@@ -527,7 +527,7 @@ static void GCTM (int propagateerrors) {
       luaO_pushfstring(L, "error in __gc metamethod (%s)", lua_tostring(L, -1));
       status = LUA_ERRGCMM;  // error in __gc metamethod
     }
-    luaD_throw(status);  // re-send error
+    throw status;  // re-send error
   }
 }
 
