@@ -67,7 +67,6 @@ public:
 };
 
 
-void luaX_init (lua_State *L);
 void luaX_setinput (lua_State *L, LexState *ls, ZIO *z,
                               TString *source, int firstchar);
 TString *luaX_newstring (LexState *ls, const char *str, size_t l);

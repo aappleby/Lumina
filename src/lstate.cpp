@@ -22,22 +22,6 @@
 #include "ltm.h"
 
 
-#if !defined(LUAI_GCPAUSE)
-#define LUAI_GCPAUSE	200  /* 200% */
-#endif
-
-#if !defined(LUAI_GCMAJOR)
-#define LUAI_GCMAJOR	200  /* 200% */
-#endif
-
-#if !defined(LUAI_GCMUL)
-#define LUAI_GCMUL	200 /* GC runs 'twice the speed' of memory allocation */
-#endif
-
-
-#define MEMERRMSG       "not enough memory"
-
-
 static void close_state (lua_State *L) {
   THREAD_CHECK(L);
 
@@ -98,7 +82,6 @@ lua_State *lua_newthread (lua_State *L) {
 
 lua_State *lua_newstate () {
   GLOBAL_CHANGE(NULL);
-  int i;
   
   l_memcontrol.disableLimit();
 
@@ -121,30 +104,6 @@ lua_State *lua_newstate () {
   {
     GLOBAL_CHANGE(L);
     L->next_ = NULL;
-    //L->tt = LUA_TTHREAD;
-    assert(L->type() == LUA_TTHREAD);
-    L->makeLive();
-    g->gckind = KGC_NORMAL;
-    
-    g->mainthread = L;
-    g->uvhead.uprev = &g->uvhead;
-    g->uvhead.unext = &g->uvhead;
-    g->gcrunning = 0;  /* no GC while building state */
-    g->lastmajormem = 0;
-    g->strings_ = new stringtable();
-    g->panic = NULL;
-    g->version = lua_version(NULL);
-    g->gcstate = GCSpause;
-    g->allgc = NULL;
-    g->finobj = NULL;
-
-    g->gcpause = LUAI_GCPAUSE;
-    g->gcmajorinc = LUAI_GCMAJOR;
-    g->gcstepmul = LUAI_GCMUL;
-
-    for (i=0; i < LUA_NUMTAGS; i++) {
-      g->base_metatables_[i] = NULL;
-    }
 
     try {
       THREAD_CHECK(L);
@@ -153,29 +112,8 @@ lua_State *lua_newstate () {
         ScopedMemChecker c;
         L->stack_.init();  /* init stack */
 
-        Table* globals = new Table();
-
-        Table* registry = new Table(LUA_RIDX_LAST, 0);
-        registry->set(TValue(LUA_RIDX_MAINTHREAD), TValue(L));
-        registry->set(TValue(LUA_RIDX_GLOBALS), TValue(globals));
-
-        g->l_registry = registry;
-        
-        //luaC_barrierback(registry, TValue(L));
-        //luaC_barrierback(g->l_registry,TValue(globals));
-
-        g->strings_->resize(MINSTRTABSIZE);  /* initial size of string table */
-
-        // pre-create memory-error message
-        g->memerrmsg = thread_G->strings_->Create(MEMERRMSG);
-        g->memerrmsg->setFixed();
+        g->init(L);
       }
-
-      // Create tagmethod name strings
-      luaT_init();
-
-      // Create lexer reserved word strings
-      luaX_init(L);
 
       g->gcrunning = 1;  /* allow gc */
     }

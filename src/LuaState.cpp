@@ -36,6 +36,8 @@ lua_State::lua_State(global_State* g) : LuaObject(LUA_TTHREAD) {
   allowhook = 1;
   nonyieldable_count_ = 1;
   status = LUA_OK;
+
+  setColor(g->livecolor);
 }
 
 lua_State::~lua_State() {

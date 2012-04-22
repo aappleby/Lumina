@@ -43,12 +43,6 @@ typedef void * (*lua_Alloc) (void *ptr, size_t osize, size_t nsize);
 
 
 
-/* predefined values in the registry */
-#define LUA_RIDX_MAINTHREAD	1
-#define LUA_RIDX_GLOBALS	2
-#define LUA_RIDX_LAST		LUA_RIDX_GLOBALS
-
-
 
 
 #include "LuaValue.h"

@@ -55,12 +55,6 @@
 
 
 
-/* minimum size for the string table (must be power of 2) */
-#if !defined(MINSTRTABSIZE)
-#define MINSTRTABSIZE	32
-#endif
-
-
 /* minimum size for string buffer */
 #if !defined(LUA_MINBUFFER)
 #define LUA_MINBUFFER	32

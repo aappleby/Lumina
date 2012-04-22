@@ -11,6 +11,7 @@
 #include <string.h>
 #include <conio.h>
 
+#include "LuaGlobals.h"
 #include "LuaState.h"
 
 #include "lua.h"

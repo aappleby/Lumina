@@ -17,7 +17,4 @@ const char* objtypename(const TValue* v);
 TValue luaT_gettmbyobj2 (TValue v, TMS event);
 TValue fasttm2 ( Table* table, TMS tag);
 
-void luaT_init ();
-
-
 #endif

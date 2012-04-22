@@ -21,6 +21,11 @@
 #define GCSsweep	4
 #define GCSpause	5
 
+/* predefined values in the registry */
+#define LUA_RIDX_MAINTHREAD	1
+#define LUA_RIDX_GLOBALS	2
+#define LUA_RIDX_LAST		LUA_RIDX_GLOBALS
+
 struct LuaAnchor;
 
 /*
@@ -31,6 +36,9 @@ public:
 
   global_State();
   ~global_State();
+
+  // must be called from a safe context
+  void init(lua_State* mainthread2);
 
   // actual number of total bytes allocated
   size_t getTotalBytes() {

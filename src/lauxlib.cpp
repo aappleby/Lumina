@@ -4,6 +4,7 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaGlobals.h"
 #include "LuaState.h"
 
 #include <errno.h>

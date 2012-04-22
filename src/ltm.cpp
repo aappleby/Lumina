@@ -17,36 +17,6 @@
 
 Table* lua_getmetatable (TValue v);
 
-/* ORDER TM */
-static const char *const luaT_eventname[] = {
-  "__index",
-  "__newindex",
-  "__gc",
-  "__mode",
-  "__len",
-  "__eq",
-  "__add",
-  "__sub",
-  "__mul",
-  "__div",
-  "__mod",
-  "__pow",
-  "__unm",
-  "__lt",
-  "__le",
-  "__concat",
-  "__call"
-};
-
-void luaT_init() {
-  ScopedMemChecker c;
-  for (int i=0; i<TM_N; i++) {
-    thread_G->tagmethod_names_[i] = thread_G->strings_->Create(luaT_eventname[i]);
-    thread_G->tagmethod_names_[i]->setFixed();  /* never collect these names */
-  }
-}
-
-
 TValue luaT_gettmbyobj2 (TValue v, TMS event) {
   Table* mt = lua_getmetatable(v);
   if(mt == NULL) return TValue::None();

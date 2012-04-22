@@ -31,7 +31,7 @@
 
 
 /* ORDER RESERVED */
-static const char *const luaX_tokens [] = {
+const char* luaX_tokens[] = {
     "and", "break", "do", "else", "elseif",
     "end", "false", "for", "function", "goto", "if",
     "in", "local", "nil", "not", "or", "repeat",
@@ -39,6 +39,8 @@ static const char *const luaX_tokens [] = {
     "..", "...", "==", ">=", "<=", "~=", "::", "<eof>",
     "<number>", "<name>", "<string>"
 };
+
+int luaX_tokens_count = sizeof(luaX_tokens) / sizeof(luaX_tokens[0]);
 
 
 #define save_and_next(ls) (save(ls, ls->current), next(ls))
@@ -60,19 +62,6 @@ static void save (LexState *ls, int c) {
     b->buffer.resize_nocheck(newsize);
   }
   b->buffer[luaZ_bufflen(b)++] = cast(char, c);
-}
-
-
-void luaX_init (lua_State *L) {
-  THREAD_CHECK(L);
-  int i;
-
-  ScopedMemChecker c;
-  for (i=0; i<NUM_RESERVED; i++) {
-    TString *ts = thread_G->strings_->Create(luaX_tokens[i]);
-    ts->setFixed();  /* reserved words are never collected */
-    ts->setReserved(cast_byte(i+1));  /* reserved word */
-  }
 }
 
 

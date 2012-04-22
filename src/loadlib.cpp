@@ -8,6 +8,7 @@
 ** systems.
 */
 
+#include "LuaGlobals.h"
 #include "LuaState.h"
 
 /*
