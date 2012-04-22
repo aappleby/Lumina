@@ -40,8 +40,8 @@
 
 static TValue geterrorobj (lua_State *L, int errcode ) {
   THREAD_CHECK(L);
-  if(errcode == LUA_ERRMEM) return TValue(G(L)->memerrmsg);
-  if(errcode == LUA_ERRERR) return TValue(luaS_newliteral("error in error handling"));
+  if(errcode == LUA_ERRMEM) return TValue(thread_G->memerrmsg);
+  if(errcode == LUA_ERRERR) return TValue(thread_G->strings_->Create("error in error handling"));
   return L->stack_.top_[-1];
 }
 
@@ -380,7 +380,7 @@ static l_noret resume_error (lua_State *L, const char *msg, StkId firstArg) {
     L->stack_.top_ = firstArg;  /* remove args from the stack */
 
     /* push error message */
-    TString* s = luaS_new(msg);
+    TString* s = thread_G->strings_->Create(msg);
     L->stack_.push_reserve(TValue(s));
   }
   luaD_throw(-1);  /* jump back to 'lua_resume' */

@@ -68,7 +68,7 @@ void luaX_init (lua_State *L) {
   int i;
 
   for (i=0; i<NUM_RESERVED; i++) {
-    TString *ts = luaS_new(luaX_tokens[i]);
+    TString *ts = thread_G->strings_->Create(luaX_tokens[i]);
     ts->setFixed();  /* reserved words are never collected */
     ts->setReserved(cast_byte(i+1));  /* reserved word */
   }
@@ -135,7 +135,7 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
   TString* ts = NULL;
   {
     ScopedMemChecker c;
-    ts = luaS_newlstr(str, l);  /* create new string */
+    ts = thread_G->strings_->Create(str, l);  /* create new string */
     L->stack_.push_nocheck(TValue(ts));  /* temporarily anchor it in stack */
   }
 
@@ -179,7 +179,7 @@ void luaX_setinput (lua_State *L, LexState *ls, ZIO *z, TString *source, int fir
   ls->linenumber = 1;
   ls->lastline = 1;
   ls->source = source;
-  ls->envn = luaS_new(LUA_ENV);  /* create env name */
+  ls->envn = thread_G->strings_->Create(LUA_ENV);  /* create env name */
   ls->envn->setFixed();  /* never collect this name */
   ls->buff->buffer.resize_nocheck(LUA_MINBUFFER);
 }

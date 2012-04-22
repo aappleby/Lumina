@@ -373,7 +373,7 @@ int luaK_numberK (FuncState *fs, lua_Number r) {
     
     {
       ScopedMemChecker c;
-      TString* s = luaS_newlstr((char *)&r, sizeof(r));
+      TString* s = thread_G->strings_->Create((char *)&r, sizeof(r));
       L->stack_.push_reserve(TValue(s));
     }
 

@@ -398,13 +398,13 @@ const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
     return NULL;
   }
 
-  char s[LUAI_MAXNUMBER2STR];
   lua_Number n = o->getNumber();
 
   {
     ScopedMemChecker c;
+    char s[LUAI_MAXNUMBER2STR];
     int l = lua_number2str(s, n);
-    *o = luaS_newlstr(s, l);
+    *o = thread_G->strings_->Create(s,l);
   }
 
   luaC_checkGC();
@@ -508,7 +508,7 @@ const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
 
   {
     ScopedMemChecker c;
-    ts = luaS_newlstr(s, len);
+    ts = thread_G->strings_->Create(s, len);
     L->stack_.push(TValue(ts));
   }
 
@@ -528,7 +528,7 @@ const char *lua_pushstring (lua_State *L, const char *s) {
 
     {
       ScopedMemChecker c;
-      ts = luaS_new(s);
+      ts = thread_G->strings_->Create(s);
       L->stack_.push(TValue(ts));
     }
 
@@ -609,7 +609,7 @@ int lua_pushthread (lua_State *L) {
 void lua_getglobal (lua_State *L, const char *var) {
   THREAD_CHECK(L);
   TValue globals = thread_G->getRegistry()->get(TValue(LUA_RIDX_GLOBALS));
-  L->stack_.push(TValue(luaS_new(var)));
+  L->stack_.push(TValue(thread_G->strings_->Create(var)));
   
   TValue val;
   LuaResult r = luaV_gettable2(L, globals, L->stack_.top_[-1], val);
@@ -645,7 +645,7 @@ void lua_getfield (lua_State *L, int idx, const char *k) {
 
   {
     ScopedMemChecker c;
-    TString* s = luaS_new(k);
+    TString* s = thread_G->strings_->Create(k);
     L->stack_.push(TValue(s));
   }
 
@@ -766,7 +766,7 @@ void lua_setglobal (lua_State *L, const char *var) {
 
   {
     ScopedMemChecker c;
-    TString* s = luaS_new(var);
+    TString* s = thread_G->strings_->Create(var);
     L->stack_.push(TValue(s));
   }
 
@@ -793,7 +793,7 @@ void lua_setfield (lua_State *L, int idx, const char *k) {
 
   {
     ScopedMemChecker c;
-    TString* s = luaS_new(k);
+    TString* s = thread_G->strings_->Create(k);
     L->stack_.push(TValue(s));
   }
 
@@ -1206,7 +1206,7 @@ void lua_concat (lua_State *L, int n) {
     luaV_concat(L, n);
   }
   else if (n == 0) {  /* push empty string */
-    TString* s = luaS_newlstr("", 0);
+    TString* s = thread_G->strings_->Create("", 0);
     L->stack_.push(TValue(s));
   }
   /* else n == 1; nothing to do */

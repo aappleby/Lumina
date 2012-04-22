@@ -103,7 +103,7 @@ void lua_State::restoreState(LuaExecutionState s, int status, int nresults) {
       errobj = TValue(l_G->memerrmsg);
     }
     else if(status == LUA_ERRERR) {
-      errobj = TValue(TString::Create("error in error handling"));
+      errobj = TValue(thread_G->strings_->Create("error in error handling"));
     }
     else {
       errobj = stack_.top_[-1];

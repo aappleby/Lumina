@@ -210,13 +210,13 @@ lua_State *lua_newstate () {
       L->stack_.init();  /* init stack */
       init_registry(L, g);
 
-      luaS_resize(MINSTRTABSIZE);  /* initial size of string table */
+      g->strings_->resize(MINSTRTABSIZE);  /* initial size of string table */
 
       luaT_init();
       luaX_init(L);
 
       /* pre-create memory-error message */
-      g->memerrmsg = luaS_newliteral(MEMERRMSG);
+      g->memerrmsg = thread_G->strings_->Create(MEMERRMSG);
       g->memerrmsg->setFixed();  /* it should never be collected */
 
       g->gcrunning = 1;  /* allow gc */

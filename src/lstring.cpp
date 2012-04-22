@@ -18,15 +18,3 @@
 #include "lstate.h"
 #include "lstring.h"
 #include "ldebug.h"
-
-void luaS_resize(int newsize) {
-  thread_G->strings_->resize(newsize);
-}
-
-TString *luaS_newlstr (const char *str, size_t l) {
-  return TString::Create(str,l);
-}
-
-TString *luaS_new (const char *str) {
-  return TString::Create(str);
-}

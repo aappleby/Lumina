@@ -78,7 +78,7 @@ static TString* LoadString(LoadState* S)
  {
   char* s=luaZ_openspace(S->L,S->b,size);
   LoadBlock(S,s,size*sizeof(char));
-  return luaS_newlstr(s,size-1);		/* remove trailing '\0' */
+  return thread_G->strings_->Create(s,size-1);		/* remove trailing '\0' */
  }
 }
 

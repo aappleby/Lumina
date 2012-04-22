@@ -11,13 +11,4 @@
 #include "lobject.h"
 #include "lstate.h"
 
-
-#define sizeudata(u)	(sizeof(Udata)+(u)->len)
-
-#define luaS_newliteral(s)	(luaS_newlstr("" s, (sizeof(s)/sizeof(char))-1))
-
-void     luaS_resize   (int newsize);
-TString* luaS_newlstr  (const char *str, size_t l);
-TString* luaS_new      (const char *str);
-
 #endif

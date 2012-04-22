@@ -55,7 +55,7 @@ int luaV_tostring (TValue* v) {
     lua_Number n = v->getNumber();
     char s[LUAI_MAXNUMBER2STR];
     int l = lua_number2str(s, n);
-    *v = luaS_newlstr(s, l);
+    *v = thread_G->strings_->Create(s, l);
     return 1;
   }
 
@@ -494,7 +494,7 @@ void luaV_concat (lua_State *L, int total) {
 
     {
       ScopedMemChecker c;
-      top[-n] = luaS_newlstr(buffer, tl);
+      top[-n] = thread_G->strings_->Create(buffer, tl);
     }
 
     total -= n-1;  /* got 'n' strings to create 1 new */

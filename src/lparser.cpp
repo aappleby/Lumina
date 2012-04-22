@@ -450,7 +450,7 @@ static void enterblock (FuncState *fs, BlockCnt *bl, uint8_t isloop) {
 ** create a label named "break" to resolve break statements
 */
 static void breaklabel (LexState *ls) {
-  TString *n = luaS_new("break");
+  TString *n = thread_G->strings_->Create("break");
   int l = newlabelentry(ls, &ls->dyd->label, n, 0, ls->fs->pc);
   findgotos(ls, &ls->dyd->label.arr[l]);
 }
@@ -1208,7 +1208,7 @@ static void gotostat (LexState *ls, int pc) {
     label = str_checkname(ls);
   else {
     luaX_next(ls);  /* skip break */
-    label = luaS_new("break");
+    label = thread_G->strings_->Create("break");
   }
   g = newlabelentry(ls, &ls->dyd->gt, label, line, pc);
   findlabel(ls, g);  /* close it if label already defined */
@@ -1628,7 +1628,7 @@ Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
   TString* tname = NULL;
   {
     ScopedMemChecker c;
-    tname = luaS_new(name);
+    tname = thread_G->strings_->Create(name);
     /* push name to protect it */
     L->stack_.push_reserve(TValue(tname));
   }

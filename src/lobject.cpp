@@ -171,7 +171,7 @@ int luaO_str2d (const char *s, size_t len, lua_Number *result) {
 static void pushstr (lua_State *L, const char *str, size_t l) {
   THREAD_CHECK(L);
   ScopedMemChecker c;
-  TString* s = luaS_newlstr(str, l);
+  TString* s = thread_G->strings_->Create(str, l);
   L->stack_.push_reserve(TValue(s));
 }
 
@@ -186,7 +186,7 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
 
     {
       ScopedMemChecker c;
-      TString* s = luaS_newlstr(fmt, e-fmt);
+      TString* s = thread_G->strings_->Create(fmt, e-fmt);
       L->stack_.push_reserve(TValue(s));
     }
 

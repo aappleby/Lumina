@@ -8,31 +8,13 @@
 __declspec(align(8)) class TString : public LuaObject {
 public:
 
-  TString(uint32_t hash, const char* str, int len);
   ~TString();
 
-  static TString* Create(const char* str);
-  static TString* Create(const char* str, int len);
-
   size_t getLen() const { return len_; }
-  void setLen(size_t len) { len_ = len; }
-
-  void setBuf(char* buf) {
-    buf_ = buf;
-  }
 
   const char * c_str() const {
     return buf_;
   }
-
-  void setText(const char * str, size_t len) {
-    len_ = len;
-    memcpy(buf_, str, len*sizeof(char));
-    buf_[len_] = '\0'; // terminating null
-  }
-
-  uint32_t getHash() const { return hash_; }
-  void setHash(uint32_t hash) { hash_ = hash; }
 
   uint8_t getReserved() const { return reserved_; }
   void setReserved(uint8_t r) { reserved_ = r; }
@@ -41,6 +23,11 @@ public:
   virtual int PropagateGC(GCVisitor& visitor);
 
 protected:
+
+  TString(uint32_t hash, const char* str, int len);
+  uint32_t getHash() const { return hash_; }
+
+  friend class stringtable;
 
   char* buf_;
   uint8_t reserved_;
@@ -54,6 +41,9 @@ public:
 
   stringtable();
   ~stringtable();
+
+  TString* Create(const char* str);
+  TString* Create(const char* str, int len);
 
   TString* find(uint32_t hash, const char* str, size_t len);
 
