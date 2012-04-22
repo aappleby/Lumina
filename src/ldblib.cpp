@@ -82,6 +82,7 @@ static int db_setuservalue (lua_State *L) {
 
 static void settabss (lua_State *L, const char *i, const char *v) {
   THREAD_CHECK(L);
+  luaC_checkGC();
   lua_pushstring(L, v);
   lua_setfield(L, -2, i);
 }
@@ -200,6 +201,7 @@ static int db_getlocal (lua_State *L) {
   int nvar = luaL_checkint(L, arg+2);  /* local-variable index */
   if (lua_isfunction(L, arg + 1)) {  /* function argument? */
     L->stack_.copy(arg + 1);  /* push function */
+    luaC_checkGC();
     lua_pushstring(L, lua_getlocal(L, NULL, nvar));  /* push local name */
     return 1;
   }
@@ -221,6 +223,7 @@ static int db_getlocal (lua_State *L) {
         THREAD_CHANGE(L1);
         lua_xmove(L1, L, 1);  /* push local value */
       }
+      luaC_checkGC();
       lua_pushstring(L, name);  /* push name */
       L->stack_.copy(-2);  /* re-order */
       return 2;
@@ -255,6 +258,7 @@ static int db_setlocal (lua_State *L) {
     THREAD_CHANGE(L1);
     result2 = lua_setlocal(L1, &ar, idx);
   }
+  luaC_checkGC();
   lua_pushstring(L, result2);
   return 1;
 }
@@ -267,6 +271,7 @@ static int auxupvalue (lua_State *L, int get) {
   luaL_checkIsFunction(L, 1);
   name = get ? lua_getupvalue(L, 1, n) : lua_setupvalue(L, 1, n);
   if (name == NULL) return 0;
+  luaC_checkGC();
   lua_pushstring(L, name);
   lua_insert(L, -(get+1));
   return get + 1;
@@ -327,6 +332,7 @@ static void hookf (lua_State *L, lua_Debug *ar) {
   gethooktable(L);
   lua_rawgetp(L, -1, L);
   if (lua_isfunction(L, -1)) {
+    luaC_checkGC();
     lua_pushstring(L, hooknames[(int)ar->event]);
     if (ar->currentline >= 0)
       lua_pushinteger(L, ar->currentline);
@@ -396,13 +402,17 @@ static int db_gethook (lua_State *L) {
     mask = lua_gethookmask(L1);
     hook = lua_gethook(L1);
   }
-  if (hook != NULL && hook != hookf)  /* external hook? */
+  if (hook != NULL && hook != hookf) {
+    // external hook?
+    luaC_checkGC();
     lua_pushliteral(L, "external hook");
+  }
   else {
     gethooktable(L);
     lua_rawgetp(L, -1, L1);   /* get hook */
     L->stack_.remove(-2);  /* remove hook table */
   }
+  luaC_checkGC();
   lua_pushstring(L, unmakemask(mask, buff));
   int hookcount;
   {

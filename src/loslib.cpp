@@ -111,8 +111,10 @@ static int os_tmpname (lua_State *L) {
   char buff[LUA_TMPNAMBUFSIZE];
   int err;
   lua_tmpnam(buff, err);
-  if (err)
+  if (err) {
     return luaL_error(L, "unable to generate a unique filename");
+  }
+  luaC_checkGC();
   lua_pushstring(L, buff);
   return 1;
 }
@@ -120,6 +122,7 @@ static int os_tmpname (lua_State *L) {
 
 static int os_getenv (lua_State *L) {
   THREAD_CHECK(L);
+  luaC_checkGC();
   lua_pushstring(L, getenv(luaL_checkstring(L, 1)));  /* if NULL push nil */
   return 1;
 }
@@ -298,6 +301,7 @@ static int os_setlocale (lua_State *L) {
      "numeric", "time", NULL};
   const char *l = luaL_optstring(L, 1, NULL);
   int op = luaL_checkoption(L, 2, "all", catnames);
+  luaC_checkGC();
   lua_pushstring(L, setlocale(cat[op], l));
   return 1;
 }

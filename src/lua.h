@@ -281,8 +281,9 @@ inline bool lua_isnoneornil(lua_State* L, int n) {
   return false;
 }
 
-#define lua_pushliteral(L, s)	\
-	lua_pushlstring(L, "" s, (sizeof(s)/sizeof(char))-1)
+inline void lua_pushliteral(lua_State* L, const char* s) {
+  lua_pushlstring(L, s, strlen(s) );
+}
 
 #define lua_pushglobaltable(L)  \
 	lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS)

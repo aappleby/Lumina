@@ -163,8 +163,11 @@ static int traceback (lua_State *L) {
   if (msg)
     luaL_traceback(L, L, msg, 1);
   else if (!lua_isnoneornil(L, 1)) {  /* is there an error object? */
-    if (!luaL_callmeta(L, 1, "__tostring"))  /* try its 'tostring' metamethod */
+    // try its 'tostring' metamethod
+    if (!luaL_callmeta(L, 1, "__tostring")) {
+      luaC_checkGC();
       lua_pushliteral(L, "(no error message)");
+    }
   }
   return 1;
 }
@@ -198,11 +201,13 @@ static int getargs (lua_State *L, char **argv, int n) {
   narg = argc - (n + 1);  /* number of arguments to the script */
   luaL_checkstack(L, narg + 3, "too many arguments to script");
   for (i=n+1; i < argc; i++) {
+    luaC_checkGC();
     lua_pushstring(L, argv[i]);
   }
   luaC_checkGC();
   lua_createtable(L, narg, n + 1);
   for (i=0; i < argc; i++) {
+    luaC_checkGC();
     lua_pushstring(L, argv[i]);
     lua_rawseti(L, -2, i - n);
   }
@@ -228,6 +233,7 @@ static int dolibrary (lua_State *L, const char *name) {
   int status;
   lua_pushglobaltable(L);
   lua_getfield(L, -1, "require");
+  luaC_checkGC();
   lua_pushstring(L, name);
   status = docall(L, 1, 1);
   if (status == LUA_OK) {
@@ -276,10 +282,15 @@ static int pushline (lua_State *L, int firstline) {
   l = strlen(b);
   if (l > 0 && b[l-1] == '\n')  /* line ends with newline? */
     b[l-1] = '\0';  /* remove it */
-  if (firstline && b[0] == '=')  /* first line starts with `=' ? */
-    lua_pushfstring(L, "return %s", b+1);  /* change it to `return' */
-  else
+
+  // first line starts with `=' ? change it to `return' */
+  if (firstline && b[0] == '=') {
+    lua_pushfstring(L, "return %s", b+1);
+  }
+  else {
+    luaC_checkGC();
     lua_pushstring(L, b);
+  }
   lua_freeline(L, b);
   return 1;
 }
@@ -297,6 +308,7 @@ static int loadline (lua_State *L) {
     if (!incomplete(L, status)) break;  /* cannot try to add lines? */
     if (!pushline(L, 0))  /* no more input? */
       return -1;
+    luaC_checkGC();
     lua_pushliteral(L, "\n");  /* add a new line... */
     lua_insert(L, -2);  /* ...between the two lines */
     lua_concat(L, 3);  /* join them */

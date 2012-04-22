@@ -61,9 +61,14 @@ static int str_sub (lua_State *L) {
   size_t end = posrelat(luaL_optinteger(L, 3, -1), l);
   if (start < 1) start = 1;
   if (end > l) end = l;
-  if (start <= end)
+  if (start <= end) {
+    luaC_checkGC();
     lua_pushlstring(L, s + start - 1, end - start + 1);
-  else lua_pushliteral(L, "");
+  }
+  else {
+    luaC_checkGC();
+    lua_pushliteral(L, "");
+  }
   return 1;
 }
 
@@ -118,7 +123,10 @@ static int str_rep (lua_State *L) {
   const char *s = luaL_checklstring(L, 1, &l);
   int n = luaL_checkint(L, 2);
   const char *sep = luaL_optlstring(L, 3, "", &lsep);
-  if (n <= 0) lua_pushliteral(L, "");
+  if (n <= 0) {
+    luaC_checkGC();
+    lua_pushliteral(L, "");
+  }
   else if (l + lsep < l || l + lsep >= MAXSIZE / n)  /* may overflow? */
     return luaL_error(L, "resulting string too large");
   else {
@@ -505,18 +513,23 @@ static const char *lmemfind (const char *s1, size_t l1,
 static void push_onecapture (MatchState *ms, int i, const char *s,
                                                     const char *e) {
   if (i >= ms->level) {
-    if (i == 0)  /* ms->level == 0, too */
+    if (i == 0) {  /* ms->level == 0, too */
+      luaC_checkGC();
       lua_pushlstring(ms->L, s, e - s);  /* add whole match */
-    else
+    }
+    else {
       luaL_error(ms->L, "invalid capture index");
+    }
   }
   else {
     ptrdiff_t l = ms->capture[i].len;
     if (l == CAP_UNFINISHED) luaL_error(ms->L, "unfinished capture");
     if (l == CAP_POSITION)
       lua_pushinteger(ms->L, ms->capture[i].init - ms->src_init + 1);
-    else
+    else {
+      luaC_checkGC();
       lua_pushlstring(ms->L, ms->capture[i].init, l);
+    }
   }
 }
 
@@ -688,6 +701,7 @@ static void add_value (MatchState *ms, luaL_Buffer *b, const char *s,
   }
   if (!lua_toboolean(L, -1)) {  /* nil or false? */
     L->stack_.pop();
+    luaC_checkGC();
     lua_pushlstring(L, s, e - s);  /* keep original text */
   }
   else if (!lua_isStringable(L, -1))
@@ -969,6 +983,7 @@ static void createmetatable (lua_State *L) {
   THREAD_CHECK(L);
   luaC_checkGC();
   lua_createtable(L, 0, 1);  /* table to be metatable for strings */
+  luaC_checkGC();
   lua_pushliteral(L, "");  /* dummy string */
   L->stack_.copy(-2);  /* copy table */
   lua_setmetatable(L, -2);  /* set table as metatable for strings */

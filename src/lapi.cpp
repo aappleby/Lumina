@@ -516,34 +516,25 @@ void lua_pushunsigned (lua_State *L, lua_Unsigned u) {
 
 
 const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
+  ScopedMemChecker c;
   THREAD_CHECK(L);
-
-  luaC_checkGC();
-
-  {
-    ScopedMemChecker c;
-    TString* ts = thread_G->strings_->Create(s, len);
-    L->stack_.push(TValue(ts));
-    return ts->c_str();
-  }
+  TString* ts = thread_G->strings_->Create(s, len);
+  L->stack_.push(TValue(ts));
+  return ts->c_str();
 }
 
 
 const char *lua_pushstring (lua_State *L, const char *s) {
+  ScopedMemChecker c;
   THREAD_CHECK(L);
   if (s == NULL) {
     L->stack_.push(TValue::Nil());
     return NULL;
   }
 
-  luaC_checkGC();
-
-  {
-    ScopedMemChecker c;
-    TString* ts = thread_G->strings_->Create(s);
-    L->stack_.push(TValue(ts));
-    return ts->c_str();
-  }
+  TString* ts = thread_G->strings_->Create(s);
+  L->stack_.push(TValue(ts));
+  return ts->c_str();
 }
 
 

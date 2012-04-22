@@ -50,12 +50,17 @@ static int io_type (lua_State *L) {
   LStream *p;
   luaL_checkany(L, 1);
   p = (LStream *)luaL_testudata(L, 1, LUA_FILEHANDLE);
-  if (p == NULL)
+  if (p == NULL) {
     L->stack_.push(TValue::Nil());  /* not a file */
-  else if (isclosed(p))
+  }
+  else if (isclosed(p)) {
+    luaC_checkGC();
     lua_pushliteral(L, "closed file");
-  else
+  }
+  else {
+    luaC_checkGC();
     lua_pushliteral(L, "file");
+  }
   return 1;
 }
 
@@ -63,10 +68,14 @@ static int io_type (lua_State *L) {
 static int f_tostring (lua_State *L) {
   THREAD_CHECK(L);
   LStream *p = tolstream(L);
-  if (isclosed(p))
+  if (isclosed(p)) {
+    luaC_checkGC();
     lua_pushliteral(L, "file (closed)");
-  else
+  }
+  else {
+    luaC_checkGC();
     lua_pushfstring(L, "file (%p)", p->f);
+  }
   return 1;
 }
 
@@ -310,6 +319,7 @@ static int test_eof (lua_State *L, FILE *f) {
   THREAD_CHECK(L);
   int c = getc(f);
   ungetc(c, f);
+  luaC_checkGC();
   lua_pushlstring(L, NULL, 0);
   return (c != EOF);
 }
@@ -599,6 +609,7 @@ static int io_noclose (lua_State *L) {
   LStream *p = tolstream(L);
   p->closef = &io_noclose;  /* keep file opened */
   L->stack_.push(TValue::Nil());
+  luaC_checkGC();
   lua_pushliteral(L, "cannot close standard file");
   return 2;
 }

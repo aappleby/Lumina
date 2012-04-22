@@ -205,6 +205,7 @@ static int luaB_collectgarbage (lua_State *L) {
 static int luaB_type (lua_State *L) {
   THREAD_CHECK(L);
   luaL_checkany(L, 1);
+  luaC_checkGC();
   lua_pushstring(L, luaL_typename(L, 1));
   return 1;
 }
@@ -401,6 +402,7 @@ static int finishpcall (lua_State *L, int status) {
   if (!lua_checkstack(L, 1)) {  /* no space for extra boolean? */
     L->stack_.setTopIndex(0);  /* create space for return values */
     lua_pushboolean(L, 0);
+    luaC_checkGC();
     lua_pushstring(L, "stack overflow");
     return 2;  /* return false, msg */
   }
@@ -484,6 +486,7 @@ int luaopen_base (lua_State *L) {
   lua_setfield(L, -2, "_G");
   /* open lib into global table */
   luaL_setfuncs(L, base_funcs, 0);
+  luaC_checkGC();
   lua_pushliteral(L, LUA_VERSION);
   lua_setfield(L, -2, "_VERSION");  /* set global _VERSION */
   return 1;

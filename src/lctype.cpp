@@ -6,6 +6,8 @@
 
 #define lctype_c
 
+#include <string.h>
+
 #include "lctype.h"
 
 #if !LUA_USE_CTYPE	/* { */
