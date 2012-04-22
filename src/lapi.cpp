@@ -607,8 +607,13 @@ int lua_pushthread (lua_State *L) {
 
 void lua_getglobal (lua_State *L, const char *var) {
   THREAD_CHECK(L);
-  TValue globals = thread_G->getRegistry()->get(TValue(LUA_RIDX_GLOBALS));
-  L->stack_.push(TValue(thread_G->strings_->Create(var)));
+  TValue globals;
+
+  {
+    ScopedMemChecker c;
+    globals = thread_G->getRegistry()->get(TValue(LUA_RIDX_GLOBALS));
+    L->stack_.push(TValue(thread_G->strings_->Create(var)));
+  }
   
   TValue val;
   LuaResult r = luaV_gettable2(L, globals, L->stack_.top_[-1], val);
@@ -1205,6 +1210,7 @@ void lua_concat (lua_State *L, int n) {
     luaV_concat(L, n);
   }
   else if (n == 0) {  /* push empty string */
+    ScopedMemChecker c;
     TString* s = thread_G->strings_->Create("", 0);
     L->stack_.push(TValue(s));
   }

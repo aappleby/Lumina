@@ -121,6 +121,7 @@ TString* stringtable::Create( const char* str )
 }
 
 TString* stringtable::Create(const char *str, int len) {
+  assert(l_memcontrol.limitDisabled);
   uint32_t hash = hashString(str,len);
 
   TString* old_string = find(hash, str, len);
@@ -130,7 +131,7 @@ TString* stringtable::Create(const char *str, int len) {
   }
 
   if ((nuse_ >= (uint32_t)size_) && (size_ <= MAX_INT/2)) {
-    ScopedMemChecker c;
+    //ScopedMemChecker c;
     luaC_runtilstate(~(1 << GCSsweepstring));
     resize(size_ * 2);
   }

@@ -47,6 +47,7 @@ void handleError(LuaResult err, const TValue* val)
 
 // Converts value to string in-place, returning 1 if successful.
 int luaV_tostring (TValue* v) {
+  ScopedMemChecker c;
 
   if(v->isString()) return 1;
 

@@ -450,6 +450,7 @@ static void enterblock (FuncState *fs, BlockCnt *bl, uint8_t isloop) {
 ** create a label named "break" to resolve break statements
 */
 static void breaklabel (LexState *ls) {
+  ScopedMemChecker c;
   TString *n = thread_G->strings_->Create("break");
   int l = newlabelentry(ls, &ls->dyd->label, n, 0, ls->fs->pc);
   findgotos(ls, &ls->dyd->label.arr[l]);
@@ -1201,6 +1202,7 @@ static int cond (LexState *ls) {
 
 
 static void gotostat (LexState *ls, int pc) {
+  ScopedMemChecker c;
   int line = ls->linenumber;
   TString *label;
   int g;
