@@ -74,8 +74,10 @@ static l_noret semerror (LexState *ls, const char *msg) {
 
 
 static l_noret error_expected (LexState *ls, int token) {
-  luaX_syntaxerror(ls,
-      luaO_pushfstring(ls->L, "%s expected", luaX_token2str(ls, token)));
+  luaC_checkGC();
+  const char* token_text = luaX_token2str(ls, token);
+  const char* text = luaO_pushfstring(ls->L, "%s expected", token_text);
+  luaX_syntaxerror(ls, text);
 }
 
 
@@ -83,11 +85,12 @@ static l_noret errorlimit (FuncState *fs, int limit, const char *what) {
   lua_State *L = fs->ls->L;
   const char *msg;
   int line = fs->f->linedefined;
+  luaC_checkGC();
   const char *where = (line == 0)
                       ? "main function"
                       : luaO_pushfstring(L, "function at line %d", line);
-  msg = luaO_pushfstring(L, "too many %s (limit is %d) in %s",
-                             what, limit, where);
+  luaC_checkGC();
+  msg = luaO_pushfstring(L, "too many %s (limit is %d) in %s", what, limit, where);
   luaX_syntaxerror(fs->ls, msg);
 }
 
@@ -127,9 +130,11 @@ static void check_match (LexState *ls, int what, int who, int where) {
     if (where == ls->linenumber)
       error_expected(ls, what);
     else {
-      luaX_syntaxerror(ls, luaO_pushfstring(ls->L,
-             "%s expected (to close %s at line %d)",
-              luaX_token2str(ls, what), luaX_token2str(ls, who), where));
+      const char* what_token = luaX_token2str(ls, what);
+      const char* who_token = luaX_token2str(ls, who);
+      luaC_checkGC();
+      const char* text = luaO_pushfstring(ls->L, "%s expected (to close %s at line %d)", what_token, who_token, where);
+      luaX_syntaxerror(ls, text);
     }
   }
 }
@@ -342,6 +347,7 @@ static void closegoto (LexState *ls, int g, Labeldesc *label) {
   assert(gt->name == label->name);
   if (gt->nactvar < label->nactvar) {
     TString *vname = getlocvar(fs, gt->nactvar)->varname;
+    luaC_checkGC();
     const char *msg = luaO_pushfstring(ls->L,
       "<goto %s> at line %d jumps into the scope of local " LUA_QS,
       gt->name->c_str(), gt->line, vname->c_str());
@@ -467,6 +473,7 @@ static l_noret undefgoto (LexState *ls, Labeldesc *gt) {
   const char *msg = (gt->name->getReserved() > 0)
                     ? "<%s> at line %d not inside a loop"
                     : "no visible label " LUA_QS " for <goto> at line %d";
+  luaC_checkGC();
   msg = luaO_pushfstring(ls->L, msg, gt->name->c_str(), gt->line);
   semerror(ls, msg);
 }
@@ -1232,6 +1239,7 @@ static void checkrepeated (FuncState *fs, Labellist *ll, TString *label) {
   int i;
   for (i = fs->bl->firstlabel; i < ll->n; i++) {
     if (label == ll->arr[i].name) {
+      luaC_checkGC();
       const char *msg = luaO_pushfstring(fs->ls->L,
                           "label " LUA_QS " already defined on line %d",
                           label->c_str(), ll->arr[i].line);

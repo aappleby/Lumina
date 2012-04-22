@@ -201,8 +201,9 @@ static const char *checkoption (lua_State *L, const char *conv, char *buff) {
       }
     }
   }
-  luaL_argerror(L, 1,
-    lua_pushfstring(L, "invalid conversion specifier '%%%s'", conv));
+  luaC_checkGC();
+  const char* text = lua_pushfstring(L, "invalid conversion specifier '%%%s'", conv);
+  luaL_argerror(L, 1, text);
   return conv;  /* to avoid warnings */
 }
 

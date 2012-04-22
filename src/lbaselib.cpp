@@ -216,7 +216,8 @@ static int pairsmeta (lua_State *L, const char *method, int iszero,
   THREAD_CHECK(L);
   if (!luaL_getmetafield(L, 1, method)) {  /* no metamethod? */
     luaL_checktype(L, 1, LUA_TTABLE);  /* argument must be a table */
-    lua_pushcfunction(L, iter);  /* will return generator, */
+    luaC_checkGC();
+    lua_pushcclosure(L, iter, 0);  /* will return generator, */
     L->stack_.copy(1);  /* state, */
     if (iszero) lua_pushinteger(L, 0);  /* and initial value */
     else L->stack_.push(TValue::Nil());

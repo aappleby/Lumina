@@ -567,6 +567,7 @@ static void addinfo (const char *msg) {
     else {  /* no source available; use "?" instead */
       buff[0] = '?'; buff[1] = '\0';
     }
+    luaC_checkGC();
     luaO_pushfstring(L, "%s:%d: %s", buff, line, msg);
   }
 }

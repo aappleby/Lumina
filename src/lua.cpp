@@ -176,7 +176,8 @@ static int traceback (lua_State *L) {
 static int docall (lua_State *L, int narg, int nres) {
   int status;
   int base = L->stack_.getTopIndex() - narg;  /* function index */
-  lua_pushcfunction(L, traceback);  /* push traceback function */
+  luaC_checkGC();
+  lua_pushcclosure(L, traceback, 0);  /* push traceback function */
   lua_insert(L, base);  /* put it under chunk and args */
   globalL = L;  /* to be available to 'laction' */
   signal(SIGINT, laction);
@@ -285,6 +286,7 @@ static int pushline (lua_State *L, int firstline) {
 
   // first line starts with `=' ? change it to `return' */
   if (firstline && b[0] == '=') {
+    luaC_checkGC();
     lua_pushfstring(L, "return %s", b+1);
   }
   else {
@@ -330,10 +332,12 @@ static void dotty (lua_State *L) {
       luaL_checkstack(L, LUA_MINSTACK, "too many results to print");
       lua_getglobal(L, "print");
       lua_insert(L, 1);
-      if (lua_pcall(L, L->stack_.getTopIndex()-1, 0, 0) != LUA_OK)
+      if (lua_pcall(L, L->stack_.getTopIndex()-1, 0, 0) != LUA_OK) {
+        luaC_checkGC();
         l_message(progname, lua_pushfstring(L,
                                "error calling " LUA_QL("print") " (%s)",
                                lua_tostring(L, -1)));
+      }
     }
   }
   L->stack_.setTopIndex(0);  /* clear stack */
@@ -511,7 +515,8 @@ int main (int argc, char **argv) {
     return EXIT_FAILURE;
   }
   /* call 'pmain' in protected mode */
-  lua_pushcfunction(L, &pmain);
+  luaC_checkGC();
+  lua_pushcclosure(L, &pmain, 0);
   lua_pushinteger(L, argc);  /* 1st argument */
   lua_pushlightuserdata(L, argv); /* 2nd argument */
   status = lua_pcall(L, 2, 1, 0);

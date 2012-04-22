@@ -550,7 +550,6 @@ const char *lua_pushvfstring (lua_State *L, const char *fmt,
 
 const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
   THREAD_CHECK(L);
-  luaC_checkGC();
 
   va_list argp;
   va_start(argp, fmt);
@@ -562,6 +561,7 @@ const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
 
 
 void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
+  ScopedMemChecker c;
   THREAD_CHECK(L);
   if (n == 0) {
     L->stack_.push(TValue::LightFunction(fn));
@@ -570,17 +570,13 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
 
   L->stack_.checkArgs(n);
   api_check(n <= MAXUPVAL, "upvalue index too large");
-  luaC_checkGC();
 
-  {
-    ScopedMemChecker c;
-    Closure *cl = new Closure(fn, n);
-    L->stack_.top_ -= n;
-    while (n--) {
-      cl->pupvals_[n] = L->stack_.top_[n];
-    }
-    L->stack_.push(TValue(cl));
+  Closure *cl = new Closure(fn, n);
+  L->stack_.top_ -= n;
+  while (n--) {
+    cl->pupvals_[n] = L->stack_.top_[n];
   }
+  L->stack_.push(TValue(cl));
 }
 
 
@@ -872,25 +868,29 @@ int lua_setmetatable (lua_State *L, int objindex) {
   // else overrides the _global_ metatable.
 
   switch (obj->type()) {
-    case LUA_TTABLE: {
-      obj->getTable()->metatable = mt;
-      if (mt)
-        luaC_barrierback(obj->getObject(), TValue(mt));
-        luaC_checkfinalizer(obj->getObject(), mt);
-      break;
-    }
-    case LUA_TUSERDATA: {
-      obj->getUserdata()->metatable_ = mt;
-      if (mt) {
-        luaC_barrier(obj->getUserdata(), TValue(mt));
-        luaC_checkfinalizer(obj->getObject(), mt);
+    case LUA_TTABLE:
+      {
+        obj->getTable()->metatable = mt;
+        if (mt) {
+          luaC_barrierback(obj->getObject(), TValue(mt));
+          luaC_checkfinalizer(obj->getObject(), mt);
+        }
+        break;
       }
-      break;
-    }
-    default: {
-      thread_G->base_metatables_[obj->type()] = mt;
-      break;
-    }
+    case LUA_TUSERDATA:
+      {
+        obj->getUserdata()->metatable_ = mt;
+        if (mt) {
+          luaC_barrier(obj->getUserdata(), TValue(mt));
+          luaC_checkfinalizer(obj->getObject(), mt);
+        }
+        break;
+      }
+    default: 
+      {
+        thread_G->base_metatables_[obj->type()] = mt;
+        break;
+      }
   }
 
   L->stack_.pop();

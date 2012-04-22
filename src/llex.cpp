@@ -80,15 +80,19 @@ const char *luaX_token2str (LexState *ls, int token) {
   THREAD_CHECK(ls->L);
   if (token < FIRST_RESERVED) {
     assert(token == cast(unsigned char, token));
+    luaC_checkGC();
     return (lisprint(token)) ? luaO_pushfstring(ls->L, LUA_QL("%c"), token) :
                               luaO_pushfstring(ls->L, "char(%d)", token);
   }
   else {
     const char *s = luaX_tokens[token - FIRST_RESERVED];
-    if (token < TK_EOS)
+    if (token < TK_EOS) {
+      luaC_checkGC();
       return luaO_pushfstring(ls->L, LUA_QS, s);
-    else
+    }
+    else {
       return s;
+    }
   }
 }
 
@@ -99,8 +103,11 @@ static const char *txtToken (LexState *ls, int token) {
     case TK_NAME:
     case TK_STRING:
     case TK_NUMBER:
-      save(ls, '\0');
-      return luaO_pushfstring(ls->L, LUA_QS, luaZ_buffer(ls->buff));
+      {
+        save(ls, '\0');
+        luaC_checkGC();
+        return luaO_pushfstring(ls->L, LUA_QS, luaZ_buffer(ls->buff));
+      }
     default:
       return luaX_token2str(ls, token);
   }
@@ -111,9 +118,12 @@ static l_noret lexerror (LexState *ls, const char *msg, int token) {
   THREAD_CHECK(ls->L);
   char buff[LUA_IDSIZE];
   luaO_chunkid(buff, ls->source->c_str(), LUA_IDSIZE);
+  luaC_checkGC();
   msg = luaO_pushfstring(ls->L, "%s:%d: %s", buff, ls->linenumber, msg);
-  if (token)
+  if (token) {
+    luaC_checkGC();
     luaO_pushfstring(ls->L, "%s near %s", msg, txtToken(ls, token));
+  }
   throw LUA_ERRSYNTAX;
 }
 

@@ -96,12 +96,19 @@ static int pushglobalfuncname (lua_State *L, lua_Debug *ar) {
 
 static void pushfuncname (lua_State *L, lua_Debug *ar) {
   THREAD_CHECK(L);
-  if (*ar->namewhat != '\0')  /* is there a name? */
+  if (*ar->namewhat != '\0') {
+    /* is there a name? */
+    luaC_checkGC();
     lua_pushfstring(L, "function " LUA_QS, ar->name);
-  else if (*ar->what == 'm')  /* main? */
-      lua_pushfstring(L, "main chunk");
+  }
+  else if (*ar->what == 'm') {
+    /* main? */
+    luaC_checkGC();
+    lua_pushfstring(L, "main chunk");
+  }
   else if (*ar->what == 'C') {
     if (pushglobalfuncname(L, ar)) {
+      luaC_checkGC();
       lua_pushfstring(L, "function " LUA_QS, lua_tostring(L, -1));
       L->stack_.remove(-2);  /* remove name */
     }
@@ -111,6 +118,7 @@ static void pushfuncname (lua_State *L, lua_Debug *ar) {
     }
   }
   else {
+    luaC_checkGC();
     lua_pushfstring(L, "function <%s:%d>", ar->short_src, ar->linedefined);
   }
 }
@@ -143,7 +151,10 @@ void luaL_traceback (lua_State *L, lua_State *L1,
     numlevels = countlevels(L1);
   }
   int mark = (numlevels > LEVELS1 + LEVELS2) ? LEVELS1 : 0;
-  if (msg) lua_pushfstring(L, "%s\n", msg);
+  if (msg) {
+    luaC_checkGC();
+    lua_pushfstring(L, "%s\n", msg);
+  }
   luaC_checkGC();
   lua_pushliteral(L, "stack traceback:");
   {
@@ -161,8 +172,10 @@ void luaL_traceback (lua_State *L, lua_State *L1,
         lua_getinfo(L1, "Slnt", &ar);
         {
           THREAD_CHANGE(L);
+          luaC_checkGC();
           lua_pushfstring(L, "\n\t%s:", ar.short_src);
           if (ar.currentline > 0) {
+            luaC_checkGC();
             lua_pushfstring(L, "%d:", ar.currentline);
           }
           luaC_checkGC();
@@ -210,6 +223,7 @@ int luaL_argerror (lua_State *L, int narg, const char *extramsg) {
 static int typeerror (lua_State *L, int narg, const char* type1) {
   THREAD_CHECK(L);
   const char* type2 = luaL_typename(L, narg);
+  luaC_checkGC();
   const char *msg = lua_pushfstring(L, "%s expected, got %s", type1, type2);
   return luaL_argerror(L, narg, msg);
 }
@@ -227,6 +241,7 @@ void luaL_where (lua_State *L, int level) {
   if (lua_getstack(L, level, &ar)) {  /* check function at level */
     lua_getinfo(L, "Sl", &ar);  /* get info about it */
     if (ar.currentline > 0) {  /* is there info? */
+      luaC_checkGC();
       lua_pushfstring(L, "%s:%d: ", ar.short_src, ar.currentline);
       return;
     }
@@ -257,10 +272,14 @@ int luaL_fileresult (lua_State *L, int stat, const char *fname) {
   }
   else {
     L->stack_.push(TValue::Nil());
-    if (fname)
+    if (fname) {
+      luaC_checkGC();
       lua_pushfstring(L, "%s: %s", fname, strerror(en));
-    else
+    }
+    else {
+      luaC_checkGC();
       lua_pushfstring(L, "%s", strerror(en));
+    }
     lua_pushinteger(L, en);
     return 3;
   }
@@ -360,8 +379,9 @@ int luaL_checkoption (lua_State *L,
   for (i=0; lst[i]; i++)
     if (strcmp(lst[i], name) == 0)
       return i;
-  return luaL_argerror(L, narg,
-                       lua_pushfstring(L, "invalid option " LUA_QS, name));
+  luaC_checkGC();
+  const char* text = lua_pushfstring(L, "invalid option " LUA_QS, name);
+  return luaL_argerror(L, narg, text);
 }
 
 
@@ -384,6 +404,7 @@ void luaL_checkIsFunction(lua_State *L, int narg) {
   TValue v = *pv;
   if(v.isFunction()) return;
   const char* actualType = v.typeName();
+  luaC_checkGC();
   const char *msg = lua_pushfstring(L, "Expected a function, got a %s", actualType);
   luaL_argerror(L, narg, msg);
 }
@@ -393,6 +414,7 @@ void luaL_checkIsTable(lua_State* L, int narg) {
   TValue v = *index2addr(L, narg);
   if(v.isTable()) return;
   const char* actualType = v.typeName();
+  luaC_checkGC();
   const char *msg = lua_pushfstring(L, "Expected a table, got a %s", actualType);
   luaL_argerror(L, narg, msg);
 }
@@ -662,6 +684,7 @@ static int errfile (lua_State *L, const char *what, int fnameindex) {
   THREAD_CHECK(L);
   const char *serr = strerror(errno);
   const char *filename = lua_tostring(L, fnameindex) + 1;
+  luaC_checkGC();
   lua_pushfstring(L, "cannot %s %s: %s", what, filename, serr);
   L->stack_.remove(fnameindex);
   return LUA_ERRFILE;
@@ -713,6 +736,7 @@ int luaL_loadfilex (lua_State *L, const char *filename,
     lf.f = stdin;
   }
   else {
+    luaC_checkGC();
     lua_pushfstring(L, "@%s", filename);
     lf.f = fopen(filename, "r");
     if (lf.f == NULL) return errfile(L, "open", fnameindex);
@@ -834,6 +858,7 @@ const char *luaL_tolstring (lua_State *L, int idx, size_t *len) {
       luaC_checkGC();
       lua_pushliteral(L, "nil");
     } else {
+      luaC_checkGC();
       lua_pushfstring(L, "%s: %p", luaL_typename(L, idx),
                                           lua_topointer(L, idx));
     }
@@ -858,6 +883,7 @@ void luaL_setfuncs (lua_State *L, const luaL_Reg *l, int nup) {
       /* copy upvalues to the top */
       L->stack_.copy(-nup);
     }
+    luaC_checkGC();
     lua_pushcclosure(L, l->func, nup);  /* closure with those upvalues */
     lua_setfield(L, -(nup + 2), l->name);
   }
@@ -893,7 +919,8 @@ int luaL_getsubtable (lua_State *L, int idx, const char *fname) {
 void luaL_requiref (lua_State *L, const char *modname,
                                lua_CFunction openf, int glb) {
   THREAD_CHECK(L);
-  lua_pushcfunction(L, openf);
+  luaC_checkGC();
+  lua_pushcclosure(L, openf, 0);
   luaC_checkGC();
   lua_pushstring(L, modname);  /* argument to open function */
   lua_call(L, 1, 1);  /* open module */

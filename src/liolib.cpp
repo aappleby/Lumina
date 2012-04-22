@@ -261,6 +261,7 @@ static void aux_lines (lua_State *L, int toclose) {
   lua_pushinteger(L, n);  /* number of arguments to read */
   lua_pushboolean(L, toclose);  /* close/not close file when finished */
   for (i = 1; i <= n; i++) L->stack_.copy(i + 1);  /* copy arguments */
+  luaC_checkGC();
   lua_pushcclosure(L, io_readline, 3 + n);
 }
 

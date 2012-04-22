@@ -744,7 +744,8 @@ static int loadlib (lua_State *L) {
     luaL_requiref(L1, "package", luaopen_package, 1);
     luaL_getsubtable(L1, LUA_REGISTRYINDEX, "_PRELOAD");
     for (i = 0; libs[i].name; i++) {
-      lua_pushcfunction(L1, libs[i].func);
+      luaC_checkGC();
+      lua_pushcclosure(L1, libs[i].func, 0);
       lua_setfield(L1, -2, libs[i].name);
     }
   }
@@ -996,7 +997,8 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("tocfunction") {
       { GLOBAL_CHANGE(L); tempindex = getindex; }
-      lua_pushcfunction(L1, lua_tocfunction(L1, tempindex));
+      luaC_checkGC();
+      lua_pushcclosure(L1, lua_tocfunction(L1, tempindex), 0);
     }
     else if EQ("func2num") {
       { GLOBAL_CHANGE(L); tempindex = getindex; }
@@ -1064,6 +1066,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("pushcclosure") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }
+      luaC_checkGC();
       lua_pushcclosure(L1, testC, tempnum);
     }
     else if EQ("pushupvalueindex") {
@@ -1324,6 +1327,7 @@ static int Cfunck (lua_State *L) {
 static int makeCfunc (lua_State *L) {
   THREAD_CHECK(L);
   luaL_checkstring(L, 1);
+  luaC_checkGC();
   lua_pushcclosure(L, Cfunc, L->stack_.getTopIndex());
   return 1;
 }

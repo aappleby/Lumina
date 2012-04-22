@@ -28,8 +28,9 @@ typedef struct {
 
 static void error(LoadState* S, const char* why)
 {
- luaO_pushfstring(S->L,"%s: %s precompiled chunk",S->name,why);
- throw LUA_ERRSYNTAX;
+  luaC_checkGC();
+  luaO_pushfstring(S->L,"%s: %s precompiled chunk",S->name,why);
+  throw LUA_ERRSYNTAX;
 }
 
 #define LoadMem(S,b,n,size)	LoadBlock(S,b,(n)*(size))

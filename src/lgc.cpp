@@ -521,6 +521,7 @@ static void GCTM (int propagateerrors) {
   // Report errors during finalization.
   if (status != LUA_OK && propagateerrors) {  // error while running __gc?
     if (status == LUA_ERRRUN) {  // is there an error msg.?
+      luaC_checkGC();
       luaO_pushfstring(L, "error in __gc metamethod (%s)", lua_tostring(L, -1));
       status = LUA_ERRGCMM;  // error in __gc metamethod
     }

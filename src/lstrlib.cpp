@@ -653,6 +653,7 @@ static int gmatch (lua_State *L) {
   luaL_checkstring(L, 2);
   L->stack_.setTopIndex(2);
   lua_pushinteger(L, 0);
+  luaC_checkGC();
   lua_pushcclosure(L, gmatch_aux, 3);
   return 1;
 }

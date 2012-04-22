@@ -121,6 +121,7 @@ static int luaB_cocreate (lua_State *L) {
 static int luaB_cowrap (lua_State *L) {
   THREAD_CHECK(L);
   luaB_cocreate(L);
+  luaC_checkGC();
   lua_pushcclosure(L, luaB_auxwrap, 1);
   return 1;
 }

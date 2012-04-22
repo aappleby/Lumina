@@ -251,7 +251,7 @@ void  (lua_len)    (lua_State *L, int idx);
 
 #define lua_register(L,n,f) (lua_pushcfunction(L, (f)), lua_setglobal(L, (n)))
 
-#define lua_pushcfunction(L,f)	lua_pushcclosure(L, (f), 0)
+//#define lua_pushcfunction(L,f)	lua_pushcclosure(L, (f), 0)
 
 inline bool lua_isfunction(lua_State* L, int n) {
   TValue* v = index2addr2(L,n);

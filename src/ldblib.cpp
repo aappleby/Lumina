@@ -148,6 +148,7 @@ static int db_getinfo (lua_State *L) {
     }
   }
   else if (lua_isfunction(L, arg+1)) {
+    luaC_checkGC();
     lua_pushfstring(L, ">%s", options);
     options = lua_tostring(L, -1);
     L->stack_.copy(arg+1);
