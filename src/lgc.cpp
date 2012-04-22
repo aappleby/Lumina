@@ -377,8 +377,6 @@ static void sweepthread (lua_State *L1) {
 
 
 static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
-  global_State *g = thread_G;
-
   while (*p != NULL && count-- > 0) {
     LuaObject *curr = *p;
     if (curr->isDead()) {  /* is 'curr' dead? */
@@ -399,7 +397,6 @@ static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
 }
 
 static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
-  global_State *g = thread_G;
   while (*p != NULL && count-- > 0) {
     LuaObject *curr = *p;
     if (curr->isDead()) {  /* is 'curr' dead? */

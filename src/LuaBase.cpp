@@ -15,6 +15,7 @@ void * LuaBase::operator new(size_t size) {
 }
 
 void LuaBase::operator delete(void* blob) {
+  assert(!l_memcontrol.limitDisabled);
   luaM_free(blob);
 }
 
