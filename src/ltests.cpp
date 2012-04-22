@@ -555,6 +555,7 @@ static int string_query (lua_State *L) {
     return 2;
   }
   else if (s < tb->size_) {
+    ScopedMemChecker c;
     LuaObject *ts;
     int n = 0;
     for (ts = tb->hash_[s]; ts; ts = ts->next_) {

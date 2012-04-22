@@ -204,10 +204,12 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
         break;
       }
       case 'd': {
+        ScopedMemChecker c;
         L->stack_.push_reserve( TValue(va_arg(argp, int)) );
         break;
       }
       case 'f': {
+        ScopedMemChecker c;
         L->stack_.push_reserve( TValue(va_arg(argp, lua_Number)) );
         break;
       }

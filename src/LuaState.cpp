@@ -117,7 +117,10 @@ void lua_State::restoreState(LuaExecutionState s, int status, int nresults) {
     // Put the error object on the restored stack
     stack_.push_nocheck(errobj);
     
-    stack_.shrink();
+    {
+      ScopedMemChecker c;
+      stack_.shrink();
+    }
 
     l_memcontrol.enableLimit();
   }

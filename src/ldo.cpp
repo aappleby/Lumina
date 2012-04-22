@@ -55,10 +55,12 @@ l_noret luaD_throw (int errcode) {
 
   // Throwing errors while we're in the middle of constructing an object
   // is forbidden, as that can break things badly in C++.
+  /*
   if(l_memcontrol.limitDisabled) {
     assert(false);
     printf("xxx");
   }
+  */
 
   throw(errcode);
 }
@@ -78,7 +80,10 @@ void luaD_hook (lua_State *L, int event, int line) {
     ptrdiff_t ci_top = savestack(L, ci->getTop());
     
     // Make sure the stack can hold enough values for a C call
-    L->stack_.reserve(LUA_MINSTACK);
+    {
+      ScopedMemChecker c;
+      L->stack_.reserve(LUA_MINSTACK);
+    }
     ci->setTop( L->stack_.top_ + LUA_MINSTACK );
     assert(ci->getTop() <= L->stack_.last());
 
@@ -127,7 +132,11 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
   }
 
   ptrdiff_t funcr = func - L->stack_.begin();
-  incr_top(L);
+  L->stack_.top_++;
+  {
+    ScopedMemChecker c;
+    L->stack_.reserve(0);
+  }
   func = L->stack_.begin() + funcr; /* previous call may change stack */
   *func = tm;  /* tag method is the new function to be called */
   return func;
@@ -186,7 +195,10 @@ void luaD_precallLua(lua_State* L, StkId func, int nresults) {
   Proto *p = func->getLClosure()->proto_;
 
   ptrdiff_t funcr = savestack(L, func);
-  L->stack_.reserve(p->maxstacksize);
+  {
+    ScopedMemChecker c;
+    L->stack_.reserve(p->maxstacksize);
+  }
   func = restorestack(L, funcr);
 
   int nargs = cast_int(L->stack_.top_ - func) - 1;  /* number of real arguments */
@@ -365,7 +377,10 @@ static int recover (lua_State *L, int status) {
   L->stack_.callinfo_ = ci;
   L->allowhook = ci->old_allowhook;
   L->nonyieldable_count_ = 0;  /* should be zero to be yieldable */
-  L->stack_.shrink();
+  {
+    ScopedMemChecker c;
+    L->stack_.shrink();
+  }
   L->errfunc = ci->old_errfunc;
   ci->callstatus |= CIST_STAT;  /* call has error status */
   ci->status = status;  /* (here it is) */
@@ -577,7 +592,10 @@ int luaD_protectedparser (lua_State *L, ZIO *z, const char *name, const char *mo
       new_proto = luaY_parser(L, z, &buff, &dyd, name, c);
     }
     
-    L->stack_.push_reserve(TValue(new_proto));
+    {
+      ScopedMemChecker c;
+      L->stack_.push_reserve(TValue(new_proto));
+    }
 
     {
       ScopedMemChecker c;

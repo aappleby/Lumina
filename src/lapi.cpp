@@ -136,6 +136,7 @@ int lua_checkstack (lua_State *L, int size) {
     else  /* try to grow stack */
     {
       try {
+        ScopedMemChecker c;
         L->stack_.grow(size);
       }
       catch(...) { 
@@ -490,12 +491,14 @@ void lua_pushnumber (lua_State *L, lua_Number n) {
 
 void lua_pushinteger (lua_State *L, lua_Integer n) {
   THREAD_CHECK(L);
+  ScopedMemChecker c;
   L->stack_.push_reserve(TValue(n));
 }
 
 
 void lua_pushunsigned (lua_State *L, lua_Unsigned u) {
   THREAD_CHECK(L);
+  ScopedMemChecker c;
   L->stack_.push_reserve(TValue(u));
 }
 

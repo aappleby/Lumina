@@ -98,7 +98,10 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
   if (!hasres) { // no result? 'p3' is third argument
     L->stack_.push_nocheck(*p3);  // 3rd argument
   }
-  L->stack_.reserve(0);
+  {
+    ScopedMemChecker c;
+    L->stack_.reserve(0);
+  }
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - (4 - hasres), hasres, L->stack_.callinfo_->isLua());
   if (hasres) {  /* if has result, move it to its place */
@@ -113,10 +116,13 @@ static void callTM3 (lua_State *L,
                      TValue p2,
                      TValue& result) {
   THREAD_CHECK(L);
-  L->stack_.push_nocheck(f); // push function
-  L->stack_.push_nocheck(p1); // 1st argument
-  L->stack_.push_nocheck(p2); // 2nd argument
-  L->stack_.reserve(0);
+  {
+    ScopedMemChecker c;
+    L->stack_.push_nocheck(f); // push function
+    L->stack_.push_nocheck(p1); // 1st argument
+    L->stack_.push_nocheck(p2); // 2nd argument
+    L->stack_.reserve(0);
+  }
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - 3, 1, L->stack_.callinfo_->isLua());
   result = L->stack_.pop();
@@ -129,11 +135,14 @@ static void callTM0 (lua_State *L,
                      const TValue* arg2,
                      const TValue* arg3) {
   THREAD_CHECK(L);
-  L->stack_.push_nocheck(*func);
-  L->stack_.push_nocheck(*arg1);
-  L->stack_.push_nocheck(*arg2);
-  L->stack_.push_nocheck(*arg3);
-  L->stack_.reserve(0);
+  {
+    ScopedMemChecker c;
+    L->stack_.push_nocheck(*func);
+    L->stack_.push_nocheck(*arg1);
+    L->stack_.push_nocheck(*arg2);
+    L->stack_.push_nocheck(*arg3);
+    L->stack_.reserve(0);
+  }
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - 4, 0, L->stack_.callinfo_->isLua());
 }
@@ -144,11 +153,14 @@ static void callTM1 (lua_State *L,
                      TValue arg2,
                      TValue arg3) {
   THREAD_CHECK(L);
-  L->stack_.push_nocheck(func);
-  L->stack_.push_nocheck(arg1);
-  L->stack_.push_nocheck(arg2);
-  L->stack_.push_nocheck(arg3);
-  L->stack_.reserve(0);
+  {
+    ScopedMemChecker c;
+    L->stack_.push_nocheck(func);
+    L->stack_.push_nocheck(arg1);
+    L->stack_.push_nocheck(arg2);
+    L->stack_.push_nocheck(arg3);
+    L->stack_.reserve(0);
+  }
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - 4, 0, L->stack_.callinfo_->isLua());
 }
@@ -1245,7 +1257,10 @@ void luaV_execute (lua_State *L) {
 
           if (b < 0) {  /* B == 0? */
             b = n;  /* get all var. arguments */
-            L->stack_.reserve(n);
+            {
+              ScopedMemChecker c;
+              L->stack_.reserve(n);
+            }
             base = ci->getBase();
 
             ra = RA(i);  /* previous call may change the stack */
