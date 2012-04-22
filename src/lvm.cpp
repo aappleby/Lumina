@@ -730,7 +730,7 @@ void luaV_execute (lua_State *L) {
   base = ci->getBase();
 
   /* main loop of interpreter */
-  for (;;) {
+  for (int cycle = 0;; cycle++) {
     assert(!l_memcontrol.limitDisabled);
 
     if(thread_G->getGCDebt() > 0) {
@@ -845,13 +845,6 @@ void luaV_execute (lua_State *L) {
             ScopedMemChecker c2;
             Table* t = new Table(b, c);
             base[A] = t;
-          }
-
-          if (thread_G->getGCDebt() > 0) {
-            // TODO(aappleby): GC can invalidate the top pointer? That shouldn't be happening...
-            L->stack_.top_ = &base[A] + 1;  /* limit of live values */
-            luaC_step();
-            L->stack_.top_ = ci->getTop();  /* restore top */
           }
 
           break;
@@ -1012,10 +1005,6 @@ void luaV_execute (lua_State *L) {
           base = ci->getBase();
           base[A] = base[B];
 
-          if(thread_G->getGCDebt() > 0) {
-            L->stack_.top_ = (A >= B ? &base[A+1] : &base[B]);  /* limit of live values */
-            luaC_step();
-          }
           L->stack_.top_ = ci->getTop();  /* restore top */
           break;
         }
@@ -1257,12 +1246,6 @@ void luaV_execute (lua_State *L) {
             pushclosure(L, p, cl->ppupvals_, base, &base[A]);  /* create a new one */
           else {
             base[A] = TValue(ncl);  /* push cashed closure */
-          }
-
-          if(thread_G->getGCDebt() > 0) {
-            L->stack_.top_ = &base[A+1];  /* limit of live values */
-            luaC_step();
-            L->stack_.top_ = ci->getTop();  /* restore top */
           }
           break;
         }

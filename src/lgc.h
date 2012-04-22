@@ -70,7 +70,6 @@
 void luaC_step();
 
 void luaC_freeallobjects ();
-void luaC_step ();
 void luaC_forcestep ();
 void luaC_runtilstate (int statesmask);
 void luaC_fullgc (int isemergency);

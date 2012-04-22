@@ -859,8 +859,12 @@ void luaC_forcestep () {
 
   global_State *g = thread_G;
   int i;
-  if (isgenerational(g)) generationalcollection();
-  else step();
+  if (isgenerational(g)) {
+    generationalcollection();
+  }
+  else {
+    step();
+  }
   for (i = 0; i < GCFINALIZENUM && (!g->tobefnz.isEmpty()); i++) {
     GCTM(1);  /* Call a few pending finalizers */
   }
