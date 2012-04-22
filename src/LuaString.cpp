@@ -141,26 +141,25 @@ TString* stringtable::Create(const char *str, int len) {
 
 //-----------------------------------------------------------------------------
 
-/*
-void stringtable::Sweep(bool generational) {
+bool stringtable::Sweep(bool generational) {
 
-  if(sweepCursor_ >= hash_.size()) sweepCursor_ = 0;
+  if(sweepCursor_ >= (int)hash_.size()) sweepCursor_ = 0;
 
   LuaObject** cursor = &hash_[sweepCursor_];
 
   while(*cursor) {
     LuaObject* s = *cursor;
     if (s->isDead()) {
-      *cursor = curr->next_;
-      delete curr;
+      *cursor = s->next_;
+      delete s;
     }
     else {
       if(generational) {
-        if (curr->isOld()) break;
-        curr->setOld();
+        if (s->isOld()) break;
+        s->setOld();
       }
       else {
-        curr->makeLive();
+        s->makeLive();
       }
       cursor = &s->next_;
     }
@@ -170,6 +169,5 @@ void stringtable::Sweep(bool generational) {
 
   return sweepCursor_ == hash_.size();
 }
-*/
 
 //-----------------------------------------------------------------------------

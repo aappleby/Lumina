@@ -763,11 +763,12 @@ static ptrdiff_t singlestep () {
       }
     }
     case GCSsweepstring: {
-      if (g->strings_->sweepCursor_ < g->strings_->size_) {
-        sweeplist(&g->strings_->hash_[g->strings_->sweepCursor_++], MAX_LUMEM);
+      bool done = g->strings_->Sweep(isgenerational(g));
+
+      if(!done) {
         return GCSWEEPCOST;
       }
-      else {  /* no more strings to sweep */
+      else {
         g->sweepgc = &g->finobj;  /* prepare to sweep finalizable objects */
         g->gcstate = GCSsweepudata;
         return 0;

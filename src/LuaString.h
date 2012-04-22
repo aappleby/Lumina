@@ -50,6 +50,8 @@ public:
 
   void resize(int newsize);
 
+  bool Sweep(bool generational);
+
 //private:
   LuaVector<LuaObject*> hash_;
   uint32_t nuse_;
