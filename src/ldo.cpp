@@ -408,15 +408,16 @@ static int recover (lua_State *L, int status) {
 */
 static l_noret resume_error (lua_State *L, const char *msg, StkId firstArg) {
   THREAD_CHECK(L);
+  LuaResult result;
   {
     ScopedMemChecker c;
     L->stack_.top_ = firstArg;  /* remove args from the stack */
 
     /* push error message */
     TString* s = thread_G->strings_->Create(msg);
-    LuaResult result = L->stack_.push_reserve2(TValue(s));
-    handleResult(result);
+    result = L->stack_.push_reserve2(TValue(s));
   }
+  handleResult(result);
   luaD_throw(-1);  /* jump back to 'lua_resume' */
 }
 

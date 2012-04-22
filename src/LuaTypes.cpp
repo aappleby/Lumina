@@ -69,6 +69,10 @@ LuaGlobalScope::~LuaGlobalScope() {
 
 void handleResult(LuaResult err, const TValue* val)
 {
+  // Handling errors can throw exceptions and must be done
+  // outside of memory allocation blocks.
+  assert(!l_memcontrol.limitDisabled);
+
   switch(err) {
     case LUA_OK:
       return;

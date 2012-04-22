@@ -536,15 +536,19 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   fs->firstlocal = ls->dyd->actvar.n;
   fs->bl = NULL;
 
+  LuaResult result = LUA_OK;
   {
     ScopedMemChecker c;
     f = new Proto();
     f->linkGC(getGlobalGCHead());
 
     /* anchor prototype (to avoid being collected) */
-    LuaResult result = L->stack_.push_reserve2(TValue(f));
-    handleResult(result);
+    result = L->stack_.push_reserve2(TValue(f));
+  }
+  handleResult(result);
 
+  {
+    ScopedMemChecker c;
     fs->f = f;
     f->source = ls->source;
     f->maxstacksize = 2;  /* registers 0/1 are always valid */
@@ -554,8 +558,8 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
     /* anchor table of constants (to avoid being collected) */
     
     result = L->stack_.push_reserve2(TValue(fs->constant_map));
-    handleResult(result);
   }
+  handleResult(result);
 
   enterblock(fs, bl, 0);
 }
