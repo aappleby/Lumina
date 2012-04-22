@@ -448,11 +448,7 @@ void deletelist (LuaObject*& head) {
 static void checkSizes () {
   global_State *g = thread_G;
   if (g->gckind != KGC_EMERGENCY) {  /* do not change sizes in emergency */
-    int hs = g->strings_->size_ / 2;  /* half the size of the string table */
-    if (g->strings_->nuse_ < cast(uint32_t, hs)) {  /* using less than that half? */
-      ScopedMemChecker c;
-      g->strings_->resize(hs);  /* halve its size */
-    }
+    g->strings_->Shrink();
     g->buff.buffer.clear();
   }
 }
@@ -626,7 +622,7 @@ void luaC_changemode (lua_State *L, int mode) {
   else {  /* change to incremental mode */
     /* sweep all objects to turn them back to white
        (as white has not changed, nothing extra will be collected) */
-    g->strings_->sweepCursor_ = 0;
+    g->strings_->RestartSweep();
     g->gcstate = GCSsweepstring;
     g->gckind = KGC_NORMAL;
     luaC_runtilstate(~sweepphases);
@@ -659,11 +655,7 @@ void luaC_freeallobjects () {
   deletelist(thread_G->allgc);
 
   // free all string lists
-  for (int i = 0; i < thread_G->strings_->size_; i++) {
-    deletelist(thread_G->strings_->hash_[i]);
-  }
-
-  assert(thread_G->strings_->nuse_ == 0);
+  thread_G->strings_->Clear();
 }
 
 
@@ -731,7 +723,7 @@ static void atomic () {
 
   g->allweak_.Sweep();
 
-  g->strings_->sweepCursor_ = 0;  /* prepare to sweep strings */
+  g->strings_->RestartSweep();  /* prepare to sweep strings */
   g->gcstate = GCSsweepstring;
   
   std::swap(g->livecolor, g->deadcolor);
@@ -897,7 +889,7 @@ void luaC_fullgc (int isemergency) {
   if (keepinvariant(g)) {  /* marking phase? */
     /* must sweep all objects to turn them back to white
        (as white has not changed, nothing will be collected) */
-    g->strings_->sweepCursor_ = 0;
+    g->strings_->RestartSweep();
     g->gcstate = GCSsweepstring;
   }
   g->gckind = isemergency ? KGC_EMERGENCY : KGC_NORMAL;

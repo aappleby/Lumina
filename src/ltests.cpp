@@ -554,14 +554,14 @@ static int string_query (lua_State *L) {
   stringtable *tb = G(L)->strings_;
   int s = luaL_optint(L, 2, 0) - 1;
   if (s==-1) {
-    lua_pushinteger(L ,tb->nuse_);
-    lua_pushinteger(L ,tb->size_);
+    lua_pushinteger(L ,tb->getStringCount());
+    lua_pushinteger(L ,tb->getHashSize());
     return 2;
   }
-  else if (s < tb->size_) {
+  else if (s < tb->getHashSize()) {
     LuaObject *ts;
     int n = 0;
-    for (ts = tb->hash_[s]; ts; ts = ts->next_) {
+    for (ts = tb->getStringAt(s); ts; ts = ts->next_) {
       LuaResult result;
       {
         ScopedMemChecker c;

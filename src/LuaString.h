@@ -26,12 +26,11 @@ public:
 
 protected:
 
-  TString(stringtable* parent, uint32_t hash, const char* str, int len);
+  TString(uint32_t hash, const char* str, int len);
   uint32_t getHash() const { return hash_; }
 
   friend class stringtable;
 
-  stringtable* parent_;
   char* buf_;
   uint8_t reserved_;
   uint32_t hash_;
@@ -48,17 +47,34 @@ public:
   TString* Create(const char* str);
   TString* Create(const char* str, int len);
 
+  int getStringCount() const { return nuse_; }
+  int getHashSize() const { return (int)hash_.size(); }
+
+  // Used only by ltests.cpp
+  TString* getStringAt(int index) const {
+    return (TString*)hash_[index];
+  }
+
   void resize(int newsize);
 
   bool Sweep(bool generational);
 
-//private:
-  LuaVector<LuaObject*> hash_;
-  uint32_t nuse_;
-  int size_;
-  int sweepCursor_;
+  void Shrink() {
+    ScopedMemChecker c;
+    if (nuse_ < (uint32_t)(hash_.size() / 2)) resize(hash_.size() / 2);
+  }
+
+  void RestartSweep() {
+    sweepCursor_ = 0;
+  }
+
+  void Clear();
 
 protected:
+
+  LuaVector<TString*> hash_;
+  uint32_t nuse_;
+  int sweepCursor_;
 
   TString* find(uint32_t hash, const char* str, size_t len);
 };
