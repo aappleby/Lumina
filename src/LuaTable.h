@@ -5,14 +5,6 @@
 
 class Table;
 
-class Node {
-public:
-  TValue i_val;
-  TValue i_key;
-  Node *next;  /* for chaining */
-};
-
-
 class Table : public LuaObject {
 public:
 
@@ -20,8 +12,8 @@ public:
 
   int getLength() const;
 
-  bool hasArray() { return !array.empty(); }
-  bool hasHash()  { return !hashtable.empty(); }
+  bool hasArray() { return !array_.empty(); }
+  bool hasHash()  { return !hash_.empty(); }
 
   // Converts key to/from linear table index.
   int  getTableIndexSize  () const;
@@ -30,8 +22,8 @@ public:
 
   // Would be nice if I could remove these, but nextvar.lua fails
   // if I remove the optimization in OP_SETLIST that uses them.
-  int getArraySize() const { return (int)array.size(); }
-  int getHashSize() const { return (int)hashtable.size(); }
+  int getArraySize() const { return (int)array_.size(); }
+  int getHashSize() const { return (int)hash_.size(); }
 
   // Main get/set methods, which we'll gradually be transitioning to.
   TValue get(TValue key) const;
@@ -43,16 +35,16 @@ public:
   //----------
   // Test support, not used in actual VM
 
-  int getArraySize() { return (int)array.size(); }
-  int getHashSize()  { return (int)hashtable.size(); }
+  int getArraySize() { return (int)array_.size(); }
+  int getHashSize()  { return (int)hash_.size(); }
 
   void getArrayElement ( int index, TValue& outVal ) {
-    outVal = array[index];
+    outVal = array_[index];
   }
 
   void getHashElement ( int index, TValue& outKey, TValue& outVal ) {
-    outKey = hashtable[index].i_key;
-    outVal = hashtable[index].i_val;
+    outKey = hash_[index].i_key;
+    outVal = hash_[index].i_val;
   }
 
   //----------
@@ -81,8 +73,15 @@ public:
 
 protected:
 
-  LuaVector<TValue> array;
-  LuaVector<Node> hashtable;
+  class Node {
+  public:
+    TValue i_val;
+    TValue i_key;
+    Node *next;  /* for chaining */
+  };
+
+  LuaVector<TValue> array_;
+  LuaVector<Node> hash_;
 
   int lastfree;
 

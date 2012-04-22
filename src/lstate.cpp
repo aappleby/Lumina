@@ -62,14 +62,15 @@ lua_State *lua_newthread (lua_State *L) {
     ScopedMemChecker c;
     L1 = new lua_State(thread_G);
     L1->linkGC(getGlobalGCHead());
+
+    L1->hookmask = L->hookmask;
+    L1->basehookcount = L->basehookcount;
+    L1->hook = L->hook;
+    L1->hookcount = L1->basehookcount;
+    
     L->stack_.push(TValue(L1));
   }
 
-  L1->hookmask = L->hookmask;
-  L1->basehookcount = L->basehookcount;
-  L1->hook = L->hook;
-  L1->hookcount = L1->basehookcount;
-  
   {
     THREAD_CHANGE(L1);
     ScopedMemChecker c;

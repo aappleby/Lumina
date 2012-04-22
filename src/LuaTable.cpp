@@ -1,7 +1,5 @@
 #include "LuaTable.h"
 
-#include "lmem.h"
-
 void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal);
 int luaO_ceillog2 (unsigned int x);
 
@@ -73,29 +71,29 @@ int Table::getLength() const {
 
 //-----------------------------------------------------------------------------
 
-Node* Table::findBin(TValue key) {
-  if(hashtable.empty()) return NULL;
+Table::Node* Table::findBin(TValue key) {
+  if(hash_.empty()) return NULL;
 
   uint32_t hash = key.hashValue();
-  uint32_t mask = (uint32_t)hashtable.size() - 1;
+  uint32_t mask = (uint32_t)hash_.size() - 1;
 
-  return &hashtable[hash & mask];
+  return &hash_[hash & mask];
 }
 
-Node* Table::findBin(int key) {
-  if(hashtable.empty()) return NULL;
+Table::Node* Table::findBin(int key) {
+  if(hash_.empty()) return NULL;
 
   TValue key2(key);
   uint32_t hash = key2.hashValue();
-  uint32_t mask = (uint32_t)hashtable.size() - 1;
+  uint32_t mask = (uint32_t)hash_.size() - 1;
 
-  return &hashtable[hash & mask];
+  return &hash_[hash & mask];
 }
 
 //-----------------------------------------------------------------------------
 
-Node* Table::findNode(TValue key) {
-  if(hashtable.empty()) return NULL;
+Table::Node* Table::findNode(TValue key) {
+  if(hash_.empty()) return NULL;
 
   for(Node* node = findBin(key); node; node = node->next) {
     if(node->i_key == key) return node;
@@ -104,8 +102,8 @@ Node* Table::findNode(TValue key) {
   return NULL;
 }
 
-Node* Table::findNode(int key) {
-  if(hashtable.empty()) return NULL;
+Table::Node* Table::findNode(int key) {
+  if(hash_.empty()) return NULL;
 
   for(Node* node = findBin(key); node; node = node->next) {
     if(node->i_key == key) return node;
@@ -119,13 +117,13 @@ Node* Table::findNode(int key) {
 // lua_next.
 
 int Table::getTableIndexSize() const {
-  return (int)(array.size() + hashtable.size());
+  return (int)(array_.size() + hash_.size());
 }
 
 bool Table::keyToTableIndex(TValue key, int& outIndex) {
   if(key.isInteger()) {
     int index = key.getInteger() - 1; // lua index -> c index
-    if((index >= 0) && (index < (int)array.size())) {
+    if((index >= 0) && (index < (int)array_.size())) {
       outIndex = index;
       return true;
     }
@@ -134,22 +132,22 @@ bool Table::keyToTableIndex(TValue key, int& outIndex) {
   Node* node = findNode(key);
   if(node == NULL) return false;
   
-  outIndex = (int)(node - hashtable.begin()) + (int)array.size();
+  outIndex = (int)(node - hash_.begin()) + (int)array_.size();
   return true;
 }
 
 bool Table::tableIndexToKeyVal(int index, TValue& outKey, TValue& outVal) {
   if(index < 0) return false;
-  if(index < (int)array.size()) {
+  if(index < (int)array_.size()) {
     outKey = TValue(index + 1); // c index -> lua index
-    outVal = array[index];
+    outVal = array_[index];
     return true;
   }
 
-  index -= (int)array.size();
-  if(index < (int)hashtable.size()) {
-    outKey = hashtable[index].i_key;
-    outVal = hashtable[index].i_val;
+  index -= (int)array_.size();
+  if(index < (int)hash_.size()) {
+    outKey = hash_[index].i_key;
+    outVal = hash_[index].i_val;
     return true;
   }
 
@@ -165,8 +163,8 @@ TValue Table::get(TValue key) const {
     // lua index -> c index
     int intkey = key.getInteger();
     int index = intkey - 1;
-    if((index >= 0) && (index < (int)array.size())) {
-      return array[index];
+    if((index >= 0) && (index < (int)array_.size())) {
+      return array_[index];
     }
 
     // Important - if the integer wasn't in the array, we have convert it
@@ -174,14 +172,14 @@ TValue Table::get(TValue key) const {
     key = intkey;
   }
 
-  // Non-integer key, search the hashtable.
+  // Non-integer key, search the hash table.
 
-  if(hashtable.empty()) return TValue::None();
+  if(hash_.empty()) return TValue::None();
 
   uint32_t hash = key.hashValue();
-  uint32_t mask = (uint32_t)hashtable.size() - 1;
+  uint32_t mask = (uint32_t)hash_.size() - 1;
 
-  const Node* node = &hashtable[hash & mask];
+  const Node* node = &hash_[hash & mask];
 
   for(; node; node = node->next) {
     if(node->i_key == key) {
@@ -194,10 +192,10 @@ TValue Table::get(TValue key) const {
 
 //-----------------------------------------------------------------------------
 
-Node* Table::getFreeNode() {
+Table::Node* Table::getFreeNode() {
   while (lastfree > 0) {
     lastfree--;
-    Node* last = &hashtable[lastfree];
+    Node* last = &hash_[lastfree];
     if (last->i_key.isNil())
       return last;
   }
@@ -234,8 +232,8 @@ int Table::set(TValue key, TValue val) {
   if(key.isInteger()) {
     // Lua index -> C index
     int index = key.getInteger() - 1;
-    if((index >= 0) && (index < (int)array.size())) {
-      array[index] = val;
+    if((index >= 0) && (index < (int)array_.size())) {
+      array_[index] = val;
       return LUA_OK;
     }
   }
@@ -256,7 +254,7 @@ int Table::set(TValue key, TValue val) {
     return LUA_OK;
   }
 
-  // Nope, primary position occupied. Get a free node in the hashtable
+  // Nope, primary position occupied. Get a free node in the hash_
   Node *new_node = getFreeNode();
 
   // If there are no free nodes, rehash to make space for the key and repeat.
@@ -296,17 +294,17 @@ void Table::computeOptimalSizes(TValue newkey, int& outArraySize, int& outHashSi
 
   memset(logtable,0,32*sizeof(int));
 
-  for(int i = 0; i < (int)array.size(); i++) {
-    if(array[i].isNil()) continue;
+  for(int i = 0; i < (int)array_.size(); i++) {
+    if(array_[i].isNil()) continue;
     // C index -> Lua index
     TValue key(i+1);
     countKey(key, logtable);
     totalKeys++;
   }
 
-  for(int i = 0; i < (int)hashtable.size(); i++) {
-    TValue& key = hashtable[i].i_key;
-    TValue& val = hashtable[i].i_val;
+  for(int i = 0; i < (int)hash_.size(); i++) {
+    TValue& key = hash_[i].i_key;
+    TValue& val = hash_[i].i_val;
     if(val.isNil()) continue;
     countKey(key, logtable);
     totalKeys++;
@@ -349,8 +347,8 @@ void Table::computeOptimalSizes(TValue newkey, int& outArraySize, int& outHashSi
 int Table::resize(int nasize, int nhsize) {
   assert(l_memcontrol.limitDisabled);
 
-  int oldasize = (int)array.size();
-  int oldhsize = (int)hashtable.size();
+  int oldasize = (int)array_.size();
+  int oldhsize = (int)hash_.size();
 
   // Allocate temporary storage for the resize before we modify the table
   LuaVector<Node> temphash;
@@ -358,7 +356,7 @@ int Table::resize(int nasize, int nhsize) {
 
   if(nasize) {
     temparray.resize_nocheck(nasize);
-    memcpy(temparray.begin(), array.begin(), std::min(oldasize, nasize) * sizeof(TValue));
+    memcpy(temparray.begin(), array_.begin(), std::min(oldasize, nasize) * sizeof(TValue));
   }
 
   if (nhsize) {
@@ -368,12 +366,12 @@ int Table::resize(int nasize, int nhsize) {
   }
 
   // Memory allocated, swap and reinsert
-  temparray.swap(array);
-  temphash.swap(hashtable);
-  lastfree = (int)hashtable.size(); // all positions are free
+  temparray.swap(array_);
+  temphash.swap(hash_);
+  lastfree = (int)hash_.size(); // all positions are free
 
-  // Move array overflow to hashtable
-  for(int i = (int)array.size(); i < (int)temparray.size(); i++) {
+  // Move array overflow to hash_
+  for(int i = (int)array_.size(); i < (int)temparray.size(); i++) {
     if (!temparray[i].isNil()) {
       set(TValue(i+1), temparray[i]);
     }
@@ -395,16 +393,16 @@ int Table::resize(int nasize, int nhsize) {
 int Table::traverse(Table::nodeCallback c, void* blob) {
   TValue temp;
 
-  for(int i = 0; i < (int)array.size(); i++) {
+  for(int i = 0; i < (int)array_.size(); i++) {
     temp = i + 1; // c index -> lua index;
-    c(temp,array[i],blob);
+    c(temp,array_[i],blob);
   }
-  for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node& n = hashtable[i];
+  for(int i = 0; i < (int)hash_.size(); i++) {
+    Node& n = hash_[i];
     c(n.i_key, n.i_val, blob);
   }
 
-  return TRAVCOST + (int)array.size() + 2 * (int)hashtable.size();
+  return TRAVCOST + (int)array_.size() + 2 * (int)hash_.size();
 }
 
 //-----------------------------------------------------------------------------
@@ -413,14 +411,14 @@ void Table::VisitGC(GCVisitor& visitor) {
   setColor(GRAY);
   visitor.PushGray(this);
 
-  for(int i = 0; i < (int)array.size(); i++) {
-    if(array[i].isString()) {
-      array[i].getObject()->setColor(LuaObject::GRAY);
+  for(int i = 0; i < (int)array_.size(); i++) {
+    if(array_[i].isString()) {
+      array_[i].getObject()->setColor(LuaObject::GRAY);
     }
   }
 
-  for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node& n = hashtable[i];
+  for(int i = 0; i < (int)hash_.size(); i++) {
+    Node& n = hash_[i];
 
     if(n.i_key.isString()) n.i_key.getObject()->setColor(LuaObject::GRAY);
     if(n.i_val.isString()) n.i_val.getObject()->setColor(LuaObject::GRAY);
@@ -462,12 +460,12 @@ int Table::PropagateGC(GCVisitor& visitor) {
 int Table::PropagateGC_Strong(GCVisitor& visitor) {
   setColor(BLACK);
 
-  for(int i = 0; i < (int)array.size(); i++) {
-    visitor.MarkValue(array[i]);
+  for(int i = 0; i < (int)array_.size(); i++) {
+    visitor.MarkValue(array_[i]);
   }
 
-  for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node& n = hashtable[i];
+  for(int i = 0; i < (int)hash_.size(); i++) {
+    Node& n = hash_[i];
 
     if(n.i_val.isNil()) {
       if (n.i_key.isWhite()) {
@@ -479,7 +477,7 @@ int Table::PropagateGC_Strong(GCVisitor& visitor) {
     }
   }
 
-  return TRAVCOST + (int)array.size() + 2 * (int)hashtable.size();
+  return TRAVCOST + (int)array_.size() + 2 * (int)hash_.size();
 }
 
 //----------
@@ -487,12 +485,12 @@ int Table::PropagateGC_Strong(GCVisitor& visitor) {
 int Table::PropagateGC_WeakValues(GCVisitor& visitor) {
   bool hasDeadValues = false;
 
-  for(int i = 0; i < (int)array.size(); i++) {
-    if(array[i].isLiveColor()) hasDeadValues = true;
+  for(int i = 0; i < (int)array_.size(); i++) {
+    if(array_[i].isLiveColor()) hasDeadValues = true;
   }
 
-  for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node& n = hashtable[i];
+  for(int i = 0; i < (int)hash_.size(); i++) {
+    Node& n = hash_[i];
 
     // Sweep dead keys with no values, mark all other
     // keys.
@@ -512,7 +510,7 @@ int Table::PropagateGC_WeakValues(GCVisitor& visitor) {
     visitor.PushGrayAgain(this);
   }
 
-  return TRAVCOST + (int)hashtable.size();
+  return TRAVCOST + (int)hash_.size();
 }
 
 //----------
@@ -522,14 +520,14 @@ int Table::PropagateGC_Ephemeron(GCVisitor& visitor) {
   bool propagate = false;
   bool hasDeadKeys = false;
 
-  for(int i = 0; i < (int)array.size(); i++) {
-    if (array[i].isWhite()) {
-      visitor.MarkValue(array[i]);
+  for(int i = 0; i < (int)array_.size(); i++) {
+    if (array_[i].isWhite()) {
+      visitor.MarkValue(array_[i]);
     }
   }
 
-  for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node& n = hashtable[i];
+  for(int i = 0; i < (int)hash_.size(); i++) {
+    Node& n = hash_[i];
 
     // sweep keys for nil values
     if (n.i_val.isNil()) {
@@ -561,20 +559,20 @@ int Table::PropagateGC_Ephemeron(GCVisitor& visitor) {
     visitor.PushGrayAgain(this);
   }
 
-  return TRAVCOST + (int)array.size() + (int)hashtable.size();
+  return TRAVCOST + (int)array_.size() + (int)hash_.size();
 }
 
 //----------
 
 void Table::SweepWhite() {
-  for (int i = 0; i < (int)array.size(); i++) {
-    if (array[i].isLiveColor()) {
-      array[i] = TValue::Nil();
+  for (int i = 0; i < (int)array_.size(); i++) {
+    if (array_[i].isLiveColor()) {
+      array_[i] = TValue::Nil();
     }
   }
 
-  for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node& n = hashtable[i];
+  for(int i = 0; i < (int)hash_.size(); i++) {
+    Node& n = hash_[i];
 
     if(n.i_key.isLiveColor()) {
       n.i_key = TValue::Nil();
@@ -590,8 +588,8 @@ void Table::SweepWhite() {
 //----------
 
 void Table::SweepWhiteKeys() {
-  for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node& n = hashtable[i];
+  for(int i = 0; i < (int)hash_.size(); i++) {
+    Node& n = hash_[i];
     if(n.i_key.isLiveColor()) {
       n.i_val = TValue::Nil();
       n.i_key = TValue::Nil();
@@ -602,14 +600,14 @@ void Table::SweepWhiteKeys() {
 //----------
 
 void Table::SweepWhiteVals() {
-  for (int i = 0; i < (int)array.size(); i++) {
-    if (array[i].isLiveColor()) {
-      array[i] = TValue::Nil();
+  for (int i = 0; i < (int)array_.size(); i++) {
+    if (array_[i].isLiveColor()) {
+      array_[i] = TValue::Nil();
     }
   }
 
-  for(int i = 0; i < (int)hashtable.size(); i++) {
-    Node& n = hashtable[i];
+  for(int i = 0; i < (int)hash_.size(); i++) {
+    Node& n = hash_[i];
     if(!n.i_val.isLiveColor()) continue;
 
     // White value. If key was white, key goes away too.

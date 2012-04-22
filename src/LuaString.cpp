@@ -21,8 +21,9 @@ uint32_t hashString(const char* str, size_t len) {
 //-----------------------------------------------------------------------------
 // TString
 
-TString::TString(uint32_t hash, const char* str, int len)
+TString::TString(stringtable* parent, uint32_t hash, const char* str, int len)
 : LuaObject(LUA_TSTRING),
+  parent_(parent),
   buf_(NULL),
   reserved_(0),
   hash_(hash),
@@ -38,7 +39,7 @@ TString::~TString() {
   buf_ = NULL;
   len_ = NULL;
 
-  thread_G->strings_->nuse_--;
+  parent_->nuse_--;
 }
 
 //-----------------------------------------------------------------------------
@@ -130,12 +131,45 @@ TString* stringtable::Create(const char *str, int len) {
     resize(size_ * 2);
   }
   
-  TString* new_string = new TString(hash, str, len);
+  TString* new_string = new TString(this, hash, str, len);
 
   LuaObject** list = &hash_[hash & (size_ - 1)];
   new_string->linkGC(list);
   nuse_++;
   return new_string;
 }
+
+//-----------------------------------------------------------------------------
+
+/*
+void stringtable::Sweep(bool generational) {
+
+  if(sweepCursor_ >= hash_.size()) sweepCursor_ = 0;
+
+  LuaObject** cursor = &hash_[sweepCursor_];
+
+  while(*cursor) {
+    LuaObject* s = *cursor;
+    if (s->isDead()) {
+      *cursor = curr->next_;
+      delete curr;
+    }
+    else {
+      if(generational) {
+        if (curr->isOld()) break;
+        curr->setOld();
+      }
+      else {
+        curr->makeLive();
+      }
+      cursor = &s->next_;
+    }
+  }
+
+  sweepCursor_++;
+
+  return sweepCursor_ == hash_.size();
+}
+*/
 
 //-----------------------------------------------------------------------------

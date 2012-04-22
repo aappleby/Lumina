@@ -2,6 +2,8 @@
 #include "LuaObject.h"
 #include "LuaVector.h"
 
+class stringtable;
+
 /*
 ** Header for string value; string bytes follow the end of this structure
 */
@@ -24,11 +26,12 @@ public:
 
 protected:
 
-  TString(uint32_t hash, const char* str, int len);
+  TString(stringtable* parent, uint32_t hash, const char* str, int len);
   uint32_t getHash() const { return hash_; }
 
   friend class stringtable;
 
+  stringtable* parent_;
   char* buf_;
   uint8_t reserved_;
   uint32_t hash_;
@@ -45,8 +48,6 @@ public:
   TString* Create(const char* str);
   TString* Create(const char* str, int len);
 
-  TString* find(uint32_t hash, const char* str, size_t len);
-
   void resize(int newsize);
 
 //private:
@@ -54,4 +55,8 @@ public:
   uint32_t nuse_;
   int size_;
   int sweepCursor_;
+
+protected:
+
+  TString* find(uint32_t hash, const char* str, size_t len);
 };
