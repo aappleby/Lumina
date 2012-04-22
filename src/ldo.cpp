@@ -137,7 +137,10 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
 void luaD_precallLightC(lua_State* L, StkId func, int nresults) {
   lua_CFunction f = func->getLightFunction();
 
-  L->stack_.createCCall(func, nresults, LUA_MINSTACK);
+  {
+    ScopedMemChecker c;
+    L->stack_.createCCall(func, nresults, LUA_MINSTACK);
+  }
 
   if (L->hookmask & LUA_MASKCALL) luaD_hook(L, LUA_HOOKCALL, -1);
 
@@ -158,7 +161,10 @@ void luaD_precallLightC(lua_State* L, StkId func, int nresults) {
 void luaD_precallC(lua_State* L, StkId func, int nresults) {
   lua_CFunction f = func->getCClosure()->cfunction_;
 
-  L->stack_.createCCall(func, nresults, LUA_MINSTACK);
+  {
+    ScopedMemChecker c;
+    L->stack_.createCCall(func, nresults, LUA_MINSTACK);
+  }
 
   if (L->hookmask & LUA_MASKCALL) luaD_hook(L, LUA_HOOKCALL, -1);
 

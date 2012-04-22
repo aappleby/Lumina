@@ -57,6 +57,7 @@ static void expr (LexState *ls, expdesc *v);
 
 
 static void anchor_token (LexState *ls) {
+  ScopedMemChecker c;
   /* last token from outer function must be EOS */
   assert(ls->fs != NULL || ls->t.token == TK_EOS);
   if (ls->t.token == TK_NAME || ls->t.token == TK_STRING) {
@@ -809,6 +810,7 @@ static void body (LexState *ls, expdesc *e, int ismethod, int line) {
   new_fs.f->linedefined = line;
   checknext(ls, '(');
   if (ismethod) {
+    ScopedMemChecker c;
     new_localvarliteral(ls, "self");  /* create 'self' parameter */
     adjustlocalvars(ls, 1);
   }
@@ -1328,6 +1330,8 @@ static void forbody (LexState *ls, int base, int line, int nvars, int isnum) {
 
 
 static void fornum (LexState *ls, TString *varname, int line) {
+  ScopedMemChecker c;
+
   /* fornum -> NAME = exp1,exp1[,exp1] forbody */
   FuncState *fs = ls->fs;
   int base = fs->freereg;
@@ -1350,6 +1354,8 @@ static void fornum (LexState *ls, TString *varname, int line) {
 
 
 static void forlist (LexState *ls, TString *indexname) {
+  ScopedMemChecker c;
+
   /* forlist -> NAME {,NAME} IN explist forbody */
   FuncState *fs = ls->fs;
   expdesc e;

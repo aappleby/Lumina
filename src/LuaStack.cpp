@@ -438,7 +438,6 @@ void LuaStack::createCCall(StkId func, int nresults, int nstack)
   reserve(nstack);
   func = begin() + func_index;
 
-  ScopedMemChecker c;
   CallInfo* ci = nextCallinfo();  /* now 'enter' new function */
   ci->nresults = nresults;
   ci->setFunc(func);

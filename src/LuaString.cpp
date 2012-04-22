@@ -131,7 +131,6 @@ TString* stringtable::Create(const char *str, int len) {
   }
 
   if ((nuse_ >= (uint32_t)size_) && (size_ <= MAX_INT/2)) {
-    //ScopedMemChecker c;
     luaC_runtilstate(~(1 << GCSsweepstring));
     resize(size_ * 2);
   }

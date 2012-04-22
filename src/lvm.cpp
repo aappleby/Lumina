@@ -47,7 +47,7 @@ void handleError(LuaResult err, const TValue* val)
 
 // Converts value to string in-place, returning 1 if successful.
 int luaV_tostring (TValue* v) {
-  ScopedMemChecker c;
+  assert(l_memcontrol.limitDisabled);
 
   if(v->isString()) return 1;
 
@@ -452,6 +452,7 @@ void luaV_concat (lua_State *L, int total) {
     }
 
     if (top[-1].getString()->getLen() == 0) { /* second operand is empty? */
+      ScopedMemChecker c;
       luaV_tostring(top-2);
       total -= n-1;  /* got 'n' strings to create 1 new */
       L->stack_.top_ -= n-1;  /* popped 'n' strings and pushed one */

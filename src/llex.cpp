@@ -63,7 +63,6 @@ static void save (LexState *ls, int c) {
 
 
 void luaX_init (lua_State *L) {
-  //ScopedMemChecker c;
   THREAD_CHECK(L);
   int i;
 
@@ -129,15 +128,13 @@ l_noret luaX_syntaxerror (LexState *ls, const char *msg) {
 ** (by that time it should be anchored in function's prototype)
 */
 TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
+  assert(l_memcontrol.limitDisabled);
   THREAD_CHECK(ls->L);
   lua_State *L = ls->L;
 
   TString* ts = NULL;
-  {
-    ScopedMemChecker c;
-    ts = thread_G->strings_->Create(str, l);  /* create new string */
-    L->stack_.push_nocheck(TValue(ts));  /* temporarily anchor it in stack */
-  }
+  ts = thread_G->strings_->Create(str, l);  /* create new string */
+  L->stack_.push_nocheck(TValue(ts));  /* temporarily anchor it in stack */
 
   // TODO(aappleby): Save string in 'ls->fs->h'. Why it does so exactly this way, I don't
   // know. Will have to investigate in the future.
@@ -302,10 +299,15 @@ static void read_long_string (LexState *ls, SemInfo *seminfo, int sep) {
         else next(ls);
       }
     }
-  } endloop:
-  if (seminfo)
+  } 
+
+endloop:
+
+  if (seminfo) {
+    ScopedMemChecker c;
     seminfo->ts = luaX_newstring(ls, luaZ_buffer(ls->buff) + (2 + sep),
                                      luaZ_bufflen(ls->buff) - 2*(2 + sep));
+  }
 }
 
 
@@ -403,9 +405,14 @@ static void read_string (LexState *ls, int del, SemInfo *seminfo) {
         save_and_next(ls);
     }
   }
+
   save_and_next(ls);  /* skip delimiter */
-  seminfo->ts = luaX_newstring(ls, luaZ_buffer(ls->buff) + 1,
-                                   luaZ_bufflen(ls->buff) - 2);
+
+  {
+    ScopedMemChecker c;
+    seminfo->ts = luaX_newstring(ls, luaZ_buffer(ls->buff) + 1,
+                                     luaZ_bufflen(ls->buff) - 2);
+  }
 }
 
 
@@ -503,7 +510,12 @@ static int llex (LexState *ls, SemInfo *seminfo) {
           do {
             save_and_next(ls);
           } while (lislalnum(ls->current));
-          ts = luaX_newstring(ls, luaZ_buffer(ls->buff), luaZ_bufflen(ls->buff));
+
+          {
+            ScopedMemChecker c;
+            ts = luaX_newstring(ls, luaZ_buffer(ls->buff), luaZ_bufflen(ls->buff));
+          }
+
           seminfo->ts = ts;
           if (ts->getReserved() > 0)  /* reserved word? */
             return ts->getReserved() - 1 + FIRST_RESERVED;

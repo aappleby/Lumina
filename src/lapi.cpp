@@ -700,20 +700,19 @@ void lua_rawgetp (lua_State *L, int idx, const void *p) {
 
 
 void lua_createtable (lua_State *L, int narray, int nrec) {
+  ScopedMemChecker c;
+
   THREAD_CHECK(L);
   Table *t;
+
+  // whyyyy do we do garbage collection here?
   luaC_checkGC();
 
-  {
-    ScopedMemChecker c;
-    t = new Table();
-    if(t == NULL) luaD_throw(LUA_ERRMEM);
-    t->linkGC(getGlobalGCHead());
-    L->stack_.push(TValue(t));
-  }
+  t = new Table();
+  t->linkGC(getGlobalGCHead());
+  L->stack_.push(TValue(t));
 
   if (narray > 0 || nrec > 0) {
-    ScopedMemChecker c;
     t->resize(narray, nrec);
   }
 }
