@@ -4,6 +4,7 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaGlobals.h"
 #include "LuaProto.h"
 #include "LuaState.h"
 
@@ -15,7 +16,6 @@
 #include "ldo.h"
 #include "lmem.h"
 #include "lobject.h"
-#include "lstring.h"
 #include "lundump.h"
 #include "lzio.h"
 

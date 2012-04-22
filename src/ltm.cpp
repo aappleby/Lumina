@@ -13,7 +13,6 @@
 
 #include "lobject.h"
 #include "lstate.h"
-#include "lstring.h"
 #include "ltm.h"
 
 Table* lua_getmetatable (TValue v);

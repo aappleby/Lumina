@@ -14,11 +14,11 @@
 
 #include "lctype.h"
 #include "ldo.h"
+#include "lgc.h"
 #include "llex.h"
 #include "lobject.h"
 #include "lparser.h"
 #include "lstate.h"
-#include "lstring.h"
 #include "lzio.h"
 
 

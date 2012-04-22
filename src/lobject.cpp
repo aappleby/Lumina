@@ -4,6 +4,7 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaGlobals.h"
 #include "LuaState.h"
 
 #include <stdarg.h>
@@ -21,7 +22,6 @@
 #include "lmem.h"
 #include "lobject.h"
 #include "lstate.h"
-#include "lstring.h"
 #include "lvm.h"
 
 

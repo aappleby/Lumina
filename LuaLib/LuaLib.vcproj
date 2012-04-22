@@ -639,18 +639,6 @@
 				>
 			</File>
 		</Filter>
-		<Filter
-			Name="_Done"
-			>
-			<File
-				RelativePath="..\src\lstring.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\lstring.h"
-				>
-			</File>
-		</Filter>
 		<File
 			RelativePath="..\src\lua.h"
 			>

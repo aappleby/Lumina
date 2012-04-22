@@ -15,13 +15,13 @@
 #include "lcode.h"
 #include "ldebug.h"
 #include "ldo.h"
+#include "lgc.h"
 #include "llex.h"
 #include "lmem.h"
 #include "lobject.h"
 #include "lopcodes.h"
 #include "lparser.h"
 #include "lstate.h"
-#include "lstring.h"
 
 
 

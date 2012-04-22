@@ -23,7 +23,6 @@
 #include "lobject.h"
 #include "lopcodes.h"
 #include "lparser.h"
-#include "lstring.h"
 #include "lvm.h"
 
 

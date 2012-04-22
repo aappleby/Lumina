@@ -26,7 +26,6 @@
 #include "lopcodes.h"
 #include "lparser.h"
 #include "lstate.h"
-#include "lstring.h"
 #include "ltm.h"
 #include "lundump.h"
 #include "lvm.h"

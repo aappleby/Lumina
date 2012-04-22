@@ -24,7 +24,6 @@
 #include "lobject.h"
 #include "lopcodes.h"
 #include "lstate.h"
-#include "lstring.h"
 #include "ltm.h"
 #include "lvm.h"
 

@@ -23,10 +23,10 @@
 #include "lctype.h"
 #include "ldebug.h"
 #include "ldo.h"
+#include "lgc.h"
 #include "lmem.h"
 #include "lopcodes.h"
 #include "lstate.h"
-#include "lstring.h"
 #include "lualib.h"
 
 
