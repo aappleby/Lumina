@@ -6,8 +6,6 @@
 
 #include "lmem.h"
 
-l_noret luaD_throw (int errcode);
-
 template<class T>
 class LuaVector {
 public:

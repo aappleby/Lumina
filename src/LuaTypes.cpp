@@ -7,6 +7,7 @@
 
 l_noret luaG_typeerror (const TValue *o, const char *op);
 l_noret luaG_runerror (const char *fmt, ...);
+l_noret luaD_throw (int errcode);
 
 __declspec(thread) lua_State* thread_L = NULL;
 __declspec(thread) global_State* thread_G = NULL;
@@ -70,6 +71,10 @@ void handleResult(LuaResult err, const TValue* val)
 {
   switch(err) {
     case LUA_OK:
+      return;
+
+    case LUA_ERRMEM:
+      luaD_throw(LUA_ERRMEM);
       return;
 
     case LUA_ERRERR:

@@ -75,7 +75,9 @@ void Memcontrol::checkLimit() {
   }
 
   // If we're still over, throw the out-of-memory error.
-  if(isOverLimit()) luaD_throw(LUA_ERRMEM);
+  if(isOverLimit()) {
+    handleResult(LUA_ERRMEM);
+  }
 }
 
 //-----------------------------------------------------------------------------

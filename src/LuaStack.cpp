@@ -6,8 +6,6 @@
 
 #include <assert.h>
 
-l_noret luaG_runerror (const char *fmt, ...);
-
 //------------------------------------------------------------------------------
 // Set up our starting stack & callinfo.
 
@@ -64,8 +62,6 @@ void LuaStack::realloc (int newsize) {
     }
   }
   */
-
-  // Stack is valid again, ScopedMemChecker will check limit on destruction.
 }
 
 //------------------------------------------------------------------------------
@@ -104,7 +100,6 @@ LuaResult LuaStack::grow2(int extrasize) {
 
   // Asking for more stack when we're already over the limit is  an error.
   if ((int)size() > LUAI_MAXSTACK) {
-    //luaD_throw(LUA_ERRERR);
     return LUA_ERRERR;
   }
 
@@ -113,7 +108,6 @@ LuaResult LuaStack::grow2(int extrasize) {
   int needed = inuse + extrasize + EXTRA_STACK;
   if (needed > LUAI_MAXSTACK) {  /* stack overflow? */
     realloc(ERRORSTACKSIZE);
-    //luaG_runerror("stack overflow");
     return LUA_ERRSTACK;
   }
 

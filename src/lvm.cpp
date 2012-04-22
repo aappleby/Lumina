@@ -835,17 +835,15 @@ void luaV_execute (lua_State *L) {
           int b = GETARG_B(i);
           int c = GETARG_C(i);
 
-          l_memcontrol.disableLimit();
-
-          Table* t = new Table();
-          t->linkGC(getGlobalGCHead());
-          base[A] = t;
-          if (b != 0 || c != 0) {
-            t->resize(luaO_fb2int(b), luaO_fb2int(c));
+          {
+            ScopedMemChecker c2;
+            Table* t = new Table();
+            t->linkGC(getGlobalGCHead());
+            base[A] = t;
+            if (b != 0 || c != 0) {
+              t->resize(luaO_fb2int(b), luaO_fb2int(c));
+            }
           }
-
-          l_memcontrol.enableLimit();
-          l_memcontrol.checkLimit();
 
           if (thread_G->getGCDebt() > 0) {
             // TODO(aappleby): GC can invalidate the top pointer? That shouldn't be happening...

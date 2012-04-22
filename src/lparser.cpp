@@ -575,8 +575,6 @@ static void close_func (LexState *ls) {
     f->upvalues.resize_nocheck(fs->num_upvals);
   }
 
-  l_memcontrol.checkLimit();
-
   assert(fs->bl == NULL);
   ls->fs = fs->prev;
   /* last token read was anchored in defunct function; must re-anchor it */
