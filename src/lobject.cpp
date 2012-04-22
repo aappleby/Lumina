@@ -170,12 +170,10 @@ int luaO_str2d (const char *s, size_t len, lua_Number *result) {
 
 static void pushstr (lua_State *L, const char *str, size_t l) {
   THREAD_CHECK(L);
-  ScopedMemChecker c;
-  TString* s = thread_G->strings_->Create(str, l);
-
   LuaResult result;
   {
     ScopedMemChecker c;
+    TString* s = thread_G->strings_->Create(str, l);
     result = L->stack_.push_reserve2(TValue(s));
   }
   handleResult(result);

@@ -57,7 +57,6 @@ static void expr (LexState *ls, expdesc *v);
 
 
 static void anchor_token (LexState *ls) {
-  ScopedMemChecker c;
   /* last token from outer function must be EOS */
   assert(ls->fs != NULL || ls->t.token == TK_EOS);
   if (ls->t.token == TK_NAME || ls->t.token == TK_STRING) {
@@ -451,8 +450,11 @@ static void enterblock (FuncState *fs, BlockCnt *bl, uint8_t isloop) {
 ** create a label named "break" to resolve break statements
 */
 static void breaklabel (LexState *ls) {
-  ScopedMemChecker c;
-  TString *n = thread_G->strings_->Create("break");
+  TString* n;
+  {
+    ScopedMemChecker c;
+    n = thread_G->strings_->Create("break");
+  }
   int l = newlabelentry(ls, &ls->dyd->label, n, 0, ls->fs->pc);
   findgotos(ls, &ls->dyd->label.arr[l]);
 }
@@ -812,7 +814,6 @@ static void body (LexState *ls, expdesc *e, int ismethod, int line) {
   new_fs.f->linedefined = line;
   checknext(ls, '(');
   if (ismethod) {
-    ScopedMemChecker c;
     new_localvarliteral(ls, "self");  /* create 'self' parameter */
     adjustlocalvars(ls, 1);
   }
@@ -1338,7 +1339,6 @@ static void fornum (LexState *ls, TString *varname, int line) {
   FuncState *fs = ls->fs;
   int base = fs->freereg;
   {
-    ScopedMemChecker c;
     new_localvarliteral(ls, "(for index)");
     new_localvarliteral(ls, "(for limit)");
     new_localvarliteral(ls, "(for step)");
@@ -1365,19 +1365,19 @@ static void forlist (LexState *ls, TString *indexname) {
   int nvars = 4;  /* gen, state, control, plus at least one declared var */
   int line;
   int base = fs->freereg;
-  {
-    ScopedMemChecker c;
-    /* create control variables */
-    new_localvarliteral(ls, "(for generator)");
-    new_localvarliteral(ls, "(for state)");
-    new_localvarliteral(ls, "(for control)");
-    /* create declared variables */
-    new_localvar(ls, indexname);
-  }
+
+  /* create control variables */
+  new_localvarliteral(ls, "(for generator)");
+  new_localvarliteral(ls, "(for state)");
+  new_localvarliteral(ls, "(for control)");
+  /* create declared variables */
+  new_localvar(ls, indexname);
+
   while (testnext(ls, ',')) {
     new_localvar(ls, str_checkname(ls));
     nvars++;
   }
+
   checknext(ls, TK_IN);
   line = ls->linenumber;
   adjust_assign(ls, 3, explist(ls, &e), &e);

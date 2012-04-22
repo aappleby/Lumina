@@ -369,7 +369,6 @@ int Table::resize(int nasize, int nhsize) {
   // Move array overflow to hashtable
   for(int i = (int)array.size(); i < (int)temparray.size(); i++) {
     if (!temparray[i].isNil()) {
-      ScopedMemChecker c;
       set(TValue(i+1), temparray[i]);
     }
   }
@@ -378,7 +377,6 @@ int Table::resize(int nasize, int nhsize) {
   for (int i = (int)temphash.size() - 1; i >= 0; i--) {
     Node* old = &temphash[i];
     if (!old->i_val.isNil()) {
-      ScopedMemChecker c;
       set(old->i_key, old->i_val);
     }
   }

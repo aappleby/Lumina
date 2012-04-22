@@ -48,10 +48,15 @@ static void init_registry (lua_State *L, global_State *g) {
   /* create registry */
   //ScopedMemChecker c;
 
-  Table* registry = new Table();
-  registry->linkGC(getGlobalGCHead());
-  g->l_registry = registry;
-  registry->resize(LUA_RIDX_LAST, 0);
+  Table* registry;
+
+  {
+    ScopedMemChecker c;
+    registry = new Table();
+    registry->linkGC(getGlobalGCHead());
+    g->l_registry = registry;
+    registry->resize(LUA_RIDX_LAST, 0);
+  }
 
   /* registry[LUA_RIDX_MAINTHREAD] = L */
   mt = L;
@@ -206,20 +211,29 @@ lua_State *lua_newstate () {
     try {
       THREAD_CHECK(L);
 
-      ScopedMemChecker c;
-
       global_State *g = thread_G;
-      L->stack_.init();  /* init stack */
+
+      {
+        ScopedMemChecker c;
+        L->stack_.init();  /* init stack */
+      }
+
       init_registry(L, g);
 
-      g->strings_->resize(MINSTRTABSIZE);  /* initial size of string table */
+      {
+        ScopedMemChecker c;
+        g->strings_->resize(MINSTRTABSIZE);  /* initial size of string table */
+      }
 
       luaT_init();
       luaX_init(L);
 
       /* pre-create memory-error message */
-      g->memerrmsg = thread_G->strings_->Create(MEMERRMSG);
-      g->memerrmsg->setFixed();  /* it should never be collected */
+      {
+        ScopedMemChecker c;
+        g->memerrmsg = thread_G->strings_->Create(MEMERRMSG);
+        g->memerrmsg->setFixed();  /* it should never be collected */
+      }
 
       g->gcrunning = 1;  /* allow gc */
     }

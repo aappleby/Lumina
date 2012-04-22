@@ -68,7 +68,6 @@ stringtable::~stringtable() {
 }
 
 TString* stringtable::find(uint32_t hash, const char *str, size_t len) {
-
   LuaObject* o = hash_[hash & (size_-1)];
 
   for (; o != NULL; o = o->next_) {
@@ -85,6 +84,7 @@ TString* stringtable::find(uint32_t hash, const char *str, size_t len) {
 }
 
 void stringtable::resize(int newsize) {
+  assert(l_memcontrol.limitDisabled);
 
   // cannot resize while GC is traversing strings
   luaC_runtilstate(~(1 << GCSsweepstring));
@@ -117,6 +117,7 @@ void stringtable::resize(int newsize) {
 
 TString* stringtable::Create( const char* str )
 {
+  assert(l_memcontrol.limitDisabled);
   return Create(str, strlen(str));
 }
 

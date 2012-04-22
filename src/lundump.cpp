@@ -138,10 +138,11 @@ static void LoadConstants(LoadState* S, Proto* f)
 
 static void LoadUpvalues(LoadState* S, Proto* f)
 {
-  ScopedMemChecker c;
-
   int n=LoadInt(S);
-  f->upvalues.resize_nocheck(n);
+  {
+    ScopedMemChecker c;
+    f->upvalues.resize_nocheck(n);
+  }
   
   for (int i=0; i<n; i++) {
     f->upvalues[i].name=NULL;
@@ -155,15 +156,19 @@ static void LoadUpvalues(LoadState* S, Proto* f)
 
 static void LoadDebug(LoadState* S, Proto* f)
 {
-  ScopedMemChecker c;
-
   f->source=LoadString(S);
   int n = LoadInt(S);
-  f->lineinfo.resize_nocheck(n);
+  {
+    ScopedMemChecker c;
+    f->lineinfo.resize_nocheck(n);
+  }
 
   LoadVector(S,f->lineinfo.begin(),n,sizeof(int));
   n=LoadInt(S);
-  f->locvars.resize_nocheck(n);
+  {
+    ScopedMemChecker c;
+    f->locvars.resize_nocheck(n);
+  }
 
   for (int i=0; i < n; i++) {
     f->locvars[i].varname=NULL;

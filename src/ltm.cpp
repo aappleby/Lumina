@@ -39,7 +39,7 @@ static const char *const luaT_eventname[] = {
 };
 
 void luaT_init() {
-  //ScopedMemChecker c;
+  ScopedMemChecker c;
   for (int i=0; i<TM_N; i++) {
     thread_G->tagmethod_names_[i] = thread_G->strings_->Create(luaT_eventname[i]);
     thread_G->tagmethod_names_[i]->setFixed();  /* never collect these names */
