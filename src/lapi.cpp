@@ -517,16 +517,15 @@ void lua_pushunsigned (lua_State *L, lua_Unsigned u) {
 
 const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
   THREAD_CHECK(L);
-  TString *ts;
+
   luaC_checkGC();
 
   {
     ScopedMemChecker c;
-    ts = thread_G->strings_->Create(s, len);
+    TString* ts = thread_G->strings_->Create(s, len);
     L->stack_.push(TValue(ts));
+    return ts->c_str();
   }
-
-  return ts->c_str();
 }
 
 
@@ -536,16 +535,13 @@ const char *lua_pushstring (lua_State *L, const char *s) {
     L->stack_.push(TValue::Nil());
     return NULL;
   }
-  else {
-    TString *ts;
-    luaC_checkGC();
 
-    {
-      ScopedMemChecker c;
-      ts = thread_G->strings_->Create(s);
-      L->stack_.push(TValue(ts));
-    }
+  luaC_checkGC();
 
+  {
+    ScopedMemChecker c;
+    TString* ts = thread_G->strings_->Create(s);
+    L->stack_.push(TValue(ts));
     return ts->c_str();
   }
 }
@@ -585,13 +581,15 @@ void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
   api_check(n <= MAXUPVAL, "upvalue index too large");
   luaC_checkGC();
 
-  ScopedMemChecker c;
-  Closure *cl = new Closure(fn, n);
-  L->stack_.top_ -= n;
-  while (n--) {
-    cl->pupvals_[n] = L->stack_.top_[n];
+  {
+    ScopedMemChecker c;
+    Closure *cl = new Closure(fn, n);
+    L->stack_.top_ -= n;
+    while (n--) {
+      cl->pupvals_[n] = L->stack_.top_[n];
+    }
+    L->stack_.push(TValue(cl));
   }
-  L->stack_.push(TValue(cl));
 }
 
 
@@ -717,19 +715,11 @@ void lua_rawgetp (lua_State *L, int idx, const void *p) {
 void lua_createtable (lua_State *L, int narray, int nrec) {
   THREAD_CHECK(L);
 
-  // whyyyy do we do garbage collection here?
-  luaC_checkGC();
-
   {
     ScopedMemChecker c;
 
-    Table* t = new Table();
-    t->linkGC(getGlobalGCHead());
+    Table* t = new Table(narray, nrec);
     L->stack_.push(TValue(t));
-
-    if (narray > 0 || nrec > 0) {
-      t->resize(narray, nrec);
-    }
   }
 }
 

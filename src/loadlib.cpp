@@ -616,9 +616,13 @@ int luaopen_package (lua_State *L) {
   luaL_newmetatable(L, "_LOADLIB");
   lua_pushcfunction(L, gctm);
   lua_setfield(L, -2, "__gc");
+
   /* create `package' table */
-  luaL_newlib(L, pk_funcs);
+  lua_createtable(L, 0, sizeof(pk_funcs)/sizeof((pk_funcs)[0]) - 1);
+  luaL_setfuncs(L,pk_funcs,0);
+
   /* create 'searchers' table */
+  luaC_checkGC();
   lua_createtable(L, sizeof(searchers)/sizeof(searchers[0]) - 1, 0);
   /* fill it with pre-defined searchers */
   for (i=0; searchers[i] != NULL; i++) {

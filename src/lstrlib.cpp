@@ -967,6 +967,7 @@ static const luaL_Reg strlib[] = {
 
 static void createmetatable (lua_State *L) {
   THREAD_CHECK(L);
+  luaC_checkGC();
   lua_createtable(L, 0, 1);  /* table to be metatable for strings */
   lua_pushliteral(L, "");  /* dummy string */
   L->stack_.copy(-2);  /* copy table */
@@ -983,7 +984,10 @@ static void createmetatable (lua_State *L) {
 */
 int luaopen_string (lua_State *L) {
   THREAD_CHECK(L);
-  luaL_newlib(L, strlib);
+
+  lua_createtable(L, 0, sizeof(strlib)/sizeof((strlib)[0]) - 1);
+  luaL_setfuncs(L,strlib,0);
+
   createmetatable(L);
   return 1;
 }

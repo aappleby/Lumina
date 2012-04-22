@@ -287,6 +287,7 @@ int luaL_newmetatable (lua_State *L, const char *tname) {
   if (!lua_isnil(L, -1))  /* name already in use? */
     return 0;  /* leave previous value on top, but return 0 */
   L->stack_.pop();
+  luaC_checkGC();
   lua_createtable(L, 0, 0);
   L->stack_.copy(-1);
   lua_setfield(L, LUA_REGISTRYINDEX, tname);  /* registry.name = metatable */
@@ -853,7 +854,7 @@ int luaL_getsubtable (lua_State *L, int idx, const char *fname) {
   else {
     idx = lua_absindex(L, idx);
     L->stack_.pop();  /* remove previous result */
-    lua_newtable(L);
+    lua_createtable(L, 0, 0);
     L->stack_.copy(-1);  /* copy to be left at top */
     lua_setfield(L, idx, fname);  /* assign new table to field */
     return 0;  /* false, because did not find table there */

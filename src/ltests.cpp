@@ -363,7 +363,9 @@ static int listcode (lua_State *L) {
   luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1),
                  1, "Lua function expected");
   p = obj_at(L, 1)->getLClosure()->proto_;
-  lua_newtable(L);
+
+  lua_createtable(L, 0, 0);
+
   setnameval(L, "maxstack", p->maxstacksize);
   setnameval(L, "numparams", p->numparams);
   for (pc=0; pc < (int)p->code.size(); pc++) {
@@ -383,6 +385,7 @@ static int listk (lua_State *L) {
   luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1),
                  1, "Lua function expected");
   p = obj_at(L, 1)->getLClosure()->proto_;
+  luaC_checkGC();
   lua_createtable(L, (int)p->constants.size(), 0);
   for (i=0; i < (int)p->constants.size(); i++) {
     pushobject(L, &p->constants[i]);
@@ -413,6 +416,7 @@ static int listlocals (lua_State *L) {
 
 static int get_limits (lua_State *L) {
   THREAD_CHECK(L);
+  luaC_checkGC();
   lua_createtable(L, 0, 5);
   setnameval(L, "BITS_INT", 32);
   setnameval(L, "LFPF", LFIELDS_PER_FLUSH);
@@ -1022,7 +1026,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       lua_pushboolean(L1, tempnum);
     }
     else if EQ("newtable") {
-      lua_newtable(L1);
+      lua_createtable(L1, 0, 0);
     }
     else if EQ("newuserdata") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }
@@ -1341,7 +1345,7 @@ static void sethookaux (lua_State *L, int mask, int count, const char *scpt) {
   lua_getfield(L, LUA_REGISTRYINDEX, "C_HOOK");  /* get C_HOOK table */
   if (!lua_istable(L, -1)) {  /* no hook table? */
     L->stack_.pop();  /* remove previous value */
-    lua_newtable(L);  /* create new C_HOOK table */
+    lua_createtable(L, 0, 0);  /* create new C_HOOK table */
     L->stack_.copy(-1);
     lua_setfield(L, LUA_REGISTRYINDEX, "C_HOOK");  /* register it */
   }
@@ -1404,7 +1408,6 @@ static const struct luaL_Reg tests_funcs[] = {
   {"gccolor", get_gccolor},
   {"gcstate", gc_state},
   {"getref", getref},
-//  {"hash", hash_query},
   {"int2fb", int2fb_aux},
   {"limits", get_limits},
   {"listcode", listcode},
@@ -1442,6 +1445,9 @@ int luaopen_test (lua_State *L) {
   THREAD_CHECK(L);
   lua_atpanic(L, &tpanic);
   atexit(checkfinalmem);
-  luaL_newlib(L, tests_funcs);
+
+  lua_createtable(L, 0, sizeof(tests_funcs)/sizeof((tests_funcs)[0]) - 1);
+  luaL_setfuncs(L,tests_funcs,0);
+
   return 1;
 }

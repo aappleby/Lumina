@@ -223,7 +223,8 @@ static const luaL_Reg bitlib[] = {
 
 int luaopen_bit32 (lua_State *L) {
   THREAD_CHECK(L);
-  luaL_newlib(L, bitlib);
+  lua_createtable(L, 0, sizeof(bitlib)/sizeof((bitlib)[0]) - 1);
+  luaL_setfuncs(L,bitlib,0);
   return 1;
 }
 

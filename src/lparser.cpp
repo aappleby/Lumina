@@ -554,7 +554,6 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
     f->maxstacksize = 2;  /* registers 0/1 are always valid */
 
     fs->constant_map = new Table();
-    fs->constant_map->linkGC(getGlobalGCHead());
     /* anchor table of constants (to avoid being collected) */
     
     result = L->stack_.push_reserve2(TValue(fs->constant_map));

@@ -200,6 +200,7 @@ static int getargs (lua_State *L, char **argv, int n) {
   for (i=n+1; i < argc; i++) {
     lua_pushstring(L, argv[i]);
   }
+  luaC_checkGC();
   lua_createtable(L, narg, n + 1);
   for (i=0; i < argc; i++) {
     lua_pushstring(L, argv[i]);

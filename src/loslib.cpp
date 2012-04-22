@@ -220,6 +220,7 @@ static int os_date (lua_State *L) {
     L->stack_.push(TValue::Nil());
   }
   else if (strcmp(s, "*t") == 0) {
+    luaC_checkGC();
     lua_createtable(L, 0, 9);  /* 9 = number of fields */
     setfield(L, "sec", stm->tm_sec);
     setfield(L, "min", stm->tm_min);
@@ -337,7 +338,10 @@ static const luaL_Reg syslib[] = {
 
 int luaopen_os (lua_State *L) {
   THREAD_CHECK(L);
-  luaL_newlib(L, syslib);
+
+  lua_createtable(L, 0, sizeof(syslib)/sizeof((syslib)[0]) - 1);
+  luaL_setfuncs(L,syslib,0);
+
   return 1;
 }
 

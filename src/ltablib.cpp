@@ -107,6 +107,7 @@ static int tconcat (lua_State *L) {
 static int pack (lua_State *L) {
   THREAD_CHECK(L);
   int n = L->stack_.getTopIndex();  /* number of elements to pack */
+  luaC_checkGC();
   lua_createtable(L, n, 1);  /* create result table */
   lua_pushinteger(L, n);
   lua_setfield(L, -2, "n");  /* t.n = number of elements */
@@ -266,7 +267,10 @@ static const luaL_Reg tab_funcs[] = {
 
 int luaopen_table (lua_State *L) {
   THREAD_CHECK(L);
-  luaL_newlib(L, tab_funcs);
+
+  lua_createtable(L, 0, sizeof(tab_funcs)/sizeof((tab_funcs)[0]) - 1);
+  luaL_setfuncs(L,tab_funcs,0);
+
   return 1;
 }
 

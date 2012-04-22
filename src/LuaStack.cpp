@@ -138,7 +138,9 @@ void LuaStack::shrink() {
 
 LuaResult LuaStack::reserve2(int newsize) {
   assert(l_memcontrol.limitDisabled);
-  if ((last() - top_) <= newsize) return grow2(newsize);
+  if ((last() - top_) <= newsize) {
+    return grow2(newsize);
+  }
 
   return LUA_OK;
 }

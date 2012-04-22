@@ -832,17 +832,13 @@ void luaV_execute (lua_State *L) {
 
       case OP_NEWTABLE:
         {
-          int b = GETARG_B(i);
-          int c = GETARG_C(i);
+          int b = luaO_fb2int( GETARG_B(i) );
+          int c = luaO_fb2int( GETARG_C(i) );
 
           {
             ScopedMemChecker c2;
-            Table* t = new Table();
-            t->linkGC(getGlobalGCHead());
+            Table* t = new Table(b, c);
             base[A] = t;
-            if (b != 0 || c != 0) {
-              t->resize(luaO_fb2int(b), luaO_fb2int(c));
-            }
           }
 
           if (thread_G->getGCDebt() > 0) {

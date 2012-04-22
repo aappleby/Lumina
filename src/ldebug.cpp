@@ -204,7 +204,6 @@ static void collectvalidlines (lua_State *L, Closure *f) {
     {
       ScopedMemChecker c;
       t = new Table();  /* new table to store active lines */
-      t->linkGC(getGlobalGCHead());
       result = L->stack_.push_reserve2(TValue(t));
     }
     handleResult(result);

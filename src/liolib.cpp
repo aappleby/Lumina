@@ -620,7 +620,10 @@ static void createstdfile (lua_State *L, FILE *f, const char *k,
 
 int luaopen_io (lua_State *L) {
   THREAD_CHECK(L);
-  luaL_newlib(L, iolib);  /* new module */
+
+  lua_createtable(L, 0, sizeof(iolib)/sizeof((iolib)[0]) - 1);
+  luaL_setfuncs(L,iolib,0);
+
   createmeta(L);
   /* create (and set) default files */
   createstdfile(L, stdin, IO_INPUT, "stdin");

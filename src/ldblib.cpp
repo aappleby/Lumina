@@ -161,6 +161,7 @@ static int db_getinfo (lua_State *L) {
   }
   if (!result)
     return luaL_argerror(L, arg+2, "invalid option");
+  luaC_checkGC();
   lua_createtable(L, 0, 2);
   if (strchr(options, 'S')) {
     settabss(L, "source", ar.source);
@@ -467,7 +468,10 @@ static const luaL_Reg dblib[] = {
 
 int luaopen_debug (lua_State *L) {
   THREAD_CHECK(L);
-  luaL_newlib(L, dblib);
+
+  lua_createtable(L, 0, sizeof(dblib)/sizeof((dblib)[0]) - 1);
+  luaL_setfuncs(L,dblib,0);
+
   return 1;
 }
 

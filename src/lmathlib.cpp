@@ -304,7 +304,10 @@ static const luaL_Reg mathlib[] = {
 */
 int luaopen_math (lua_State *L) {
   THREAD_CHECK(L);
-  luaL_newlib(L, mathlib);
+
+  lua_createtable(L, 0, sizeof(mathlib)/sizeof((mathlib)[0]) - 1);
+  luaL_setfuncs(L,mathlib,0);
+
   lua_pushnumber(L, PI);
   lua_setfield(L, -2, "pi");
   lua_pushnumber(L, HUGE_VAL);

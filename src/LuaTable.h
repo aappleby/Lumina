@@ -16,7 +16,7 @@ public:
 class Table : public LuaObject {
 public:
 
-  Table();
+  Table(int arrayLength = 0, int hashLength = 0);
 
   int getLength() const;
 

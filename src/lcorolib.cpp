@@ -187,7 +187,8 @@ static const luaL_Reg co_funcs[] = {
 
 int luaopen_coroutine (lua_State *L) {
   THREAD_CHECK(L);
-  luaL_newlib(L, co_funcs);
+  lua_createtable(L, 0, sizeof(co_funcs)/sizeof((co_funcs)[0]) - 1);
+  luaL_setfuncs(L,co_funcs,0);
   return 1;
 }
 
