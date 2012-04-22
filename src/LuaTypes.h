@@ -20,12 +20,6 @@ typedef TValue* StkId;  /* index to stack elements */
 typedef void (*lua_Hook) (lua_State *L, lua_Debug *ar);
 typedef int (*lua_CFunction) (lua_State *L);
 
-// The core "update the garbage collector" call. Eventually I want to push this
-// down to a small number of well-defined, safe locations.
-inline void luaC_checkGC() {}
-
-void luaC_checkGC2();
-
 typedef double lua_Number;
 typedef ptrdiff_t lua_Integer;
 typedef uint32_t lua_Unsigned;

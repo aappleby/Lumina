@@ -35,7 +35,6 @@
 
 static void setnameval (lua_State *L, const char *name, int val) {
   THREAD_CHECK(L);
-  luaC_checkGC();
   lua_pushstring(L, name);
   lua_pushinteger(L, val);
   lua_settable(L, -3);
@@ -372,7 +371,6 @@ static int listcode (lua_State *L) {
   for (pc=0; pc < (int)p->code.size(); pc++) {
     char buff[100];
     lua_pushinteger(L, pc+1);
-    luaC_checkGC();
     lua_pushstring(L, buildop(p, pc, buff));
     lua_settable(L, -3);
   }
@@ -387,7 +385,6 @@ static int listk (lua_State *L) {
   luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1),
                  1, "Lua function expected");
   p = obj_at(L, 1)->getLClosure()->proto_;
-  luaC_checkGC();
   lua_createtable(L, (int)p->constants.size(), 0);
   for (i=0; i < (int)p->constants.size(); i++) {
     pushobject(L, &p->constants[i]);
@@ -407,7 +404,6 @@ static int listlocals (lua_State *L) {
                  1, "Lua function expected");
   p = obj_at(L, 1)->getLClosure()->proto_;
   while ((name = p->getLocalName(++i, pc)) != NULL) {
-    luaC_checkGC();
     lua_pushstring(L, name);
   }
   return i-1;
@@ -420,7 +416,6 @@ static int listlocals (lua_State *L) {
 
 static int get_limits (lua_State *L) {
   THREAD_CHECK(L);
-  luaC_checkGC();
   lua_createtable(L, 0, 5);
   setnameval(L, "BITS_INT", 32);
   setnameval(L, "LFPF", LFIELDS_PER_FLUSH);
@@ -468,29 +463,23 @@ static int get_gccolor (lua_State *L) {
   luaL_checkany(L, 1);
   o = obj_at(L, 1);
   if (!o->isCollectable()) {
-    luaC_checkGC();
     lua_pushstring(L, "no collectable");
   }
   else {
     LuaObject* lo = o->getObject();
     int n = 1;
-    luaC_checkGC();
     lua_pushstring(L, lo->isWhite() ? "white" :
                       lo->isBlack() ? "black" : "grey");
     if (lo->isFinalized()) {
-      luaC_checkGC();
       lua_pushliteral(L, "/finalized"); n++;
     }
     if (lo->isSeparated()) {
-      luaC_checkGC();
       lua_pushliteral(L, "/separated"); n++;
     }
     if (lo->isFixed()) {
-      luaC_checkGC();
       lua_pushliteral(L, "/fixed"); n++;
     }
     if (lo->isOld()) {
-      luaC_checkGC();
       lua_pushliteral(L, "/old"); n++;
     }
     lua_concat(L, n);
@@ -505,7 +494,6 @@ static int gc_state (lua_State *L) {
     "sweepstring", "sweepudata", "sweep", "pause", ""};
   int option = luaL_checkoption(L, 1, "", statenames);
   if (option == GCSpause + 1) {
-    luaC_checkGC();
     lua_pushstring(L, statenames[thread_G->gcstate]);
     return 1;
   }
@@ -551,7 +539,6 @@ static int table_query (lua_State *L) {
       pushobject(L, &key);
     }
     else {
-      luaC_checkGC();
       lua_pushliteral(L, "<undef>");
     }
     pushobject(L, &val);
@@ -623,13 +610,11 @@ static int upvalue (lua_State *L) {
   if (lua_isnone(L, 3)) {
     const char *name = lua_getupvalue(L, 1, n);
     if (name == NULL) return 0;
-    luaC_checkGC();
     lua_pushstring(L, name);
     return 2;
   }
   else {
     const char *name = lua_setupvalue(L, 1, n);
-    luaC_checkGC();
     lua_pushstring(L, name);
     return 1;
   }
@@ -687,7 +672,6 @@ static int s2d (lua_State *L) {
 static int d2s (lua_State *L) {
   THREAD_CHECK(L);
   double d = luaL_checknumber(L, 1);
-  luaC_checkGC();
   lua_pushlstring(L, cast(char *, &d), sizeof(d));
   return 1;
 }
@@ -744,7 +728,6 @@ static int loadlib (lua_State *L) {
     luaL_requiref(L1, "package", luaopen_package, 1);
     luaL_getsubtable(L1, LUA_REGISTRYINDEX, "_PRELOAD");
     for (i = 0; libs[i].name; i++) {
-      luaC_checkGC();
       lua_pushcclosure(L1, libs[i].func, 0);
       lua_setfield(L1, -2, libs[i].name);
     }
@@ -779,7 +762,6 @@ static int doremote (lua_State *L) {
       {
         GLOBAL_CHANGE(L);
         L->stack_.push(TValue::Nil());
-        luaC_checkGC();
         lua_pushstring(L, result);
         lua_pushinteger(L, status);
       }
@@ -791,7 +773,6 @@ static int doremote (lua_State *L) {
         const char* result = lua_tostring(L1, i);
         {
           GLOBAL_CHANGE(L);
-          luaC_checkGC();
           lua_pushstring(L, result);
         }
       }
@@ -895,7 +876,6 @@ static void pushcode (lua_State *L, int code) {
   THREAD_CHECK(L);
   static const char *const codes[] = {"OK", "YIELD", "ERRRUN",
                    "ERRSYNTAX", "ERRMEM", "ERRGCMM", "ERRERR"};
-  luaC_checkGC();
   lua_pushstring(L, codes[code]);
 }
 
@@ -979,7 +959,6 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     else if EQ("tostring") {
       { GLOBAL_CHANGE(L); tempindex = getindex; }
       const char *s = lua_tostring(L1, tempindex);
-      luaC_checkGC();
       const char *s1 = lua_pushstring(L1, s);
       assert((s == NULL && s1 == NULL) || (strcmp)(s, s1) == 0);
     }
@@ -997,7 +976,6 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("tocfunction") {
       { GLOBAL_CHANGE(L); tempindex = getindex; }
-      luaC_checkGC();
       lua_pushcclosure(L1, lua_tocfunction(L1, tempindex), 0);
     }
     else if EQ("func2num") {
@@ -1015,7 +993,6 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
           const char* result = lua_tostring(L1, -(n - i));
           {
             GLOBAL_CHANGE(L);
-            luaC_checkGC();
             lua_pushstring(L, result);
           }
         }
@@ -1039,7 +1016,6 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("pushstring") {
       { GLOBAL_CHANGE(L); tempstring = getstring; }
-      luaC_checkGC();
       lua_pushstring(L1, tempstring);
     }
     else if EQ("pushnil") {
@@ -1066,7 +1042,6 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("pushcclosure") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }
-      luaC_checkGC();
       lua_pushcclosure(L1, testC, tempnum);
     }
     else if EQ("pushupvalueindex") {
@@ -1236,7 +1211,6 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("type") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }
-      luaC_checkGC();
       lua_pushstring(L1, luaL_typename(L1, tempnum));
     }
     else if EQ("append") {
@@ -1327,7 +1301,6 @@ static int Cfunck (lua_State *L) {
 static int makeCfunc (lua_State *L) {
   THREAD_CHECK(L);
   luaL_checkstring(L, 1);
-  luaC_checkGC();
   lua_pushcclosure(L, Cfunc, L->stack_.getTopIndex());
   return 1;
 }
@@ -1354,7 +1327,6 @@ static void Chook (lua_State *L, lua_Debug *ar) {
   lua_gettable(L, -2);  /* get C_HOOK[L] (script saved by sethookaux) */
   scpt = lua_tostring(L, -1);  /* not very religious (string will be popped) */
   L->stack_.pop(2);  /* remove C_HOOK and script */
-  luaC_checkGC();
   lua_pushstring(L, events[ar->event]);  /* may be used by script */
   lua_pushinteger(L, ar->currentline);  /* may be used by script */
   runC(L, L, scpt);  /* run script from C_HOOK[L] */
@@ -1378,7 +1350,6 @@ static void sethookaux (lua_State *L, int mask, int count, const char *scpt) {
     lua_setfield(L, LUA_REGISTRYINDEX, "C_HOOK");  /* register it */
   }
   lua_pushlightuserdata(L, L);
-  luaC_checkGC();
   lua_pushstring(L, scpt);
   lua_settable(L, -3);  /* C_HOOK[L] = script */
   lua_sethook(L, Chook, mask, count);

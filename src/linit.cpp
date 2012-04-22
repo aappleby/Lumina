@@ -62,7 +62,6 @@ void luaL_openlibs (lua_State *L) {
   /* add open functions from 'preloadedlibs' into 'package.preload' table */
   luaL_getsubtable(L, LUA_REGISTRYINDEX, "_PRELOAD");
   for (lib = preloadedlibs; lib->func; lib++) {
-    luaC_checkGC();
     lua_pushcclosure(L, lib->func, 0);
     lua_setfield(L, -2, lib->name);
   }

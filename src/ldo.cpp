@@ -317,7 +317,6 @@ void luaD_call (lua_State *L, StkId func, int nResults, int allowyield) {
     luaV_execute(L);  /* call it */
   }
   if (!allowyield) L->nonyieldable_count_--;
-  luaC_checkGC();
 }
 
 
@@ -568,7 +567,6 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
 static void checkmode (lua_State *L, const char *mode, const char *x) {
   THREAD_CHECK(L);
   if (mode && strchr(mode, x[0]) == NULL) {
-    luaC_checkGC();
     luaO_pushfstring(L, "attempt to load a %s chunk (mode is " LUA_QS ")", x, mode);
     throw LUA_ERRSYNTAX;
   }

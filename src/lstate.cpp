@@ -111,8 +111,6 @@ static void close_state (lua_State *L) {
 lua_State *lua_newthread (lua_State *L) {
   THREAD_CHECK(L);
 
-  luaC_checkGC();
-
   lua_State* L1 = NULL;
   {
     ScopedMemChecker c;

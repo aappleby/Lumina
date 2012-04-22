@@ -411,8 +411,6 @@ const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
     *o = thread_G->strings_->Create(s,l);
   }
 
-  luaC_checkGC();
-
   o = index2addr(L, idx);  /* luaC_checkGC may reallocate the stack */
   if(o == NULL) return NULL;
   if (len != NULL) *len = o->getString()->getLen();
@@ -542,7 +540,6 @@ const char *lua_pushvfstring (lua_State *L, const char *fmt,
                                       va_list argp) {
   THREAD_CHECK(L);
   const char *ret;
-  luaC_checkGC();
   ret = luaO_pushvfstring(fmt, argp);
   return ret;
 }
@@ -994,8 +991,6 @@ int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc) {
     if (!luaD_precall(L, func, nresults)) {
       luaV_execute(L);
     }
-    luaC_checkGC();
-
   }
   catch(LuaResult error) {
     status = error;
@@ -1211,7 +1206,6 @@ void lua_concat (lua_State *L, int n) {
   THREAD_CHECK(L);
   L->stack_.checkArgs(n);
   if (n >= 2) {
-    luaC_checkGC();
     luaV_concat(L, n);
   }
   else if (n == 0) {  /* push empty string */
@@ -1239,7 +1233,6 @@ void lua_len (lua_State *L, int idx) {
 
 void *lua_newuserdata (lua_State *L, size_t size) {
   THREAD_CHECK(L);
-  luaC_checkGC();
 
   if(!l_memcontrol.canAlloc(size)) {
     throw LUA_ERRMEM;

@@ -521,7 +521,6 @@ static void GCTM (int propagateerrors) {
   // Report errors during finalization.
   if (status != LUA_OK && propagateerrors) {  // error while running __gc?
     if (status == LUA_ERRRUN) {  // is there an error msg.?
-      luaC_checkGC();
       luaO_pushfstring(L, "error in __gc metamethod (%s)", lua_tostring(L, -1));
       status = LUA_ERRGCMM;  // error in __gc metamethod
     }
@@ -864,25 +863,6 @@ void luaC_forcestep () {
   else step();
   for (i = 0; i < GCFINALIZENUM && (!g->tobefnz.isEmpty()); i++) {
     GCTM(1);  /* Call a few pending finalizers */
-  }
-}
-
-
-/*
-void luaC_checkGC() {
-  assert(!l_memcontrol.limitDisabled);
-
-  if(thread_G->getGCDebt() > 0) {
-    luaC_step();
-  }
-}
-*/
-
-void luaC_checkGC2() {
-  assert(!l_memcontrol.limitDisabled);
-
-  if(thread_G->getGCDebt() > 0) {
-    luaC_step();
   }
 }
 

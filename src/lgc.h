@@ -69,8 +69,6 @@
 
 void luaC_step();
 
-void luaC_checkGC();
-
 void luaC_freeallobjects ();
 void luaC_step ();
 void luaC_forcestep ();

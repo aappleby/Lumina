@@ -54,11 +54,9 @@ static int io_type (lua_State *L) {
     L->stack_.push(TValue::Nil());  /* not a file */
   }
   else if (isclosed(p)) {
-    luaC_checkGC();
     lua_pushliteral(L, "closed file");
   }
   else {
-    luaC_checkGC();
     lua_pushliteral(L, "file");
   }
   return 1;
@@ -69,11 +67,9 @@ static int f_tostring (lua_State *L) {
   THREAD_CHECK(L);
   LStream *p = tolstream(L);
   if (isclosed(p)) {
-    luaC_checkGC();
     lua_pushliteral(L, "file (closed)");
   }
   else {
-    luaC_checkGC();
     lua_pushfstring(L, "file (%p)", p->f);
   }
   return 1;
@@ -261,7 +257,6 @@ static void aux_lines (lua_State *L, int toclose) {
   lua_pushinteger(L, n);  /* number of arguments to read */
   lua_pushboolean(L, toclose);  /* close/not close file when finished */
   for (i = 1; i <= n; i++) L->stack_.copy(i + 1);  /* copy arguments */
-  luaC_checkGC();
   lua_pushcclosure(L, io_readline, 3 + n);
 }
 
@@ -320,7 +315,6 @@ static int test_eof (lua_State *L, FILE *f) {
   THREAD_CHECK(L);
   int c = getc(f);
   ungetc(c, f);
-  luaC_checkGC();
   lua_pushlstring(L, NULL, 0);
   return (c != EOF);
 }
@@ -610,7 +604,6 @@ static int io_noclose (lua_State *L) {
   LStream *p = tolstream(L);
   p->closef = &io_noclose;  /* keep file opened */
   L->stack_.push(TValue::Nil());
-  luaC_checkGC();
   lua_pushliteral(L, "cannot close standard file");
   return 2;
 }

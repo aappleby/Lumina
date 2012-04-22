@@ -107,7 +107,6 @@ static int tconcat (lua_State *L) {
 static int pack (lua_State *L) {
   THREAD_CHECK(L);
   int n = L->stack_.getTopIndex();  /* number of elements to pack */
-  luaC_checkGC();
   lua_createtable(L, n, 1);  /* create result table */
   lua_pushinteger(L, n);
   lua_setfield(L, -2, "n");  /* t.n = number of elements */

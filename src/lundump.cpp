@@ -28,7 +28,6 @@ typedef struct {
 
 static void error(LoadState* S, const char* why)
 {
-  luaC_checkGC();
   luaO_pushfstring(S->L,"%s: %s precompiled chunk",S->name,why);
   throw LUA_ERRSYNTAX;
 }

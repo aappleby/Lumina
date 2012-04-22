@@ -114,7 +114,6 @@ static int os_tmpname (lua_State *L) {
   if (err) {
     return luaL_error(L, "unable to generate a unique filename");
   }
-  luaC_checkGC();
   lua_pushstring(L, buff);
   return 1;
 }
@@ -122,7 +121,6 @@ static int os_tmpname (lua_State *L) {
 
 static int os_getenv (lua_State *L) {
   THREAD_CHECK(L);
-  luaC_checkGC();
   lua_pushstring(L, getenv(luaL_checkstring(L, 1)));  /* if NULL push nil */
   return 1;
 }
@@ -201,7 +199,6 @@ static const char *checkoption (lua_State *L, const char *conv, char *buff) {
       }
     }
   }
-  luaC_checkGC();
   const char* text = lua_pushfstring(L, "invalid conversion specifier '%%%s'", conv);
   luaL_argerror(L, 1, text);
   return conv;  /* to avoid warnings */
@@ -224,7 +221,6 @@ static int os_date (lua_State *L) {
     L->stack_.push(TValue::Nil());
   }
   else if (strcmp(s, "*t") == 0) {
-    luaC_checkGC();
     lua_createtable(L, 0, 9);  /* 9 = number of fields */
     setfield(L, "sec", stm->tm_sec);
     setfield(L, "min", stm->tm_min);
@@ -302,7 +298,6 @@ static int os_setlocale (lua_State *L) {
      "numeric", "time", NULL};
   const char *l = luaL_optstring(L, 1, NULL);
   int op = luaL_checkoption(L, 2, "all", catnames);
-  luaC_checkGC();
   lua_pushstring(L, setlocale(cat[op], l));
   return 1;
 }

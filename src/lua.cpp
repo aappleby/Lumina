@@ -165,7 +165,6 @@ static int traceback (lua_State *L) {
   else if (!lua_isnoneornil(L, 1)) {  /* is there an error object? */
     // try its 'tostring' metamethod
     if (!luaL_callmeta(L, 1, "__tostring")) {
-      luaC_checkGC();
       lua_pushliteral(L, "(no error message)");
     }
   }
@@ -176,7 +175,6 @@ static int traceback (lua_State *L) {
 static int docall (lua_State *L, int narg, int nres) {
   int status;
   int base = L->stack_.getTopIndex() - narg;  /* function index */
-  luaC_checkGC();
   lua_pushcclosure(L, traceback, 0);  /* push traceback function */
   lua_insert(L, base);  /* put it under chunk and args */
   globalL = L;  /* to be available to 'laction' */
@@ -202,13 +200,10 @@ static int getargs (lua_State *L, char **argv, int n) {
   narg = argc - (n + 1);  /* number of arguments to the script */
   luaL_checkstack(L, narg + 3, "too many arguments to script");
   for (i=n+1; i < argc; i++) {
-    luaC_checkGC();
     lua_pushstring(L, argv[i]);
   }
-  luaC_checkGC();
   lua_createtable(L, narg, n + 1);
   for (i=0; i < argc; i++) {
-    luaC_checkGC();
     lua_pushstring(L, argv[i]);
     lua_rawseti(L, -2, i - n);
   }
@@ -234,7 +229,6 @@ static int dolibrary (lua_State *L, const char *name) {
   int status;
   lua_pushglobaltable(L);
   lua_getfield(L, -1, "require");
-  luaC_checkGC();
   lua_pushstring(L, name);
   status = docall(L, 1, 1);
   if (status == LUA_OK) {
@@ -286,11 +280,9 @@ static int pushline (lua_State *L, int firstline) {
 
   // first line starts with `=' ? change it to `return' */
   if (firstline && b[0] == '=') {
-    luaC_checkGC();
     lua_pushfstring(L, "return %s", b+1);
   }
   else {
-    luaC_checkGC();
     lua_pushstring(L, b);
   }
   lua_freeline(L, b);
@@ -310,7 +302,6 @@ static int loadline (lua_State *L) {
     if (!incomplete(L, status)) break;  /* cannot try to add lines? */
     if (!pushline(L, 0))  /* no more input? */
       return -1;
-    luaC_checkGC();
     lua_pushliteral(L, "\n");  /* add a new line... */
     lua_insert(L, -2);  /* ...between the two lines */
     lua_concat(L, 3);  /* join them */
@@ -333,7 +324,6 @@ static void dotty (lua_State *L) {
       lua_getglobal(L, "print");
       lua_insert(L, 1);
       if (lua_pcall(L, L->stack_.getTopIndex()-1, 0, 0) != LUA_OK) {
-        luaC_checkGC();
         l_message(progname, lua_pushfstring(L,
                                "error calling " LUA_QL("print") " (%s)",
                                lua_tostring(L, -1)));
@@ -515,7 +505,6 @@ int main (int argc, char **argv) {
     return EXIT_FAILURE;
   }
   /* call 'pmain' in protected mode */
-  luaC_checkGC();
   lua_pushcclosure(L, &pmain, 0);
   lua_pushinteger(L, argc);  /* 1st argument */
   lua_pushlightuserdata(L, argv); /* 2nd argument */

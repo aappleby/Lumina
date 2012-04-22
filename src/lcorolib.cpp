@@ -30,12 +30,10 @@ static int auxresume (lua_State *L, lua_State *co, int narg) {
     checkresult = lua_checkstack(co, narg);
   }
   if (!checkresult) {
-    luaC_checkGC();
     lua_pushliteral(L, "too many arguments to resume");
     return -1;  /* error flag */
   }
   if (co->status == LUA_OK && co->stack_.getTopIndex() == 0) {
-    luaC_checkGC();
     lua_pushliteral(L, "cannot resume dead coroutine");
     return -1;  /* error flag */
   }
@@ -55,7 +53,6 @@ static int auxresume (lua_State *L, lua_State *co, int narg) {
         THREAD_CHANGE(co);
         co->stack_.pop(nres);  /* remove results anyway */
       }
-      luaC_checkGC();
       lua_pushliteral(L, "too many results to resume");
       return -1;  /* error flag */
     }
@@ -121,7 +118,6 @@ static int luaB_cocreate (lua_State *L) {
 static int luaB_cowrap (lua_State *L) {
   THREAD_CHECK(L);
   luaB_cocreate(L);
-  luaC_checkGC();
   lua_pushcclosure(L, luaB_auxwrap, 1);
   return 1;
 }
@@ -138,14 +134,12 @@ static int luaB_costatus (lua_State *L) {
   lua_State *co = lua_tothread(L, 1);
   luaL_argcheck(L, co, 1, "coroutine expected");
   if (L == co) {
-    luaC_checkGC();
     lua_pushliteral(L, "running");
   }
   else {
     switch (co->status) {
       case LUA_YIELD:
         {
-          luaC_checkGC();
           lua_pushliteral(L, "suspended");
           break;
         }
@@ -154,23 +148,19 @@ static int luaB_costatus (lua_State *L) {
         lua_Debug ar;
         if (lua_getstack(co, 0, &ar) > 0) {  /* does it have frames? */
           THREAD_CHANGE(L);
-          luaC_checkGC();
           lua_pushliteral(L, "normal");  /* it is running */
         }
         else if (co->stack_.getTopIndex() == 0) {
           THREAD_CHANGE(L);
-          luaC_checkGC();
           lua_pushliteral(L, "dead");
         }
         else {
           THREAD_CHANGE(L);
-          luaC_checkGC();
           lua_pushliteral(L, "suspended");  /* initial state */
         }
         break;
       }
       default:  /* some error occurred */
-        luaC_checkGC();
         lua_pushliteral(L, "dead");
         break;
     }
