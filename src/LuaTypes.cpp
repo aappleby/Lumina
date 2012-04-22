@@ -5,6 +5,9 @@
 
 #include <assert.h>
 
+l_noret luaG_typeerror (const TValue *o, const char *op);
+l_noret luaG_runerror (const char *fmt, ...);
+
 __declspec(thread) lua_State* thread_L = NULL;
 __declspec(thread) global_State* thread_G = NULL;
 
@@ -60,4 +63,37 @@ LuaGlobalScope::LuaGlobalScope(lua_State* L) {
 LuaGlobalScope::~LuaGlobalScope() {
   thread_L = oldState;
   thread_G = oldState ? oldState->l_G : NULL;
+}
+
+
+void handleResult(LuaResult err, const TValue* val)
+{
+  switch(err) {
+    case LUA_OK:
+      return;
+
+    case LUA_ERRERR:
+      luaD_throw(LUA_ERRERR);
+      return;
+
+    case LUA_ERRSTACK:
+      luaG_runerror("stack overflow");
+      return;
+
+    case LUA_BAD_TABLE:
+      luaG_typeerror(val, "index");
+      return;
+
+    case LUA_BAD_INDEX_TM:
+      luaG_typeerror(val, "invalid type in __index method");
+      return;
+
+    case LUA_META_LOOP:
+      luaG_runerror("loop in gettable");
+      return;
+
+    default:
+      assert(false);
+      return;
+  }
 }

@@ -99,24 +99,28 @@ void LuaStack::free() {
 // additional space - whichever's greater. Not more than
 // LUAI_MAXSTACK though.
 
-void LuaStack::grow(int extrasize) {
+LuaResult LuaStack::grow2(int extrasize) {
   assert(l_memcontrol.limitDisabled);
 
   // Asking for more stack when we're already over the limit is  an error.
-  if ((int)size() > LUAI_MAXSTACK)  /* error after extra size? */
-    luaD_throw(LUA_ERRERR);
+  if ((int)size() > LUAI_MAXSTACK) {
+    //luaD_throw(LUA_ERRERR);
+    return LUA_ERRERR;
+  }
 
   // Asking for more space than could possibly fit on the stack is an error.
   int inuse = (int)(top_ - begin());
   int needed = inuse + extrasize + EXTRA_STACK;
   if (needed > LUAI_MAXSTACK) {  /* stack overflow? */
     realloc(ERRORSTACKSIZE);
-    luaG_runerror("stack overflow");
+    //luaG_runerror("stack overflow");
+    return LUA_ERRSTACK;
   }
 
   int newsize = std::max(2 * (int)size(), needed);
   newsize = std::min(newsize, LUAI_MAXSTACK);
   realloc(newsize);
+  return LUA_OK;
 }
 
 
@@ -138,9 +142,11 @@ void LuaStack::shrink() {
 
 //------------------------------------------------------------------------------
 
-void LuaStack::reserve(int newsize) {
+LuaResult LuaStack::reserve2(int newsize) {
   assert(l_memcontrol.limitDisabled);
-  if ((last() - top_) <= newsize) grow(newsize);
+  if ((last() - top_) <= newsize) return grow2(newsize);
+
+  return LUA_OK;
 }
 
 //------------------------------------------------------------------------------
@@ -242,11 +248,11 @@ void LuaStack::push(const TValue* v) {
   assert((top_ <= callinfo_->getTop()) && "stack overflow");
 }
 
-void LuaStack::push_reserve(TValue v) {
+LuaResult LuaStack::push_reserve2(TValue v) {
   assert(l_memcontrol.limitDisabled);
   top_[0] = v;
   top_++;
-  reserve(0);
+  return reserve2(0);
 }
 
 void LuaStack::push_nocheck(TValue v) {
@@ -439,12 +445,13 @@ CallInfo* LuaStack::findProtectedCall() {
   return NULL;  /* no pending pcall */
 }
 
-void LuaStack::createCCall(StkId func, int nresults, int nstack)
+LuaResult LuaStack::createCCall2(StkId func, int nresults, int nstack)
 {
   assert(l_memcontrol.limitDisabled);
   // ensure minimum stack size
   ptrdiff_t func_index = func - begin();
-  reserve(nstack);
+  LuaResult result = reserve2(nstack);
+  if(result != LUA_OK) return result;
   func = begin() + func_index;
 
   CallInfo* ci = nextCallinfo();  /* now 'enter' new function */
@@ -453,6 +460,7 @@ void LuaStack::createCCall(StkId func, int nresults, int nstack)
   ci->setTop(top_ + nstack);
   assert(ci->getTop() <= last());
   ci->callstatus = 0;
+  return LUA_OK;
 }
 
 //------------------------------------------------------------------------------

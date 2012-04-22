@@ -41,7 +41,7 @@ public:
 
   void   push(TValue v);
   void   push(const TValue* v);
-  void   push_reserve(TValue v);
+  LuaResult push_reserve2(TValue v);
   void   push_nocheck(TValue v);
 
   TValue pop();
@@ -60,7 +60,7 @@ public:
 
   CallInfo* findProtectedCall();
 
-  void createCCall(StkId func, int nresults, int nstack);
+  LuaResult createCCall2(StkId func, int nresults, int nstack);
 
   //----------
   // Upvalue support
@@ -72,9 +72,9 @@ public:
 
   void init();
   void free();
-  void grow(int size);
+  LuaResult grow2(int size);
   void shrink();
-  void reserve(int newsize);
+  LuaResult reserve2(int newsize);
 
   //----------
   // Utilities

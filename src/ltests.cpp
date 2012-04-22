@@ -555,11 +555,15 @@ static int string_query (lua_State *L) {
     return 2;
   }
   else if (s < tb->size_) {
-    ScopedMemChecker c;
     LuaObject *ts;
     int n = 0;
     for (ts = tb->hash_[s]; ts; ts = ts->next_) {
-      L->stack_.push_reserve(TValue(ts));
+      LuaResult result;
+      {
+        ScopedMemChecker c;
+        result = L->stack_.push_reserve2(TValue(ts));
+      }
+      handleResult(result);
       n++;
     }
     return n;

@@ -212,7 +212,6 @@ int Table::set(TValue key, TValue val) {
   // Check for nil keys
   if (key.isNil()) {
     assert(false);
-    //luaG_runerror("Key is invalid (either nil or NaN)");
     return LUA_ERRKEY;
   }
 
@@ -221,7 +220,6 @@ int Table::set(TValue key, TValue val) {
     double n = key.getNumber();
     if(n != n) {
       assert(false);
-      // luaG_runerror("Key is invalid (either nil or NaN)");
       return LUA_ERRKEY;
     }
   }

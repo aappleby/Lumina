@@ -32,19 +32,6 @@
 /* limit for table tag-method chains (to avoid loops) */
 #define MAXTAGLOOP	100
 
-void handleError(LuaResult err, const TValue* val)
-{
-  switch(err) {
-    case LR_BAD_TABLE:
-      luaG_typeerror(val, "index"); break;
-    case LR_BAD_INDEX_TM:
-      luaG_typeerror(val, "invalid type in __index method"); break;
-    case LR_META_LOOP:
-      luaG_runerror("loop in gettable"); break;
-  }
-}
-
-
 // Converts value to string in-place, returning 1 if successful.
 int luaV_tostring (TValue* v) {
   assert(l_memcontrol.limitDisabled);
@@ -98,10 +85,12 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
   if (!hasres) { // no result? 'p3' is third argument
     L->stack_.push_nocheck(*p3);  // 3rd argument
   }
+  LuaResult result2 = LUA_OK;
   {
     ScopedMemChecker c;
-    L->stack_.reserve(0);
+    result2 = L->stack_.reserve2(0);
   }
+  handleResult(result2);
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - (4 - hasres), hasres, L->stack_.callinfo_->isLua());
   if (hasres) {  /* if has result, move it to its place */
@@ -116,13 +105,15 @@ static void callTM3 (lua_State *L,
                      TValue p2,
                      TValue& result) {
   THREAD_CHECK(L);
+  LuaResult result2;
   {
     ScopedMemChecker c;
     L->stack_.push_nocheck(f); // push function
     L->stack_.push_nocheck(p1); // 1st argument
     L->stack_.push_nocheck(p2); // 2nd argument
-    L->stack_.reserve(0);
+    result2 = L->stack_.reserve2(0);
   }
+  handleResult(result2);
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - 3, 1, L->stack_.callinfo_->isLua());
   result = L->stack_.pop();
@@ -135,14 +126,16 @@ static void callTM0 (lua_State *L,
                      const TValue* arg2,
                      const TValue* arg3) {
   THREAD_CHECK(L);
+  LuaResult result = LUA_OK;
   {
     ScopedMemChecker c;
     L->stack_.push_nocheck(*func);
     L->stack_.push_nocheck(*arg1);
     L->stack_.push_nocheck(*arg2);
     L->stack_.push_nocheck(*arg3);
-    L->stack_.reserve(0);
+    result = L->stack_.reserve2(0);
   }
+  handleResult(result);
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - 4, 0, L->stack_.callinfo_->isLua());
 }
@@ -153,14 +146,16 @@ static void callTM1 (lua_State *L,
                      TValue arg2,
                      TValue arg3) {
   THREAD_CHECK(L);
+  LuaResult result = LUA_OK;
   {
     ScopedMemChecker c;
     L->stack_.push_nocheck(func);
     L->stack_.push_nocheck(arg1);
     L->stack_.push_nocheck(arg2);
     L->stack_.push_nocheck(arg3);
-    L->stack_.reserve(0);
+    result = L->stack_.reserve2(0);
   }
+  handleResult(result);
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - 4, 0, L->stack_.callinfo_->isLua());
 }
@@ -178,7 +173,7 @@ LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outRe
       if(!value.isNone() && !value.isNil()) {
         // Basic table lookup, nothing weird going on here.
         outResult = value;
-        return LR_OK;
+        return LUA_OK;
       }
     }
 
@@ -194,9 +189,9 @@ LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outRe
     if(tagmethod.isNone() || tagmethod.isNil()) {
       if(source.isTable()) {
         outResult = TValue::Nil();
-        return LR_OK;
+        return LUA_OK;
       } else {
-        return LR_BAD_TABLE;
+        return LUA_BAD_TABLE;
       }
     }
 
@@ -205,7 +200,7 @@ LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outRe
 
     if (tagmethod.isFunction()) {
       callTM3(L, tagmethod, source, key, outResult);
-      return LR_OK;
+      return LUA_OK;
     }
 
     if(tagmethod.isTable()) {
@@ -214,10 +209,10 @@ LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outRe
     }
 
     // Trying to use other things as the __index tagmethod is an error.
-    return LR_BAD_INDEX_TM;
+    return LUA_BAD_INDEX_TM;
   }
 
-  return LR_META_LOOP;
+  return LUA_META_LOOP;
 }
 
 // TODO(aappleby) - This gets a StkId parameter, but the tag method calling can invalidate the stack.
@@ -231,10 +226,10 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId outRe
   TValue result;
   LuaResult r = luaV_gettable2(L, *source, *key, result);
 
-  if(r == LR_OK) {
+  if(r == LUA_OK) {
     L->stack_[stackIndex] = result;
   } else {
-    handleError(r, source);
+    handleResult(r, source);
   }
 }
 
@@ -1280,10 +1275,12 @@ void luaV_execute (lua_State *L) {
 
           if (b < 0) {  /* B == 0? */
             b = n;  /* get all var. arguments */
+            LuaResult result;
             {
               ScopedMemChecker c;
-              L->stack_.reserve(n);
+              result = L->stack_.reserve2(n);
             }
+            handleResult(result);
             base = ci->getBase();
 
             ra = RA(i);  /* previous call may change the stack */

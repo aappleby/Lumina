@@ -172,7 +172,13 @@ static void pushstr (lua_State *L, const char *str, size_t l) {
   THREAD_CHECK(L);
   ScopedMemChecker c;
   TString* s = thread_G->strings_->Create(str, l);
-  L->stack_.push_reserve(TValue(s));
+
+  LuaResult result;
+  {
+    ScopedMemChecker c;
+    result = L->stack_.push_reserve2(TValue(s));
+  }
+  handleResult(result);
 }
 
 
@@ -184,11 +190,13 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
     const char *e = strchr(fmt, '%');
     if (e == NULL) break;
 
+    LuaResult result;
     {
       ScopedMemChecker c;
       TString* s = thread_G->strings_->Create(fmt, e-fmt);
-      L->stack_.push_reserve(TValue(s));
+      result = L->stack_.push_reserve2(TValue(s));
     }
+    handleResult(result);
 
     switch (*(e+1)) {
       case 's': {
@@ -203,16 +211,26 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
         pushstr(L, &buff, 1);
         break;
       }
-      case 'd': {
-        ScopedMemChecker c;
-        L->stack_.push_reserve( TValue(va_arg(argp, int)) );
-        break;
-      }
-      case 'f': {
-        ScopedMemChecker c;
-        L->stack_.push_reserve( TValue(va_arg(argp, lua_Number)) );
-        break;
-      }
+      case 'd': 
+        {
+          LuaResult result;
+          {
+            ScopedMemChecker c;
+            result = L->stack_.push_reserve2( TValue(va_arg(argp, int)) );
+          }
+          handleResult(result);
+          break;
+        }
+      case 'f': 
+        {
+          LuaResult result;
+          {
+            ScopedMemChecker c;
+            result = L->stack_.push_reserve2( TValue(va_arg(argp, lua_Number)) );
+          }
+          handleResult(result);
+          break;
+        }
       case 'p': {
         char buff[4*sizeof(void *) + 8]; /* should be enough space for a `%p' */
         int l = sprintf(buff, "%p", va_arg(argp, void *));

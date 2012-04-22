@@ -188,20 +188,26 @@ static void funcinfo (lua_Debug *ar, Closure *cl) {
 static void collectvalidlines (lua_State *L, Closure *f) {
   THREAD_CHECK(L);
   if (f == NULL || f->isC) {
-    ScopedMemChecker c;
-    L->stack_.push_reserve(TValue::Nil());
+    LuaResult result;
+    {
+      ScopedMemChecker c;
+      result = L->stack_.push_reserve2(TValue::Nil());
+    }
+    handleResult(result);
   }
   else {
     int i;
     TValue v;
 
     Table* t = NULL;
+    LuaResult result;
     {
       ScopedMemChecker c;
       t = new Table();  /* new table to store active lines */
       t->linkGC(getGlobalGCHead());
-      L->stack_.push_reserve(TValue(t));
+      result = L->stack_.push_reserve2(TValue(t));
     }
+    handleResult(result);
 
     v = true;
     for (i = 0; i < (int)f->proto_->lineinfo.size(); i++) {
@@ -292,12 +298,18 @@ int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
   if(func->isLClosure()) cl = func->getLClosure();
 
   status = auxgetinfo(L, what, ar, cl, ci);
+  
+  LuaResult result = LUA_OK;
   if (strchr(what, 'f')) {
     ScopedMemChecker c;
-    L->stack_.push_reserve(*func);
+    result = L->stack_.push_reserve2(*func);
   }
-  if (strchr(what, 'L'))
+  handleResult(result);
+
+  if (strchr(what, 'L')) {
     collectvalidlines(L, cl);
+  }
+
   return status;
 }
 
@@ -569,10 +581,12 @@ l_noret luaG_errormsg () {
     L->stack_.top_[0] = L->stack_.top_[-1];  /* move argument */
     L->stack_.top_[-1] = *errfunc;  /* push function */
     L->stack_.top_++;
+    LuaResult result;
     {
       ScopedMemChecker c;
-      L->stack_.reserve(0);
+      result = L->stack_.reserve2(0);
     }
+    handleResult(result);
     luaD_call(L, L->stack_.top_ - 2, 1, 0);  /* call it */
   }
   luaD_throw(LUA_ERRRUN);

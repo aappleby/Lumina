@@ -373,11 +373,13 @@ int luaK_numberK (FuncState *fs, lua_Number r) {
   if (r == 0 || (r != r)) {  /* handle -0 and NaN */
     /* use raw representation as key to avoid numeric problems */
     
+    LuaResult result;
     {
       ScopedMemChecker c;
       TString* s = thread_G->strings_->Create((char *)&r, sizeof(r));
-      L->stack_.push_reserve(TValue(s));
+      result = L->stack_.push_reserve2(TValue(s));
     }
+    handleResult(result);
 
     n = addk(fs, L->stack_.top_ - 1, &o);
     L->stack_.pop();

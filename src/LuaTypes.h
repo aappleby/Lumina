@@ -28,21 +28,6 @@ typedef uint32_t Instruction;
 
 //-----------------------------------------------------------------------------
 
-enum LuaResult
-{
-  LR_OK = 0,
-  LR_BAD_TABLE,
-  LR_BAD_INDEX_TM,
-  LR_META_LOOP,
-  LR_BAD_MATH,  // tried to do math on things that weren't numbers
-};
-
-// Whether 'val' points to a value on the Lua stack or elsewhere _does_ matter,
-// as it's used to deduce what sort of variable 'val' is.
-void handleError(LuaResult err, const TValue* val);
-
-//-----------------------------------------------------------------------------
-
 void  luaM_free(void * blob);
 
 LuaObject** getGlobalGCHead();
@@ -120,6 +105,41 @@ typedef enum {
   TM_CALL,
   TM_N		/* number of elements in the enum */
 } TMS;
+
+//-----------------------------------------------------------------------------
+
+/* thread status */
+enum LuaResult {
+  LUA_OK		       = 0,
+  LUA_YIELD	       = 1,
+  LUA_ERRRUN	     = 2,
+  LUA_ERRSYNTAX	   = 3,
+  LUA_ERRMEM	     = 4,
+  LUA_ERRGCMM	     = 5,
+  LUA_ERRERR	     = 6,
+  LUA_ERRSTACK     = 7,
+  LUA_ERRKEY       = 8,
+  LUA_BAD_TABLE    = 9,
+  LUA_BAD_INDEX_TM = 10,
+  LUA_META_LOOP    = 11,
+  LUA_BAD_MATH     = 12,
+};
+
+/*
+enum LuaResult
+{
+  LR_OK = 0,
+  LR_BAD_TABLE,
+  LR_BAD_INDEX_TM,
+  LR_META_LOOP,
+  LR_BAD_MATH,  // tried to do math on things that weren't numbers
+};
+*/
+
+// Whether 'val' points to a value on the Lua stack or elsewhere _does_ matter,
+// as it's used to deduce what sort of variable 'val' is.
+void handleResult(LuaResult err, const TValue* val = NULL);
+
 
 
 

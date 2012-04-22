@@ -136,8 +136,12 @@ int lua_checkstack (lua_State *L, int size) {
     else  /* try to grow stack */
     {
       try {
-        ScopedMemChecker c;
-        L->stack_.grow(size);
+        LuaResult result = LUA_OK;
+        {
+          ScopedMemChecker c;
+          result = L->stack_.grow2(size);
+        }
+        handleResult(result);
       }
       catch(...) { 
         res = 0;
@@ -491,15 +495,23 @@ void lua_pushnumber (lua_State *L, lua_Number n) {
 
 void lua_pushinteger (lua_State *L, lua_Integer n) {
   THREAD_CHECK(L);
-  ScopedMemChecker c;
-  L->stack_.push_reserve(TValue(n));
+  LuaResult result;
+  {
+    ScopedMemChecker c;
+    result = L->stack_.push_reserve2(TValue(n));
+  }
+  handleResult(result);
 }
 
 
 void lua_pushunsigned (lua_State *L, lua_Unsigned u) {
   THREAD_CHECK(L);
-  ScopedMemChecker c;
-  L->stack_.push_reserve(TValue(u));
+  LuaResult result;
+  {
+    ScopedMemChecker c;
+    result = L->stack_.push_reserve2(TValue(u));
+  }
+  handleResult(result);
 }
 
 
@@ -621,10 +633,10 @@ void lua_getglobal (lua_State *L, const char *var) {
   TValue val;
   LuaResult r = luaV_gettable2(L, globals, L->stack_.top_[-1], val);
 
-  if(r == LR_OK) {
+  if(r == LUA_OK) {
     L->stack_.top_[-1] = val;
   } else {
-    handleError(r, &globals);
+    handleResult(r, &globals);
   }
 }
 
@@ -637,10 +649,10 @@ void lua_gettable (lua_State *L, int idx) {
   TValue val;
   LuaResult r = luaV_gettable2(L, *t, L->stack_.top_[-1], val);
 
-  if(r == LR_OK) {
+  if(r == LUA_OK) {
     L->stack_.top_[-1] = val;
   } else {
-    handleError(r, t);
+    handleResult(r, t);
   }
 }
 
@@ -659,10 +671,10 @@ void lua_getfield (lua_State *L, int idx, const char *k) {
   TValue val;
   LuaResult r = luaV_gettable2(L, *t, L->stack_.top_[-1], val);
 
-  if(r == LR_OK) {
+  if(r == LUA_OK) {
     L->stack_.top_[-1] = val;
   } else {
-    handleError(r, t);
+    handleResult(r, t);
   }
 }
 

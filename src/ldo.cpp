@@ -55,12 +55,10 @@ l_noret luaD_throw (int errcode) {
 
   // Throwing errors while we're in the middle of constructing an object
   // is forbidden, as that can break things badly in C++.
-  /*
   if(l_memcontrol.limitDisabled) {
     assert(false);
     printf("xxx");
   }
-  */
 
   throw(errcode);
 }
@@ -80,10 +78,13 @@ void luaD_hook (lua_State *L, int event, int line) {
     ptrdiff_t ci_top = savestack(L, ci->getTop());
     
     // Make sure the stack can hold enough values for a C call
+    LuaResult result = LUA_OK;
     {
       ScopedMemChecker c;
-      L->stack_.reserve(LUA_MINSTACK);
+      result = L->stack_.reserve2(LUA_MINSTACK);
     }
+    handleResult(result);
+
     ci->setTop( L->stack_.top_ + LUA_MINSTACK );
     assert(ci->getTop() <= L->stack_.last());
 
@@ -133,10 +134,14 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
 
   ptrdiff_t funcr = func - L->stack_.begin();
   L->stack_.top_++;
+
+  LuaResult result = LUA_OK;
   {
     ScopedMemChecker c;
-    L->stack_.reserve(0);
+    result = L->stack_.reserve2(0);
   }
+  handleResult(result);
+
   func = L->stack_.begin() + funcr; /* previous call may change stack */
   *func = tm;  /* tag method is the new function to be called */
   return func;
@@ -146,10 +151,12 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
 void luaD_precallLightC(lua_State* L, StkId func, int nresults) {
   lua_CFunction f = func->getLightFunction();
 
+  LuaResult result = LUA_OK;
   {
     ScopedMemChecker c;
-    L->stack_.createCCall(func, nresults, LUA_MINSTACK);
+    result = L->stack_.createCCall2(func, nresults, LUA_MINSTACK);
   }
+  handleResult(result);
 
   if (L->hookmask & LUA_MASKCALL) luaD_hook(L, LUA_HOOKCALL, -1);
 
@@ -170,10 +177,12 @@ void luaD_precallLightC(lua_State* L, StkId func, int nresults) {
 void luaD_precallC(lua_State* L, StkId func, int nresults) {
   lua_CFunction f = func->getCClosure()->cfunction_;
 
+  LuaResult result = LUA_OK;
   {
     ScopedMemChecker c;
-    L->stack_.createCCall(func, nresults, LUA_MINSTACK);
+    L->stack_.createCCall2(func, nresults, LUA_MINSTACK);
   }
+  handleResult(result);
 
   if (L->hookmask & LUA_MASKCALL) luaD_hook(L, LUA_HOOKCALL, -1);
 
@@ -195,10 +204,14 @@ void luaD_precallLua(lua_State* L, StkId func, int nresults) {
   Proto *p = func->getLClosure()->proto_;
 
   ptrdiff_t funcr = savestack(L, func);
+  LuaResult result = LUA_OK;
   {
     ScopedMemChecker c;
-    L->stack_.reserve(p->maxstacksize);
+    result = L->stack_.reserve2(p->maxstacksize);
   }
+  handleResult(result);
+
+
   func = restorestack(L, funcr);
 
   int nargs = cast_int(L->stack_.top_ - func) - 1;  /* number of real arguments */
@@ -401,7 +414,8 @@ static l_noret resume_error (lua_State *L, const char *msg, StkId firstArg) {
 
     /* push error message */
     TString* s = thread_G->strings_->Create(msg);
-    L->stack_.push_reserve(TValue(s));
+    LuaResult result = L->stack_.push_reserve2(TValue(s));
+    handleResult(result);
   }
   luaD_throw(-1);  /* jump back to 'lua_resume' */
 }
@@ -592,10 +606,12 @@ int luaD_protectedparser (lua_State *L, ZIO *z, const char *name, const char *mo
       new_proto = luaY_parser(L, z, &buff, &dyd, name, c);
     }
     
+    LuaResult result;
     {
       ScopedMemChecker c;
-      L->stack_.push_reserve(TValue(new_proto));
+      result = L->stack_.push_reserve2(TValue(new_proto));
     }
+    handleResult(result);
 
     {
       ScopedMemChecker c;

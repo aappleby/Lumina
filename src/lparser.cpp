@@ -540,7 +540,8 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
     f->linkGC(getGlobalGCHead());
 
     /* anchor prototype (to avoid being collected) */
-    L->stack_.push_reserve(TValue(f));
+    LuaResult result = L->stack_.push_reserve2(TValue(f));
+    handleResult(result);
 
     fs->f = f;
     f->source = ls->source;
@@ -549,7 +550,9 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
     fs->constant_map = new Table();
     fs->constant_map->linkGC(getGlobalGCHead());
     /* anchor table of constants (to avoid being collected) */
-    L->stack_.push_reserve(TValue(fs->constant_map));
+    
+    result = L->stack_.push_reserve2(TValue(fs->constant_map));
+    handleResult(result);
   }
 
   enterblock(fs, bl, 0);
@@ -1639,12 +1642,14 @@ Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
   FuncState funcstate;
   BlockCnt bl;
   TString* tname = NULL;
+  LuaResult result;
   {
     ScopedMemChecker c;
     tname = thread_G->strings_->Create(name);
     /* push name to protect it */
-    L->stack_.push_reserve(TValue(tname));
+    result = L->stack_.push_reserve2(TValue(tname));
   }
+  handleResult(result);
   lexstate.buff = buff;
   lexstate.dyd = dyd;
   dyd->actvar.n = dyd->gt.n = dyd->label.n = 0;

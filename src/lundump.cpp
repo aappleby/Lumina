@@ -186,12 +186,14 @@ static void LoadDebug(LoadState* S, Proto* f)
 static Proto* LoadFunction(LoadState* S)
 {
   Proto* f = NULL;
+  LuaResult result;
   {
     ScopedMemChecker c;
     f = new Proto();
     f->linkGC(getGlobalGCHead());
-    S->L->stack_.push_reserve(TValue(f));
+    result = S->L->stack_.push_reserve2(TValue(f));
   }
+  handleResult(result);
 
   f->linedefined=LoadInt(S);
   f->lastlinedefined=LoadInt(S);
