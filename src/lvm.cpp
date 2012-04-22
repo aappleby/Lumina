@@ -731,6 +731,8 @@ void luaV_execute (lua_State *L) {
 
   /* main loop of interpreter */
   for (;;) {
+    luaC_checkGC2();
+
     Instruction i = *(ci->savedpc++);
     OpCode opcode = (OpCode)(i & 0x0000003F);
 

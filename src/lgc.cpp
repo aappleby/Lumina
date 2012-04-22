@@ -868,7 +868,17 @@ void luaC_forcestep () {
 }
 
 
+/*
 void luaC_checkGC() {
+  assert(!l_memcontrol.limitDisabled);
+
+  if(thread_G->getGCDebt() > 0) {
+    luaC_step();
+  }
+}
+*/
+
+void luaC_checkGC2() {
   assert(!l_memcontrol.limitDisabled);
 
   if(thread_G->getGCDebt() > 0) {

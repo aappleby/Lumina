@@ -22,7 +22,9 @@ typedef int (*lua_CFunction) (lua_State *L);
 
 // The core "update the garbage collector" call. Eventually I want to push this
 // down to a small number of well-defined, safe locations.
-void luaC_checkGC();
+inline void luaC_checkGC() {}
+
+void luaC_checkGC2();
 
 typedef double lua_Number;
 typedef ptrdiff_t lua_Integer;
