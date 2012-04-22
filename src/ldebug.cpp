@@ -207,6 +207,8 @@ static void collectvalidlines (lua_State *L, Closure *f) {
     for (i = 0; i < (int)f->proto_->lineinfo.size(); i++) {
       /* for all lines with code */
       TValue key(f->proto_->lineinfo[i]);
+
+      ScopedMemChecker c;
       t->set(key, v);  /* table[line] = true */
     }
   }

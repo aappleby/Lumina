@@ -35,10 +35,10 @@ public:
 
   // Main get/set methods, which we'll gradually be transitioning to.
   TValue get(TValue key) const;
-  bool   set(TValue key, TValue val);
+  int    set(TValue key, TValue val);
   
   // This is used in a few places
-  void resize(int arrayssize, int hashsize);
+  int resize(int arrayssize, int hashsize);
 
   //----------
   // Test support, not used in actual VM

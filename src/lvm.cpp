@@ -253,7 +253,18 @@ void luaV_settable (lua_State *L, const TValue *t2, TValue *key, StkId val) {
       /* if previous value is not nil, there must be a previous entry
          in the table; moreover, a metamethod has no relevance */
       if (!oldval.isNone() && !oldval.isNil()) {
-        h->set(*key,*val);
+        if(key->isNil()) luaG_runerror("Key is invalid (either nil or NaN)");
+        if(key->isNone()) luaG_runerror("Key is invalid (either nil or NaN)");
+        if(key->isNumber()) {
+          double n = key->getNumber();
+          if(n != n) {
+            luaG_runerror("Key is invalid (either nil or NaN)");
+          }
+        }
+        {
+          ScopedMemChecker c;
+          h->set(*key,*val);
+        }
         luaC_barrierback(h, *key);
         luaC_barrierback(h, *val);
         return;
@@ -263,7 +274,18 @@ void luaV_settable (lua_State *L, const TValue *t2, TValue *key, StkId val) {
       TValue tagmethod = fasttm2(h->metatable, TM_NEWINDEX);
       if (tagmethod.isNil() || tagmethod.isNone()) {
         // no metamethod, add (key,val) to table
-        h->set(*key,*val);
+        if(key->isNil()) luaG_runerror("Key is invalid (either nil or NaN)");
+        if(key->isNone()) luaG_runerror("Key is invalid (either nil or NaN)");
+        if(key->isNumber()) {
+          double n = key->getNumber();
+          if(n != n) {
+            luaG_runerror("Key is invalid (either nil or NaN)");
+          }
+        }
+        {
+          ScopedMemChecker c;
+          h->set(*key,*val);
+        }
         luaC_barrierback(h, *key);
         luaC_barrierback(h, *val);
         return;
@@ -1218,12 +1240,13 @@ void luaV_execute (lua_State *L) {
           // NOTE(aappleby): This is mostly a performance optimization, but the
           // nextvar.lua tests break if it's removed.
           if (last > (int)h->getArraySize()) {
+            ScopedMemChecker c;
             h->resize(last, (int)h->getHashSize());
-            l_memcontrol.checkLimit();
           }
 
           // TODO(aappleby): we probably don't have to call barrierback every time through this loop
           for (; n > 0; n--) {
+            ScopedMemChecker c;
             h->set(TValue(last--), ra[n]);
             luaC_barrierback(h, ra[n]);
           }

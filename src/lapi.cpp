@@ -816,7 +816,10 @@ void lua_rawset (lua_State *L, int idx) {
   t = index2addr(L, idx);
   assert(t);
   api_check(t->isTable(), "table expected");
-  t->getTable()->set(L->stack_.top_[-2], L->stack_.top_[-1]);
+  {
+    ScopedMemChecker c;
+    t->getTable()->set(L->stack_.top_[-2], L->stack_.top_[-1]);
+  }
   luaC_barrierback(t->getObject(), L->stack_.top_[-1]);
   luaC_barrierback(t->getObject(), L->stack_.top_[-2]);
   L->stack_.top_ -= 2;
@@ -830,7 +833,10 @@ void lua_rawseti (lua_State *L, int idx, int n) {
   t = index2addr(L, idx);
   assert(t);
   api_check(t->isTable(), "table expected");
-  t->getTable()->set(TValue(n), L->stack_.top_[-1]);
+  {
+    ScopedMemChecker c;
+    t->getTable()->set(TValue(n), L->stack_.top_[-1]);
+  }
   luaC_barrierback(t->getObject(), L->stack_.top_[-1]);
   L->stack_.pop();
 }
@@ -845,7 +851,10 @@ void lua_rawsetp (lua_State *L, int idx, const void *p) {
   assert(t);
   api_check(t->isTable(), "table expected");
   k = TValue::LightUserdata((void*)p);
-  t->getTable()->set(k, L->stack_.top_[-1]);
+  {
+    ScopedMemChecker c;
+    t->getTable()->set(k, L->stack_.top_[-1]);
+  }
   luaC_barrierback(t->getObject(), L->stack_.top_[-1]);
   L->stack_.pop();
 }

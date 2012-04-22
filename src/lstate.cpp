@@ -55,16 +55,22 @@ static void init_registry (lua_State *L, global_State *g) {
 
   /* registry[LUA_RIDX_MAINTHREAD] = L */
   mt = L;
-  registry->set(TValue(LUA_RIDX_MAINTHREAD), mt);
+  {
+    ScopedMemChecker c;
+    registry->set(TValue(LUA_RIDX_MAINTHREAD), mt);
+  }
   luaC_barrierback(registry, mt);
 
   // TODO(aappleby): Are barriers needed on the registry?
 
   /* registry[LUA_RIDX_GLOBALS] = table of globals */
-  Table* t = new Table();
-  t->linkGC(getGlobalGCHead());
-  mt = t;
-  registry->set(TValue(LUA_RIDX_GLOBALS),mt);
+  {
+    ScopedMemChecker c;
+    Table* t = new Table();
+    t->linkGC(getGlobalGCHead());
+    mt = t;
+    registry->set(TValue(LUA_RIDX_GLOBALS),mt);
+  }
   luaC_barrierback(registry,mt);
 }
 

@@ -4,7 +4,6 @@
 
 void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal);
 int luaO_ceillog2 (unsigned int x);
-l_noret luaG_runerror (const char *fmt, ...);
 
 /*
 ** max size of array part is 2^MAXBITS
@@ -208,19 +207,22 @@ Node* Table::getFreeNode() {
 // position), new key goes to an empty position.
 //
 
-bool Table::set(TValue key, TValue val) {
+int Table::set(TValue key, TValue val) {
+  assert(l_memcontrol.limitDisabled);
   // Check for nil keys
   if (key.isNil()) {
-    luaG_runerror("Key is invalid (either nil or NaN)");
-    return false;
+    assert(false);
+    //luaG_runerror("Key is invalid (either nil or NaN)");
+    return LUA_ERRKEY;
   }
 
   // Check for NaN keys
   if (key.isNumber()) {
     double n = key.getNumber();
     if(n != n) {
-      luaG_runerror("Key is invalid (either nil or NaN)");
-      return false;
+      assert(false);
+      // luaG_runerror("Key is invalid (either nil or NaN)");
+      return LUA_ERRKEY;
     }
   }
 
@@ -230,7 +232,7 @@ bool Table::set(TValue key, TValue val) {
     int index = key.getInteger() - 1;
     if((index >= 0) && (index < (int)array.size())) {
       array[index] = val;
-      return true;
+      return LUA_OK;
     }
   }
 
@@ -239,7 +241,7 @@ bool Table::set(TValue key, TValue val) {
   Node* node = findNode(key);
   if(node) {
     node->i_val = val;
-    return true;
+    return LUA_OK;
   }
   
   // No node for that key. Can we just put the key in its primary position?
@@ -247,7 +249,7 @@ bool Table::set(TValue key, TValue val) {
   if(primary_node && primary_node->i_val.isNil()) {
     primary_node->i_key = key;
     primary_node->i_val = val;
-    return true;
+    return LUA_OK;
   }
 
   // Nope, primary position occupied. Get a free node in the hashtable
@@ -258,9 +260,6 @@ bool Table::set(TValue key, TValue val) {
     int arraysize, hashsize;
     computeOptimalSizes(key, arraysize, hashsize);
     resize(arraysize, hashsize);
-
-    l_memcontrol.checkLimit();
-
     return set(key,val);
   }
 
@@ -273,7 +272,7 @@ bool Table::set(TValue key, TValue val) {
   primary_node->i_key = key;
   primary_node->i_val = val;
   primary_node->next = new_node;
-  return true;
+  return LUA_OK;
 }
 
 //-----------------------------------------------------------------------------
@@ -343,8 +342,8 @@ void Table::computeOptimalSizes(TValue newkey, int& outArraySize, int& outHashSi
 
 // #TODO - Table resize should be effectively atomic...
 
-void Table::resize(int nasize, int nhsize) {
-  ScopedMemChecker c;
+int Table::resize(int nasize, int nhsize) {
+  assert(l_memcontrol.limitDisabled);
 
   int oldasize = (int)array.size();
   int oldhsize = (int)hashtable.size();
@@ -372,6 +371,7 @@ void Table::resize(int nasize, int nhsize) {
   // Move array overflow to hashtable
   for(int i = (int)array.size(); i < (int)temparray.size(); i++) {
     if (!temparray[i].isNil()) {
+      ScopedMemChecker c;
       set(TValue(i+1), temparray[i]);
     }
   }
@@ -380,9 +380,12 @@ void Table::resize(int nasize, int nhsize) {
   for (int i = (int)temphash.size() - 1; i >= 0; i--) {
     Node* old = &temphash[i];
     if (!old->i_val.isNil()) {
+      ScopedMemChecker c;
       set(old->i_key, old->i_val);
     }
   }
+
+  return LUA_OK;
 }
 
 //-----------------------------------------------------------------------------

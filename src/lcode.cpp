@@ -337,7 +337,10 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   k = fs->num_constants;
   /* numerical value does not need GC barrier;
      table has no metatable, so it does not need to invalidate cache */
-  fs->constant_map->set(*key, TValue(k));
+  {
+    ScopedMemChecker c;
+    fs->constant_map->set(*key, TValue(k));
+  }
   
   if (k >= (int)f->constants.size()) {
     ScopedMemChecker c;
