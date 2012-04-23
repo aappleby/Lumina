@@ -85,8 +85,14 @@ global_State::global_State()
 }
 
 global_State::~global_State() {
-  assert(mainthread == NULL);
+  delete strings_;
+  strings_ = NULL;
 
+  buff.buffer.clear();
+
+  assert(thread_G->getTotalBytes() == sizeof(global_State));
+
+  assert(mainthread == NULL);
   assert(anchor_head_ == NULL);
   assert(anchor_tail_ == NULL);
 }

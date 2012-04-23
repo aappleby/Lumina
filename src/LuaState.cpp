@@ -38,6 +38,8 @@ lua_State::lua_State(global_State* g) : LuaObject(LUA_TTHREAD) {
   status = LUA_OK;
 
   setColor(g->livecolor);
+
+  stack_.init();  /* init stack */
 }
 
 lua_State::~lua_State() {

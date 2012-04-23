@@ -42,12 +42,6 @@ static void close_state (lua_State *L) {
   delete L;
   thread_L = NULL;
 
-  delete thread_G->strings_;
-  thread_G->strings_ = NULL;
-
-  thread_G->buff.buffer.clear();
-
-  assert(thread_G->getTotalBytes() == sizeof(global_State));
   delete thread_G;
   thread_G = NULL;
 }
@@ -65,8 +59,6 @@ lua_State *lua_newthread (lua_State *L) {
   L1->hook = L->hook;
   L1->hookcount = L1->basehookcount;
   
-  L1->stack_.init();  /* init stack */
-
   L->stack_.push(TValue(L1));
 
   return L1;
@@ -84,27 +76,12 @@ lua_State *lua_newstate () {
   lua_State* L = new lua_State(g);
   thread_L = L;
 
-  L->stack_.init();  /* init stack */
-
   g->init(L);
 
   l_memcontrol.enableLimit();
 
   if(l_memcontrol.isOverLimit()) {
-
-    luaC_freeallobjects();
-
-    thread_L = NULL;
-    delete L;
-
-    delete g->strings_;
-    g->strings_ = NULL;
-
-    assert(g->getTotalBytes() == sizeof(global_State));
-
-    delete thread_G;
-    thread_G = NULL;
-
+    close_state(L);
     return NULL;
   }
 
