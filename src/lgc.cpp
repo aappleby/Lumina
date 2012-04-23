@@ -50,18 +50,6 @@
 #define stddebt(g)	(-cast(ptrdiff_t, g->getTotalBytes()/100) * g->gcpause)
 
 
-//static void markobject (LuaObject *o);
-
-/*
-inline void markvalue(TValue* v) {
-  if(v->isCollectable()) {
-    markobject(v->getObject());
-  }
-}
-*/
-
-
-
 /*
 ** {======================================================
 ** Generic functions
@@ -73,9 +61,14 @@ inline void markvalue(TValue* v) {
 ** barrier that moves collector forward, that is, mark the white object
 ** being pointed by a black object.
 */
+
+// TODO(aappleby): If this is replaced with barrierback everything still works.
+// Is it needed?
+
 void luaC_barrier (LuaObject *o, TValue value) {
   if(!o->isBlack()) return;
   if(!value.isWhite()) return;
+
   LuaObject* v = value.getObject();
 
   global_State *g = thread_G;
@@ -83,13 +76,13 @@ void luaC_barrier (LuaObject *o, TValue value) {
   assert(isgenerational(g) || (g->gcstate != GCSpause));
   assert(o->type() != LUA_TTABLE);
 
-  if (keepinvariant(g)) {  /* must keep invariant? */
+  if (keepinvariant(g)) {  // must keep invariant?
     GCVisitor visitor(&g->gc_);
-    visitor.MarkObject(v);  /* restore invariant */
+    visitor.MarkObject(v);  // restore invariant
   }
-  else {  /* sweep phase */
+  else {  // sweep phase
     assert(issweepphase(g));
-    o->makeLive();  /* mark main obj. as white to avoid other barriers */
+    o->makeLive();  // mark main obj. as white to avoid other barriers
   }
 }
 
@@ -122,13 +115,17 @@ void luaC_barrierback (LuaObject *o, TValue v) {
 ** it again. Otherwise, use a backward barrier, to avoid marking all
 ** possible instances.
 */
-void luaC_barrierproto (Proto *p, Closure *c) {
+
+// TODO(aappleby): If this just does the grayagain push everything works,
+// is it needed?
+
+void luaC_barrierproto (Proto *p, Closure* c) {
   if(!p->isBlack()) return;
 
-  if (p->cache == NULL) {  /* first time? */
+  if (p->cache == NULL) {  // first time?
     luaC_barrier(p, TValue(c));
   }
-  else {  /* use a backward barrier */
+  else {  // use a backward barrier
     thread_G->gc_.grayagain_.Push(p);
   }
 }
@@ -142,21 +139,6 @@ void luaC_barrierproto (Proto *p, Closure *c) {
 ** {======================================================
 ** Mark functions
 ** =======================================================
-*/
-
-
-/*
-** mark an object. Userdata and closed upvalues are visited and turned
-** black here. Strings remain gray (it is the same as making them
-** black). Other objects are marked gray and added to appropriate list
-** to be visited (and turned black) later. (Open upvalues are already
-** linked in 'headuv' list.)
-*/
-/*
-static void markobject(LuaObject *o) {
-  GCVisitor v;
-  v.MarkObject(o);
-}
 */
 
 
@@ -331,14 +313,6 @@ void deletelist (LuaObject*& head) {
 ** =======================================================
 */
 
-static void checkSizes () {
-  global_State *g = thread_G;
-  if (g->gckind != KGC_EMERGENCY) {  /* do not change sizes in emergency */
-    g->strings_->Shrink();
-    g->buff.buffer.clear();
-  }
-}
-
 // Move the first item in the objects-with-finalizers list back to the global
 // GC list.
 
@@ -436,11 +410,6 @@ void separatetobefnz (int all) {
       *p = curr->next_;  /* remove 'curr' from 'finobj' list */
       curr->next_ = NULL;
 
-      /*
-      curr->next_ = *lastnext;  // link at the end of 'tobefnz' list
-      *lastnext = curr;
-      lastnext = &curr->next_;
-      */
       g->tobefnz.PushTail(curr);
     }
   }
@@ -544,6 +513,8 @@ void luaC_freeallobjects () {
   thread_G->strings_->Clear();
 }
 
+// We have marked our root objects and incrementally propagated those marks
+// out through all objects in the universe.
 
 static void atomic () {
   assert(!l_memcontrol.limitDisabled);
@@ -620,9 +591,14 @@ static ptrdiff_t singlestep () {
   global_State *g = thread_G;
   switch (g->gcstate) {
     case GCSpause: {
-      if (!isgenerational(g)) markroot(g);  /* start a new collection */
-      /* in any case, root must be marked */
-      assert(!g->mainthread->isWhite() && !g->l_registry.getObject()->isWhite());
+      if (!isgenerational(g)) {
+        // start a new collection
+        markroot(g);
+      }
+      // in any case, root must be marked
+      assert(!g->mainthread->isWhite());
+      assert(!g->l_registry.isWhite());
+
       g->gcstate = GCSpropagate;
       return GCROOTCOST;
     }
@@ -668,12 +644,19 @@ static ptrdiff_t singlestep () {
       }
       else {
         /* sweep main thread */
+        // TODO(aappleby): What? Why is it sweeping a list of one object
+        // that should never be dead?
         LuaObject *mt = g->mainthread;
         sweeplist(&mt, 1);
         
-        checkSizes();
+        // We have swept everything. If this is not an emergency, try and
+        // save some RAM by reducing the size of our internal buffers.
+        if (g->gckind != KGC_EMERGENCY) {
+          g->strings_->Shrink();
+          g->buff.buffer.clear();
+        }
         
-        g->gcstate = GCSpause;  /* finish collection */
+        g->gcstate = GCSpause;
         return GCSWEEPCOST;
       }
     }
