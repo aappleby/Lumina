@@ -50,13 +50,15 @@
 #define stddebt(g)	(-cast(ptrdiff_t, g->getTotalBytes()/100) * g->gcpause)
 
 
-static void markobject (LuaObject *o);
+//static void markobject (LuaObject *o);
 
+/*
 inline void markvalue(TValue* v) {
   if(v->isCollectable()) {
     markobject(v->getObject());
   }
 }
+*/
 
 
 
@@ -80,8 +82,10 @@ void luaC_barrier (LuaObject *o, TValue value) {
   assert(o->isBlack() && v->isWhite() && !v->isDead() && !o->isDead());
   assert(isgenerational(g) || (g->gcstate != GCSpause));
   assert(o->type() != LUA_TTABLE);
+
   if (keepinvariant(g)) {  /* must keep invariant? */
-    markobject(v);  /* restore invariant */
+    GCVisitor visitor(&g->gc_);
+    visitor.MarkObject(v);  /* restore invariant */
   }
   else {  /* sweep phase */
     assert(issweepphase(g));
@@ -148,56 +152,12 @@ void luaC_barrierproto (Proto *p, Closure *c) {
 ** to be visited (and turned black) later. (Open upvalues are already
 ** linked in 'headuv' list.)
 */
+/*
 static void markobject(LuaObject *o) {
   GCVisitor v;
   v.MarkObject(o);
 }
-
-void GCVisitor::MarkValue(TValue v) {
-  if(v.isCollectable()) {
-    MarkObject(v.getObject());
-  }
-}
-
-void GCVisitor::MarkObject(LuaObject* o) {
-  if(o == NULL) return;
-  if(o->isGray()) {
-    return;
-  }
-  if(o->isBlack()) {
-    return;
-  }
-
-  mark_count_++;
-
-  if(!o->isFixed()) {
-    assert(o->isLiveColor());
-  }
-
-  o->VisitGC(*this);
-  return;
-}
-
-void GCVisitor::PushGray(LuaObject* o) {
-  thread_G->PushGray(o);
-}
-
-void GCVisitor::PushGrayAgain(LuaObject* o) {
-  thread_G->PushGrayAgain(o);
-}
-
-void GCVisitor::PushWeak(LuaObject* o) {
-  thread_G->PushWeak(o);
-}
-
-void GCVisitor::PushAllWeak(LuaObject* o) {
-  thread_G->PushAllWeak(o);
-}
-
-void GCVisitor::PushEphemeron(LuaObject* o) {
-  thread_G->PushEphemeron(o);
-}
-
+*/
 
 
 /*
@@ -207,22 +167,26 @@ void GCVisitor::PushEphemeron(LuaObject* o) {
 static void markroot (global_State *g) {
   g->gc_.ClearGraylists();
 
-  markobject(g->mainthread);
-  markvalue(&g->l_registry);
+  GCVisitor visitor(&g->gc_);
+
+  visitor.MarkObject(g->mainthread);
+  visitor.MarkValue(g->l_registry);
   
   for (int i=0; i < LUA_NUMTAGS; i++) {
-    markobject(g->base_metatables_[i]);
+    visitor.MarkObject(g->base_metatables_[i]);
   }
 
   /* mark any finalizing object left from previous cycle */
   for(LuaList::iterator it = g->tobefnz.begin(); it; ++it) {
     it->makeLive();
-    markobject(it);
+    visitor.MarkObject(it);
   }
 
   // Mark all objects anchored in the C stack
   for(LuaAnchor* cursor = g->anchor_head_; cursor; cursor = cursor->next_) {
-    if(cursor->object_) markobject(cursor->object_);
+    if(cursor->object_) {
+      visitor.MarkObject(cursor->object_);
+    }
   }
 }
 
@@ -586,24 +550,26 @@ static void atomic () {
 
   global_State *g = thread_G;
 
+  GCVisitor visitor(&g->gc_);
+
   assert(!g->mainthread->isWhite());
 
   /* mark running thread */
-  markobject(thread_L);  
+  visitor.MarkObject(thread_L);  
 
   /* registry and global metatables may be changed by API */
-  markvalue(&g->l_registry);
+  visitor.MarkValue(g->l_registry);
   
   /* mark basic metatables */
   for (int i=0; i < LUA_NUMTAGS; i++) {
-    markobject(g->base_metatables_[i]);
+    visitor.MarkObject(g->base_metatables_[i]);
   }
 
   // remark occasional upvalues of (maybe) dead threads
   // mark all values stored in marked open upvalues. (See comment in 'lstate.h'.)
   for (UpVal* uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {
     if (uv->isGray()) {
-      markvalue(uv->v);
+      visitor.MarkValue(*uv->v);
     }
   }
 
@@ -622,11 +588,11 @@ static void atomic () {
 
   for(LuaList::iterator it = g->tobefnz.begin(); it; ++it) {
     it->makeLive();
-    markobject(it);
+    visitor.MarkObject(it);
   }
   
   /* remark, to propagate `preserveness' */
-  GCVisitor v;
+  GCVisitor v(&g->gc_);
   g->gc_.grayhead_.PropagateGC(v);
   g->gc_.ConvergeEphemerons();
 
@@ -662,7 +628,7 @@ static ptrdiff_t singlestep () {
     }
     case GCSpropagate: {
       if (g->gc_.hasGrays()) {
-        GCVisitor visitor;
+        GCVisitor visitor(&g->gc_);
         LuaObject *o = g->gc_.grayhead_.Pop();
         return o->PropagateGC(visitor);
       }

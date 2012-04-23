@@ -2,26 +2,6 @@
 #include "LuaBase.h"
 #include "LuaTypes.h"
 
-class GCVisitor {
-public:
-
-  GCVisitor()
-    : mark_count_(0)
-  {
-  }
-
-  void MarkValue     (TValue v);
-  void MarkObject    (LuaObject* o);
-
-  void PushGray      (LuaObject* o);
-  void PushGrayAgain (LuaObject* o);
-  void PushWeak      (LuaObject* o);
-  void PushAllWeak   (LuaObject* o);
-  void PushEphemeron (LuaObject* o);
-
-  int mark_count_;
-};
-
 class LuaObject : public LuaBase {
 public:
 

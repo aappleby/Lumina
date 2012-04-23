@@ -1,6 +1,8 @@
 #include "LuaUpval.h"
 
-#include "lmem.h"
+#include "LuaCollector.h"
+
+#include "lmem.h" // for l_memcontrol
 
 UpVal::UpVal(LuaObject** gchead) : LuaObject(LUA_TUPVAL) {
   assert(l_memcontrol.limitDisabled);

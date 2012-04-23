@@ -436,7 +436,9 @@ void LuaStack::closeUpvals(StkId level) {
         if (thread_G->keepInvariant()) {
           uv->clearOld();  /* see MOVE OLD rule */
           uv->grayToBlack();  /* it is being visited now */
-          thread_G->markValue(uv->v);
+
+          GCVisitor visitor(&thread_G->gc_);
+          visitor.MarkValue(*uv->v);
         }
         else {
           assert(thread_G->isSweepPhase());

@@ -14,6 +14,7 @@ class UpVal;
 class Table;
 class Proto;
 class Udata;
+class GCVisitor;
 
 typedef TValue* StkId;  /* index to stack elements */
 

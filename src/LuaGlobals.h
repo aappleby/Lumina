@@ -65,9 +65,6 @@ public:
     return (gckind == KGC_GEN) || (gcstate <= GCSatomic);
   }
 
-  void markValue(TValue* v);
-  void markObject(LuaObject* o);
-
   //----------
 
   void incTotalBytes(int size);

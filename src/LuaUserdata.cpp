@@ -1,5 +1,6 @@
 #include "LuaUserdata.h"
 
+#include "LuaCollector.h"
 #include "LuaTable.h"
 
 #include "lmem.h"

@@ -169,9 +169,9 @@ void global_State::PushEphemeron(LuaObject* o) {
   gc_.ephemeron_.Push(o);
 }
 
-
+/*
 void global_State::markObject(LuaObject *o) {
-  GCVisitor visitor;
+  GCVisitor visitor(
   visitor.MarkObject(o);
 }
 
@@ -180,4 +180,4 @@ void global_State::markValue(TValue* v) {
     markObject(v->getObject());
   }
 }
-
+*/

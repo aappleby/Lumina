@@ -1,5 +1,6 @@
 #include "LuaClosure.h"
 
+#include "LuaCollector.h"
 #include "LuaProto.h"
 #include "LuaUpval.h"
 

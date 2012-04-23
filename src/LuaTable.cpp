@@ -1,5 +1,7 @@
 #include "LuaTable.h"
 
+#include "LuaCollector.h"
+
 void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal);
 int luaO_ceillog2 (unsigned int x);
 

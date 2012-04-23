@@ -1,6 +1,7 @@
 #include "LuaProto.h"
 
 #include "LuaClosure.h"
+#include "LuaCollector.h"
 #include "LuaString.h"
 
 Proto::Proto() : LuaObject(LUA_TPROTO) {
