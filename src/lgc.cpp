@@ -110,7 +110,7 @@ void luaC_barrierback (LuaObject *o, TValue v) {
 
   assert(o->isTable());
 
-  thread_G->PushGrayAgain(o);
+  thread_G->gc_.grayagain_.Push(o);
 }
 
 
@@ -129,7 +129,7 @@ void luaC_barrierproto (Proto *p, Closure *c) {
     luaC_barrier(p, TValue(c));
   }
   else {  /* use a backward barrier */
-    thread_G->PushGrayAgain(p);
+    thread_G->gc_.grayagain_.Push(p);
   }
 }
 

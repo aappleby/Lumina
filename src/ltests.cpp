@@ -1134,7 +1134,8 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     else if EQ("compare") {
       int a, b;
       { GLOBAL_CHANGE(L); a = getindex; b = getindex; tempnum = getnum; }
-      lua_pushboolean(L1, lua_compare(L1, a, b, tempnum));
+      int result = lua_compare(L1, a, b, tempnum);
+      lua_pushboolean(L1, result);
     }
     else if EQ("call") {
       int narg, nres;

@@ -93,15 +93,7 @@ public:
   LuaObject *finobj;  /* list of collectable objects with finalizers */
   LuaList tobefnz;  /* list of userdata to be GC */
 
-  // Gray lists
-  /*
-  LuaGraylist grayhead_;  // Topmost list of gray objects
-  LuaGraylist grayagain_; // list of objects to be traversed atomically
-  LuaGraylist weak_;      // list of tables with weak values
-  LuaGraylist ephemeron_; // list of ephemeron tables (weak keys)
-  LuaGraylist allweak_;   // list of all-weak tables
-  */
-
+  // The global garbage collector.
   LuaCollector gc_;
 
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
@@ -119,12 +111,6 @@ public:
   Table *base_metatables_[LUA_NUMTAGS];  /* metatables for basic types */
 
   int call_depth_;
-
-  void PushGray(LuaObject* o);
-  void PushGrayAgain(LuaObject* o);
-  void PushWeak(LuaObject* o);
-  void PushAllWeak(LuaObject* o);
-  void PushEphemeron(LuaObject* o);
 
   LuaAnchor* anchor_head_;
   LuaAnchor* anchor_tail_;

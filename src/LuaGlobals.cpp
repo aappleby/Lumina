@@ -148,36 +148,3 @@ void global_State::incTotalBytes(int bytes) {
 void global_State::incGCDebt(int debt) { 
   GCdebt_ += debt;
 }
-
-void global_State::PushGray(LuaObject* o) {
-  gc_.grayhead_.Push(o);
-}
-
-void global_State::PushGrayAgain(LuaObject* o) {
-  gc_.grayagain_.Push(o);
-}
-
-void global_State::PushWeak(LuaObject* o) {
-  gc_.weak_.Push(o);
-}
-
-void global_State::PushAllWeak(LuaObject* o) {
-  gc_.allweak_.Push(o);
-}
-
-void global_State::PushEphemeron(LuaObject* o) {
-  gc_.ephemeron_.Push(o);
-}
-
-/*
-void global_State::markObject(LuaObject *o) {
-  GCVisitor visitor(
-  visitor.MarkObject(o);
-}
-
-void global_State::markValue(TValue* v) {
-  if(v->isCollectable()) {
-    markObject(v->getObject());
-  }
-}
-*/

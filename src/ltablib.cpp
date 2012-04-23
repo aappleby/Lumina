@@ -169,8 +169,10 @@ static int sort_comp (lua_State *L, int a, int b) {
     L->stack_.pop();
     return res;
   }
-  else  /* a < b? */
+  else {
+    /* a < b? */
     return lua_compare(L, a, b, LUA_OPLT);
+  }
 }
 
 static void auxsort (lua_State *L, int l, int u) {
