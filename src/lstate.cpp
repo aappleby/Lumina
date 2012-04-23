@@ -25,9 +25,6 @@
 static void close_state (lua_State *L) {
   THREAD_CHECK(L);
 
-  // close all upvalues for this thread
-  L->stack_.closeUpvals(L->stack_.begin());
-
   // TODO(aappleby): grayagain_ and grayhead_ still have objects in them during destruction?
 
   thread_G->grayhead_.Clear();
@@ -38,7 +35,6 @@ static void close_state (lua_State *L) {
 
   luaC_freeallobjects();  /* collect all objects */
 
-  assert(L->stack_.open_upvals_ == NULL);
   delete L;
   thread_L = NULL;
 
