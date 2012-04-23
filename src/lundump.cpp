@@ -112,7 +112,7 @@ static void LoadConstants(LoadState* S, Proto* f)
     switch(LoadChar(S))
     {
     case LUA_TNIL:
-      f->constants[i] = TValue::nil;
+      f->constants[i] = TValue::Nil();
       break;
     case LUA_TBOOLEAN:
       f->constants[i] = LoadChar(S) ? true : false;
@@ -124,7 +124,7 @@ static void LoadConstants(LoadState* S, Proto* f)
       f->constants[i] = LoadString(S);
       break;
     default:
-      f->constants[i] = TValue::nil;
+      f->constants[i] = TValue::Nil();
     }
   }
   n=LoadInt(S);

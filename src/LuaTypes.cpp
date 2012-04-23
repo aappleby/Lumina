@@ -13,19 +13,21 @@ __declspec(thread) global_State* thread_G = NULL;
 
 char* luaT_typenames_[] = {
   "nil",
+  "no value",
   "boolean",
-  "userdata",
   "number",
+  "userdata",
+  "function",
+
   "string",
   "table",
-  "function",
-  "userdata",
   "thread",
-  "function",
-  "function",
   "proto",
+  "function",
+  "function",
   "upval",
-  "no value",
+  "userdata",
+
   "<invalid>",
 };
 

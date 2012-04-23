@@ -92,7 +92,7 @@ void global_State::init(lua_State* mainthread2) {
 
   // Create global registry.
   Table* registry = new Table(LUA_RIDX_LAST, 0);
-  l_registry = registry;
+  l_registry = TValue(registry);
 
   // Create global variable table.
   Table* globals = new Table();

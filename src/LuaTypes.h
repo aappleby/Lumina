@@ -65,19 +65,21 @@ public:
 */
 enum LuaType {
   LUA_TNIL           = 0,   // Nil - valid value, but contains nothing.
-  LUA_TBOOLEAN       = 1,   // Boolean
-  LUA_TLIGHTUSERDATA = 2,   // User-supplied void*
+  LUA_TNONE          = 1,   // None - invalid value, what you get if you read past the end of an array.
+  LUA_TBOOLEAN       = 2,   // Boolean
   LUA_TNUMBER        = 3,   // Double-precision floating point number
-  LUA_TSTRING        = 4,   // String
-  LUA_TTABLE         = 5,   // Table
-  LUA_TLCL           = 6,   // Lua closure
-  LUA_TUSERDATA      = 7,   // User-supplied blob of bytes
+  LUA_TLIGHTUSERDATA = 4,   // User-supplied void*
+  LUA_TLCF           = 5,   // C function pointer, used like a callback.
+
+  LUA_TSTRING        = 6,   // String
+  LUA_TTABLE         = 7,   // Table
   LUA_TTHREAD        = 8,   // One execution state, like a thread.
-  LUA_TLCF           = 9,   // C function pointer, used like a callback.
-  LUA_TCCL           = 10,  // C closure - function pointer with persistent state
-  LUA_TPROTO         = 11,  // Function prototype, contains VM opcodes
+  LUA_TPROTO         = 9,   // Function prototype, contains VM opcodes
+  LUA_TLCL           = 10,  // Lua closure
+  LUA_TCCL           = 11,  // C closure - function pointer with persistent state
   LUA_TUPVAL         = 12,  // Persistent state object for C and Lua closuers
-  LUA_TNONE          = 13,  // None - invalid value, what you get if you read past the end of an array.
+  LUA_TUSERDATA      = 13,  // User-supplied blob of bytes
+
   LUA_NUMTAGS        = 14,
 };
 

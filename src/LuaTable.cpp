@@ -611,7 +611,7 @@ void Table::SweepWhiteVals() {
     if(!n.i_val.isLiveColor()) continue;
 
     // White value. If key was white, key goes away too.
-    n.i_val = TValue::nil;
+    n.i_val = TValue::Nil();
     if (n.i_key.isWhite()) {
       n.i_key = TValue::Nil();
     }

@@ -70,7 +70,7 @@ int lua_State::PropagateGC(GCVisitor& visitor) {
   }
 
   for (; v < stack_.end(); v++) {
-    *v = TValue::nil;
+    *v = TValue::Nil();
   }
 
   // why do threads go on the 'grayagain' list?

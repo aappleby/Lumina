@@ -321,7 +321,7 @@ void LuaStack::setTopIndex(int idx) {
   if (idx >= 0) {
     assert((idx <= last() - (func + 1)) && "new top too large");
     while (top_ < (func + 1) + idx) {
-      push(TValue::nil);
+      push(TValue::Nil());
     }
     top_ = (func + 1) + idx;
   }

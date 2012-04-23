@@ -204,7 +204,7 @@ LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outRe
     }
 
     if(tagmethod.isTable()) {
-      source = &tagmethod;
+      source = tagmethod;
       continue;
     }
 
@@ -758,7 +758,7 @@ void luaV_execute (lua_State *L) {
       base = ci->getBase();
     }
 
-    assert(base <= L->stack_.top_ && L->stack_.top_ < L->stack_.end());
+    //assert(base <= L->stack_.top_ && L->stack_.top_ < L->stack_.end());
     StkId ra = &base[A];
 
     switch(GET_OPCODE(i)) {
@@ -1275,7 +1275,7 @@ void luaV_execute (lua_State *L) {
               ra[j] = base[j-n];
             }
             else {
-              ra[j] = TValue::nil;
+              ra[j] = TValue::Nil();
             }
           }
           break;

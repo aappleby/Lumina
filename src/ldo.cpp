@@ -294,7 +294,7 @@ int luaD_postcall (lua_State *L, StkId firstResult) {
     firstResult++;
   }
   while (i-- > 0) {
-    *res = TValue::nil;
+    *res = TValue::Nil();
     res++;
   }
   L->stack_.top_ = res;

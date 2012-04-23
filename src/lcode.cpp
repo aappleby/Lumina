@@ -348,7 +348,7 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   }
   
   while (oldsize < (int)f->constants.size()) {
-    f->constants[oldsize++] = TValue::nil;
+    f->constants[oldsize++] = TValue::Nil();
   }
   f->constants[k] = *v;
   fs->num_constants++;

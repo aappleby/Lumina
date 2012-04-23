@@ -79,8 +79,8 @@ public:
   const T* begin() const { return buf_; }
   T* begin() { return buf_; }
 
-  const T* end() const { return begin() + size_; }
-  T* end() { return begin() + size_; }
+  const T* end() const { return buf_ + size_; }
+  T* end() { return buf_ + size_; }
 
   void swap ( LuaVector<T>& v ) {
     T* tempbuf = v.buf_;

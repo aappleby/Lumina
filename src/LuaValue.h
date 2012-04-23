@@ -1,66 +1,49 @@
 #pragma once
+
+#include "LuaObject.h"
 #include "LuaTypes.h"
+
 #include <assert.h>
 
 class TValue {
 public:
 
-  TValue() { type_ = LUA_TNIL; bytes_ = 0; }
+  TValue() {
+    type_ = LUA_TNIL;
+    bytes_ = 0;
+  }
+
   TValue(LuaType type, uint64_t data) {
     type_ = type;
     bytes_ = data;
   }
 
-  static TValue nil;
-  static TValue none;
+  //static TValue nil;
+  //static TValue none;
 
-  static TValue Nil();
-  static TValue None();
+  static TValue Nil()   { return TValue(LUA_TNIL, 0); }
+  static TValue None()  { return TValue(LUA_TNONE, 0); }
 
   static TValue LightUserdata(const void* p);
   static TValue LightFunction(lua_CFunction f);
-  //static TValue LClosure(Closure* c);
-  //static TValue CClosure(Closure* c);
 
-  explicit TValue(bool v)     { type_ = LUA_TBOOLEAN; bytes_ = v ? 1 : 0; }
-  explicit TValue(int32_t v)  { type_ = LUA_TNUMBER; number_ = v; }
-  explicit TValue(int64_t v)  { type_ = LUA_TNUMBER; number_ = (double)v; }
-  explicit TValue(uint32_t v) { type_ = LUA_TNUMBER; number_ = v; }
-  explicit TValue(uint64_t v) { type_ = LUA_TNUMBER; number_ = (double)v; }
-  explicit TValue(double v)   { type_ = LUA_TNUMBER; number_ = v; }
-  explicit TValue(TString* v);
-  explicit TValue(LuaObject* o);
-
-  // Conversion operators are dangerous
-
-  // operator Table*() { return getTable(); }
+  explicit TValue(LuaObject* o)  { type_ = o->type(); bytes_ = 0; object_ = o; }
+  explicit TValue(bool v)        { type_ = LUA_TBOOLEAN; bytes_ = v ? 1 : 0; }
+  explicit TValue(int32_t v)     { type_ = LUA_TNUMBER; number_ = v; }
+  explicit TValue(int64_t v)     { type_ = LUA_TNUMBER; number_ = (double)v; }
+  explicit TValue(uint32_t v)    { type_ = LUA_TNUMBER; number_ = v; }
+  explicit TValue(uint64_t v)    { type_ = LUA_TNUMBER; number_ = (double)v; }
+  explicit TValue(double v)      { type_ = LUA_TNUMBER; number_ = v; }
 
   // Assignment operators
 
-  void operator = (TValue V);
-  void operator = (TValue * pV);
-
-  void operator = (LuaObject* o);
-
-  void operator = (double v)  { type_ = LUA_TNUMBER; number_ = v; }
-  void operator = (int v)     { type_ = LUA_TNUMBER; number_ = (double)v; }
-  void operator = (size_t v)  { type_ = LUA_TNUMBER; number_ = (double)v; }
-  void operator = (int64_t v) { type_ = LUA_TNUMBER; number_ = (double)v; }
-  void operator = (bool v)    { type_ = LUA_TBOOLEAN; bytes_ = v ? 1 : 0; }
-
-  void operator = (TString* v ) {
-    bytes_ = 0;
-    object_ = (LuaObject*)v;
-    type_ = LUA_TSTRING;
-    sanityCheck();
-  }
-
-  void operator = (Proto* p) {
-    bytes_ = 0;
-    object_ = (LuaObject*)p;
-    type_ = LUA_TPROTO;
-    sanityCheck();
-  }
+  void operator = (LuaObject* o) { type_ = o->type(); bytes_ = 0; object_ = o; }
+  void operator = (TValue v)     { type_ = v.type_; bytes_ = v.bytes_; }
+  void operator = (double v)     { type_ = LUA_TNUMBER; number_ = v; }
+  void operator = (int v)        { type_ = LUA_TNUMBER; number_ = (double)v; }
+  void operator = (size_t v)     { type_ = LUA_TNUMBER; number_ = (double)v; }
+  void operator = (int64_t v)    { type_ = LUA_TNUMBER; number_ = (double)v; }
+  void operator = (bool v)       { type_ = LUA_TBOOLEAN; bytes_ = v ? 1 : 0; }
 
   // Comparison operators.
 
@@ -80,8 +63,8 @@ public:
 
   // stuff
 
-  bool isCollectable() const;
-  bool isFunction() const;
+  bool isCollectable() const   { return type_ >= LUA_TSTRING; }
+  bool isFunction() const      { return (type_ == LUA_TCCL) || (type_ == LUA_TLCL) || (type_ == LUA_TLCF); }
 
   bool isNil() const           { return type_ == LUA_TNIL; }
   bool isNotNil() const        { return type_ != LUA_TNIL; }
