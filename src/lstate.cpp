@@ -38,14 +38,14 @@ static void close_state (lua_State *L) {
 
   luaC_freeallobjects();  /* collect all objects */
 
+  assert(L->stack_.open_upvals_ == NULL);
+  delete L;
+  thread_L = NULL;
+
   delete thread_G->strings_;
   thread_G->strings_ = NULL;
 
   thread_G->buff.buffer.clear();
-
-  assert(L->stack_.open_upvals_ == NULL);
-  delete L;
-  thread_L = NULL;
 
   assert(thread_G->getTotalBytes() == sizeof(global_State));
   delete thread_G;
@@ -92,10 +92,10 @@ lua_State *lua_newstate () {
 
   if(l_memcontrol.isOverLimit()) {
 
+    luaC_freeallobjects();
+
     thread_L = NULL;
     delete L;
-
-    luaC_freeallobjects();
 
     delete g->strings_;
     g->strings_ = NULL;
