@@ -520,7 +520,7 @@ static void GCTM (int propagateerrors) {
       luaO_pushfstring(L, "error in __gc metamethod (%s)", lua_tostring(L, -1));
       status = LUA_ERRGCMM;  // error in __gc metamethod
     }
-    throw status;  // re-send error
+    throwError(status);  // re-send error
   }
 }
 

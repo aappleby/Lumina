@@ -152,7 +152,7 @@ void luaD_precallLightC(lua_State* L, StkId func, int nresults) {
   if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
     luaG_runerror("C stack overflow");
   } else if (L->l_G->call_depth_ >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3))) {
-    throw LUA_ERRERR;
+    throwError(LUA_ERRERR);
   }
 
   int n = (*f)(L);  /* do the actual call */
@@ -178,7 +178,7 @@ void luaD_precallC(lua_State* L, StkId func, int nresults) {
   if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
     luaG_runerror("C stack overflow");
   } else if (L->l_G->call_depth_ >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3))) {
-    throw LUA_ERRERR;
+    throwError(LUA_ERRERR);
   }
 
   int n = (*f)(L);  /* do the actual call */
@@ -406,7 +406,7 @@ static l_noret resume_error (lua_State *L, const char *msg, StkId firstArg) {
   }
   handleResult(result);
 
-  throw (LuaResult)-1;  /* jump back to 'lua_resume' */
+  throwError((LuaResult)-1);  /* jump back to 'lua_resume' */
 }
 
 
@@ -525,7 +525,7 @@ int lua_yield (lua_State *L, int nresults) {
     ci->continuation_ = NULL;
     ci->old_func_ = savestack(L, ci->getFunc());  /* save current 'func' */
     ci->setFunc(L->stack_.top_ - nresults - 1);  /* protect stack below results */
-    throw LUA_YIELD;
+    throwError(LUA_YIELD);
   }
   assert(ci->callstatus & CIST_HOOKED);  /* must be inside a hook */
   return 0;  /* return to 'luaD_hook' */
@@ -556,7 +556,7 @@ int lua_yieldk (lua_State *L, int nresults, int ctx, lua_CFunction k) {
   L->stack_.callinfo_->old_func_ = savestack(L, L->stack_.callinfo_->getFunc());  /* save current 'func' */
   L->stack_.callinfo_->setFunc(L->stack_.top_ - nresults - 1);  /* protect stack below results */
 
-  throw LUA_YIELD;
+  throwError(LUA_YIELD);
   return 0;
 }
 
@@ -568,7 +568,7 @@ static void checkmode (lua_State *L, const char *mode, const char *x) {
   THREAD_CHECK(L);
   if (mode && strchr(mode, x[0]) == NULL) {
     luaO_pushfstring(L, "attempt to load a %s chunk (mode is " LUA_QS ")", x, mode);
-    throw LUA_ERRSYNTAX;
+    throwError(LUA_ERRSYNTAX);
   }
 }
 

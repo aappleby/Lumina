@@ -624,7 +624,7 @@ static int newuserdata (lua_State *L) {
   THREAD_CHECK(L);
   size_t size = luaL_checkint(L, 1);
   // TODO(aappleby): This limit of 1 gigabyte for a userdata is arbitrary.
-  if(size > 1000000000) throw LUA_ERRMEM;
+  if(size > 1000000000) throwError(LUA_ERRMEM);
   char *p = cast(char *, lua_newuserdata(L, size));
   while (size--) *p++ = '\0';
   return 1;
@@ -1253,7 +1253,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("throw") {
       LuaResult error = (LuaResult)1;
-      throw error;
+      throwError(error);
     }
     else {
       GLOBAL_CHANGE(L);

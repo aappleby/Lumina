@@ -108,7 +108,7 @@ static l_noret lexerror (LexState *ls, const char *msg, int token) {
   if (token) {
     luaO_pushfstring(ls->L, "%s near %s", msg, txtToken(ls, token));
   }
-  throw LUA_ERRSYNTAX;
+  throwError(LUA_ERRSYNTAX);
 }
 
 

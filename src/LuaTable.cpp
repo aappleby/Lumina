@@ -32,7 +32,8 @@ uint32_t hash64 (uint32_t a, uint32_t b) {
 //-----------------------------------------------------------------------------
 
 Table::Table(int arrayLength, int hashLength) 
-: LuaObject(LUA_TTABLE) {
+: LuaObject(LUA_TTABLE),
+  lastfree(-1) {
   assert(l_memcontrol.limitDisabled);
   metatable = NULL;
   linkGC(getGlobalGCHead());

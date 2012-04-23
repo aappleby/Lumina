@@ -1235,7 +1235,7 @@ void *lua_newuserdata (lua_State *L, size_t size) {
   THREAD_CHECK(L);
 
   if(!l_memcontrol.canAlloc(size)) {
-    throw LUA_ERRMEM;
+    throwError(LUA_ERRMEM);
   }
 
   Udata* u = NULL;

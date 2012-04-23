@@ -67,6 +67,9 @@ LuaGlobalScope::~LuaGlobalScope() {
   thread_G = oldState ? oldState->l_G : NULL;
 }
 
+void throwError(LuaResult err) {
+  throw err;
+}
 
 void handleResult(LuaResult err, const TValue* val)
 {
@@ -95,7 +98,7 @@ void handleResult(LuaResult err, const TValue* val)
       return;
 
     default:
-      throw err;
+      throwError(err);
       return;
   }
 }

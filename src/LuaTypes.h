@@ -141,6 +141,7 @@ enum LuaResult
 // Whether 'val' points to a value on the Lua stack or elsewhere _does_ matter,
 // as it's used to deduce what sort of variable 'val' is.
 void handleResult(LuaResult err, const TValue* val = NULL);
+void throwError(LuaResult error);
 
 
 

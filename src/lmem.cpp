@@ -72,7 +72,7 @@ void Memcontrol::checkLimit() {
 
   // If we're still over, throw the out-of-memory error.
   if(isOverLimit()) {
-    throw LUA_ERRMEM;
+    throwError(LUA_ERRMEM);
   }
 }
 
@@ -90,10 +90,10 @@ void *luaM_alloc_nocheck (size_t size) {
   assert(l_memcontrol.limitDisabled);
 
   uint8_t* buf = (uint8_t*)malloc(16 + size + MARKSIZE);
-  if (buf == NULL) return NULL;
+  assert(buf);
 
-  memset(buf + 16, -MARK, size);
-  memset(buf + 16 + size, MARK, MARKSIZE);
+  //memset(buf + 16, -MARK, size);
+  //memset(buf + 16 + size, MARK, MARKSIZE);
   l_memcontrol.alloc(size);
 
   if(thread_G) thread_G->incTotalBytes((int)size);
@@ -112,12 +112,10 @@ void luaM_free(void * blob) {
 
   if(thread_G) thread_G->incTotalBytes(-(int)block->size);
 
-  uint8_t* buf = reinterpret_cast<uint8_t*>(block);
-  uint8_t* mark = buf + 16 + block->size;
-  for (int i = 0; i < MARKSIZE; i++) assert(mark[i] == MARK);
+  //uint8_t* buf = reinterpret_cast<uint8_t*>(block);
+  //uint8_t* mark = buf + 16 + block->size;
+  //for (int i = 0; i < MARKSIZE; i++) assert(mark[i] == MARK);
   
-  memset(buf, -MARK, 16 + (size_t)block->size + MARKSIZE);
-
   free(block);
 }
 
