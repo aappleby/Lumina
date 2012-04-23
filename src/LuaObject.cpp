@@ -17,8 +17,6 @@ const LuaObject::Color LuaObject::colorB = WHITE1;
 
 void *luaM_alloc_ (size_t size, int type, int pool);
 
-int LuaObject::instanceCounts[256];
-
 LuaObject::LuaObject(LuaType type) {
 
   next_ = NULL;
@@ -27,12 +25,12 @@ LuaObject::LuaObject(LuaType type) {
   color_ = thread_G ? thread_G->livecolor : GRAY;
   type_ = type;
 
-  LuaObject::instanceCounts[type_]++;
+  if(thread_G) thread_G->instanceCounts[type_]++;
 }
 
 LuaObject::~LuaObject() {
   assert((thread_G == NULL) || (thread_G->isShuttingDown) || (color_ == thread_G->deadcolor));
-  LuaObject::instanceCounts[type_]--;
+  if(thread_G) thread_G->instanceCounts[type_]--;
 }
 
 void LuaObject::linkGC(LuaObject** gcHead) {

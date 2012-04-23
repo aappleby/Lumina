@@ -81,6 +81,8 @@ global_State::global_State()
 
   memset(tagmethod_names_,0,sizeof(tagmethod_names_));
   memset(base_metatables_,0,sizeof(base_metatables_));
+
+  memset(instanceCounts,0,sizeof(instanceCounts));
 }
 
 global_State::~global_State() {

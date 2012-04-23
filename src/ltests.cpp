@@ -445,7 +445,7 @@ static int mem_query (lua_State *L) {
     bool found = false;
     for (i = LUA_NUMTAGS - 1; i >= 0; i--) {
       if (strcmp(t, ttypename(i)) == 0) {
-        total += LuaObject::instanceCounts[i];
+        total += thread_G->instanceCounts[i];
         found = true;
       }
     }

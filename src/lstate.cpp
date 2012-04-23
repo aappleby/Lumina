@@ -31,6 +31,7 @@ static void close_state (lua_State *L) {
   L->stack_.closeUpvals(L->stack_.begin());
 
   // TODO(aappleby): grayagain_ and grayhead_ still have objects in them during destruction?
+
   thread_G->grayhead_.Clear();
   thread_G->grayagain_.Clear();
   thread_G->weak_.Clear();
@@ -56,26 +57,19 @@ static void close_state (lua_State *L) {
 
 lua_State *lua_newthread (lua_State *L) {
   THREAD_CHECK(L);
+  ScopedMemChecker c;
 
-  lua_State* L1 = NULL;
-  {
-    ScopedMemChecker c;
-    L1 = new lua_State(thread_G);
-    L1->linkGC(getGlobalGCHead());
+  lua_State* L1 = new lua_State(thread_G);
+  L1->linkGC(getGlobalGCHead());
 
-    L1->hookmask = L->hookmask;
-    L1->basehookcount = L->basehookcount;
-    L1->hook = L->hook;
-    L1->hookcount = L1->basehookcount;
-    
-    L->stack_.push(TValue(L1));
-  }
+  L1->hookmask = L->hookmask;
+  L1->basehookcount = L->basehookcount;
+  L1->hook = L->hook;
+  L1->hookcount = L1->basehookcount;
+  
+  L1->stack_.init();  /* init stack */
 
-  {
-    THREAD_CHANGE(L1);
-    ScopedMemChecker c;
-    L1->stack_.init();  /* init stack */
-  }
+  L->stack_.push(TValue(L1));
 
   return L1;
 }
@@ -92,37 +86,32 @@ lua_State *lua_newstate () {
   lua_State* L = new lua_State(g);
   thread_L = L;
 
+  L->stack_.init();  /* init stack */
+
+  g->init(L);
+  g->gcrunning = 1;  /* allow gc */
+
   l_memcontrol.enableLimit();
 
-  if(!l_memcontrol.limitDisabled && l_memcontrol.isOverLimit()) {
-    thread_G->isShuttingDown = true;
+  if(l_memcontrol.isOverLimit()) {
+    g->isShuttingDown = true;
 
+    thread_L = NULL;
     delete L;
-    delete g;
+
+    luaC_freeallobjects();
+
+    delete g->strings_;
+    g->strings_ = NULL;
+
+    assert(g->getTotalBytes() == sizeof(global_State));
+
+    delete thread_G;
+    thread_G = NULL;
+
     return NULL;
   }
 
-  {
-    GLOBAL_CHANGE(L);
-    L->next_ = NULL;
-
-    try {
-      THREAD_CHECK(L);
-
-      {
-        ScopedMemChecker c;
-        L->stack_.init();  /* init stack */
-
-        g->init(L);
-      }
-
-      g->gcrunning = 1;  /* allow gc */
-    }
-    catch(...) {
-      close_state(L);
-      L = NULL;
-    }
-  }
   return L;
 }
 

@@ -130,6 +130,8 @@ public:
   LuaAnchor* anchor_head_;
   LuaAnchor* anchor_tail_;
 
+  int instanceCounts[LUA_NUMTAGS];
+
 private:
 
   size_t totalbytes_;  /* number of bytes currently allocated - GCdebt */

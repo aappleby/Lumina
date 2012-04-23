@@ -109,8 +109,6 @@ public:
   LuaObject *next_;
   LuaObject *next_gray_;
 
-  static int instanceCounts[256];
-
 private:
   LuaType type_;
   uint8_t flags_;
