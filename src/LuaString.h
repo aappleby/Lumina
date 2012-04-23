@@ -7,16 +7,13 @@ class stringtable;
 /*
 ** Header for string value; string bytes follow the end of this structure
 */
-__declspec(align(8)) class TString : public LuaObject {
+class TString : public LuaObject {
 public:
 
   ~TString();
 
   size_t getLen() const { return len_; }
-
-  const char * c_str() const {
-    return buf_;
-  }
+  const char* c_str() const { return buf_; }
 
   int getReserved() const { return reserved_; }
   void setReserved(int r) { reserved_ = r; }
@@ -47,28 +44,17 @@ public:
   TString* Create(const char* str);
   TString* Create(const char* str, int len);
 
-  int getStringCount() const { return nuse_; }
-  int getHashSize() const { return (int)hash_.size(); }
-
-  // Used only by ltests.cpp
-  TString* getStringAt(int index) const {
-    return (TString*)hash_[index];
-  }
-
-  void resize(int newsize);
+  void Resize(int newsize);
+  void Shrink();
+  void Clear();
 
   bool Sweep(bool generational);
+  void RestartSweep();
 
-  void Shrink() {
-    ScopedMemChecker c;
-    if (nuse_ < (uint32_t)(hash_.size() / 2)) resize(hash_.size() / 2);
-  }
-
-  void RestartSweep() {
-    sweepCursor_ = 0;
-  }
-
-  void Clear();
+  // These are used only by ltests.cpp
+  int getStringCount() const { return nuse_; }
+  int getHashSize() const { return (int)hash_.size(); }
+  TString* getStringAt(int index) const { return (TString*)hash_[index]; }
 
 protected:
 

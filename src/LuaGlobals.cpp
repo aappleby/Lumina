@@ -104,7 +104,7 @@ void global_State::init(lua_State* mainthread2) {
 
   // Create global string table.
   strings_ = new stringtable();
-  strings_->resize(MINSTRTABSIZE);  /* initial size of string table */
+  strings_->Resize(MINSTRTABSIZE);  /* initial size of string table */
 
   // Create memory error message string.
   memerrmsg = strings_->Create(MEMERRMSG);

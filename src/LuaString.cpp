@@ -76,7 +76,7 @@ TString* stringtable::find(uint32_t hash, const char *str, size_t len) {
   return NULL;
 }
 
-void stringtable::resize(int newsize) {
+void stringtable::Resize(int newsize) {
   assert(l_memcontrol.limitDisabled);
 
   int oldsize = (int)hash_.size();
@@ -125,7 +125,7 @@ TString* stringtable::Create(const char *str, int len) {
   }
 
   if ((nuse_ >= (uint32_t)hash_.size()) && (hash_.size() <= MAX_INT/2)) {
-    resize(hash_.size() * 2);
+    Resize(hash_.size() * 2);
   }
   
   TString* new_string = new TString(hash, str, len);
@@ -166,6 +166,19 @@ bool stringtable::Sweep(bool generational) {
   sweepCursor_++;
 
   return sweepCursor_ == (int)hash_.size();
+}
+
+//-----------------------------------------------------------------------------
+
+void stringtable::Shrink() {
+  ScopedMemChecker c;
+  if (nuse_ < (uint32_t)(hash_.size() / 2)) {
+    Resize(hash_.size() / 2);
+  }
+}
+
+void stringtable::RestartSweep() {
+  sweepCursor_ = 0;
 }
 
 //-----------------------------------------------------------------------------
