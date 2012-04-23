@@ -321,27 +321,6 @@ static void convergeephemerons (global_State *g) {
 */
 
 
-/*
-** clear entries with unmarked keys from all weaktables in list.
-*/
-static void clearkeys (LuaObject* graylist) {
-  for (LuaObject* o = graylist; o != NULL; o = o->next_gray_) {
-    Table *h = dynamic_cast<Table*>(o);
-    h->SweepWhiteKeys();
-  }
-}
-
-/*
-** clear entries with unmarked values from all weaktables in list 'l' up
-** to element 'f'
-*/
-static void clearvalues (LuaObject *l, LuaObject *f) {
-  for (; l != f; l = l->next_gray_) {
-    Table *h = dynamic_cast<Table*>(l);
-    h->SweepWhiteVals();
-  }
-}
-
 static LuaObject **sweeplist (LuaObject **p, size_t count);
 
 

@@ -30,8 +30,8 @@ public:
   CallInfo* previous;
   CallInfo* next;  /* dynamic call link */
 
-  short nresults;  /* expected number of results from this function */
-  uint8_t callstatus;
+  int nresults;  /* expected number of results from this function */
+  int callstatus;
 
   // only for Lua functions
   const Instruction *savedpc;
@@ -42,8 +42,8 @@ public:
 
   ptrdiff_t old_func_;
   ptrdiff_t old_errfunc;
-  uint8_t old_allowhook;
-  uint8_t status;
+  int old_allowhook;
+  int status;
 
 protected:
 

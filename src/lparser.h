@@ -39,9 +39,9 @@ typedef enum {
 
 struct expdesc {
   expkind k;
-  short idx;  /* index (R/K) */
-  uint8_t tr;  /* table (register or upvalue) */
-  uint8_t vt;  /* whether 't' is register (VLOCAL) or upvalue (VUPVAL) */
+  int idx;  /* index (R/K) */
+  int tr;  /* table (register or upvalue) */
+  int vt;  /* whether 't' is register (VLOCAL) or upvalue (VUPVAL) */
   int info;  /* for generic use */
   lua_Number nval;  /* for VKNUM */
   int t;  /* patch list of `exit when true' */
@@ -60,7 +60,7 @@ struct Labeldesc {
   TString *name;  /* label identifier */
   int pc;  /* position in code */
   int line;  /* line where it appeared */
-  uint8_t nactvar;  /* local level where it appears in current block */
+  int nactvar;  /* local level where it appears in current block */
 };
 
 
@@ -104,10 +104,10 @@ public:
   int num_constants;  /* number of elements in `k' */
   int num_protos;  /* number of elements in `p' */
   int firstlocal;  /* index of first local var (in Dyndata array) */
-  short nlocvars;  /* number of elements in 'f->locvars' */
-  uint8_t nactvar;  /* number of active local variables */
-  uint8_t num_upvals;  /* number of upvalues */
-  uint8_t freereg;  /* first free register */
+  int nlocvars;  /* number of elements in 'f->locvars' */
+  int nactvar;  /* number of active local variables */
+  int num_upvals;  /* number of upvalues */
+  int freereg;  /* first free register */
 };
 
 

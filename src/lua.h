@@ -354,10 +354,10 @@ public:
   int currentline;	/* (l) */
   int linedefined;	/* (S) */
   int lastlinedefined;	/* (S) */
-  unsigned char nups;	/* (u) number of upvalues */
-  unsigned char nparams;/* (u) number of parameters */
-  char isvararg;        /* (u) */
-  char istailcall;	/* (t) */
+  int nups;	/* (u) number of upvalues */
+  int nparams;/* (u) number of parameters */
+  int isvararg;        /* (u) */
+  int istailcall;	/* (t) */
   char short_src[LUA_IDSIZE]; /* (S) */
   /* private part */
   CallInfo *i_ci;  /* active function */

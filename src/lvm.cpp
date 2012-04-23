@@ -53,7 +53,7 @@ int luaV_tostring (TValue* v) {
 static void traceexec (lua_State *L) {
   THREAD_CHECK(L);
   CallInfo *ci = L->stack_.callinfo_;
-  uint8_t mask = L->hookmask;
+  int mask = L->hookmask;
   if ((mask & LUA_MASKCOUNT) && L->hookcount == 0) {
     L->hookcount = L->basehookcount;
     luaD_hook(L, LUA_HOOKCOUNT, -1);
@@ -117,27 +117,6 @@ static void callTM3 (lua_State *L,
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - 3, 1, L->stack_.callinfo_->isLua());
   result = L->stack_.pop();
-}
-
-
-static void callTM0 (lua_State *L,
-                     const TValue* func,
-                     const TValue* arg1,
-                     const TValue* arg2,
-                     const TValue* arg3) {
-  THREAD_CHECK(L);
-  LuaResult result = LUA_OK;
-  {
-    ScopedMemChecker c;
-    L->stack_.push_nocheck(*func);
-    L->stack_.push_nocheck(*arg1);
-    L->stack_.push_nocheck(*arg2);
-    L->stack_.push_nocheck(*arg3);
-    result = L->stack_.reserve2(0);
-  }
-  handleResult(result);
-  /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->stack_.top_ - 4, 0, L->stack_.callinfo_->isLua());
 }
 
 static void callTM1 (lua_State *L,
@@ -745,9 +724,9 @@ void luaV_execute (lua_State *L) {
     uint32_t Bk = (i >> 23) & 0x000000FF;
     uint32_t C  = (i >> 14) & 0x000001FF;
     uint32_t Ck = (i >> 14) & 0x000000FF;
-    uint32_t Ax = (i >>  6) & 0x03FFFFFF;
+    //uint32_t Ax = (i >>  6) & 0x03FFFFFF;
     uint32_t Bx = (i >> 14) & 0x0003FFFF;
-    int32_t Bs = (int32_t)Bx - 0x1FFFF;
+    //int32_t Bs = (int32_t)Bx - 0x1FFFF;
 
     /* WARNING: several calls may realloc the stack and invalidate `ra' */
     base = ci->getBase();
@@ -761,7 +740,7 @@ void luaV_execute (lua_State *L) {
     //assert(base <= L->stack_.top_ && L->stack_.top_ < L->stack_.end());
     StkId ra = &base[A];
 
-    switch(GET_OPCODE(i)) {
+    switch(opcode) {
       case OP_MOVE:
         {
           base[A] = base[B];
@@ -1035,7 +1014,7 @@ void luaV_execute (lua_State *L) {
 
           int result = luaV_lessthan(L, rb, rc);
 
-          if (result != A) ci->savedpc++;
+          if (result != (int)A) ci->savedpc++;
           break;
         }
 
@@ -1046,7 +1025,7 @@ void luaV_execute (lua_State *L) {
 
           int result = luaV_lessequal(L, rb, rc);
 
-          if (result != A) ci->savedpc++;
+          if (result != (int)A) ci->savedpc++;
           break;
         }
 

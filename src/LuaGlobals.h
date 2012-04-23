@@ -85,9 +85,9 @@ public:
   LuaObject::Color livecolor;
   LuaObject::Color deadcolor;
 
-  uint8_t gcstate;  /* state of garbage collector */
-  uint8_t gckind;  /* kind of GC running */
-  uint8_t gcrunning;  /* true if GC is running */
+  int gcstate;  /* state of garbage collector */
+  int gckind;  /* kind of GC running */
+  int gcrunning;  /* true if GC is running */
 
   LuaObject *allgc;  /* list of all collectable objects */
   LuaObject **sweepgc;  /* current position of sweep */
@@ -117,7 +117,7 @@ public:
   TString *tagmethod_names_[TM_N];  /* array with tag-method names */
   Table *base_metatables_[LUA_NUMTAGS];  /* metatables for basic types */
 
-  uint8_t isShuttingDown;
+  int isShuttingDown;
 
   int call_depth_;
 

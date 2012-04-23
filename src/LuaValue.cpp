@@ -78,7 +78,7 @@ bool TValue::isLiveColor() const {
 }
 
 uint32_t TValue::hashValue() const {
-  return hash64(lowbytes_, highbytes_);
+  return hash64(twobytes.lowbytes_, twobytes.highbytes_);
 }
 
 extern char** luaT_typenames;

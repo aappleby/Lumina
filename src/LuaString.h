@@ -18,8 +18,8 @@ public:
     return buf_;
   }
 
-  uint8_t getReserved() const { return reserved_; }
-  void setReserved(uint8_t r) { reserved_ = r; }
+  int getReserved() const { return reserved_; }
+  void setReserved(int r) { reserved_ = r; }
 
   virtual void VisitGC(GCVisitor& visitor);
   virtual int PropagateGC(GCVisitor& visitor);
@@ -32,7 +32,7 @@ protected:
   friend class stringtable;
 
   char* buf_;
-  uint8_t reserved_;
+  int reserved_;
   uint32_t hash_;
   size_t len_;  /* number of characters in string */
 

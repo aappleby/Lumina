@@ -40,11 +40,11 @@
 class BlockCnt {
 public:
   BlockCnt *previous;  /* chain */
-  short firstlabel;  /* index of first label in this block */
-  short firstgoto;  /* index of first pending goto in this block */
-  uint8_t nactvar;  /* # active locals outside the block */
-  uint8_t upval;  /* true if some variable in the block is an upvalue */
-  uint8_t isloop;  /* true if `block' is a loop */
+  int firstlabel;  /* index of first label in this block */
+  int firstgoto;  /* index of first pending goto in this block */
+  int nactvar;  /* # active locals outside the block */
+  int upval;  /* true if some variable in the block is an upvalue */
+  int isloop;  /* true if `block' is a loop */
 };
 
 
@@ -237,7 +237,7 @@ static int newupvalue (FuncState *fs, TString *name, expdesc *v) {
   Proto *f = fs->f;
   int oldsize = (int)f->upvalues.size();
   checklimit(fs, fs->num_upvals + 1, MAXUPVAL, "upvalues");
-  if(fs->num_upvals >= f->upvalues.size()) {
+  if(fs->num_upvals >= (int)f->upvalues.size()) {
     ScopedMemChecker c;
     f->upvalues.grow();
   }

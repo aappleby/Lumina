@@ -463,7 +463,7 @@ static void resume (lua_State *L, void *ud) {
 }
 
 
-int lua_resume (lua_State *L, lua_State *from, int nargs) {
+int lua_resume (lua_State *L, lua_State * /*from*/, int nargs) {
   THREAD_CHECK(L);
   L->nonyieldable_count_ = 0;  /* allow yields */
   L->stack_.checkArgs((L->status == LUA_OK) ? nargs + 1 : nargs);

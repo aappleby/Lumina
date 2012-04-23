@@ -5,8 +5,8 @@
 
 struct LuaExecutionState {
   CallInfo*  callinfo_;
-  uint8_t    allowhook;
-  uint16_t   nonyieldable_count_;
+  int allowhook;
+  int nonyieldable_count_;
   ptrdiff_t  errfunc;
   ptrdiff_t  old_top;
 };
@@ -26,17 +26,17 @@ public:
   LuaExecutionState saveState(StkId top);
   void restoreState(LuaExecutionState s, int status, int nresults);
 
-  uint8_t status;
+  int status;
   global_State *l_G;
 
   const Instruction *oldpc;  /* last pc traced */
 
   LuaStack stack_;
 
-  unsigned short nonyieldable_count_;  /* number of non-yieldable calls in stack */
+  int nonyieldable_count_;  /* number of non-yieldable calls in stack */
 
-  uint8_t hookmask;
-  uint8_t allowhook;
+  int hookmask;
+  int allowhook;
   int basehookcount;
   int hookcount;
   lua_Hook hook;

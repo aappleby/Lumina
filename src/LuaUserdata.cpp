@@ -27,7 +27,7 @@ void Udata::VisitGC(GCVisitor& visitor) {
   return;
 }
 
-int Udata::PropagateGC(GCVisitor& visitor) {
+int Udata::PropagateGC(GCVisitor&) {
   assert(false);
   return 0;
 }

@@ -45,7 +45,7 @@ void TString::VisitGC(GCVisitor&) {
   setColor(GRAY);
 }
 
-int TString::PropagateGC(GCVisitor& visitor) {
+int TString::PropagateGC(GCVisitor&) {
   assert(false);
   return 0;
 }
@@ -165,7 +165,7 @@ bool stringtable::Sweep(bool generational) {
 
   sweepCursor_++;
 
-  return sweepCursor_ == hash_.size();
+  return sweepCursor_ == (int)hash_.size();
 }
 
 //-----------------------------------------------------------------------------

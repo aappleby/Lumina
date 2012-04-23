@@ -1172,7 +1172,6 @@ int lua_error (lua_State *L) {
   THREAD_CHECK(L);
   L->stack_.checkArgs(1);
   luaG_errormsg();
-  return 0;  /* to avoid warnings */
 }
 
 int lua_next (lua_State* L, int idx) {
@@ -1186,7 +1185,6 @@ int lua_next (lua_State* L, int idx) {
     bool found = t->keyToTableIndex(key,start);
     if(!found) {
       luaG_runerror("invalid key to 'next'");
-      return 0;
     }
   }
 

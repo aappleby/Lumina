@@ -113,12 +113,12 @@ bool LuaObject::isBlack() {
   return color_ == BLACK; 
 }
 
-void LuaObject::VisitGC(GCVisitor& visitor) {
+void LuaObject::VisitGC(GCVisitor&) {
   // Should never be visiting the base class
   assert(false);
 }
 
-int LuaObject::PropagateGC(GCVisitor& visitor) {
+int LuaObject::PropagateGC(GCVisitor&) {
   // Should never be propagating GC through the base class.
   assert(false);
   return 0;

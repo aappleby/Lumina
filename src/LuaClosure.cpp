@@ -53,7 +53,7 @@ int Closure::PropagateGC(GCVisitor& visitor) {
     }
   }
   else {
-    assert(nupvalues == proto_->upvalues.size());
+    assert(nupvalues == (int)proto_->upvalues.size());
     visitor.MarkObject(proto_);
     for (int i=0; i< nupvalues; i++) {
       visitor.MarkObject(ppupvals_[i]);

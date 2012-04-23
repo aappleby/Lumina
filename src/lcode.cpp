@@ -320,7 +320,6 @@ static void freeexp (FuncState *fs, expdesc *e) {
 
 static int addk (FuncState *fs, TValue *key, TValue *v) {
   THREAD_CHECK(fs->ls->L);
-  lua_State *L = fs->ls->L;
   TValue idx = fs->constant_map->get(*key);
   Proto *f = fs->f;
   int k, oldsize;

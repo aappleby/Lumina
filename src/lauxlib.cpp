@@ -669,12 +669,11 @@ static int errfile (lua_State *L, const char *what, int fnameindex) {
 
 static int skipBOM (LoadF *lf) {
   const char *p = "\xEF\xBB\xBF";  /* Utf8 BOM mark */
-  int c;
   lf->n = 0;
   do {
-    c = getc(lf->f);
+    int c = getc(lf->f);
     if (c == EOF || c != *(unsigned char *)p++) return c;
-    lf->buff[lf->n++] = c;  /* to be read by the parser */
+    lf->buff[lf->n++] = (char)c;  /* to be read by the parser */
   } while (*p != '\0');
   lf->n = 0;  /* prefix matched; discard it */
   return getc(lf->f);  /* return next character */
@@ -722,8 +721,10 @@ int luaL_loadfilex (lua_State *L, const char *filename,
     if (lf.f == NULL) return errfile(L, "reopen", fnameindex);
     skipcomment(&lf, &c);  /* re-read initial portion */
   }
-  if (c != EOF)
-    lf.buff[lf.n++] = c;  /* 'c' is the first character of the stream */
+  if (c != EOF) {
+    // 'c' is the first character of the stream
+    lf.buff[lf.n++] = (char)c;  
+  }
   status = lua_load(L, getF, &lf, lua_tostring(L, -1), mode);
   readstatus = ferror(lf.f);
   if (filename) fclose(lf.f);  /* close file (even in case of errors) */

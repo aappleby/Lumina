@@ -51,7 +51,8 @@ static int tpanic (lua_State *L) {
   THREAD_CHECK(L);
   fprintf(stderr, "PANIC: unprotected error in call to Lua API (%s)\n",
                    lua_tostring(L, -1));
-  return (exit(EXIT_FAILURE), 0);  /* do not return to Lua */
+  // do not return to Lua
+  exit(EXIT_FAILURE);
 }
 
 
@@ -166,7 +167,7 @@ static void checkCClosure (global_State *g, Closure *cl) {
 
 static void checkLClosure (global_State *g, Closure *cl) {
   int i;
-  assert(cl->nupvalues == cl->proto_->upvalues.size());
+  assert(cl->nupvalues == (int)cl->proto_->upvalues.size());
   checkobjref(g, cl, cl->proto_);
   for (i=0; i<cl->nupvalues; i++) {
     if (cl->ppupvals_[i]) {
@@ -1260,7 +1261,6 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
       luaL_error(L, "unknown instruction %s", buff);
     }
   }
-  return 0;
 }
 
 

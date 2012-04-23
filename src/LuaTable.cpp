@@ -349,7 +349,7 @@ int Table::resize(int nasize, int nhsize) {
   assert(l_memcontrol.limitDisabled);
 
   int oldasize = (int)array_.size();
-  int oldhsize = (int)hash_.size();
+  //int oldhsize = (int)hash_.size();
 
   // Allocate temporary storage for the resize before we modify the table
   LuaVector<Node> temphash;

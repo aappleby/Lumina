@@ -39,7 +39,7 @@ void UpVal::VisitGC(GCVisitor& visitor) {
   }
 }
 
-int UpVal::PropagateGC(GCVisitor& visitor) {
+int UpVal::PropagateGC(GCVisitor&) {
   assert(false);
   return 0;
 }

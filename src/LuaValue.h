@@ -162,7 +162,7 @@ private:
     struct {
       uint32_t lowbytes_;
       uint32_t highbytes_;
-    };
+    } twobytes;
   };
 
   LuaType type_;
