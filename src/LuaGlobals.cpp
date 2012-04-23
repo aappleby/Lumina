@@ -150,23 +150,23 @@ void global_State::incGCDebt(int debt) {
 }
 
 void global_State::PushGray(LuaObject* o) {
-  grayhead_.Push(o);
+  gc_.grayhead_.Push(o);
 }
 
 void global_State::PushGrayAgain(LuaObject* o) {
-  grayagain_.Push(o);
+  gc_.grayagain_.Push(o);
 }
 
 void global_State::PushWeak(LuaObject* o) {
-  weak_.Push(o);
+  gc_.weak_.Push(o);
 }
 
 void global_State::PushAllWeak(LuaObject* o) {
-  allweak_.Push(o);
+  gc_.allweak_.Push(o);
 }
 
 void global_State::PushEphemeron(LuaObject* o) {
-  ephemeron_.Push(o);
+  gc_.ephemeron_.Push(o);
 }
 
 

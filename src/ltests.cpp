@@ -247,13 +247,12 @@ void CheckGraylistCB(LuaObject* o) {
   o = o->next_gray_;
 }
 
-static void markgrays (global_State *g) {
-  if (!keepinvariant(g)) return;
-  g->grayhead_.Traverse(CheckGraylistCB);
-  g->grayagain_.Traverse(CheckGraylistCB);
-  g->weak_.Traverse(CheckGraylistCB);
-  g->ephemeron_.Traverse(CheckGraylistCB);
-  g->allweak_.Traverse(CheckGraylistCB);
+static void markTestGrays (global_State *g) {
+  g->gc_.grayhead_.Traverse(CheckGraylistCB);
+  g->gc_.grayagain_.Traverse(CheckGraylistCB);
+  g->gc_.weak_.Traverse(CheckGraylistCB);
+  g->gc_.ephemeron_.Traverse(CheckGraylistCB);
+  g->gc_.allweak_.Traverse(CheckGraylistCB);
 }
 
 
@@ -287,8 +286,12 @@ int lua_checkmemory (lua_State *L) {
   assert(!g->l_registry.getObject()->isDead());
   g->mainthread->sanityCheck();
   g->mainthread->clearTestGray();
+  
   /* check 'allgc' list */
-  markgrays(g);
+  if (keepinvariant(g)) {
+    markTestGrays(g);
+  }
+
   checkold(g, g->allgc);
   for (o = g->allgc; o != NULL; o = o->next_) {
     checkobject(g, o);

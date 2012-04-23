@@ -1,6 +1,7 @@
 #pragma once
-#include "LuaTypes.h"
+
 #include "LuaBuffer.h"
+#include "LuaCollector.h"
 #include "LuaList.h"
 #include "LuaUpval.h" // for uvhead
 #include "LuaValue.h" // for l_registry
@@ -96,12 +97,15 @@ public:
   LuaList tobefnz;  /* list of userdata to be GC */
 
   // Gray lists
+  /*
   LuaGraylist grayhead_;  // Topmost list of gray objects
-
   LuaGraylist grayagain_; // list of objects to be traversed atomically
   LuaGraylist weak_;      // list of tables with weak values
   LuaGraylist ephemeron_; // list of ephemeron tables (weak keys)
   LuaGraylist allweak_;   // list of all-weak tables
+  */
+
+  LuaCollector gc_;
 
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
   Mbuffer buff;  /* temporary buffer for string concatenation */
