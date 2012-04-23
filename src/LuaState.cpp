@@ -41,6 +41,13 @@ lua_State::lua_State(global_State* g) : LuaObject(LUA_TTHREAD) {
 }
 
 lua_State::~lua_State() {
+
+  if(l_G) {
+    if(this == l_G->mainthread) {
+      l_G->mainthread = NULL;
+    }
+  }
+
   if(!stack_.empty()) {
     stack_.closeUpvals(stack_.begin());
   }

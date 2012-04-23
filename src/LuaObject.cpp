@@ -29,7 +29,6 @@ LuaObject::LuaObject(LuaType type) {
 }
 
 LuaObject::~LuaObject() {
-  assert((thread_G == NULL) || (thread_G->isShuttingDown) || (color_ == thread_G->deadcolor));
   if(thread_G) thread_G->instanceCounts[type_]--;
 }
 

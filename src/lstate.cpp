@@ -25,8 +25,6 @@
 static void close_state (lua_State *L) {
   THREAD_CHECK(L);
 
-  thread_G->isShuttingDown = true;
-
   // close all upvalues for this thread
   L->stack_.closeUpvals(L->stack_.begin());
 
@@ -89,12 +87,10 @@ lua_State *lua_newstate () {
   L->stack_.init();  /* init stack */
 
   g->init(L);
-  g->gcrunning = 1;  /* allow gc */
 
   l_memcontrol.enableLimit();
 
   if(l_memcontrol.isOverLimit()) {
-    g->isShuttingDown = true;
 
     thread_L = NULL;
     delete L;

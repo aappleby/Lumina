@@ -47,7 +47,6 @@ global_State::global_State()
 : uvhead(NULL)
 {
   GCdebt_ = 0;
-  isShuttingDown = false;
   totalbytes_ = sizeof(global_State);
   call_depth_ = 0;
 
@@ -86,6 +85,8 @@ global_State::global_State()
 }
 
 global_State::~global_State() {
+  assert(mainthread == NULL);
+
   assert(anchor_head_ == NULL);
   assert(anchor_tail_ == NULL);
 }
@@ -125,6 +126,9 @@ void global_State::init(lua_State* mainthread2) {
     ts->setFixed();
     ts->setReserved(i+1);
   }
+
+  // Global state has been created, start up the garbage collector.
+  gcrunning = 1;
 }
 
 void global_State::setGCDebt(size_t debt) {

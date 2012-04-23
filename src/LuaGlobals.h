@@ -117,8 +117,6 @@ public:
   TString *tagmethod_names_[TM_N];  /* array with tag-method names */
   Table *base_metatables_[LUA_NUMTAGS];  /* metatables for basic types */
 
-  int isShuttingDown;
-
   int call_depth_;
 
   void PushGray(LuaObject* o);
