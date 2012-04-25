@@ -29,7 +29,7 @@
 #endif
 
 /*
-** Bits in CallInfo status
+** Bits in LuaStackFrame status
 */
 #define CIST_LUA	(1<<0)	/* call is running a Lua function */
 #define CIST_HOOKED	(1<<1)	/* call is running a debug hook */

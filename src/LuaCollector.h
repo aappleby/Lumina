@@ -27,16 +27,16 @@ public:
   LuaGraylist allweak_;   // list of all-weak tables
 };
 
-class GCVisitor {
+class LuaGCVisitor {
 public:
 
-  GCVisitor(LuaCollector* parent)
+  LuaGCVisitor(LuaCollector* parent)
   : parent_(parent),
     mark_count_(0)
   {
   }
 
-  void MarkValue     (TValue v);
+  void MarkValue     (LuaValue v);
   void MarkObject    (LuaObject* o);
 
   void PushGray      (LuaObject* o);

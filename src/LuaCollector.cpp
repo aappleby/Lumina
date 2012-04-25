@@ -1,7 +1,7 @@
 #include "LuaCollector.h"
 
 #include "LuaGlobals.h"
-#include "LuaObject.h" // for GCVisitor
+#include "LuaObject.h" // for LuaGCVisitor
 #include "LuaValue.h"
 
 void LuaCollector::ClearGraylists() {
@@ -26,7 +26,7 @@ void LuaCollector::RetraverseGrays() {
   old_grayagain.Swap(grayagain_);
   old_ephemeron.Swap(ephemeron_);
   
-  GCVisitor v(this);
+  LuaGCVisitor v(this);
 
   grayhead_.PropagateGC(v);
   old_grayagain.PropagateGC(v);
@@ -45,7 +45,7 @@ void LuaCollector::ConvergeEphemerons() {
     while(!old_ephemeron.isEmpty()) {
 
       LuaObject* o = old_ephemeron.Pop();
-      GCVisitor v(this);
+      LuaGCVisitor v(this);
       o->PropagateGC(v);
 
       // If propagating through the ephemeron table turned any objects gray,
@@ -62,13 +62,13 @@ void LuaCollector::ConvergeEphemerons() {
 
 //------------------------------------------------------------------------------
 
-void GCVisitor::MarkValue(TValue v) {
+void LuaGCVisitor::MarkValue(LuaValue v) {
   if(v.isCollectable()) {
     MarkObject(v.getObject());
   }
 }
 
-void GCVisitor::MarkObject(LuaObject* o) {
+void LuaGCVisitor::MarkObject(LuaObject* o) {
   if(o == NULL) return;
   if(o->isGray()) {
     return;
@@ -89,23 +89,23 @@ void GCVisitor::MarkObject(LuaObject* o) {
 
 //------------------------------------------------------------------------------
 
-void GCVisitor::PushGray(LuaObject* o) {
+void LuaGCVisitor::PushGray(LuaObject* o) {
   parent_->grayhead_.Push(o);
 }
 
-void GCVisitor::PushGrayAgain(LuaObject* o) {
+void LuaGCVisitor::PushGrayAgain(LuaObject* o) {
   parent_->grayagain_.Push(o);
 }
 
-void GCVisitor::PushWeak(LuaObject* o) {
+void LuaGCVisitor::PushWeak(LuaObject* o) {
   parent_->weak_.Push(o);
 }
 
-void GCVisitor::PushAllWeak(LuaObject* o) {
+void LuaGCVisitor::PushAllWeak(LuaObject* o) {
   parent_->allweak_.Push(o);
 }
 
-void GCVisitor::PushEphemeron(LuaObject* o) {
+void LuaGCVisitor::PushEphemeron(LuaObject* o) {
   parent_->ephemeron_.Push(o);
 }
 

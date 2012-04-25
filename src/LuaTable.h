@@ -3,12 +3,12 @@
 #include "LuaValue.h"
 #include "LuaVector.h"
 
-class Table;
+class LuaTable;
 
-class Table : public LuaObject {
+class LuaTable : public LuaObject {
 public:
 
-  Table(int arrayLength = 0, int hashLength = 0);
+  LuaTable(int arrayLength = 0, int hashLength = 0);
 
   int getLength() const;
 
@@ -17,8 +17,8 @@ public:
 
   // Converts key to/from linear table index.
   int  getTableIndexSize  () const;
-  bool keyToTableIndex    (TValue key, int& outIndex);
-  bool tableIndexToKeyVal (int index, TValue& outKey, TValue& outValue);
+  bool keyToTableIndex    (LuaValue key, int& outIndex);
+  bool tableIndexToKeyVal (int index, LuaValue& outKey, LuaValue& outValue);
 
   // Would be nice if I could remove these, but nextvar.lua fails
   // if I remove the optimization in OP_SETLIST that uses them.
@@ -26,8 +26,8 @@ public:
   int getHashSize() const { return (int)hash_.size(); }
 
   // Main get/set methods, which we'll gradually be transitioning to.
-  TValue get(TValue key) const;
-  int    set(TValue key, TValue val);
+  LuaValue get(LuaValue key) const;
+  int    set(LuaValue key, LuaValue val);
   
   // This is used in a few places
   int resize(int arrayssize, int hashsize);
@@ -38,11 +38,11 @@ public:
   int getArraySize() { return (int)array_.size(); }
   int getHashSize()  { return (int)hash_.size(); }
 
-  void getArrayElement ( int index, TValue& outVal ) {
+  void getArrayElement ( int index, LuaValue& outVal ) {
     outVal = array_[index];
   }
 
-  void getHashElement ( int index, TValue& outKey, TValue& outVal ) {
+  void getHashElement ( int index, LuaValue& outKey, LuaValue& outVal ) {
     outKey = hash_[index].i_key;
     outVal = hash_[index].i_val;
   }
@@ -50,12 +50,12 @@ public:
   //----------
   // Garbage collection support, should probably be split out into a subclass
 
-  virtual void VisitGC(GCVisitor& visitor);
-  virtual int PropagateGC(GCVisitor& visitor);
+  virtual void VisitGC(LuaGCVisitor& visitor);
+  virtual int PropagateGC(LuaGCVisitor& visitor);
 
-  int PropagateGC_Strong(GCVisitor& visitor);
-  int PropagateGC_WeakValues(GCVisitor& visitor);
-  int PropagateGC_Ephemeron(GCVisitor& visitor);
+  int PropagateGC_Strong(LuaGCVisitor& visitor);
+  int PropagateGC_WeakValues(LuaGCVisitor& visitor);
+  int PropagateGC_Ephemeron(LuaGCVisitor& visitor);
 
   void SweepWhite();
   void SweepWhiteKeys();
@@ -64,49 +64,49 @@ public:
   //----------
   // Visitor pattern stuff. Used in ltests.cpp
 
-  typedef void (*nodeCallback)(const TValue& key, const TValue& value, void* blob);
-  int traverse(Table::nodeCallback c, void* blob);
+  typedef void (*nodeCallback)(const LuaValue& key, const LuaValue& value, void* blob);
+  int traverse(LuaTable::nodeCallback c, void* blob);
 
   //----------
 
-  Table *metatable;
+  LuaTable *metatable;
 
 protected:
 
   class Node {
   public:
-    TValue i_val;
-    TValue i_key;
+    LuaValue i_val;
+    LuaValue i_key;
     Node *next;  /* for chaining */
   };
 
-  LuaVector<TValue> array_;
+  LuaVector<LuaValue> array_;
   LuaVector<Node> hash_;
 
   int lastfree;
 
   // Returns the node matching the key.
-  Node* findNode(TValue key);
+  Node* findNode(LuaValue key);
   Node* findNode(int key);
 
   // Returns the node where the key would go.
-  Node* findBin(TValue key);
+  Node* findBin(LuaValue key);
   Node* findBin(int key);
 
   //----------
 
   Node* getFreeNode();
 
-  void computeOptimalSizes(TValue newkey, int& arraysize, int& hashsize);
+  void computeOptimalSizes(LuaValue newkey, int& arraysize, int& hashsize);
 
-  TValue* newKey(const TValue* key);
+  LuaValue* newKey(const LuaValue* key);
 
   //----------
 
   /*
-  typedef void (*valueCallback)(TValue* v, void* blob);
+  typedef void (*valueCallback)(LuaValue* v, void* blob);
 
-  int traverseNodes(Table::nodeCallback c, void* blob);
-  int traverseArray(Table::valueCallback c, void* blob);
+  int traverseNodes(LuaTable::nodeCallback c, void* blob);
+  int traverseArray(LuaTable::valueCallback c, void* blob);
   */
 };

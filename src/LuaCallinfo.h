@@ -10,7 +10,7 @@ class LuaStack;
 /*
 ** information about a call
 */
-class CallInfo : public LuaBase {
+class LuaStackFrame : public LuaBase {
 public:
 
   void sanityCheck();
@@ -23,12 +23,12 @@ public:
   const StkId getTop() const  { return stack_->begin() + top_index_; }
   const StkId getBase() const { return stack_->begin() + base_index_; }
 
-  void setFunc(StkId func) { func_index_ = func - stack_->begin(); }
-  void setTop(StkId top)   { top_index_ = top - stack_->begin(); }
-  void setBase(StkId base) { base_index_ = base - stack_->begin(); }
+  void setFunc(StkId func) { func_index_ = int(func - stack_->begin()); }
+  void setTop(StkId top)   { top_index_ = int(top - stack_->begin()); }
+  void setBase(StkId base) { base_index_ = int(base - stack_->begin()); }
 
-  CallInfo* previous;
-  CallInfo* next;  /* dynamic call link */
+  LuaStackFrame* previous;
+  LuaStackFrame* next;  /* dynamic call link */
 
   int nresults;  /* expected number of results from this function */
   int callstatus;
@@ -37,7 +37,7 @@ public:
   const Instruction *savedpc;
 
   // only for C functions
-  lua_CFunction continuation_;  /* continuation in case of yields */
+  LuaCallback continuation_;  /* continuation in case of yields */
   int continuation_context_;  /* context info. in case of yields */
 
   ptrdiff_t old_func_;
@@ -47,7 +47,7 @@ public:
 
 protected:
 
-  CallInfo() {
+  LuaStackFrame() {
     stack_ = NULL;
     func_index_ = 0;
     top_index_ = 0;
@@ -66,7 +66,7 @@ protected:
     old_allowhook = 0;
     status = 0;
   }
-  ~CallInfo() {}
+  ~LuaStackFrame() {}
 
   friend class LuaStack;
 

@@ -11,7 +11,7 @@
 
 LuaStack::LuaStack() {
   top_ = NULL;
-  callinfo_head_ = new CallInfo();
+  callinfo_head_ = new LuaStackFrame();
   callinfo_head_->stack_ = this;
   callinfo_ = callinfo_head_;
   open_upvals_ = NULL;
@@ -34,7 +34,7 @@ void LuaStack::init() {
   top_ = begin();
 
   /* initialize first ci */
-  CallInfo* ci = callinfo_head_;
+  LuaStackFrame* ci = callinfo_head_;
   ci->next = ci->previous = NULL;
   ci->callstatus = 0;
   ci->setFunc(getTop());
@@ -54,7 +54,7 @@ void LuaStack::realloc (int newsize) {
   // Remember where the old stack was. This will be a dangling pointer
   // after the resize, but that's OK as we only use it to fix up the
   // existing pointers - it doesn't get dereferenced.
-  TValue *oldstack = begin();
+  LuaValue *oldstack = begin();
 
   // Resize the stack array. but do not check to see if we've exceeded
   // our memory limit.
@@ -65,13 +65,13 @@ void LuaStack::realloc (int newsize) {
   
   // Correct all stack references in open upvalues.
   for (LuaObject* up = open_upvals_; up != NULL; up = up->next_) {
-    UpVal* uv = static_cast<UpVal*>(up);
+    LuaUpvalue* uv = static_cast<LuaUpvalue*>(up);
     uv->v = (uv->v - oldstack) + begin();
   }
   
   // Correct all stack references in all active callinfos.
   /*
-  for (CallInfo* ci = callinfo_; ci != NULL; ci = ci->previous) {
+  for (LuaStackFrame* ci = callinfo_; ci != NULL; ci = ci->previous) {
     ci->setTop( (ci->getTop() - oldstack) + begin() );
     ci->setFunc( (ci->getFunc() - oldstack) + begin() );
     if ((ci->callstatus & CIST_LUA)) {
@@ -93,9 +93,9 @@ void LuaStack::free() {
   
   // free the entire 'ci' list
   callinfo_ = callinfo_head_;
-  CallInfo *ci = callinfo_head_->next;
+  LuaStackFrame *ci = callinfo_head_->next;
   while (ci != NULL) {
-    CallInfo* next = ci->next;
+    LuaStackFrame* next = ci->next;
     luaM_free(ci);
     ci = next;
   }
@@ -167,7 +167,7 @@ LuaResult LuaStack::reserve2(int newsize) {
 // top of the stack _plus_ anything referenced by an active callinfo.
 
 int LuaStack::countInUse() {
-  CallInfo *temp_ci;
+  LuaStackFrame *temp_ci;
   StkId lim = top_;
   for (temp_ci = callinfo_; temp_ci != NULL; temp_ci = temp_ci->previous) {
     assert(temp_ci->getTop() <= last());
@@ -184,12 +184,12 @@ int LuaStack::countInUse() {
 // Negative stack indices are indexed from the stack top.
 // Negative indices less than or equal to LUA_REGISTRYINDEX are special.
 
-TValue LuaStack::at(int idx) {
+LuaValue LuaStack::at(int idx) {
   if (idx > 0) {
-    TValue *o = callinfo_->getFunc() + idx;
+    LuaValue *o = callinfo_->getFunc() + idx;
     if (o >= top_) {
       assert(false);
-      return TValue::None();
+      return LuaValue::None();
     }
     else return *o;
   }
@@ -208,22 +208,22 @@ TValue LuaStack::at(int idx) {
     // can't assert here, some test code is intentionally trying to do this and
     // expecting to fail.
     //assert(false);
-    return TValue::None();
+    return LuaValue::None();
   }
 
   idx = LUA_REGISTRYINDEX - idx - 1;
 
-  Closure* func = callinfo_->getFunc()->getCClosure();
+  LuaClosure* func = callinfo_->getFunc()->getCClosure();
   if(idx < func->nupvalues) {
     return func->pupvals_[idx];
   }
 
   // Invalid stack index.
   assert(false);
-  return TValue::None();
+  return LuaValue::None();
 }
 
-TValue LuaStack::at_frame(int idx) {
+LuaValue LuaStack::at_frame(int idx) {
   assert(idx > LUA_REGISTRYINDEX);
   assert(idx < (top_ - callinfo_->getFunc()));
 
@@ -238,8 +238,8 @@ TValue LuaStack::at_frame(int idx) {
 //------------------------------------------------------------------------------
 
 void LuaStack::copy(int index) {
-  TValue v = at(index);
-  if(v.isNone()) v = TValue::Nil();
+  LuaValue v = at(index);
+  if(v.isNone()) v = LuaValue::Nil();
   push(v);
 }
 
@@ -249,31 +249,31 @@ void LuaStack::copy_frame(int index) {
 
 //------------------------------------------------------------------------------
 
-void LuaStack::push(TValue v) {
+void LuaStack::push(LuaValue v) {
   top_[0] = v;
   top_++;
   assert((top_ <= callinfo_->getTop()) && "stack overflow");
 }
 
-void LuaStack::push(const TValue* v) {
+void LuaStack::push(const LuaValue* v) {
   top_[0] = *v;
   top_++;
   assert((top_ <= callinfo_->getTop()) && "stack overflow");
 }
 
-LuaResult LuaStack::push_reserve2(TValue v) {
+LuaResult LuaStack::push_reserve2(LuaValue v) {
   assert(l_memcontrol.limitDisabled);
   top_[0] = v;
   top_++;
   return reserve2(0);
 }
 
-void LuaStack::push_nocheck(TValue v) {
+void LuaStack::push_nocheck(LuaValue v) {
   top_[0] = v;
   top_++;
 }
 
-TValue LuaStack::pop() {
+LuaValue LuaStack::pop() {
   top_--;
   return *top_;
 }
@@ -301,7 +301,7 @@ void LuaStack::insert(int idx) {
 
 void LuaStack::remove(int index) {
   assert(index > LUA_REGISTRYINDEX);
-  TValue* p = (index > 0) ? &callinfo_->getFunc()[index] : &top_[index];
+  LuaValue* p = (index > 0) ? &callinfo_->getFunc()[index] : &top_[index];
   while (++p < top_) {
     p[-1] = p[0];
   }
@@ -321,7 +321,7 @@ void LuaStack::setTopIndex(int idx) {
   if (idx >= 0) {
     assert((idx <= last() - (func + 1)) && "new top too large");
     while (top_ < (func + 1) + idx) {
-      push(TValue::Nil());
+      push(LuaValue::Nil());
     }
     top_ = (func + 1) + idx;
   }
@@ -340,9 +340,9 @@ void LuaStack::checkArgs(int count) {
 
 //------------------------------------------------------------------------------
 
-CallInfo* LuaStack::extendCallinfo() {
+LuaStackFrame* LuaStack::extendCallinfo() {
   assert(l_memcontrol.limitDisabled);
-  CallInfo *ci = new CallInfo();
+  LuaStackFrame *ci = new LuaStackFrame();
   ci->stack_ = this;
   assert(callinfo_->next == NULL);
   callinfo_->next = ci;
@@ -351,7 +351,7 @@ CallInfo* LuaStack::extendCallinfo() {
   return ci;
 }
 
-CallInfo* LuaStack::nextCallinfo() {
+LuaStackFrame* LuaStack::nextCallinfo() {
   assert(l_memcontrol.limitDisabled);
   if(callinfo_->next == NULL) {
     callinfo_ = extendCallinfo();
@@ -362,8 +362,8 @@ CallInfo* LuaStack::nextCallinfo() {
 }
 
 void LuaStack::sweepCallinfo() {
-  CallInfo *ci = callinfo_;
-  CallInfo *next = ci->next;
+  LuaStackFrame *ci = callinfo_;
+  LuaStackFrame *next = ci->next;
   ci->next = NULL;
   while ((ci = next) != NULL) {
     next = ci->next;
@@ -373,12 +373,12 @@ void LuaStack::sweepCallinfo() {
 
 //------------------------------------------------------------------------------
 
-UpVal* LuaStack::createUpvalFor(StkId level) {
+LuaUpvalue* LuaStack::createUpvalFor(StkId level) {
   assert(l_memcontrol.limitDisabled);
   LuaObject **pp = &open_upvals_;
-  UpVal *p;
-  UpVal *uv;
-  while (*pp != NULL && (p = dynamic_cast<UpVal*>(*pp))->v >= level) {
+  LuaUpvalue *p;
+  LuaUpvalue *uv;
+  while (*pp != NULL && (p = dynamic_cast<LuaUpvalue*>(*pp))->v >= level) {
     assert(p->v != &p->value);
     if (p->v == level) {
       // Resurrect the upvalue if necessary.
@@ -393,7 +393,7 @@ UpVal* LuaStack::createUpvalFor(StkId level) {
     pp = &(p->next_);
   }
   /* not found: create a new one */
-  uv = new UpVal(pp);
+  uv = new LuaUpvalue(pp);
   uv->v = level;  /* current value lives in the stack */
 
   // TODO(aappleby): Is there any way to break this dependency on the global state?  
@@ -407,10 +407,10 @@ UpVal* LuaStack::createUpvalFor(StkId level) {
 }
 
 void LuaStack::closeUpvals(StkId level) {
-  UpVal *uv;
+  LuaUpvalue *uv;
 
   while (open_upvals_ != NULL) {
-    uv = dynamic_cast<UpVal*>(open_upvals_);
+    uv = dynamic_cast<LuaUpvalue*>(open_upvals_);
     if(uv->v < level) break;
 
     assert(!uv->isBlack() && uv->v != &uv->value);
@@ -437,7 +437,7 @@ void LuaStack::closeUpvals(StkId level) {
           uv->clearOld();  /* see MOVE OLD rule */
           uv->grayToBlack();  /* it is being visited now */
 
-          GCVisitor visitor(&thread_G->gc_);
+          LuaGCVisitor visitor(&thread_G->gc_);
           visitor.MarkValue(*uv->v);
         }
         else {
@@ -451,8 +451,8 @@ void LuaStack::closeUpvals(StkId level) {
 
 //------------------------------------------------------------------------------
 
-CallInfo* LuaStack::findProtectedCall() {
-  CallInfo *ci;
+LuaStackFrame* LuaStack::findProtectedCall() {
+  LuaStackFrame *ci;
   for (ci = callinfo_; ci != NULL; ci = ci->previous) {  /* search for a pcall */
     if (ci->callstatus & CIST_YPCALL)
       return ci;
@@ -469,7 +469,7 @@ LuaResult LuaStack::createCCall2(StkId func, int nresults, int nstack)
   if(result != LUA_OK) return result;
   func = begin() + func_index;
 
-  CallInfo* ci = nextCallinfo();  /* now 'enter' new function */
+  LuaStackFrame* ci = nextCallinfo();  /* now 'enter' new function */
   ci->nresults = nresults;
   ci->setFunc(func);
   ci->setTop(top_ + nstack);
@@ -484,18 +484,18 @@ void LuaStack::sanityCheck() {
 
   // All open upvals must be open and must be non-black.
   for (LuaObject* uvo = open_upvals_; uvo != NULL; uvo = uvo->next_) {
-    UpVal *uv = dynamic_cast<UpVal*>(uvo);
+    LuaUpvalue *uv = dynamic_cast<LuaUpvalue*>(uvo);
     assert(uv->v != &uv->value);
     assert(!uvo->isBlack());
   }
 
-  for (CallInfo* ci = callinfo_; ci != NULL; ci = ci->previous) {
+  for (LuaStackFrame* ci = callinfo_; ci != NULL; ci = ci->previous) {
     assert(ci->getTop() <= last());
     ci->sanityCheck();
   }
 
   for(int i = 0; i < (int)size(); i++) {
-    TValue* v = &buf_[i];
+    LuaValue* v = &buf_[i];
     if(v == top_) break;
     v->sanityCheck();
   }

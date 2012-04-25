@@ -28,8 +28,8 @@ typedef struct Zio ZIO;
 
 
 
-char *luaZ_openspace (lua_State *L, Mbuffer *buff, size_t n);
-void luaZ_init (lua_State *L, ZIO *z, lua_Reader reader,
+char *luaZ_openspace (LuaThread *L, Mbuffer *buff, size_t n);
+void luaZ_init (LuaThread *L, ZIO *z, lua_Reader reader,
                                         void *data);
 size_t luaZ_read (ZIO* z, void* b, size_t n);	/* read next n bytes */
 
@@ -42,7 +42,7 @@ struct Zio {
   const char *p;		/* current position in buffer */
   lua_Reader reader;		/* reader function */
   void* data;			/* additional data */
-  lua_State *L;			/* Lua state (for reader) */
+  LuaThread *L;			/* Lua state (for reader) */
 };
 
 

@@ -20,7 +20,7 @@
 #include "lzio.h"
 
 typedef struct {
- lua_State* L;
+ LuaThread* L;
  ZIO* Z;
  Mbuffer* b;
  const char* name;
@@ -61,14 +61,14 @@ static int LoadInt(LoadState* S)
  return x;
 }
 
-static lua_Number LoadNumber(LoadState* S)
+static double LoadNumber(LoadState* S)
 {
- lua_Number x;
+ double x;
  LoadVar(S,x);
  return x;
 }
 
-static TString* LoadString(LoadState* S)
+static LuaString* LoadString(LoadState* S)
 {
   size_t size;
   LoadVar(S,size);
@@ -78,7 +78,7 @@ static TString* LoadString(LoadState* S)
   else {
     char* s=luaZ_openspace(S->L,S->b,size);
     LoadBlock(S,s,size*sizeof(char));
-    TString* result;
+    LuaString* result;
     {
       ScopedMemChecker c;
       result = thread_G->strings_->Create(s,size-1); /* remove trailing '\0' */
@@ -87,7 +87,7 @@ static TString* LoadString(LoadState* S)
   }
 }
 
-static void LoadCode(LoadState* S, Proto* f)
+static void LoadCode(LoadState* S, LuaProto* f)
 {
   int n=LoadInt(S);
   {
@@ -97,9 +97,9 @@ static void LoadCode(LoadState* S, Proto* f)
   LoadVector(S,&f->code[0],n,sizeof(Instruction));
 }
 
-static Proto* LoadFunction(LoadState* S);
+static LuaProto* LoadFunction(LoadState* S);
 
-static void LoadConstants(LoadState* S, Proto* f)
+static void LoadConstants(LoadState* S, LuaProto* f)
 {
   int i,n;
   n=LoadInt(S);
@@ -112,7 +112,7 @@ static void LoadConstants(LoadState* S, Proto* f)
     switch(LoadChar(S))
     {
     case LUA_TNIL:
-      f->constants[i] = TValue::Nil();
+      f->constants[i] = LuaValue::Nil();
       break;
     case LUA_TBOOLEAN:
       f->constants[i] = LoadChar(S) ? true : false;
@@ -124,7 +124,7 @@ static void LoadConstants(LoadState* S, Proto* f)
       f->constants[i] = LoadString(S);
       break;
     default:
-      f->constants[i] = TValue::Nil();
+      f->constants[i] = LuaValue::Nil();
     }
   }
   n=LoadInt(S);
@@ -136,7 +136,7 @@ static void LoadConstants(LoadState* S, Proto* f)
   for (i=0; i<n; i++) f->subprotos_[i]=LoadFunction(S);
 }
 
-static void LoadUpvalues(LoadState* S, Proto* f)
+static void LoadUpvalues(LoadState* S, LuaProto* f)
 {
   int n=LoadInt(S);
   {
@@ -154,7 +154,7 @@ static void LoadUpvalues(LoadState* S, Proto* f)
   }
 }
 
-static void LoadDebug(LoadState* S, Proto* f)
+static void LoadDebug(LoadState* S, LuaProto* f)
 {
   f->source=LoadString(S);
   int n = LoadInt(S);
@@ -188,15 +188,15 @@ static void LoadDebug(LoadState* S, Proto* f)
   }
 }
 
-static Proto* LoadFunction(LoadState* S)
+static LuaProto* LoadFunction(LoadState* S)
 {
-  Proto* f = NULL;
+  LuaProto* f = NULL;
   LuaResult result;
   {
     ScopedMemChecker c;
-    f = new Proto();
+    f = new LuaProto();
     f->linkGC(getGlobalGCHead());
-    result = S->L->stack_.push_reserve2(TValue(f));
+    result = S->L->stack_.push_reserve2(LuaValue(f));
   }
   handleResult(result);
 
@@ -238,7 +238,7 @@ static void LoadHeader(LoadState* S)
 /*
 ** load precompiled chunk
 */
-Proto* luaU_undump (lua_State* L, ZIO* Z, Mbuffer* buff, const char* name)
+LuaProto* luaU_undump (LuaThread* L, ZIO* Z, Mbuffer* buff, const char* name)
 {
  THREAD_CHECK(L);
  LoadState S;
@@ -275,7 +275,7 @@ void luaU_header (uint8_t* h)
  *h++=cast_byte(sizeof(int));
  *h++=cast_byte(sizeof(size_t));
  *h++=cast_byte(sizeof(Instruction));
- *h++=cast_byte(sizeof(lua_Number));
- *h++=cast_byte(((lua_Number)0.5)==0);		/* is lua_Number integral? */
+ *h++=cast_byte(sizeof(double));
+ *h++=cast_byte(((double)0.5)==0);		/* is double integral? */
  memcpy(h,LUAC_TAIL,sizeof(LUAC_TAIL)-sizeof(char));
 }

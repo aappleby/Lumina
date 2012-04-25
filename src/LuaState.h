@@ -4,7 +4,7 @@
 #include "LuaStack.h"
 
 struct LuaExecutionState {
-  CallInfo*  callinfo_;
+  LuaStackFrame*  callinfo_;
   int allowhook;
   int nonyieldable_count_;
   ptrdiff_t  errfunc;
@@ -14,21 +14,21 @@ struct LuaExecutionState {
 /*
 ** `per thread' state
 */
-class lua_State : public LuaObject {
+class LuaThread : public LuaObject {
 public:
 
-  lua_State(global_State* g);
-  lua_State(lua_State* parent_thread);
-  ~lua_State();
+  LuaThread(LuaVM* g);
+  LuaThread(LuaThread* parent_thread);
+  ~LuaThread();
 
-  virtual void VisitGC(GCVisitor& visitor);
-  virtual int PropagateGC(GCVisitor& visitor);
+  virtual void VisitGC(LuaGCVisitor& visitor);
+  virtual int PropagateGC(LuaGCVisitor& visitor);
 
   LuaExecutionState saveState(StkId top);
   void restoreState(LuaExecutionState s, int status, int nresults);
 
   int status;
-  global_State *l_G;
+  LuaVM *l_G;
 
   const Instruction *oldpc;  /* last pc traced */
 
@@ -40,7 +40,7 @@ public:
   int allowhook;
   int basehookcount;
   int hookcount;
-  lua_Hook hook;
+  LuaHook hook;
   
   ptrdiff_t errfunc;  /* current error handling function (stack index) */
 
@@ -49,9 +49,9 @@ public:
 
 struct ScopedCallDepth
 {
-  ScopedCallDepth(lua_State* state);
+  ScopedCallDepth(LuaThread* state);
   ~ScopedCallDepth();
 
-  lua_State* state_;
+  LuaThread* state_;
 };
 

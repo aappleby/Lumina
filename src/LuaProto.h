@@ -7,7 +7,7 @@
 ** Description of an upvalue for function prototypes
 */
 struct Upvaldesc {
-  TString *name;  /* upvalue name (for debug information) */
+  LuaString *name;  /* upvalue name (for debug information) */
   uint8_t instack;  /* whether it is in stack */
   uint8_t idx;  /* index of upvalue (in stack or in outer function's list) */
 };
@@ -18,7 +18,7 @@ struct Upvaldesc {
 ** (used for debug information)
 */
 struct LocVar {
-  TString *varname;
+  LuaString *varname;
   int startpc;  /* first point where variable is active */
   int endpc;    /* first point where variable is dead */
 };
@@ -27,20 +27,20 @@ struct LocVar {
 /*
 ** Function Prototypes
 */
-class Proto : public LuaObject {
+class LuaProto : public LuaObject {
 public:
-  Proto();
+  LuaProto();
 
-  virtual void VisitGC(GCVisitor& visitor);
-  virtual int  PropagateGC(GCVisitor& visitor);
+  virtual void VisitGC(LuaGCVisitor& visitor);
+  virtual int  PropagateGC(LuaGCVisitor& visitor);
 
   const char* getLocalName(int local_number, int pc) const;
   const char* getUpvalName(int upval_number) const;
 
-  LuaVector<TValue> constants;
+  LuaVector<LuaValue> constants;
   LuaVector<Instruction> code;
   LuaVector<int> lineinfo;
-  LuaVector<Proto*> subprotos_; // functions defined inside the function
+  LuaVector<LuaProto*> subprotos_; // functions defined inside the function
   LuaVector<LocVar> locvars; // information about local variables (debug information)
   LuaVector<Upvaldesc> upvalues; // upvalue information
   
@@ -50,9 +50,9 @@ public:
 
   // TODO(aappleby): see if this actually makes a difference in performance
 
-  Closure *cache;  /* last created closure with this prototype */
+  LuaClosure *cache;  /* last created closure with this prototype */
 
-  TString  *source;  /* used for debug information */
+  LuaString  *source;  /* used for debug information */
   int linedefined;
   int lastlinedefined;
   uint8_t numparams;  /* number of fixed parameters */

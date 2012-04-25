@@ -32,11 +32,11 @@ struct LuaAnchor;
 /*
 ** `global state', shared by all threads of this state
 */
-class global_State : public LuaBase {
+class LuaVM : public LuaBase {
 public:
 
-  global_State();
-  ~global_State();
+  LuaVM();
+  ~LuaVM();
 
   // actual number of total bytes allocated
   size_t getTotalBytes() {
@@ -71,10 +71,10 @@ public:
 
   //----------
 
-  stringtable* strings_;  /* hash table for strings */
+  LuaStringTable* strings_;  /* hash table for strings */
 
-  TValue l_registry;
-  Table* getRegistry() { return l_registry.getTable(); }
+  LuaValue l_registry;
+  LuaTable* getRegistry() { return l_registry.getTable(); }
 
   size_t lastmajormem;  /* memory in use after last major collection */
   LuaObject::Color livecolor;
@@ -93,19 +93,19 @@ public:
   // The global garbage collector.
   LuaCollector gc_;
 
-  UpVal uvhead;  /* head of double-linked list of all open upvalues */
+  LuaUpvalue uvhead;  /* head of double-linked list of all open upvalues */
   Mbuffer buff;  /* temporary buffer for string concatenation */
   int gcpause;  /* size of pause between successive GCs */
   int gcmajorinc;  /* how much to wait for a major GC (only in gen. mode) */
   int gcstepmul;  /* GC `granularity' */
 
-  lua_CFunction panic;  /* to be called in unprotected errors */
-  lua_State *mainthread;
-  const lua_Number *version;  /* pointer to version number */
+  LuaCallback panic;  /* to be called in unprotected errors */
+  LuaThread *mainthread;
+  const double *version;  /* pointer to version number */
 
-  TString *memerrmsg;  /* memory-error message */
-  TString *tagmethod_names_[TM_N];  /* array with tag-method names */
-  Table *base_metatables_[LUA_NUMTAGS];  /* metatables for basic types */
+  LuaString *memerrmsg;  /* memory-error message */
+  LuaString *tagmethod_names_[TM_N];  /* array with tag-method names */
+  LuaTable *base_metatables_[LUA_NUMTAGS];  /* metatables for basic types */
 
   int call_depth_;
 
@@ -121,7 +121,7 @@ private:
 };
 
 
-stringtable* getGlobalStringtable();
+LuaStringTable* getGlobalStringtable();
 
 struct LuaAnchor {
 
@@ -151,7 +151,7 @@ struct LuaAnchor {
     unlink();
   }
 
-  void link(global_State* state) {
+  void link(LuaVM* state) {
     state_ = state;
 
     prev_ = NULL;
@@ -182,7 +182,7 @@ struct LuaAnchor {
   }
    
   LuaObject* object_;
-  global_State* state_;
+  LuaVM* state_;
   LuaAnchor* prev_;
   LuaAnchor* next_;
 };

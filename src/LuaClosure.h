@@ -2,25 +2,25 @@
 #include "LuaObject.h"
 #include "LuaValue.h"
 
-class Closure : public LuaObject {
+class LuaClosure : public LuaObject {
 public:
 
-  Closure(Proto* proto, int n);
-  Closure(lua_CFunction func, int n);
-  ~Closure();
+  LuaClosure(LuaProto* proto, int n);
+  LuaClosure(LuaCallback func, int n);
+  ~LuaClosure();
 
-  virtual void VisitGC(GCVisitor& visitor);
-  virtual int PropagateGC(GCVisitor& visitor);
+  virtual void VisitGC(LuaGCVisitor& visitor);
+  virtual int PropagateGC(LuaGCVisitor& visitor);
 
   int isC;
   int nupvalues;
 
-  TValue* pupvals_;
-  UpVal** ppupvals_;
+  LuaValue* pupvals_;
+  LuaUpvalue** ppupvals_;
 
-  lua_CFunction cfunction_;
+  LuaCallback cfunction_;
 
-  Proto *proto_;
+  LuaProto *proto_;
 };
 
 

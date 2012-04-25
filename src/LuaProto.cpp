@@ -4,7 +4,7 @@
 #include "LuaCollector.h"
 #include "LuaString.h"
 
-Proto::Proto() : LuaObject(LUA_TPROTO) {
+LuaProto::LuaProto() : LuaObject(LUA_TPROTO) {
   assert(l_memcontrol.limitDisabled);
   cache = NULL;
   numparams = 0;
@@ -15,12 +15,12 @@ Proto::Proto() : LuaObject(LUA_TPROTO) {
   source = NULL;
 }
 
-void Proto::VisitGC(GCVisitor& visitor) {
+void LuaProto::VisitGC(LuaGCVisitor& visitor) {
   setColor(GRAY);
   visitor.PushGray(this);
 }
 
-int Proto::PropagateGC(GCVisitor& visitor) {
+int LuaProto::PropagateGC(LuaGCVisitor& visitor) {
   setColor(BLACK);
 
   // allow cache to be collected
@@ -57,7 +57,7 @@ int Proto::PropagateGC(GCVisitor& visitor) {
          (int)locvars.size();
 }
 
-const char* Proto::getLocalName(int local_number, int pc) const {
+const char* LuaProto::getLocalName(int local_number, int pc) const {
   for (int i = 0; i<(int)locvars.size() && locvars[i].startpc <= pc; i++) {
     if (pc < locvars[i].endpc) {  /* is variable active? */
       local_number--;
@@ -68,9 +68,9 @@ const char* Proto::getLocalName(int local_number, int pc) const {
   return NULL;  /* not found */
 }
 
-const char* Proto::getUpvalName(int upval_number) const {
+const char* LuaProto::getUpvalName(int upval_number) const {
   assert(upval_number < (int)upvalues.size());
-  TString *s = upvalues[upval_number].name;
+  LuaString *s = upvalues[upval_number].name;
   if (s == NULL) return "?";
   else return s->c_str();
 }

@@ -5,37 +5,37 @@
 
 //------------------------------------------------------------------------------
 
-class LuaStack : public LuaVector<TValue> {
+class LuaStack : public LuaVector<LuaValue> {
 public:
 
   LuaStack();
   ~LuaStack();
 
-  TValue* last() {
+  LuaValue* last() {
     return end() - EXTRA_STACK;
   }
 
   //----------
 
-  TValue* getTop() { return top_; }
-  void    setTop(TValue* newtop) { top_ = newtop; }
+  LuaValue* getTop() { return top_; }
+  void    setTop(LuaValue* newtop) { top_ = newtop; }
 
   int  getTopIndex();
   void setTopIndex(int index);
 
 
-  TValue at(int index);
-  TValue at_frame(int index);
+  LuaValue at(int index);
+  LuaValue at_frame(int index);
 
   void   copy(int index);
   void   copy_frame(int index);
 
-  void   push(TValue v);
-  void   push(const TValue* v);
-  LuaResult push_reserve2(TValue v);
-  void   push_nocheck(TValue v);
+  void   push(LuaValue v);
+  void   push(const LuaValue* v);
+  LuaResult push_reserve2(LuaValue v);
+  void   push_nocheck(LuaValue v);
 
-  TValue pop();
+  LuaValue pop();
   void   pop(int count);
   void   remove(int index);
 
@@ -43,20 +43,20 @@ public:
 
   //----------
 
-  CallInfo* nextCallinfo();
+  LuaStackFrame* nextCallinfo();
   void sweepCallinfo();
   bool callinfoEmpty() {
     return callinfo_ == callinfo_head_;
   }
 
-  CallInfo* findProtectedCall();
+  LuaStackFrame* findProtectedCall();
 
   LuaResult createCCall2(StkId func, int nresults, int nstack);
 
   //----------
   // Upvalue support
 
-  UpVal* createUpvalFor(StkId level);
+  LuaUpvalue* createUpvalFor(StkId level);
   void closeUpvals(StkId level);
 
   //----------
@@ -74,16 +74,16 @@ public:
 
   //----------
 
-  TValue* top_;
-  CallInfo* callinfo_;  /* call info for current function */
+  LuaValue* top_;
+  LuaStackFrame* callinfo_;  /* call info for current function */
 
   LuaObject *open_upvals_;  /* list of open upvalues in this stack */
 
-  CallInfo* callinfo_head_;  /* CallInfo for first level (C calling Lua) */
+  LuaStackFrame* callinfo_head_;  /* LuaStackFrame for first level (C calling Lua) */
 
 protected:
 
-  CallInfo* extendCallinfo();
+  LuaStackFrame* extendCallinfo();
 
   int countInUse();
   void realloc(int newsize);
@@ -100,11 +100,11 @@ public:
   {
   }
 
-  operator TValue*() {
+  operator LuaValue*() {
     return stack_->begin() + index_;
   }
 
-  TValue& operator[] ( int offset ) {
+  LuaValue& operator[] ( int offset ) {
     return stack_->begin()[index_ + offset];
   }
 

@@ -14,7 +14,7 @@
 extern const char* luaX_tokens[];
 extern int luaX_tokens_count;
 
-const lua_Number *lua_version (lua_State *L);
+const double *lua_version (LuaThread *L);
 
 void luaC_freeallobjects();
 
@@ -45,11 +45,11 @@ LuaObject** getGlobalGCHead() {
   return &thread_G->allgc;
 }
 
-global_State::global_State()
+LuaVM::LuaVM()
 : uvhead(NULL)
 {
   GCdebt_ = 0;
-  totalbytes_ = sizeof(global_State);
+  totalbytes_ = sizeof(LuaVM);
   call_depth_ = 0;
 
   livecolor = LuaObject::colorA;
@@ -83,22 +83,22 @@ global_State::global_State()
   thread_G = this;
 
   // Create the main thread
-  mainthread = new lua_State(this);
+  mainthread = new LuaThread(this);
   thread_L = mainthread;
 
   // Create global registry.
-  Table* registry = new Table(LUA_RIDX_LAST, 0);
-  l_registry = TValue(registry);
+  LuaTable* registry = new LuaTable(LUA_RIDX_LAST, 0);
+  l_registry = LuaValue(registry);
 
   // Create global variable table.
-  Table* globals = new Table();
-  registry->set(TValue(LUA_RIDX_GLOBALS), TValue(globals));
+  LuaTable* globals = new LuaTable();
+  registry->set(LuaValue(LUA_RIDX_GLOBALS), LuaValue(globals));
 
   // Store main thread in the registry.
-  registry->set(TValue(LUA_RIDX_MAINTHREAD), TValue(mainthread));
+  registry->set(LuaValue(LUA_RIDX_MAINTHREAD), LuaValue(mainthread));
 
   // Create global string table.
-  strings_ = new stringtable();
+  strings_ = new LuaStringTable();
   strings_->Resize(MINSTRTABSIZE);  /* initial size of string table */
 
   // Create memory error message string.
@@ -115,7 +115,7 @@ global_State::global_State()
 
   // Create lexer reserved word strings.
   for (int i = 0; i < luaX_tokens_count; i++) {
-    TString *ts = strings_->Create(luaX_tokens[i]);
+    LuaString *ts = strings_->Create(luaX_tokens[i]);
     ts->setFixed();
     ts->setReserved(i+1);
   }
@@ -124,7 +124,7 @@ global_State::global_State()
   gcrunning = 1;
 }
 
-global_State::~global_State() {
+LuaVM::~LuaVM() {
   gc_.ClearGraylists();
 
   luaC_freeallobjects();  /* collect all objects */
@@ -138,21 +138,21 @@ global_State::~global_State() {
 
   buff.buffer.clear();
 
-  assert(thread_G->getTotalBytes() == sizeof(global_State));
+  assert(thread_G->getTotalBytes() == sizeof(LuaVM));
 
   assert(mainthread == NULL);
   assert(anchor_head_ == NULL);
   assert(anchor_tail_ == NULL);
 }
 
-void global_State::setGCDebt(size_t debt) {
+void LuaVM::setGCDebt(size_t debt) {
   GCdebt_ = debt;
 }
 
-void global_State::incTotalBytes(int bytes) {
+void LuaVM::incTotalBytes(int bytes) {
   totalbytes_ += bytes;
 }
 
-void global_State::incGCDebt(int debt) { 
+void LuaVM::incGCDebt(int debt) { 
   GCdebt_ += debt;
 }

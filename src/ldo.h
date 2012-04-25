@@ -18,14 +18,14 @@
 
 
 /* type of protected functions, to be ran by `runprotected' */
-typedef void (*Pfunc) (lua_State *L, void *ud);
+typedef void (*Pfunc) (LuaThread *L, void *ud);
 
-int luaD_protectedparser (lua_State *L, ZIO *z, const char *name, const char *mode);
-void luaD_hook (lua_State *L, int event, int line);
-int luaD_precall (lua_State *L, StkId func, int nresults);
-void luaD_call (lua_State *L, StkId func, int nResults,
+int luaD_protectedparser (LuaThread *L, ZIO *z, const char *name, const char *mode);
+void luaD_hook (LuaThread *L, int event, int line);
+int luaD_precall (LuaThread *L, StkId func, int nresults);
+void luaD_call (LuaThread *L, StkId func, int nResults,
                                         int allowyield);
-int luaD_postcall (lua_State *L, StkId firstResult);
+int luaD_postcall (LuaThread *L, StkId firstResult);
 
 l_noret luaD_throw (int errcode);
 

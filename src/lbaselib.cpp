@@ -23,7 +23,7 @@
 
 
 
-static int luaB_print (lua_State *L) {
+static int luaB_print (LuaThread *L) {
   THREAD_CHECK(L);
   int n = L->stack_.getTopIndex();  /* number of arguments */
   int i;
@@ -49,11 +49,11 @@ static int luaB_print (lua_State *L) {
 
 #define SPACECHARS	" \f\n\r\t\v"
 
-static int luaB_tonumber (lua_State *L) {
+static int luaB_tonumber (LuaThread *L) {
   THREAD_CHECK(L);
   if (lua_isnoneornil(L, 2)) {  /* standard conversion */
     int isnum;
-    lua_Number n = lua_tonumberx(L, 1, &isnum);
+    double n = lua_tonumberx(L, 1, &isnum);
     if (isnum) {
       lua_pushnumber(L, n);
       return 1;
@@ -71,12 +71,12 @@ static int luaB_tonumber (lua_State *L) {
     if (*s == '-') { s++; neg = 1; }  /* handle signal */
     else if (*s == '+') s++;
     if (isalnum((unsigned char)*s)) {
-      lua_Number n = 0;
+      double n = 0;
       do {
         int digit = (isdigit((unsigned char)*s)) ? *s - '0'
                        : toupper((unsigned char)*s) - 'A' + 10;
         if (digit >= base) break;  /* invalid numeral; force a fail */
-        n = n * (lua_Number)base + (lua_Number)digit;
+        n = n * (double)base + (double)digit;
         s++;
       } while (isalnum((unsigned char)*s));
       s += strspn(s, SPACECHARS);  /* skip trailing spaces */
@@ -86,12 +86,12 @@ static int luaB_tonumber (lua_State *L) {
       }  /* else not a number */
     }  /* else not a number */
   }
-  L->stack_.push(TValue::Nil()); /* not a number */
+  L->stack_.push(LuaValue::Nil()); /* not a number */
   return 1;
 }
 
 
-static int luaB_error (lua_State *L) {
+static int luaB_error (LuaThread *L) {
   THREAD_CHECK(L);
   int level = luaL_optint(L, 2, 1);
   L->stack_.setTopIndex(1);
@@ -104,11 +104,11 @@ static int luaB_error (lua_State *L) {
 }
 
 
-static int luaB_getmetatable (lua_State *L) {
+static int luaB_getmetatable (LuaThread *L) {
   THREAD_CHECK(L);
   luaL_checkany(L, 1);
   if (!lua_getmetatable(L, 1)) {
-    L->stack_.push(TValue::Nil());
+    L->stack_.push(LuaValue::Nil());
     return 1;  /* no metatable */
   }
   luaL_getmetafield(L, 1, "__metatable");
@@ -116,10 +116,10 @@ static int luaB_getmetatable (lua_State *L) {
 }
 
 
-static int luaB_setmetatable (lua_State *L) {
+static int luaB_setmetatable (LuaThread *L) {
   THREAD_CHECK(L);
-  TValue* pv2 = index2addr(L, 2);
-  TValue v2 = pv2 ? *pv2 : TValue::Nil();
+  LuaValue* pv2 = index2addr(L, 2);
+  LuaValue v2 = pv2 ? *pv2 : LuaValue::Nil();
   luaL_checkIsTable(L, 1);
   luaL_argcheck(L,
                 v2.isNil() ||
@@ -134,7 +134,7 @@ static int luaB_setmetatable (lua_State *L) {
 }
 
 
-static int luaB_rawequal (lua_State *L) {
+static int luaB_rawequal (LuaThread *L) {
   THREAD_CHECK(L);
   luaL_checkany(L, 1);
   luaL_checkany(L, 2);
@@ -143,7 +143,7 @@ static int luaB_rawequal (lua_State *L) {
 }
 
 
-static int luaB_rawlen (lua_State *L) {
+static int luaB_rawlen (LuaThread *L) {
   THREAD_CHECK(L);
   int t = lua_type(L, 1);
   luaL_argcheck(L, t == LUA_TTABLE || t == LUA_TSTRING, 1,
@@ -153,7 +153,7 @@ static int luaB_rawlen (lua_State *L) {
 }
 
 
-static int luaB_rawget (lua_State *L) {
+static int luaB_rawget (LuaThread *L) {
   THREAD_CHECK(L);
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_checkany(L, 2);
@@ -162,7 +162,7 @@ static int luaB_rawget (lua_State *L) {
   return 1;
 }
 
-static int luaB_rawset (lua_State *L) {
+static int luaB_rawset (LuaThread *L) {
   THREAD_CHECK(L);
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_checkany(L, 2);
@@ -173,7 +173,7 @@ static int luaB_rawset (lua_State *L) {
 }
 
 
-static int luaB_collectgarbage (lua_State *L) {
+static int luaB_collectgarbage (LuaThread *L) {
   THREAD_CHECK(L);
   static const char *const opts[] = {"stop", "restart", "collect",
     "count", "step", "setpause", "setstepmul",
@@ -187,7 +187,7 @@ static int luaB_collectgarbage (lua_State *L) {
   switch (o) {
     case LUA_GCCOUNT: {
       int b = lua_gc(L, LUA_GCCOUNTB, 0);
-      lua_pushnumber(L, res + ((lua_Number)b/1024));
+      lua_pushnumber(L, res + ((double)b/1024));
       lua_pushinteger(L, b);
       return 2;
     }
@@ -203,7 +203,7 @@ static int luaB_collectgarbage (lua_State *L) {
 }
 
 
-static int luaB_type (lua_State *L) {
+static int luaB_type (LuaThread *L) {
   THREAD_CHECK(L);
   luaL_checkany(L, 1);
   lua_pushstring(L, luaL_typename(L, 1));
@@ -211,15 +211,15 @@ static int luaB_type (lua_State *L) {
 }
 
 
-static int pairsmeta (lua_State *L, const char *method, int iszero,
-                      lua_CFunction iter) {
+static int pairsmeta (LuaThread *L, const char *method, int iszero,
+                      LuaCallback iter) {
   THREAD_CHECK(L);
   if (!luaL_getmetafield(L, 1, method)) {  /* no metamethod? */
     luaL_checktype(L, 1, LUA_TTABLE);  /* argument must be a table */
     lua_pushcclosure(L, iter, 0);  /* will return generator, */
     L->stack_.copy(1);  /* state, */
     if (iszero) lua_pushinteger(L, 0);  /* and initial value */
-    else L->stack_.push(TValue::Nil());
+    else L->stack_.push(LuaValue::Nil());
   }
   else {
     L->stack_.copy(1);  /* argument 'self' to metamethod */
@@ -229,26 +229,26 @@ static int pairsmeta (lua_State *L, const char *method, int iszero,
 }
 
 
-static int luaB_next (lua_State *L) {
+static int luaB_next (LuaThread *L) {
   THREAD_CHECK(L);
   luaL_checktype(L, 1, LUA_TTABLE);
   L->stack_.setTopIndex(2);  /* create a 2nd argument if there isn't one */
   if (lua_next(L, 1))
     return 2;
   else {
-    L->stack_.push(TValue::Nil());
+    L->stack_.push(LuaValue::Nil());
     return 1;
   }
 }
 
 
-static int luaB_pairs (lua_State *L) {
+static int luaB_pairs (LuaThread *L) {
   THREAD_CHECK(L);
   return pairsmeta(L, "__pairs", 0, luaB_next);
 }
 
 
-static int ipairsaux (lua_State *L) {
+static int ipairsaux (LuaThread *L) {
   THREAD_CHECK(L);
   int i = luaL_checkint(L, 2);
   luaL_checktype(L, 1, LUA_TTABLE);
@@ -259,25 +259,25 @@ static int ipairsaux (lua_State *L) {
 }
 
 
-static int luaB_ipairs (lua_State *L) {
+static int luaB_ipairs (LuaThread *L) {
   THREAD_CHECK(L);
   return pairsmeta(L, "__ipairs", 1, ipairsaux);
 }
 
 
-static int load_aux (lua_State *L, int status) {
+static int load_aux (LuaThread *L, int status) {
   THREAD_CHECK(L);
   if (status == LUA_OK)
     return 1;
   else {
-    L->stack_.push(TValue::Nil());
+    L->stack_.push(LuaValue::Nil());
     lua_insert(L, -2);  /* put before error message */
     return 2;  /* return nil plus error message */
   }
 }
 
 
-static int luaB_loadfile (lua_State *L) {
+static int luaB_loadfile (LuaThread *L) {
   THREAD_CHECK(L);
   const char *fname = luaL_optstring(L, 1, NULL);
   const char *mode = luaL_optstring(L, 2, NULL);
@@ -312,7 +312,7 @@ static int luaB_loadfile (lua_State *L) {
 ** stack top. Instead, it keeps its resulting string in a
 ** reserved slot inside the stack.
 */
-static const char *generic_reader (lua_State *L, void *ud, size_t *size) {
+static const char *generic_reader (LuaThread *L, void *ud, size_t *size) {
   THREAD_CHECK(L);
   (void)(ud);  /* not used */
   luaL_checkstack(L, 2, "too many nested functions");
@@ -329,7 +329,7 @@ static const char *generic_reader (lua_State *L, void *ud, size_t *size) {
 }
 
 
-static int luaB_load (lua_State *L) {
+static int luaB_load (LuaThread *L) {
   THREAD_CHECK(L);
   int status;
   size_t l;
@@ -356,13 +356,13 @@ static int luaB_load (lua_State *L) {
 /* }====================================================== */
 
 
-static int dofilecont (lua_State *L) {
+static int dofilecont (LuaThread *L) {
   THREAD_CHECK(L);
   return L->stack_.getTopIndex() - 1;
 }
 
 
-static int luaB_dofile (lua_State *L) {
+static int luaB_dofile (LuaThread *L) {
   THREAD_CHECK(L);
   const char *fname = luaL_optstring(L, 1, NULL);
   L->stack_.setTopIndex(1);
@@ -372,7 +372,7 @@ static int luaB_dofile (lua_State *L) {
 }
 
 
-static int luaB_assert (lua_State *L) {
+static int luaB_assert (LuaThread *L) {
   THREAD_CHECK(L);
   if (!lua_toboolean(L, 1))
     return luaL_error(L, "%s", luaL_optstring(L, 2, "assertion failed!"));
@@ -380,7 +380,7 @@ static int luaB_assert (lua_State *L) {
 }
 
 
-static int luaB_select (lua_State *L) {
+static int luaB_select (LuaThread *L) {
   THREAD_CHECK(L);
   int n = L->stack_.getTopIndex();
   if (lua_type(L, 1) == LUA_TSTRING && *lua_tostring(L, 1) == '#') {
@@ -397,7 +397,7 @@ static int luaB_select (lua_State *L) {
 }
 
 
-static int finishpcall (lua_State *L, int status) {
+static int finishpcall (LuaThread *L, int status) {
   THREAD_CHECK(L);
   if (!lua_checkstack(L, 1)) {  /* no space for extra boolean? */
     L->stack_.setTopIndex(0);  /* create space for return values */
@@ -411,25 +411,25 @@ static int finishpcall (lua_State *L, int status) {
 }
 
 
-static int pcallcont (lua_State *L) {
+static int pcallcont (LuaThread *L) {
   THREAD_CHECK(L);
   int status = lua_getctx(L, NULL);
   return finishpcall(L, (status == LUA_YIELD));
 }
 
 
-static int luaB_pcall (lua_State *L) {
+static int luaB_pcall (LuaThread *L) {
   THREAD_CHECK(L);
   int status;
   luaL_checkany(L, 1);
-  L->stack_.push(TValue::Nil());
+  L->stack_.push(LuaValue::Nil());
   lua_insert(L, 1);  /* create space for status result */
   status = lua_pcallk(L, L->stack_.getTopIndex() - 2, LUA_MULTRET, 0, 0, pcallcont);
   return finishpcall(L, (status == LUA_OK));
 }
 
 
-static int luaB_xpcall (lua_State *L) {
+static int luaB_xpcall (LuaThread *L) {
   THREAD_CHECK(L);
   int status;
   int n = L->stack_.getTopIndex();
@@ -442,7 +442,7 @@ static int luaB_xpcall (lua_State *L) {
 }
 
 
-static int luaB_tostring (lua_State *L) {
+static int luaB_tostring (LuaThread *L) {
   THREAD_CHECK(L);
   luaL_checkany(L, 1);
   luaL_tolstring(L, 1, NULL);
@@ -477,7 +477,7 @@ static const luaL_Reg base_funcs[] = {
 };
 
 
-int luaopen_base (lua_State *L) {
+int luaopen_base (LuaThread *L) {
   THREAD_CHECK(L);
   /* set global _G */
   lua_pushglobaltable(L);

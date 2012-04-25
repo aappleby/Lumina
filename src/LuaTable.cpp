@@ -2,7 +2,7 @@
 
 #include "LuaCollector.h"
 
-void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal);
+void getTableMode(LuaTable* t, bool& outWeakKey, bool& outWeakVal);
 int luaO_ceillog2 (unsigned int x);
 
 /*
@@ -33,7 +33,7 @@ uint32_t hash64 (uint32_t a, uint32_t b) {
 
 //-----------------------------------------------------------------------------
 
-Table::Table(int arrayLength, int hashLength) 
+LuaTable::LuaTable(int arrayLength, int hashLength) 
 : LuaObject(LUA_TTABLE),
   lastfree(-1) {
   assert(l_memcontrol.limitDisabled);
@@ -47,13 +47,13 @@ Table::Table(int arrayLength, int hashLength)
 
 //-----------------------------------------------------------------------------
 
-int Table::getLength() const {
+int LuaTable::getLength() const {
   int start = 30;
   int cursor = 0;
   
   // Exponential search up (starting at 32) until we find a nil,
   for(int j = 5; j < 30; j++) {
-    TValue v = get(TValue(1 << j));
+    LuaValue v = get(LuaValue(1 << j));
     if(v.isNone() || v.isNil()) {
       start = j-1;
       break;
@@ -63,7 +63,7 @@ int Table::getLength() const {
   // then binary search below it to find the end.
   for(int i = start; i >= 0; i--) {
     int step = (1 << i);
-    TValue v = get(TValue(cursor+step));
+    LuaValue v = get(LuaValue(cursor+step));
     if(!v.isNone() && !v.isNil()) {
       cursor += step;
     }
@@ -74,7 +74,7 @@ int Table::getLength() const {
 
 //-----------------------------------------------------------------------------
 
-Table::Node* Table::findBin(TValue key) {
+LuaTable::Node* LuaTable::findBin(LuaValue key) {
   if(hash_.empty()) return NULL;
 
   uint32_t hash = key.hashValue();
@@ -83,10 +83,10 @@ Table::Node* Table::findBin(TValue key) {
   return &hash_[hash & mask];
 }
 
-Table::Node* Table::findBin(int key) {
+LuaTable::Node* LuaTable::findBin(int key) {
   if(hash_.empty()) return NULL;
 
-  TValue key2(key);
+  LuaValue key2(key);
   uint32_t hash = key2.hashValue();
   uint32_t mask = (uint32_t)hash_.size() - 1;
 
@@ -95,7 +95,7 @@ Table::Node* Table::findBin(int key) {
 
 //-----------------------------------------------------------------------------
 
-Table::Node* Table::findNode(TValue key) {
+LuaTable::Node* LuaTable::findNode(LuaValue key) {
   if(hash_.empty()) return NULL;
 
   for(Node* node = findBin(key); node; node = node->next) {
@@ -105,7 +105,7 @@ Table::Node* Table::findNode(TValue key) {
   return NULL;
 }
 
-Table::Node* Table::findNode(int key) {
+LuaTable::Node* LuaTable::findNode(int key) {
   if(hash_.empty()) return NULL;
 
   for(Node* node = findBin(key); node; node = node->next) {
@@ -119,11 +119,11 @@ Table::Node* Table::findNode(int key) {
 // Linear index <-> key-val conversion, used to (inefficiently) implement
 // lua_next.
 
-int Table::getTableIndexSize() const {
+int LuaTable::getTableIndexSize() const {
   return (int)(array_.size() + hash_.size());
 }
 
-bool Table::keyToTableIndex(TValue key, int& outIndex) {
+bool LuaTable::keyToTableIndex(LuaValue key, int& outIndex) {
   if(key.isInteger()) {
     int index = key.getInteger() - 1; // lua index -> c index
     if((index >= 0) && (index < (int)array_.size())) {
@@ -139,10 +139,10 @@ bool Table::keyToTableIndex(TValue key, int& outIndex) {
   return true;
 }
 
-bool Table::tableIndexToKeyVal(int index, TValue& outKey, TValue& outVal) {
+bool LuaTable::tableIndexToKeyVal(int index, LuaValue& outKey, LuaValue& outVal) {
   if(index < 0) return false;
   if(index < (int)array_.size()) {
-    outKey = TValue(index + 1); // c index -> lua index
+    outKey = LuaValue(index + 1); // c index -> lua index
     outVal = array_[index];
     return true;
   }
@@ -159,8 +159,8 @@ bool Table::tableIndexToKeyVal(int index, TValue& outKey, TValue& outVal) {
 
 //-----------------------------------------------------------------------------
 
-TValue Table::get(TValue key) const {
-  if(key.isNil()) return TValue::None();
+LuaValue LuaTable::get(LuaValue key) const {
+  if(key.isNil()) return LuaValue::None();
 
   if(key.isInteger()) {
     // lua index -> c index
@@ -171,13 +171,13 @@ TValue Table::get(TValue key) const {
     }
 
     // Important - if the integer wasn't in the array, we have convert it
-    // back into a TValue key in order to catch the negative-zero case.
+    // back into a LuaValue key in order to catch the negative-zero case.
     key = intkey;
   }
 
   // Non-integer key, search the hash table.
 
-  if(hash_.empty()) return TValue::None();
+  if(hash_.empty()) return LuaValue::None();
 
   uint32_t hash = key.hashValue();
   uint32_t mask = (uint32_t)hash_.size() - 1;
@@ -190,12 +190,12 @@ TValue Table::get(TValue key) const {
     }
   }
 
-  return TValue::None();
+  return LuaValue::None();
 }
 
 //-----------------------------------------------------------------------------
 
-Table::Node* Table::getFreeNode() {
+LuaTable::Node* LuaTable::getFreeNode() {
   while (lastfree > 0) {
     lastfree--;
     Node* last = &hash_[lastfree];
@@ -214,7 +214,7 @@ Table::Node* Table::getFreeNode() {
 // position), new key goes to an empty position.
 //
 
-int Table::set(TValue key, TValue val) {
+int LuaTable::set(LuaValue key, LuaValue val) {
   assert(l_memcontrol.limitDisabled);
   // Check for nil keys
   if (key.isNil()) {
@@ -282,7 +282,7 @@ int Table::set(TValue key, TValue val) {
 
 //-----------------------------------------------------------------------------
 
-void countKey( TValue key, int* logtable ) {
+void countKey( LuaValue key, int* logtable ) {
   if(key.isInteger()) {
     int k = key.getInteger();
     if((0 < k) && (k <= MAXASIZE)) {
@@ -291,7 +291,7 @@ void countKey( TValue key, int* logtable ) {
   }
 }
 
-void Table::computeOptimalSizes(TValue newkey, int& outArraySize, int& outHashSize) {
+void LuaTable::computeOptimalSizes(LuaValue newkey, int& outArraySize, int& outHashSize) {
   int totalKeys = 0;
   int logtable[32];
 
@@ -300,14 +300,14 @@ void Table::computeOptimalSizes(TValue newkey, int& outArraySize, int& outHashSi
   for(int i = 0; i < (int)array_.size(); i++) {
     if(array_[i].isNil()) continue;
     // C index -> Lua index
-    TValue key(i+1);
+    LuaValue key(i+1);
     countKey(key, logtable);
     totalKeys++;
   }
 
   for(int i = 0; i < (int)hash_.size(); i++) {
-    TValue& key = hash_[i].i_key;
-    TValue& val = hash_[i].i_val;
+    LuaValue& key = hash_[i].i_key;
+    LuaValue& val = hash_[i].i_val;
     if(val.isNil()) continue;
     countKey(key, logtable);
     totalKeys++;
@@ -345,9 +345,9 @@ void Table::computeOptimalSizes(TValue newkey, int& outArraySize, int& outHashSi
 // otherwise the allocation could trigger a GC pass which would try and traverse this table while
 // it's in an invalid state.
 
-// #TODO - Table resize should be effectively atomic...
+// #TODO - LuaTable resize should be effectively atomic...
 
-int Table::resize(int nasize, int nhsize) {
+int LuaTable::resize(int nasize, int nhsize) {
   assert(l_memcontrol.limitDisabled);
 
   int oldasize = (int)array_.size();
@@ -355,11 +355,11 @@ int Table::resize(int nasize, int nhsize) {
 
   // Allocate temporary storage for the resize before we modify the table
   LuaVector<Node> temphash;
-  LuaVector<TValue> temparray;
+  LuaVector<LuaValue> temparray;
 
   if(nasize) {
     temparray.resize_nocheck(nasize);
-    memcpy(temparray.begin(), array_.begin(), std::min(oldasize, nasize) * sizeof(TValue));
+    memcpy(temparray.begin(), array_.begin(), std::min(oldasize, nasize) * sizeof(LuaValue));
   }
 
   if (nhsize) {
@@ -376,7 +376,7 @@ int Table::resize(int nasize, int nhsize) {
   // Move array overflow to hash_
   for(int i = (int)array_.size(); i < (int)temparray.size(); i++) {
     if (!temparray[i].isNil()) {
-      set(TValue(i+1), temparray[i]);
+      set(LuaValue(i+1), temparray[i]);
     }
   }
 
@@ -393,8 +393,8 @@ int Table::resize(int nasize, int nhsize) {
 
 //-----------------------------------------------------------------------------
 
-int Table::traverse(Table::nodeCallback c, void* blob) {
-  TValue temp;
+int LuaTable::traverse(LuaTable::nodeCallback c, void* blob) {
+  LuaValue temp;
 
   for(int i = 0; i < (int)array_.size(); i++) {
     temp = i + 1; // c index -> lua index;
@@ -410,7 +410,7 @@ int Table::traverse(Table::nodeCallback c, void* blob) {
 
 //-----------------------------------------------------------------------------
 
-void Table::VisitGC(GCVisitor& visitor) {
+void LuaTable::VisitGC(LuaGCVisitor& visitor) {
   setColor(GRAY);
   visitor.PushGray(this);
 
@@ -430,7 +430,7 @@ void Table::VisitGC(GCVisitor& visitor) {
 
 //----------
 
-int Table::PropagateGC(GCVisitor& visitor) {
+int LuaTable::PropagateGC(LuaGCVisitor& visitor) {
   visitor.MarkObject(metatable);
 
   bool weakkey = false;
@@ -460,7 +460,7 @@ int Table::PropagateGC(GCVisitor& visitor) {
 
 //----------
 
-int Table::PropagateGC_Strong(GCVisitor& visitor) {
+int LuaTable::PropagateGC_Strong(LuaGCVisitor& visitor) {
   setColor(BLACK);
 
   for(int i = 0; i < (int)array_.size(); i++) {
@@ -472,7 +472,7 @@ int Table::PropagateGC_Strong(GCVisitor& visitor) {
 
     if(n.i_val.isNil()) {
       if (n.i_key.isWhite()) {
-        n.i_key = TValue::Nil();
+        n.i_key = LuaValue::Nil();
       }
     } else {
       visitor.MarkValue(n.i_key);
@@ -485,7 +485,7 @@ int Table::PropagateGC_Strong(GCVisitor& visitor) {
 
 //----------
 
-int Table::PropagateGC_WeakValues(GCVisitor& visitor) {
+int LuaTable::PropagateGC_WeakValues(LuaGCVisitor& visitor) {
   bool hasDeadValues = false;
 
   for(int i = 0; i < (int)array_.size(); i++) {
@@ -498,7 +498,7 @@ int Table::PropagateGC_WeakValues(GCVisitor& visitor) {
     // Sweep dead keys with no values, mark all other
     // keys.
     if(n.i_val.isNil() && n.i_key.isWhite()) {
-      n.i_key = TValue::Nil();
+      n.i_key = LuaValue::Nil();
     } else {
       visitor.MarkValue(n.i_key);
     }
@@ -519,7 +519,7 @@ int Table::PropagateGC_WeakValues(GCVisitor& visitor) {
 //----------
 // weak keys, strong values
 
-int Table::PropagateGC_Ephemeron(GCVisitor& visitor) {
+int LuaTable::PropagateGC_Ephemeron(LuaGCVisitor& visitor) {
   bool propagate = false;
   bool hasDeadKeys = false;
 
@@ -535,7 +535,7 @@ int Table::PropagateGC_Ephemeron(GCVisitor& visitor) {
     // sweep keys for nil values
     if (n.i_val.isNil()) {
       if (n.i_key.isWhite()) {
-        n.i_key = TValue::Nil();
+        n.i_key = LuaValue::Nil();
       }
       continue;
     }
@@ -567,10 +567,10 @@ int Table::PropagateGC_Ephemeron(GCVisitor& visitor) {
 
 //----------
 
-void Table::SweepWhite() {
+void LuaTable::SweepWhite() {
   for (int i = 0; i < (int)array_.size(); i++) {
     if (array_[i].isLiveColor()) {
-      array_[i] = TValue::Nil();
+      array_[i] = LuaValue::Nil();
     }
   }
 
@@ -578,34 +578,34 @@ void Table::SweepWhite() {
     Node& n = hash_[i];
 
     if(n.i_key.isLiveColor()) {
-      n.i_key = TValue::Nil();
-      n.i_val = TValue::Nil();
+      n.i_key = LuaValue::Nil();
+      n.i_val = LuaValue::Nil();
     }
 
     if(n.i_val.isLiveColor()) {
-      n.i_val = TValue::Nil();
+      n.i_val = LuaValue::Nil();
     }
   }
 }
 
 //----------
 
-void Table::SweepWhiteKeys() {
+void LuaTable::SweepWhiteKeys() {
   for(int i = 0; i < (int)hash_.size(); i++) {
     Node& n = hash_[i];
     if(n.i_key.isLiveColor()) {
-      n.i_val = TValue::Nil();
-      n.i_key = TValue::Nil();
+      n.i_val = LuaValue::Nil();
+      n.i_key = LuaValue::Nil();
     }
   }
 }
 
 //----------
 
-void Table::SweepWhiteVals() {
+void LuaTable::SweepWhiteVals() {
   for (int i = 0; i < (int)array_.size(); i++) {
     if (array_[i].isLiveColor()) {
-      array_[i] = TValue::Nil();
+      array_[i] = LuaValue::Nil();
     }
   }
 
@@ -614,9 +614,9 @@ void Table::SweepWhiteVals() {
     if(!n.i_val.isLiveColor()) continue;
 
     // White value. If key was white, key goes away too.
-    n.i_val = TValue::Nil();
+    n.i_val = LuaValue::Nil();
     if (n.i_key.isWhite()) {
-      n.i_key = TValue::Nil();
+      n.i_key = LuaValue::Nil();
     }
   }
 }

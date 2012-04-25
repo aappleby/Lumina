@@ -123,23 +123,23 @@ l_noret luaX_syntaxerror (LexState *ls, const char *msg) {
 ** it will not be collected until the end of the function's compilation
 ** (by that time it should be anchored in function's prototype)
 */
-TString *luaX_newstring (LexState *ls, const char *str, size_t l) {
+LuaString *luaX_newstring (LexState *ls, const char *str, size_t l) {
   THREAD_CHECK(ls->L);
-  lua_State *L = ls->L;
+  LuaThread *L = ls->L;
 
-  TString* ts = NULL;
+  LuaString* ts = NULL;
   {
     ScopedMemChecker c;
     ts = thread_G->strings_->Create(str, l);  /* create new string */
-    L->stack_.push_nocheck(TValue(ts));  /* temporarily anchor it in stack */
+    L->stack_.push_nocheck(LuaValue(ts));  /* temporarily anchor it in stack */
   }
 
   // TODO(aappleby): Save string in 'ls->fs->h'. Why it does so exactly this way, I don't
   // know. Will have to investigate in the future.
-  TValue s(ts);
+  LuaValue s(ts);
   {
     ScopedMemChecker c;
-    ls->fs->constant_map->set(s, TValue(true));
+    ls->fs->constant_map->set(s, LuaValue(true));
   }
   luaC_barrierback(ls->fs->constant_map, s);
 
@@ -164,7 +164,7 @@ static void inclinenumber (LexState *ls) {
 }
 
 
-void luaX_setinput (lua_State *L, LexState *ls, ZIO *z, TString *source, int firstchar) {
+void luaX_setinput (LuaThread *L, LexState *ls, ZIO *z, LuaString *source, int firstchar) {
   ScopedMemChecker c;
   THREAD_CHECK(L);
 
@@ -237,7 +237,7 @@ static void trydecpoint (LexState *ls, SemInfo *seminfo) {
 }
 
 
-/* lua_Number */
+/* double */
 static void read_numeral (LexState *ls, SemInfo *seminfo) {
   THREAD_CHECK(ls->L);
   assert(lisdigit(ls->current));
@@ -503,7 +503,7 @@ static int llex (LexState *ls, SemInfo *seminfo) {
       }
       default: {
         if (lislalpha(ls->current)) {  /* identifier or reserved word? */
-          TString *ts;
+          LuaString *ts;
           do {
             save_and_next(ls);
           } while (lislalnum(ls->current));

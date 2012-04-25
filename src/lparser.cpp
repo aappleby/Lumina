@@ -60,7 +60,7 @@ static void anchor_token (LexState *ls) {
   /* last token from outer function must be EOS */
   assert(ls->fs != NULL || ls->t.token == TK_EOS);
   if (ls->t.token == TK_NAME || ls->t.token == TK_STRING) {
-    TString *ts = ls->t.seminfo.ts;
+    LuaString *ts = ls->t.seminfo.ts;
     luaX_newstring(ls, ts->c_str(), ts->getLen());
   }
 }
@@ -81,7 +81,7 @@ static l_noret error_expected (LexState *ls, int token) {
 
 
 static l_noret errorlimit (FuncState *fs, int limit, const char *what) {
-  lua_State *L = fs->ls->L;
+  LuaThread *L = fs->ls->L;
   const char *msg;
   int line = fs->f->linedefined;
   const char *where = (line == 0)
@@ -136,8 +136,8 @@ static void check_match (LexState *ls, int what, int who, int where) {
 }
 
 
-static TString *str_checkname (LexState *ls) {
-  TString *ts;
+static LuaString *str_checkname (LexState *ls) {
+  LuaString *ts;
   check(ls, TK_NAME);
   ts = ls->t.seminfo.ts;
   luaX_next(ls);
@@ -152,7 +152,7 @@ static void init_exp (expdesc *e, expkind k, int i) {
 }
 
 
-static void codestring (LexState *ls, expdesc *e, TString *s) {
+static void codestring (LexState *ls, expdesc *e, LuaString *s) {
   init_exp(e, VK, luaK_stringK(ls->fs, s));
 }
 
@@ -162,9 +162,9 @@ static void checkname (LexState *ls, expdesc *e) {
 }
 
 
-static int registerlocalvar (LexState *ls, TString *varname) {
+static int registerlocalvar (LexState *ls, LuaString *varname) {
   FuncState *fs = ls->fs;
-  Proto *f = fs->f;
+  LuaProto *f = fs->f;
   int oldsize = (int)f->locvars.size();
   if(fs->nlocvars >= (int)f->locvars.size()) {
     ScopedMemChecker c;
@@ -173,12 +173,12 @@ static int registerlocalvar (LexState *ls, TString *varname) {
   
   while (oldsize < (int)f->locvars.size()) f->locvars[oldsize++].varname = NULL;
   f->locvars[fs->nlocvars].varname = varname;
-  luaC_barrier(f, TValue(varname));
+  luaC_barrier(f, LuaValue(varname));
   return fs->nlocvars++;
 }
 
 
-static void new_localvar (LexState *ls, TString *name) {
+static void new_localvar (LexState *ls, LuaString *name) {
   FuncState *fs = ls->fs;
   Dyndata *dyd = ls->dyd;
   int reg = registerlocalvar(ls, name);
@@ -223,7 +223,7 @@ static void removevars (FuncState *fs, int tolevel) {
 }
 
 
-static int searchupvalue (FuncState *fs, TString *name) {
+static int searchupvalue (FuncState *fs, LuaString *name) {
   int i;
   Upvaldesc *up = fs->f->upvalues.begin();
   for (i = 0; i < fs->num_upvals; i++) {
@@ -233,8 +233,8 @@ static int searchupvalue (FuncState *fs, TString *name) {
 }
 
 
-static int newupvalue (FuncState *fs, TString *name, expdesc *v) {
-  Proto *f = fs->f;
+static int newupvalue (FuncState *fs, LuaString *name, expdesc *v) {
+  LuaProto *f = fs->f;
   int oldsize = (int)f->upvalues.size();
   checklimit(fs, fs->num_upvals + 1, MAXUPVAL, "upvalues");
   if(fs->num_upvals >= (int)f->upvalues.size()) {
@@ -245,12 +245,12 @@ static int newupvalue (FuncState *fs, TString *name, expdesc *v) {
   f->upvalues[fs->num_upvals].instack = (v->k == VLOCAL);
   f->upvalues[fs->num_upvals].idx = cast_byte(v->info);
   f->upvalues[fs->num_upvals].name = name;
-  luaC_barrier(f, TValue(name));
+  luaC_barrier(f, LuaValue(name));
   return fs->num_upvals++;
 }
 
 
-static int searchvar (FuncState *fs, TString *n) {
+static int searchvar (FuncState *fs, LuaString *n) {
   int i;
   for (i=fs->nactvar-1; i >= 0; i--) {
     if (n == getlocvar(fs, i)->varname)
@@ -275,7 +275,7 @@ static void markupval (FuncState *fs, int level) {
   Find variable with given name 'n'. If it is an upvalue, add this
   upvalue into all intermediate functions.
 */
-static int singlevaraux (FuncState *fs, TString *n, expdesc *var, int base) {
+static int singlevaraux (FuncState *fs, LuaString *n, expdesc *var, int base) {
   if (fs == NULL)  /* no more levels? */
     return VVOID;  /* default is global */
   else {
@@ -302,7 +302,7 @@ static int singlevaraux (FuncState *fs, TString *n, expdesc *var, int base) {
 
 
 static void singlevar (LexState *ls, expdesc *var) {
-  TString *varname = str_checkname(ls);
+  LuaString *varname = str_checkname(ls);
   FuncState *fs = ls->fs;
   if (singlevaraux(fs, varname, var, 1) == VVOID) {  /* global name? */
     expdesc key;
@@ -342,7 +342,7 @@ static void closegoto (LexState *ls, int g, Labeldesc *label) {
   Labeldesc *gt = &gl->arr[g];
   assert(gt->name == label->name);
   if (gt->nactvar < label->nactvar) {
-    TString *vname = getlocvar(fs, gt->nactvar)->varname;
+    LuaString *vname = getlocvar(fs, gt->nactvar)->varname;
     const char *msg = luaO_pushfstring(ls->L,
       "<goto %s> at line %d jumps into the scope of local " LUA_QS,
       gt->name->c_str(), gt->line, vname->c_str());
@@ -379,7 +379,7 @@ static int findlabel (LexState *ls, int g) {
 }
 
 
-static int newlabelentry (LexState *ls, Labellist *l, TString *name,
+static int newlabelentry (LexState *ls, Labellist *l, LuaString *name,
                           int line, int pc) {
   int n = l->n;
   if(n >= (int)l->arr.size()) {
@@ -451,7 +451,7 @@ static void enterblock (FuncState *fs, BlockCnt *bl, uint8_t isloop) {
 ** create a label named "break" to resolve break statements
 */
 static void breaklabel (LexState *ls) {
-  TString* n;
+  LuaString* n;
   {
     ScopedMemChecker c;
     n = thread_G->strings_->Create("break");
@@ -500,9 +500,9 @@ static void leaveblock (FuncState *fs) {
 ** adds prototype being created into its parent list of prototypes
 ** and codes instruction to create new closure
 */
-static void codeclosure (LexState *ls, Proto *clp, expdesc *v) {
+static void codeclosure (LexState *ls, LuaProto *clp, expdesc *v) {
   FuncState *fs = ls->fs->prev;
-  Proto *f = fs->f;  /* prototype of function creating new closure */
+  LuaProto *f = fs->f;  /* prototype of function creating new closure */
   if (fs->num_protos >= (int)f->subprotos_.size()) {
     int oldsize = (int)f->subprotos_.size();
     if(fs->num_protos >= (int)f->subprotos_.size()) {
@@ -512,7 +512,7 @@ static void codeclosure (LexState *ls, Proto *clp, expdesc *v) {
     while (oldsize < (int)f->subprotos_.size()) f->subprotos_[oldsize++] = NULL;
   }
   f->subprotos_[fs->num_protos++] = clp;
-  luaC_barrier(f, TValue(clp));
+  luaC_barrier(f, LuaValue(clp));
   init_exp(v, VRELOCABLE, luaK_codeABx(fs, OP_CLOSURE, 0, fs->num_protos-1));
   luaK_exp2nextreg(fs, v);  /* fix it at stack top (for GC) */
 }
@@ -520,8 +520,8 @@ static void codeclosure (LexState *ls, Proto *clp, expdesc *v) {
 
 static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
 
-  lua_State *L = ls->L;
-  Proto *f;
+  LuaThread *L = ls->L;
+  LuaProto *f;
   fs->prev = ls->fs;  /* linked list of funcstates */
   fs->ls = ls;
   ls->fs = fs;
@@ -540,11 +540,11 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   LuaResult result = LUA_OK;
   {
     ScopedMemChecker c;
-    f = new Proto();
+    f = new LuaProto();
     f->linkGC(getGlobalGCHead());
 
     /* anchor prototype (to avoid being collected) */
-    result = L->stack_.push_reserve2(TValue(f));
+    result = L->stack_.push_reserve2(LuaValue(f));
   }
   handleResult(result);
 
@@ -554,10 +554,10 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
     f->source = ls->source;
     f->maxstacksize = 2;  /* registers 0/1 are always valid */
 
-    fs->constant_map = new Table();
+    fs->constant_map = new LuaTable();
     /* anchor table of constants (to avoid being collected) */
     
-    result = L->stack_.push_reserve2(TValue(fs->constant_map));
+    result = L->stack_.push_reserve2(LuaValue(fs->constant_map));
   }
   handleResult(result);
 
@@ -566,9 +566,9 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
 
 
 static void close_func (LexState *ls) {
-  lua_State *L = ls->L;
+  LuaThread *L = ls->L;
   FuncState *fs = ls->fs;
-  Proto *f = fs->f;
+  LuaProto *f = fs->f;
   luaK_ret(fs, 0, 0);  /* final return */
   leaveblock(fs);
   {
@@ -783,7 +783,7 @@ static void constructor (LexState *ls, expdesc *t) {
 static void parlist (LexState *ls) {
   /* parlist -> [ param { `,' param } ] */
   FuncState *fs = ls->fs;
-  Proto *f = fs->f;
+  LuaProto *f = fs->f;
   int nparams = 0;
   f->is_vararg = 0;
   if (ls->t.token != ')') {  /* is `parlist' not empty? */
@@ -1211,7 +1211,7 @@ static int cond (LexState *ls) {
 
 static void gotostat (LexState *ls, int pc) {
   int line = ls->linenumber;
-  TString *label;
+  LuaString *label;
   int g;
   if (testnext(ls, TK_GOTO))
     label = str_checkname(ls);
@@ -1228,7 +1228,7 @@ static void gotostat (LexState *ls, int pc) {
 
 
 /* check for repeated labels on the same block */
-static void checkrepeated (FuncState *fs, Labellist *ll, TString *label) {
+static void checkrepeated (FuncState *fs, Labellist *ll, LuaString *label) {
   int i;
   for (i = fs->bl->firstlabel; i < ll->n; i++) {
     if (label == ll->arr[i].name) {
@@ -1241,7 +1241,7 @@ static void checkrepeated (FuncState *fs, Labellist *ll, TString *label) {
 }
 
 
-static void labelstat (LexState *ls, TString *label, int line) {
+static void labelstat (LexState *ls, LuaString *label, int line) {
   /* label -> '::' NAME '::' */
   FuncState *fs = ls->fs;
   Labellist *ll = &ls->dyd->label;
@@ -1337,7 +1337,7 @@ static void forbody (LexState *ls, int base, int line, int nvars, int isnum) {
 }
 
 
-static void fornum (LexState *ls, TString *varname, int line) {
+static void fornum (LexState *ls, LuaString *varname, int line) {
   /* fornum -> NAME = exp1,exp1[,exp1] forbody */
   FuncState *fs = ls->fs;
   int base = fs->freereg;
@@ -1361,7 +1361,7 @@ static void fornum (LexState *ls, TString *varname, int line) {
 }
 
 
-static void forlist (LexState *ls, TString *indexname) {
+static void forlist (LexState *ls, LuaString *indexname) {
   /* forlist -> NAME {,NAME} IN explist forbody */
   FuncState *fs = ls->fs;
   expdesc e;
@@ -1392,7 +1392,7 @@ static void forlist (LexState *ls, TString *indexname) {
 static void forstat (LexState *ls, int line) {
   /* forstat -> FOR (fornum | forlist) END */
   FuncState *fs = ls->fs;
-  TString *varname;
+  LuaString *varname;
   BlockCnt bl;
   enterblock(fs, &bl, 1);  /* scope for loop and control variables */
   luaX_next(ls);  /* skip `for' */
@@ -1636,19 +1636,19 @@ static void statement (LexState *ls) {
 /* }====================================================================== */
 
 
-Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
+LuaProto *luaY_parser (LuaThread *L, ZIO *z, Mbuffer *buff,
                     Dyndata *dyd, const char *name, int firstchar) {
   THREAD_CHECK(L);
   LexState lexstate;
   FuncState funcstate;
   BlockCnt bl;
-  TString* tname = NULL;
+  LuaString* tname = NULL;
   LuaResult result;
   {
     ScopedMemChecker c;
     tname = thread_G->strings_->Create(name);
     /* push name to protect it */
-    result = L->stack_.push_reserve2(TValue(tname));
+    result = L->stack_.push_reserve2(LuaValue(tname));
   }
   handleResult(result);
   lexstate.buff = buff;

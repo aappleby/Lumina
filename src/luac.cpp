@@ -22,7 +22,7 @@
 #include "lstate.h"
 #include "lundump.h"
 
-static void PrintFunction(const Proto* f, int full);
+static void PrintFunction(const LuaProto* f, int full);
 #define luaU_print	PrintFunction
 
 #define PROGNAME	"luac"		/* default program name */
@@ -119,7 +119,7 @@ static int doargs(int argc, char* argv[])
 
 #define FUNCTION "(function()end)();"
 
-static const char* reader(lua_State *L, void *ud, size_t *size)
+static const char* reader(LuaThread *L, void *ud, size_t *size)
 {
  UNUSED(L);
  if ((*(int*)ud)--)
@@ -134,13 +134,13 @@ static const char* reader(lua_State *L, void *ud, size_t *size)
  }
 }
 
-static const Proto* combine(lua_State* L, int n)
+static const LuaProto* combine(LuaThread* L, int n)
 {
  if (n==1)
   return L->stack_.top_[-1].getLClosure()->proto_;
  else
  {
-  Proto* f;
+  LuaProto* f;
   int i=n;
   if (lua_load(L,reader,&i,"=(" PROGNAME ")",NULL)!=LUA_OK) fatal(lua_tostring(L,-1));
   f = L->stack_.top_[-1].getLClosure()->proto_;
@@ -154,17 +154,17 @@ static const Proto* combine(lua_State* L, int n)
  }
 }
 
-static int writer(lua_State* L, const void* p, size_t size, void* u)
+static int writer(LuaThread* L, const void* p, size_t size, void* u)
 {
  UNUSED(L);
  return (fwrite(p,size,1,(FILE*)u)!=1) && (size!=0);
 }
 
-static int pmain(lua_State* L)
+static int pmain(LuaThread* L)
 {
  int argc=(int)lua_tointeger(L,1);
  char** argv=(char**)lua_touserdata(L,2);
- const Proto* f;
+ const LuaProto* f;
  int i;
  if (!lua_checkstack(L,argc)) fatal("too many input files");
  for (i=0; i<argc; i++)
@@ -187,7 +187,7 @@ static int pmain(lua_State* L)
 
 int main(int argc, char* argv[])
 {
-  lua_State* L;
+  LuaThread* L;
   int i=doargs(argc,argv);
   argc-=i; argv+=i;
   if (argc<=0) usage("no input files given");
@@ -218,7 +218,7 @@ int main(int argc, char* argv[])
 
 #define VOID(p)		((const void*)(p))
 
-static void PrintString(const TString* ts)
+static void PrintString(const LuaString* ts)
 {
  const char* s=ts->c_str();
  size_t i,n=ts->getLen();
@@ -246,9 +246,9 @@ static void PrintString(const TString* ts)
  printf("%c",'"');
 }
 
-static void PrintConstant(const Proto* f, int i)
+static void PrintConstant(const LuaProto* f, int i)
 {
-  TValue v = f->constants[i];
+  LuaValue v = f->constants[i];
   if(v.isNil()) {
     printf("nil");
     return;
@@ -275,7 +275,7 @@ static void PrintConstant(const Proto* f, int i)
 #define UPVALNAME(x) ((f->upvalues[x].name) ? f->upvalues[x].name->c_str() : "-")
 #define MYK(x)		(-1-(x))
 
-static void PrintCode(const Proto* f)
+static void PrintCode(const LuaProto* f)
 {
  const Instruction* code=&f->code[0];
  int pc,n=(int)f->code.size();
@@ -376,7 +376,7 @@ static void PrintCode(const Proto* f)
 #define SS(x)	((x==1)?"":"s")
 #define S(x)	(int)(x),SS(x)
 
-static void PrintHeader(const Proto* f)
+static void PrintHeader(const LuaProto* f)
 {
  const char* s=f->source ? f->source->c_str() : "=?";
  if (*s=='@' || *s=='=')
@@ -396,7 +396,7 @@ static void PrintHeader(const Proto* f)
 	S(f->locvars.size()),S(f->constants.size()),S(f->subprotos_.size()));
 }
 
-static void PrintDebug(const Proto* f)
+static void PrintDebug(const LuaProto* f)
 {
  int i,n;
  n=(int)f->constants.size();
@@ -423,7 +423,7 @@ static void PrintDebug(const Proto* f)
  }
 }
 
-static void PrintFunction(const Proto* f, int full)
+static void PrintFunction(const LuaProto* f, int full)
 {
  int i,n=(int)f->subprotos_.size();
  PrintHeader(f);

@@ -5,20 +5,20 @@
 /*
 ** Lua Upvalues
 */
-class UpVal : public LuaObject {
+class LuaUpvalue : public LuaObject {
 public:
 
-  UpVal(LuaObject** gchead);
-  ~UpVal();
+  LuaUpvalue(LuaObject** gchead);
+  ~LuaUpvalue();
 
   void unlink();
 
-  virtual void VisitGC(GCVisitor& visitor);
-  virtual int PropagateGC(GCVisitor& visitor);
+  virtual void VisitGC(LuaGCVisitor& visitor);
+  virtual int PropagateGC(LuaGCVisitor& visitor);
 
-  TValue *v;  /* points to stack or to its own value */
+  LuaValue *v;  /* points to stack or to its own value */
 
-  TValue value;  // the value (when closed)
-  UpVal *uprev;
-  UpVal *unext;
+  LuaValue value;  // the value (when closed)
+  LuaUpvalue *uprev;
+  LuaUpvalue *unext;
 };

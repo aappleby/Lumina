@@ -5,7 +5,7 @@
 #include "LuaUpval.h"
 
 // Lua closure
-Closure::Closure(Proto* proto, int n) 
+LuaClosure::LuaClosure(LuaProto* proto, int n) 
 : LuaObject(LUA_TLCL) {
   assert(l_memcontrol.limitDisabled);
   linkGC(getGlobalGCHead());
@@ -13,7 +13,7 @@ Closure::Closure(Proto* proto, int n)
   isC = 0;
   nupvalues = n;
   pupvals_ = NULL;
-  ppupvals_ = (UpVal**)luaM_alloc_nocheck(n * sizeof(TValue*));
+  ppupvals_ = (LuaUpvalue**)luaM_alloc_nocheck(n * sizeof(LuaValue*));
   cfunction_ = NULL;
   proto_ = proto;
 
@@ -21,32 +21,32 @@ Closure::Closure(Proto* proto, int n)
 }
 
 // C closure
-Closure::Closure(lua_CFunction func, int n) 
+LuaClosure::LuaClosure(LuaCallback func, int n) 
 : LuaObject(LUA_TCCL) {
   assert(l_memcontrol.limitDisabled);
   linkGC(getGlobalGCHead());
 
   isC = 1;
   nupvalues = n;
-  pupvals_ = (TValue*)luaM_alloc_nocheck(n * sizeof(TValue));
+  pupvals_ = (LuaValue*)luaM_alloc_nocheck(n * sizeof(LuaValue));
   ppupvals_ = NULL;
   cfunction_ = func;
   proto_ = NULL;
 }
 
-Closure::~Closure() {
+LuaClosure::~LuaClosure() {
   luaM_free(pupvals_);
   luaM_free(ppupvals_);
   pupvals_ = NULL;
   ppupvals_ = NULL;
 }
 
-void Closure::VisitGC(GCVisitor& visitor) {
+void LuaClosure::VisitGC(LuaGCVisitor& visitor) {
   setColor(GRAY);
   visitor.PushGray(this);
 }
 
-int Closure::PropagateGC(GCVisitor& visitor) {
+int LuaClosure::PropagateGC(LuaGCVisitor& visitor) {
   setColor(BLACK);
   if (isC) {
     for (int i=0; i< nupvalues; i++) {

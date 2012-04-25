@@ -2,30 +2,27 @@
 #include "stdint.h"
 
 class LuaObject;
-class TString;
-class lua_State;
-class lua_Debug;
-class global_State;
-class Closure;
-class stringtable;
-class CallInfo;
-class TValue;
-class UpVal;
-class Table;
-class Proto;
-class Udata;
-class GCVisitor;
+class LuaString;
+class LuaThread;
+class LuaDebug;
+class LuaVM;
+class LuaClosure;
+class LuaCollector;
+class LuaStringTable;
+class LuaStackFrame;
+class LuaValue;
+class LuaUpvalue;
+class LuaTable;
+class LuaProto;
+class LuaBlob;
+class LuaGCVisitor;
 
-typedef TValue* StkId;  /* index to stack elements */
+typedef LuaValue* StkId;  /* index to stack elements */
 
-typedef void (*lua_Hook) (lua_State *L, lua_Debug *ar);
-typedef int (*lua_CFunction) (lua_State *L);
+typedef void (*LuaHook) (LuaThread *L, LuaDebug *ar);
+typedef int (*LuaCallback) (LuaThread *L);
 
-typedef double lua_Number;
-typedef ptrdiff_t lua_Integer;
-typedef uint32_t lua_Unsigned;
 typedef uint32_t Instruction;
-
 
 //-----------------------------------------------------------------------------
 
@@ -35,23 +32,23 @@ LuaObject** getGlobalGCHead();
 
 //-----------------------------------------------------------------------------
 
-extern __declspec(thread) lua_State* thread_L;
-extern __declspec(thread) global_State* thread_G;
+extern __declspec(thread) LuaThread* thread_L;
+extern __declspec(thread) LuaVM* thread_G;
 
 class LuaScope {
 public:
-  LuaScope(lua_State* L);
+  LuaScope(LuaThread* L);
   ~LuaScope();
 
-  lua_State* oldState;
+  LuaThread* oldState;
 };
 
 class LuaGlobalScope {
 public:
-  LuaGlobalScope(lua_State* L);
+  LuaGlobalScope(LuaThread* L);
   ~LuaGlobalScope();
 
-  lua_State* oldState;
+  LuaThread* oldState;
 };
 
 #define THREAD_CHECK(A)  assert((thread_L == A) && (thread_G == A->l_G));
@@ -65,23 +62,23 @@ public:
 ** basic types
 */
 enum LuaType {
-  LUA_TNIL           = 0,   // Nil - valid value, but contains nothing.
-  LUA_TNONE          = 1,   // None - invalid value, what you get if you read past the end of an array.
-  LUA_TBOOLEAN       = 2,   // Boolean
-  LUA_TNUMBER        = 3,   // Double-precision floating point number
-  LUA_TLIGHTUSERDATA = 4,   // User-supplied void*
-  LUA_TLCF           = 5,   // C function pointer, used like a callback.
+  LUA_TNIL      = 0,   // Nil - valid value, but contains nothing.
+  LUA_TNONE     = 1,   // None - invalid value, what you get if you read past the end of an array.
+  LUA_TBOOLEAN  = 2,   // Boolean
+  LUA_TNUMBER   = 3,   // Double-precision floating point number
+  LUA_TVOID     = 4,   // User-supplied void*
+  LUA_TCALLBACK = 5,   // C function pointer, used like a callback.
 
-  LUA_TSTRING        = 6,   // String
-  LUA_TTABLE         = 7,   // Table
-  LUA_TTHREAD        = 8,   // One execution state, like a thread.
-  LUA_TPROTO         = 9,   // Function prototype, contains VM opcodes
-  LUA_TLCL           = 10,  // Lua closure
-  LUA_TCCL           = 11,  // C closure - function pointer with persistent state
-  LUA_TUPVAL         = 12,  // Persistent state object for C and Lua closuers
-  LUA_TUSERDATA      = 13,  // User-supplied blob of bytes
+  LUA_TSTRING   = 6,   // String
+  LUA_TTABLE    = 7,   // LuaTable
+  LUA_TTHREAD   = 8,   // One execution state, like a thread.
+  LUA_TPROTO    = 9,   // Function prototype, contains VM opcodes
+  LUA_TLCL      = 10,  // Lua closure
+  LUA_TCCL      = 11,  // C closure - function pointer with persistent state
+  LUA_TUPVALUE  = 12,  // Persistent state object for C and Lua closuers
+  LUA_TBLOB     = 13,  // User-supplied blob of bytes
 
-  LUA_NUMTAGS        = 14,
+  LUA_NUMTAGS   = 14,
 };
 
 /*
@@ -141,7 +138,7 @@ enum LuaResult
 
 // Whether 'val' points to a value on the Lua stack or elsewhere _does_ matter,
 // as it's used to deduce what sort of variable 'val' is.
-void handleResult(LuaResult err, const TValue* val = NULL);
+void handleResult(LuaResult err, const LuaValue* val = NULL);
 void throwError(LuaResult error);
 
 

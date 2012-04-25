@@ -5,11 +5,11 @@
 
 #include <assert.h>
 
-l_noret luaG_typeerror (const TValue *o, const char *op);
+l_noret luaG_typeerror (const LuaValue *o, const char *op);
 l_noret luaG_runerror (const char *fmt, ...);
 
-__declspec(thread) lua_State* thread_L = NULL;
-__declspec(thread) global_State* thread_G = NULL;
+__declspec(thread) LuaThread* thread_L = NULL;
+__declspec(thread) LuaVM* thread_G = NULL;
 
 char* luaT_typenames_[] = {
   "nil",
@@ -35,17 +35,17 @@ const char* ttypename(int tag) {
   return luaT_typenames_[tag];
 }
 
-const char* objtypename(const TValue* v) {
+const char* objtypename(const LuaValue* v) {
   return luaT_typenames_[v->type()];
 }
 
 char** luaT_typenames = &luaT_typenames_[0];
 
-stringtable* getGlobalStringtable() {
+LuaStringTable* getGlobalStringtable() {
   return thread_G->strings_;
 }
 
-LuaScope::LuaScope(lua_State* L) {
+LuaScope::LuaScope(LuaThread* L) {
   assert((thread_G == NULL) || (thread_G == L->l_G));
   oldState = thread_L;
   thread_L = L;
@@ -55,7 +55,7 @@ LuaScope::~LuaScope() {
 }
 
 
-LuaGlobalScope::LuaGlobalScope(lua_State* L) {
+LuaGlobalScope::LuaGlobalScope(LuaThread* L) {
   //assert(thread_G != L->l_G);
   oldState = thread_L;
   thread_L = L;
@@ -71,7 +71,7 @@ void throwError(LuaResult err) {
   throw err;
 }
 
-void handleResult(LuaResult err, const TValue* val)
+void handleResult(LuaResult err, const LuaValue* val)
 {
   // Handling errors can throw exceptions and must be done
   // outside of memory allocation blocks.

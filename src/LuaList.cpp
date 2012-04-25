@@ -9,7 +9,7 @@ void LuaGraylist::Clear() {
 void LuaGraylist::Sweep() {
   for (LuaObject* o = head_; o != NULL; o = o->next_gray_) {
     if(o->isTable()) {
-      Table *t = dynamic_cast<Table*>(o);
+      LuaTable *t = dynamic_cast<LuaTable*>(o);
       t->SweepWhite();
     }
   }
@@ -18,7 +18,7 @@ void LuaGraylist::Sweep() {
 void LuaGraylist::SweepKeys() {
   for (LuaObject* o = head_; o != NULL; o = o->next_gray_) {
     if(o->isTable()) {
-      Table *t = dynamic_cast<Table*>(o);
+      LuaTable *t = dynamic_cast<LuaTable*>(o);
       t->SweepWhiteKeys();
     }
   }
@@ -27,7 +27,7 @@ void LuaGraylist::SweepKeys() {
 void LuaGraylist::SweepValues() {
   for (LuaObject* o = head_; o != NULL; o = o->next_gray_) {
     if(o->isTable()) {
-      Table *t = dynamic_cast<Table*>(o);
+      LuaTable *t = dynamic_cast<LuaTable*>(o);
       t->SweepWhiteVals();
     }
   }

@@ -2,15 +2,15 @@
 #include "LuaObject.h"
 #include "LuaVector.h"
 
-class stringtable;
+class LuaStringTable;
 
 /*
 ** Header for string value; string bytes follow the end of this structure
 */
-class TString : public LuaObject {
+class LuaString : public LuaObject {
 public:
 
-  ~TString();
+  ~LuaString();
 
   size_t getLen() const { return len_; }
   const char* c_str() const { return buf_; }
@@ -18,15 +18,15 @@ public:
   int getReserved() const { return reserved_; }
   void setReserved(int r) { reserved_ = r; }
 
-  virtual void VisitGC(GCVisitor& visitor);
-  virtual int PropagateGC(GCVisitor& visitor);
+  virtual void VisitGC(LuaGCVisitor& visitor);
+  virtual int PropagateGC(LuaGCVisitor& visitor);
 
 protected:
 
-  TString(uint32_t hash, const char* str, int len);
+  LuaString(uint32_t hash, const char* str, int len);
   uint32_t getHash() const { return hash_; }
 
-  friend class stringtable;
+  friend class LuaStringTable;
 
   char* buf_;
   int reserved_;
@@ -35,14 +35,14 @@ protected:
 
 };
 
-class stringtable {
+class LuaStringTable {
 public:
 
-  stringtable();
-  ~stringtable();
+  LuaStringTable();
+  ~LuaStringTable();
 
-  TString* Create(const char* str);
-  TString* Create(const char* str, int len);
+  LuaString* Create(const char* str);
+  LuaString* Create(const char* str, int len);
 
   void Resize(int newsize);
   void Shrink();
@@ -54,13 +54,13 @@ public:
   // These are used only by ltests.cpp
   int getStringCount() const { return nuse_; }
   int getHashSize() const { return (int)hash_.size(); }
-  TString* getStringAt(int index) const { return (TString*)hash_[index]; }
+  LuaString* getStringAt(int index) const { return (LuaString*)hash_[index]; }
 
 protected:
 
-  LuaVector<TString*> hash_;
+  LuaVector<LuaString*> hash_;
   uint32_t nuse_;
   int sweepCursor_;
 
-  TString* find(uint32_t hash, const char* str, size_t len);
+  LuaString* find(uint32_t hash, const char* str, size_t len);
 };

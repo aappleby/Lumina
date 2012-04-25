@@ -1,6 +1,6 @@
 /*
 ** $Id: ltablib.c,v 1.63 2011/11/28 17:26:30 roberto Exp $
-** Library for Table Manipulation
+** Library for LuaTable Manipulation
 ** See Copyright Notice in lua.h
 */
 
@@ -22,7 +22,7 @@
 	(luaL_checktype(L, n, LUA_TTABLE), luaL_len(L, n))
 
 
-static int tinsert (lua_State *L) {
+static int tinsert (LuaThread *L) {
   THREAD_CHECK(L);
   int e = aux_getn(L, 1) + 1;  /* first empty element */
   int pos;  /* where to insert new element */
@@ -50,7 +50,7 @@ static int tinsert (lua_State *L) {
 }
 
 
-static int tremove (lua_State *L) {
+static int tremove (LuaThread *L) {
   THREAD_CHECK(L);
   int e = aux_getn(L, 1);
   int pos = luaL_optint(L, 2, e);
@@ -61,13 +61,13 @@ static int tremove (lua_State *L) {
     lua_rawgeti(L, 1, pos+1);
     lua_rawseti(L, 1, pos);  /* t[pos] = t[pos+1] */
   }
-  L->stack_.push(TValue::Nil());
+  L->stack_.push(LuaValue::Nil());
   lua_rawseti(L, 1, e);  /* t[e] = nil */
   return 1;
 }
 
 
-static void addfield (lua_State *L, luaL_Buffer *b, int i) {
+static void addfield (LuaThread *L, luaL_Buffer *b, int i) {
   THREAD_CHECK(L);
   lua_rawgeti(L, 1, i);
   if (!lua_isStringable(L, -1))
@@ -77,7 +77,7 @@ static void addfield (lua_State *L, luaL_Buffer *b, int i) {
 }
 
 
-static int tconcat (lua_State *L) {
+static int tconcat (LuaThread *L) {
   THREAD_CHECK(L);
   luaL_Buffer b;
   size_t lsep;
@@ -104,7 +104,7 @@ static int tconcat (lua_State *L) {
 ** =======================================================
 */
 
-static int pack (lua_State *L) {
+static int pack (LuaThread *L) {
   THREAD_CHECK(L);
   int n = L->stack_.getTopIndex();  /* number of elements to pack */
   lua_createtable(L, n, 1);  /* create result table */
@@ -122,7 +122,7 @@ static int pack (lua_State *L) {
 }
 
 
-static int unpack (lua_State *L) {
+static int unpack (LuaThread *L) {
   THREAD_CHECK(L);
   int i, e, n;
   luaL_checktype(L, 1, LUA_TTABLE);
@@ -151,13 +151,13 @@ static int unpack (lua_State *L) {
 */
 
 
-static void set2 (lua_State *L, int i, int j) {
+static void set2 (LuaThread *L, int i, int j) {
   THREAD_CHECK(L);
   lua_rawseti(L, 1, i);
   lua_rawseti(L, 1, j);
 }
 
-static int sort_comp (lua_State *L, int a, int b) {
+static int sort_comp (LuaThread *L, int a, int b) {
   THREAD_CHECK(L);
   if (!lua_isnil(L, 2)) {  /* function? */
     int res;
@@ -175,7 +175,7 @@ static int sort_comp (lua_State *L, int a, int b) {
   }
 }
 
-static void auxsort (lua_State *L, int l, int u) {
+static void auxsort (LuaThread *L, int l, int u) {
   THREAD_CHECK(L);
   while (l < u) {  /* for tail recursion */
     int i, j;
@@ -239,7 +239,7 @@ static void auxsort (lua_State *L, int l, int u) {
   }  /* repeat the routine for the larger one */
 }
 
-static int sort (lua_State *L) {
+static int sort (LuaThread *L) {
   THREAD_CHECK(L);
   int n = aux_getn(L, 1);
   luaL_checkstack(L, 40, "");  /* assume array is smaller than 2^40 */
@@ -266,7 +266,7 @@ static const luaL_Reg tab_funcs[] = {
 };
 
 
-int luaopen_table (lua_State *L) {
+int luaopen_table (LuaThread *L) {
   THREAD_CHECK(L);
 
   lua_createtable(L, 0, sizeof(tab_funcs)/sizeof((tab_funcs)[0]) - 1);

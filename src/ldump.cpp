@@ -18,7 +18,7 @@
 #include "lundump.h"
 
 typedef struct {
- lua_State* L;
+ LuaThread* L;
  lua_Writer writer;
  void* data;
  int strip;
@@ -47,7 +47,7 @@ static void DumpInt(int x, DumpState* D)
  DumpVar(x,D);
 }
 
-static void DumpNumber(lua_Number x, DumpState* D)
+static void DumpNumber(double x, DumpState* D)
 {
  DumpVar(x,D);
 }
@@ -58,7 +58,7 @@ static void DumpVector(const void* b, int n, size_t size, DumpState* D)
  DumpMem(b,n,size,D);
 }
 
-static void DumpString(const TString* s, DumpState* D)
+static void DumpString(const LuaString* s, DumpState* D)
 {
  if (s==NULL)
  {
@@ -75,15 +75,15 @@ static void DumpString(const TString* s, DumpState* D)
 
 #define DumpCode(f,D)	 DumpVector(&f->code[0],(int)f->code.size(),sizeof(Instruction),D)
 
-static void DumpFunction(const Proto* f, DumpState* D);
+static void DumpFunction(const LuaProto* f, DumpState* D);
 
-static void DumpConstants(const Proto* f, DumpState* D)
+static void DumpConstants(const LuaProto* f, DumpState* D)
 {
   int n = (int)f->constants.size();
   DumpInt(n,D);
   for(int i=0; i < n; i++)
   {
-    TValue v = f->constants[i];
+    LuaValue v = f->constants[i];
     DumpChar(v.type(),D);
 
     if(v.isBool()) {
@@ -101,7 +101,7 @@ static void DumpConstants(const Proto* f, DumpState* D)
   }
 }
 
-static void DumpUpvalues(const Proto* f, DumpState* D)
+static void DumpUpvalues(const LuaProto* f, DumpState* D)
 {
  int i,n=(int)f->upvalues.size();
  DumpInt(n,D);
@@ -112,7 +112,7 @@ static void DumpUpvalues(const Proto* f, DumpState* D)
  }
 }
 
-static void DumpDebug(const Proto* f, DumpState* D)
+static void DumpDebug(const LuaProto* f, DumpState* D)
 {
  int i,n;
  DumpString((D->strip) ? NULL : f->source,D);
@@ -131,7 +131,7 @@ static void DumpDebug(const Proto* f, DumpState* D)
  for (i=0; i<n; i++) DumpString(f->upvalues[i].name,D);
 }
 
-static void DumpFunction(const Proto* f, DumpState* D)
+static void DumpFunction(const LuaProto* f, DumpState* D)
 {
  DumpInt(f->linedefined,D);
  DumpInt(f->lastlinedefined,D);
@@ -154,7 +154,7 @@ static void DumpHeader(DumpState* D)
 /*
 ** dump Lua function as precompiled chunk
 */
-int luaU_dump (lua_State* L, const Proto* f, lua_Writer w, void* data, int strip)
+int luaU_dump (LuaThread* L, const LuaProto* f, lua_Writer w, void* data, int strip)
 {
  THREAD_CHECK(L);
  DumpState D;

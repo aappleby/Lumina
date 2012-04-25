@@ -65,19 +65,19 @@
 // TODO(aappleby): If this is replaced with barrierback everything still works.
 // Is it needed?
 
-void luaC_barrier (LuaObject *o, TValue value) {
+void luaC_barrier (LuaObject *o, LuaValue value) {
   if(!o->isBlack()) return;
   if(!value.isWhite()) return;
 
   LuaObject* v = value.getObject();
 
-  global_State *g = thread_G;
+  LuaVM *g = thread_G;
   assert(o->isBlack() && v->isWhite() && !v->isDead() && !o->isDead());
   assert(isgenerational(g) || (g->gcstate != GCSpause));
   assert(o->type() != LUA_TTABLE);
 
   if (keepinvariant(g)) {  // must keep invariant?
-    GCVisitor visitor(&g->gc_);
+    LuaGCVisitor visitor(&g->gc_);
     visitor.MarkObject(v);  // restore invariant
   }
   else {  // sweep phase
@@ -97,7 +97,7 @@ void luaC_barrier (LuaObject *o, TValue value) {
 // If we add a white object to a black table, we need to force the garbage
 // collector to re-traverse the table by putting it back on a gray list.
 
-void luaC_barrierback (LuaObject *o, TValue v) {
+void luaC_barrierback (LuaObject *o, LuaValue v) {
   if(!o->isBlack()) return;
   if(!v.isWhite()) return;
 
@@ -119,11 +119,11 @@ void luaC_barrierback (LuaObject *o, TValue v) {
 // TODO(aappleby): If this just does the grayagain push everything works,
 // is it needed?
 
-void luaC_barrierproto (Proto *p, Closure* c) {
+void luaC_barrierproto (LuaProto *p, LuaClosure* c) {
   if(!p->isBlack()) return;
 
   if (p->cache == NULL) {  // first time?
-    luaC_barrier(p, TValue(c));
+    luaC_barrier(p, LuaValue(c));
   }
   else {  // use a backward barrier
     thread_G->gc_.grayagain_.Push(p);
@@ -146,10 +146,10 @@ void luaC_barrierproto (Proto *p, Closure* c) {
 ** mark root set and reset all gray lists, to start a new
 ** incremental (or full) collection
 */
-static void markroot (global_State *g) {
+static void markroot (LuaVM *g) {
   g->gc_.ClearGraylists();
 
-  GCVisitor visitor(&g->gc_);
+  LuaGCVisitor visitor(&g->gc_);
 
   visitor.MarkObject(g->mainthread);
   visitor.MarkValue(g->l_registry);
@@ -181,8 +181,8 @@ static void markroot (global_State *g) {
 ** =======================================================
 */
 
-void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal) {
-  TValue mode = fasttm2(t->metatable, TM_MODE);
+void getTableMode(LuaTable* t, bool& outWeakKey, bool& outWeakVal) {
+  LuaValue mode = fasttm2(t->metatable, TM_MODE);
 
   if(mode.isString()) {
     outWeakKey = (strchr(mode.getString()->c_str(), 'k') != NULL);
@@ -193,7 +193,7 @@ void getTableMode(Table* t, bool& outWeakKey, bool& outWeakVal) {
 
 // Propagate marks through all objects on this graylist, removing them
 // from the list as we go.
-void PropagateGC_Graylist(LuaObject*& head, GCVisitor& visitor) {
+void PropagateGC_Graylist(LuaObject*& head, LuaGCVisitor& visitor) {
   while(head) {
     LuaObject *o = head;
     head = o->next_gray_;
@@ -218,7 +218,7 @@ static LuaObject **sweeplist (LuaObject **p, size_t count);
 ** list of call-info structures.
 */
 
-static void sweepthread (lua_State *L1) {
+static void sweepthread (LuaThread *L1) {
   if (L1->stack_.empty()) return;  /* stack not completely built yet */
   sweeplist(&L1->stack_.open_upvals_, MAX_LUMEM);  /* sweep open upvalues */
   L1->stack_.sweepCallinfo();
@@ -254,7 +254,7 @@ static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
     else {
       if (curr->isThread()) {
         /* sweep thread's upvalues */
-        sweepthread(dynamic_cast<lua_State*>(curr));
+        sweepthread(dynamic_cast<LuaThread*>(curr));
       }
       /* update marks */
       curr->makeLive();
@@ -273,7 +273,7 @@ static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
     }
     else {
       if (curr->isThread()) {
-        sweepthread(dynamic_cast<lua_State*>(curr));  /* sweep thread's upvalues */
+        sweepthread(dynamic_cast<LuaThread*>(curr));  /* sweep thread's upvalues */
       }
       if (curr->isOld()) {
         static LuaObject *nullp = NULL;
@@ -316,7 +316,7 @@ void deletelist (LuaObject*& head) {
 // Move the first item in the objects-with-finalizers list back to the global
 // GC list.
 
-static LuaObject *udata2finalize (global_State *g) {
+static LuaObject *udata2finalize (LuaVM *g) {
   LuaObject* o = g->tobefnz.Pop();  /* get first element */
   assert(o->isFinalized());
 
@@ -337,14 +337,14 @@ static LuaObject *udata2finalize (global_State *g) {
 static void GCTM (int propagateerrors) {
 
   // Pop object with finalizer off the 'finobj' list
-  TValue v = TValue(udata2finalize(thread_G));
+  LuaValue v = LuaValue(udata2finalize(thread_G));
 
   // Get the finalizer from it.
-  TValue tm = luaT_gettmbyobj2(v, TM_GC);
+  LuaValue tm = luaT_gettmbyobj2(v, TM_GC);
   if(!tm.isFunction()) return;
 
-  lua_State* L = thread_L;
-  global_State *g = thread_G;
+  LuaThread* L = thread_L;
+  LuaVM *g = thread_G;
 
   // Call the finalizer (with a bit of difficulty)
 
@@ -390,7 +390,7 @@ static void GCTM (int propagateerrors) {
 ** finalization from list 'finobj' to list 'tobefnz' (to be finalized)
 */
 void separatetobefnz (int all) {
-  global_State *g = thread_G;
+  LuaVM *g = thread_G;
   LuaObject **p = &g->finobj;
   LuaObject *curr;
 
@@ -428,15 +428,15 @@ void RemoveObjectFromList(LuaObject* o, LuaObject** list) {
 ** if object 'o' has a finalizer, remove it from 'allgc' list (must
 ** search the list to find it) and link it in 'finobj' list.
 */
-void luaC_checkfinalizer (LuaObject *o, Table *mt) {
-  global_State *g = thread_G;
+void luaC_checkfinalizer (LuaObject *o, LuaTable *mt) {
+  LuaVM *g = thread_G;
 
   // If the object is already separated, is already finalized, or has no
   // finalizer, skip it.
   if(o->isSeparated()) return;
   if(o->isFinalized()) return;
   
-  TValue tm = fasttm2(mt, TM_GC);
+  LuaValue tm = fasttm2(mt, TM_GC);
   if(tm.isNone() || tm.isNil()) return;
 
   // Remove the object from the global GC list and add it to the 'finobj' list.
@@ -464,9 +464,9 @@ void luaC_checkfinalizer (LuaObject *o, Table *mt) {
 /*
 ** change GC mode
 */
-void luaC_changemode (lua_State *L, int mode) {
+void luaC_changemode (LuaThread *L, int mode) {
   THREAD_CHECK(L);
-  global_State *g = G(L);
+  LuaVM *g = G(L);
   if (mode == g->gckind) return;  /* nothing to change */
   if (mode == KGC_GEN) {  /* change to generational mode */
     /* make sure gray lists are consistent */
@@ -489,7 +489,7 @@ void luaC_changemode (lua_State *L, int mode) {
 ** call all pending finalizers
 */
 static void callallpendingfinalizers (int propagateerrors) {
-  global_State *g = thread_G;
+  LuaVM *g = thread_G;
   while (!g->tobefnz.isEmpty()) {
     g->tobefnz.begin()->clearOld();
     GCTM(propagateerrors);
@@ -519,9 +519,9 @@ void luaC_freeallobjects () {
 static void atomic () {
   assert(!l_memcontrol.limitDisabled);
 
-  global_State *g = thread_G;
+  LuaVM *g = thread_G;
 
-  GCVisitor visitor(&g->gc_);
+  LuaGCVisitor visitor(&g->gc_);
 
   assert(!g->mainthread->isWhite());
 
@@ -538,7 +538,7 @@ static void atomic () {
 
   // remark occasional upvalues of (maybe) dead threads
   // mark all values stored in marked open upvalues. (See comment in 'lstate.h'.)
-  for (UpVal* uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {
+  for (LuaUpvalue* uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {
     if (uv->isGray()) {
       visitor.MarkValue(*uv->v);
     }
@@ -563,7 +563,7 @@ static void atomic () {
   }
   
   /* remark, to propagate `preserveness' */
-  GCVisitor v(&g->gc_);
+  LuaGCVisitor v(&g->gc_);
   g->gc_.grayhead_.PropagateGC(v);
   g->gc_.ConvergeEphemerons();
 
@@ -588,7 +588,7 @@ static void atomic () {
 static ptrdiff_t singlestep () {
   assert(!l_memcontrol.limitDisabled);
 
-  global_State *g = thread_G;
+  LuaVM *g = thread_G;
   switch (g->gcstate) {
     case GCSpause: {
       if (!isgenerational(g)) {
@@ -604,7 +604,7 @@ static ptrdiff_t singlestep () {
     }
     case GCSpropagate: {
       if (g->gc_.hasGrays()) {
-        GCVisitor visitor(&g->gc_);
+        LuaGCVisitor visitor(&g->gc_);
         LuaObject *o = g->gc_.grayhead_.Pop();
         return o->PropagateGC(visitor);
       }
@@ -672,7 +672,7 @@ static ptrdiff_t singlestep () {
 void luaC_runtilstate (int statesmask) {
   assert(!l_memcontrol.limitDisabled);
 
-  global_State *g = thread_G;
+  LuaVM *g = thread_G;
   while (!(statesmask & (1 << g->gcstate)))
     singlestep();
 }
@@ -681,7 +681,7 @@ void luaC_runtilstate (int statesmask) {
 static void generationalcollection () {
   assert(!l_memcontrol.limitDisabled);
 
-  global_State *g = thread_G;
+  LuaVM *g = thread_G;
   if (g->lastmajormem == 0) {  /* signal for another major collection? */
     luaC_fullgc(0);  /* perform a full regular collection */
     g->lastmajormem = g->getTotalBytes();  /* update control */
@@ -699,7 +699,7 @@ static void generationalcollection () {
 static void step () {
   assert(!l_memcontrol.limitDisabled);
 
-  global_State *g = thread_G;
+  LuaVM *g = thread_G;
   ptrdiff_t lim = g->gcstepmul;  /* how much to work */
   do {  /* always perform at least one single step */
     lim -= singlestep();
@@ -717,7 +717,7 @@ static void step () {
 void luaC_forcestep () {
   assert(!l_memcontrol.limitDisabled);
 
-  global_State *g = thread_G;
+  LuaVM *g = thread_G;
   int i;
   if (isgenerational(g)) {
     generationalcollection();
@@ -747,8 +747,8 @@ void luaC_step () {
 void luaC_fullgc (int isemergency) {
   assert(!l_memcontrol.limitDisabled);
 
-  lua_State *L = thread_L;
-  global_State *g = G(L);
+  LuaThread *L = thread_L;
+  LuaVM *g = G(L);
   int origkind = g->gckind;
   assert(origkind != KGC_EMERGENCY);
   if (!isemergency)   /* do not run finalizers during emergency GC */

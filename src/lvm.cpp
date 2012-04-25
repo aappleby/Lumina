@@ -33,13 +33,13 @@
 #define MAXTAGLOOP	100
 
 // Converts value to string in-place, returning 1 if successful.
-int luaV_tostring (TValue* v) {
+int luaV_tostring (LuaValue* v) {
   assert(l_memcontrol.limitDisabled);
 
   if(v->isString()) return 1;
 
   if (v->isNumber()) {
-    lua_Number n = v->getNumber();
+    double n = v->getNumber();
     char s[LUAI_MAXNUMBER2STR];
     int l = lua_number2str(s, n);
     *v = thread_G->strings_->Create(s, l);
@@ -50,16 +50,16 @@ int luaV_tostring (TValue* v) {
 }
 
 
-static void traceexec (lua_State *L) {
+static void traceexec (LuaThread *L) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->stack_.callinfo_;
+  LuaStackFrame *ci = L->stack_.callinfo_;
   int mask = L->hookmask;
   if ((mask & LUA_MASKCOUNT) && L->hookcount == 0) {
     L->hookcount = L->basehookcount;
     luaD_hook(L, LUA_HOOKCOUNT, -1);
   }
   if (mask & LUA_MASKLINE) {
-    Proto *p = ci->getFunc()->getLClosure()->proto_;
+    LuaProto *p = ci->getFunc()->getLClosure()->proto_;
     int npc = pcRel(ci->savedpc, p);
     int newline = getfuncline(p, npc);
     if (npc == 0 ||  /* call linehook when enter a new function, */
@@ -75,8 +75,8 @@ static void traceexec (lua_State *L) {
 }
 
 
-static void callTM (lua_State *L, const TValue *f, const TValue *p1,
-                    const TValue *p2, TValue *p3, int hasres) {
+static void callTM (LuaThread *L, const LuaValue *f, const LuaValue *p1,
+                    const LuaValue *p2, LuaValue *p3, int hasres) {
   THREAD_CHECK(L);
   ptrdiff_t result = savestack(L, p3);
   L->stack_.push_nocheck(*f); // push function
@@ -99,11 +99,11 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
   }
 }
 
-static void callTM3 (lua_State *L,
-                     TValue f,
-                     TValue p1,
-                     TValue p2,
-                     TValue& result) {
+static void callTM3 (LuaThread *L,
+                     LuaValue f,
+                     LuaValue p1,
+                     LuaValue p2,
+                     LuaValue& result) {
   THREAD_CHECK(L);
   LuaResult result2;
   {
@@ -119,11 +119,11 @@ static void callTM3 (lua_State *L,
   result = L->stack_.pop();
 }
 
-static void callTM1 (lua_State *L,
-                     TValue func,
-                     TValue arg1,
-                     TValue arg2,
-                     TValue arg3) {
+static void callTM1 (LuaThread *L,
+                     LuaValue func,
+                     LuaValue arg1,
+                     LuaValue arg2,
+                     LuaValue arg3) {
   THREAD_CHECK(L);
   LuaResult result = LUA_OK;
   {
@@ -139,15 +139,15 @@ static void callTM1 (lua_State *L,
   luaD_call(L, L->stack_.top_ - 4, 0, L->stack_.callinfo_->isLua());
 }
 
-LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outResult) {
+LuaResult luaV_gettable2 (LuaThread *L, LuaValue source, LuaValue key, LuaValue& outResult) {
   THREAD_CHECK(L);
-  TValue tagmethod;
+  LuaValue tagmethod;
 
   for (int loop = 0; loop < MAXTAGLOOP; loop++) {
 
     if (source.isTable()) {
-      Table* table = source.getTable();
-      TValue value = table->get(key);
+      LuaTable* table = source.getTable();
+      LuaValue value = table->get(key);
 
       if(!value.isNone() && !value.isNil()) {
         // Basic table lookup, nothing weird going on here.
@@ -156,7 +156,7 @@ LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outRe
       }
     }
 
-    // Table lookup failed. If there's no tag method, then either the search terminates
+    // LuaTable lookup failed. If there's no tag method, then either the search terminates
     // (if object is a table) or throws an error (if object is not a table)
 
     if(source.isTable()) {
@@ -167,7 +167,7 @@ LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outRe
 
     if(tagmethod.isNone() || tagmethod.isNil()) {
       if(source.isTable()) {
-        outResult = TValue::Nil();
+        outResult = LuaValue::Nil();
         return LUA_OK;
       } else {
         return LUA_BAD_TABLE;
@@ -197,12 +197,12 @@ LuaResult luaV_gettable2 (lua_State *L, TValue source, TValue key, TValue& outRe
 // TODO(aappleby) - This gets a StkId parameter, but the tag method calling can invalidate the stack.
 // Very dangerous, need to replace.
 
-void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId outResult) {
+void luaV_gettable (LuaThread *L, const LuaValue *source, LuaValue *key, StkId outResult) {
   THREAD_CHECK(L);
 
   int stackIndex = (int)(outResult - L->stack_.begin());
 
-  TValue result;
+  LuaValue result;
   LuaResult r = luaV_gettable2(L, *source, *key, result);
 
   if(r == LUA_OK) {
@@ -215,14 +215,14 @@ void luaV_gettable (lua_State *L, const TValue *source, TValue *key, StkId outRe
 // TODO(aappleby): The original version of luaV_settable needs to be enshrined
 // as an example of baaaaaad code.
 
-void luaV_settable (lua_State *L, const TValue *t2, TValue *key, StkId val) {
+void luaV_settable (LuaThread *L, const LuaValue *t2, LuaValue *key, StkId val) {
   THREAD_CHECK(L);
   int loop;
-  TValue cursor = *t2;
+  LuaValue cursor = *t2;
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
     if (cursor.isTable()) {
-      Table *h = cursor.getTable();
-      TValue oldval = h->get(*key);
+      LuaTable *h = cursor.getTable();
+      LuaValue oldval = h->get(*key);
 
       /* if previous value is not nil, there must be a previous entry
          in the table; moreover, a metamethod has no relevance */
@@ -245,7 +245,7 @@ void luaV_settable (lua_State *L, const TValue *t2, TValue *key, StkId val) {
       }
 
       /* previous value is nil; must check the metamethod */
-      TValue tagmethod = fasttm2(h->metatable, TM_NEWINDEX);
+      LuaValue tagmethod = fasttm2(h->metatable, TM_NEWINDEX);
       if (tagmethod.isNil() || tagmethod.isNone()) {
         // no metamethod, add (key,val) to table
         if(key->isNil()) luaG_runerror("Key is invalid (either nil or NaN)");
@@ -277,7 +277,7 @@ void luaV_settable (lua_State *L, const TValue *t2, TValue *key, StkId val) {
     }
     else {
       /* not a table; check metamethod */
-      TValue tagmethod = luaT_gettmbyobj2(cursor, TM_NEWINDEX);
+      LuaValue tagmethod = luaT_gettmbyobj2(cursor, TM_NEWINDEX);
       if (tagmethod.isNone() || tagmethod.isNil()) {
         luaG_typeerror(&cursor, "index");
       }
@@ -295,10 +295,10 @@ void luaV_settable (lua_State *L, const TValue *t2, TValue *key, StkId val) {
 }
 
 
-static int call_binTM (lua_State *L, const TValue *p1, const TValue *p2,
+static int call_binTM (LuaThread *L, const LuaValue *p1, const LuaValue *p2,
                        StkId res, TMS event) {
   THREAD_CHECK(L);
-  TValue tm = luaT_gettmbyobj2(*p1, event);  /* try first operand */
+  LuaValue tm = luaT_gettmbyobj2(*p1, event);  /* try first operand */
   if (tm.isNone() || tm.isNil())
     tm = luaT_gettmbyobj2(*p2, event);  /* try second operand */
   if (tm.isNone() || tm.isNil()) return 0;
@@ -307,21 +307,21 @@ static int call_binTM (lua_State *L, const TValue *p1, const TValue *p2,
 }
 
 
-TValue get_equalTM (lua_State *L, Table *mt1, Table *mt2,
+LuaValue get_equalTM (LuaThread *L, LuaTable *mt1, LuaTable *mt2,
                                   TMS event) {
   THREAD_CHECK(L);
-  TValue tm1 = fasttm2(mt1, event);
-  if (tm1.isNone() || tm1.isNil()) return TValue::None();  /* no metamethod */
+  LuaValue tm1 = fasttm2(mt1, event);
+  if (tm1.isNone() || tm1.isNil()) return LuaValue::None();  /* no metamethod */
   if (mt1 == mt2) return tm1;  /* same metatables => same metamethods */
-  TValue tm2 = fasttm2(mt2, event);
-  if (tm2.isNone() || tm2.isNil()) return TValue::None();  /* no metamethod */
+  LuaValue tm2 = fasttm2(mt2, event);
+  if (tm2.isNone() || tm2.isNil()) return LuaValue::None();  /* no metamethod */
   if (tm1 == tm2)  /* same metamethods? */
     return tm1;
-  return TValue::None();
+  return LuaValue::None();
 }
 
 
-static int call_orderTM (lua_State *L, const TValue *p1, const TValue *p2,
+static int call_orderTM (LuaThread *L, const LuaValue *p1, const LuaValue *p2,
                          TMS event) {
   THREAD_CHECK(L);
   if (!call_binTM(L, p1, p2, L->stack_.top_, event))
@@ -331,7 +331,7 @@ static int call_orderTM (lua_State *L, const TValue *p1, const TValue *p2,
 }
 
 
-static int l_strcmp (const TString *ls, const TString *rs) {
+static int l_strcmp (const LuaString *ls, const LuaString *rs) {
   const char *l = ls->c_str();
   size_t ll = ls->getLen();
   const char *r = rs->c_str();
@@ -353,7 +353,7 @@ static int l_strcmp (const TString *ls, const TString *rs) {
 }
 
 
-int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
+int luaV_lessthan (LuaThread *L, const LuaValue *l, const LuaValue *r) {
   THREAD_CHECK(L);
   int res;
   if (l->isNumber() && r->isNumber())
@@ -366,7 +366,7 @@ int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
 }
 
 
-int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
+int luaV_lessequal (LuaThread *L, const LuaValue *l, const LuaValue *r) {
   THREAD_CHECK(L);
   int res;
   if (l->isNumber() && r->isNumber())
@@ -384,7 +384,7 @@ int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
 /*
 ** equality of Lua values. L == NULL means raw equality (no metamethods)
 */
-int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
+int luaV_equalobj_ (LuaThread *L, const LuaValue *t1, const LuaValue *t2) {
   THREAD_CHECK(L);
   if(t1->type() != t2->type()) {
     return 0;
@@ -407,7 +407,7 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
   }
 
   if(t1->isUserdata()) {
-    TValue tm = get_equalTM(L, t1->getUserdata()->metatable_, t2->getUserdata()->metatable_, TM_EQ);
+    LuaValue tm = get_equalTM(L, t1->getUserdata()->metatable_, t2->getUserdata()->metatable_, TM_EQ);
     if (tm.isNone() || tm.isNil()) return 0;  /* no TM? */
 
     callTM(L, &tm, t1, t2, L->stack_.top_, 1);  /* call TM */
@@ -415,7 +415,7 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
   }
 
   if(t1->isTable()) {
-    TValue tm = get_equalTM(L, t1->getTable()->metatable, t2->getTable()->metatable, TM_EQ);
+    LuaValue tm = get_equalTM(L, t1->getTable()->metatable, t2->getTable()->metatable, TM_EQ);
     if (tm.isNone() || tm.isNil()) return 0;  /* no TM? */
 
     callTM(L, &tm, t1, t2, L->stack_.top_, 1);  /* call TM */
@@ -428,7 +428,7 @@ int luaV_equalobj_ (lua_State *L, const TValue *t1, const TValue *t2) {
 // TODO(aappleby): Gaaaaah the logic in this is convoluted.
 // Having code with side effects (tostring) in conditionals doesn't help.
 
-void luaV_concat (lua_State *L, int total) {
+void luaV_concat (LuaThread *L, int total) {
   THREAD_CHECK(L);
   assert(total >= 2);
   do {
@@ -482,7 +482,7 @@ void luaV_concat (lua_State *L, int total) {
     for (i = 1; i < total; i++) {
       {
         ScopedMemChecker c;
-        TValue temp = top[-i-1].convertToString();
+        LuaValue temp = top[-i-1].convertToString();
         if(temp.isNone()) break;
         top[-i-1] = temp;
       }
@@ -512,7 +512,7 @@ void luaV_concat (lua_State *L, int total) {
 }
 
 
-void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
+void luaV_objlen (LuaThread *L, StkId ra, const LuaValue *rb) {
   THREAD_CHECK(L);
 
   if(rb->isString()) {
@@ -520,7 +520,7 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
     return;
   }
 
-  TValue tagmethod = luaT_gettmbyobj2(*rb, TM_LEN);
+  LuaValue tagmethod = luaT_gettmbyobj2(*rb, TM_LEN);
   if (!tagmethod.isNone()) {
     callTM(L, &tagmethod, rb, rb, ra, 1);
     return;
@@ -536,10 +536,10 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
 }
 
 
-void luaV_arith (lua_State *L, StkId ra, const TValue *rb, const TValue *rc, TMS op) {
+void luaV_arith (LuaThread *L, StkId ra, const LuaValue *rb, const LuaValue *rc, TMS op) {
   THREAD_CHECK(L);
 
-  TValue nb = rb->convertToNumber();
+  LuaValue nb = rb->convertToNumber();
 
   if(nb.isNone()) {
     if (!call_binTM(L, rb, rc, ra, op)) {
@@ -548,7 +548,7 @@ void luaV_arith (lua_State *L, StkId ra, const TValue *rb, const TValue *rc, TMS
     return;
   }
 
-  TValue nc = rc->convertToNumber();
+  LuaValue nc = rc->convertToNumber();
 
   if(nc.isNone()) {
     if (!call_binTM(L, rb, rc, ra, op)) {
@@ -558,7 +558,7 @@ void luaV_arith (lua_State *L, StkId ra, const TValue *rb, const TValue *rc, TMS
   }
 
   int arithop = op - TM_ADD + LUA_OPADD;
-  lua_Number res = luaO_arith(arithop, nb.getNumber(), nc.getNumber());
+  double res = luaO_arith(arithop, nb.getNumber(), nc.getNumber());
   *ra = res;
 }
 
@@ -568,14 +568,14 @@ void luaV_arith (lua_State *L, StkId ra, const TValue *rb, const TValue *rc, TMS
 ** whether there is a cached closure with the same upvalues needed by
 ** new closure to be created.
 */
-static Closure *getcached (Proto *p, UpVal **encup, StkId base) {
-  Closure *c = p->cache;
+static LuaClosure *getcached (LuaProto *p, LuaUpvalue **encup, StkId base) {
+  LuaClosure *c = p->cache;
   if (c != NULL) {  /* is there a cached closure? */
     int nup = (int)p->upvalues.size();
     Upvaldesc *uv = p->upvalues.begin();
     int i;
     for (i = 0; i < nup; i++) {  /* check whether it has right upvalues */
-      TValue *v = uv[i].instack ? base + uv[i].idx : encup[uv[i].idx]->v;
+      LuaValue *v = uv[i].instack ? base + uv[i].idx : encup[uv[i].idx]->v;
       if (c->ppupvals_[i]->v != v)
         return NULL;  /* wrong upvalue; cannot reuse closure */
     }
@@ -590,17 +590,17 @@ static Closure *getcached (Proto *p, UpVal **encup, StkId base) {
 ** before the assignment to 'p->cache', as the function needs the
 ** original value of that field.
 */
-static void pushclosure (lua_State *L,
-                         Proto *p,
-                         UpVal **encup,
+static void pushclosure (LuaThread *L,
+                         LuaProto *p,
+                         LuaUpvalue **encup,
                          StkId base,
                          StkId ra) {
   ScopedMemChecker c;
   THREAD_CHECK(L);
 
-  Closure *ncl = new Closure(p, (int)p->upvalues.size());
+  LuaClosure *ncl = new LuaClosure(p, (int)p->upvalues.size());
 
-  *ra = TValue(ncl);  /* anchor new closure in stack */
+  *ra = LuaValue(ncl);  /* anchor new closure in stack */
   for (int i = 0; i < (int)p->upvalues.size(); i++) {  /* fill in its upvalues */
     if (p->upvalues[i].instack) {
       /* upvalue refers to local variable? */
@@ -620,9 +620,9 @@ static void pushclosure (lua_State *L,
 /*
 ** finish execution of an opcode interrupted by an yield
 */
-void luaV_finishOp (lua_State *L) {
+void luaV_finishOp (LuaThread *L) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->stack_.callinfo_;
+  LuaStackFrame *ci = L->stack_.callinfo_;
   StkId base = ci->getBase();
   Instruction inst = *(ci->savedpc - 1);  /* interrupted instruction */
   OpCode op = GET_OPCODE(inst);
@@ -638,7 +638,7 @@ void luaV_finishOp (lua_State *L) {
       /* metamethod should not be called when operand is K */
       assert(!ISK(GETARG_B(inst)));
       /* "<=" using "<" instead? */
-      TValue tm = luaT_gettmbyobj2(base[GETARG_B(inst)], TM_LE);
+      LuaValue tm = luaT_gettmbyobj2(base[GETARG_B(inst)], TM_LE);
       if (op == OP_LE && (tm.isNone() || tm.isNil())) {
         res = !res;  /* invert result */
       }
@@ -695,11 +695,11 @@ void luaV_finishOp (lua_State *L) {
 #define KBx(i)  (k + (GETARG_Bx(i) != 0 ? GETARG_Bx(i) - 1 : GETARG_Ax(*ci->savedpc++)))
 
 
-void luaV_execute (lua_State *L) {
+void luaV_execute (LuaThread *L) {
   THREAD_CHECK(L);
-  CallInfo *ci = L->stack_.callinfo_;
-  Closure *cl;
-  TValue *k;
+  LuaStackFrame *ci = L->stack_.callinfo_;
+  LuaClosure *cl;
+  LuaValue *k;
   StkId base;
 
  newframe:  /* reentry point when frame changes (call/return) */
@@ -773,7 +773,7 @@ void luaV_execute (lua_State *L) {
       case OP_LOADNIL: 
         {
           for(uint32_t b = 0; b <= B; b++) {
-            base[A+b] = TValue::Nil();
+            base[A+b] = LuaValue::Nil();
           }
           break;
         }
@@ -805,7 +805,7 @@ void luaV_execute (lua_State *L) {
 
       case OP_SETUPVAL:
         {
-          UpVal *uv = cl->ppupvals_[GETARG_B(i)];
+          LuaUpvalue *uv = cl->ppupvals_[GETARG_B(i)];
           *uv->v = base[A];
           luaC_barrier(uv, base[A]);
           break;
@@ -824,7 +824,7 @@ void luaV_execute (lua_State *L) {
 
           {
             ScopedMemChecker c2;
-            Table* t = new Table(b, c);
+            LuaTable* t = new LuaTable(b, c);
             base[A] = t;
           }
 
@@ -843,8 +843,8 @@ void luaV_execute (lua_State *L) {
 
       case OP_ADD:
         {
-          TValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
-          TValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
+          LuaValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
+          LuaValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
           if (rb->isNumber() && rc->isNumber()) {
             double nb = rb->getNumber();
             double nc = rc->getNumber();
@@ -861,8 +861,8 @@ void luaV_execute (lua_State *L) {
 
       case OP_SUB:
         {
-          TValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
-          TValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
+          LuaValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
+          LuaValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
           if (rb->isNumber() && rc->isNumber()) {
             double nb = rb->getNumber();
             double nc = rc->getNumber();
@@ -879,8 +879,8 @@ void luaV_execute (lua_State *L) {
 
       case OP_MUL:
         {
-          TValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
-          TValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
+          LuaValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
+          LuaValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
           if (rb->isNumber() && rc->isNumber()) {
             double nb = rb->getNumber();
             double nc = rc->getNumber();
@@ -897,8 +897,8 @@ void luaV_execute (lua_State *L) {
 
       case OP_DIV:
         {
-          TValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
-          TValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
+          LuaValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
+          LuaValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
           if (rb->isNumber() && rc->isNumber()) {
             double nb = rb->getNumber();
             double nc = rc->getNumber();
@@ -915,8 +915,8 @@ void luaV_execute (lua_State *L) {
 
       case OP_MOD:
         {
-          TValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
-          TValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
+          LuaValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
+          LuaValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
           if (rb->isNumber() && rc->isNumber()) {
             double nb = rb->getNumber();
             double nc = rc->getNumber();
@@ -933,8 +933,8 @@ void luaV_execute (lua_State *L) {
 
       case OP_POW:
         {
-          TValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
-          TValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
+          LuaValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
+          LuaValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
           if (rb->isNumber() && rc->isNumber()) {
             double nb = rb->getNumber();
             double nc = rc->getNumber();
@@ -952,7 +952,7 @@ void luaV_execute (lua_State *L) {
       case OP_UNM:
         {
           if (base[B].isNumber()) {
-            lua_Number nb = base[B].getNumber();
+            double nb = base[B].getNumber();
             base[A] = -nb;
           }
           else {
@@ -1001,8 +1001,8 @@ void luaV_execute (lua_State *L) {
 
       case OP_EQ:
         {
-          TValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
-          TValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
+          LuaValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
+          LuaValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
           if (cast_int(luaV_equalobj_(L, rb, rc)) != GETARG_A(i)) {
             ci->savedpc++;
           }
@@ -1011,8 +1011,8 @@ void luaV_execute (lua_State *L) {
 
       case OP_LT:
         {
-          TValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
-          TValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
+          LuaValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
+          LuaValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
 
           int result = luaV_lessthan(L, rb, rc);
 
@@ -1022,8 +1022,8 @@ void luaV_execute (lua_State *L) {
 
       case OP_LE:
         {
-          TValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
-          TValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
+          LuaValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
+          LuaValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
 
           int result = luaV_lessequal(L, rb, rc);
 
@@ -1083,8 +1083,8 @@ void luaV_execute (lua_State *L) {
 
           if (!luaD_precall(L, ra, LUA_MULTRET)) {
             /* tail call: put called frame (n) in place of caller one (o) */
-            CallInfo *nci = L->stack_.callinfo_;  /* called frame */
-            CallInfo *oci = nci->previous;  /* caller frame */
+            LuaStackFrame *nci = L->stack_.callinfo_;  /* called frame */
+            LuaStackFrame *oci = nci->previous;  /* caller frame */
             StkId nfunc = nci->getFunc();  /* called function */
             StkId ofunc = oci->getFunc();  /* caller function */
             /* last stack slot filled by 'precall' */
@@ -1132,9 +1132,9 @@ void luaV_execute (lua_State *L) {
         // not passed the limit.
       case OP_FORLOOP:
         {
-          lua_Number index = base[A+0].getNumber();
-          lua_Number limit = base[A+1].getNumber();
-          lua_Number step  = base[A+2].getNumber();
+          double index = base[A+0].getNumber();
+          double limit = base[A+1].getNumber();
+          double step  = base[A+2].getNumber();
 
           index += step;
 
@@ -1148,9 +1148,9 @@ void luaV_execute (lua_State *L) {
 
       case OP_FORPREP:
         {
-          TValue index = base[A+0].convertToNumber();
-          TValue limit = base[A+1].convertToNumber();
-          TValue step  = base[A+2].convertToNumber();
+          LuaValue index = base[A+0].convertToNumber();
+          LuaValue limit = base[A+1].convertToNumber();
+          LuaValue step  = base[A+2].convertToNumber();
 
           if (index.isNone()) luaG_runerror(LUA_QL("for") " initial value must be a number");
           if (limit.isNone()) luaG_runerror(LUA_QL("for") " limit must be a number");
@@ -1192,7 +1192,7 @@ void luaV_execute (lua_State *L) {
           int n = GETARG_B(i);
           int c = GETARG_C(i);
           int last;
-          Table *h;
+          LuaTable *h;
           if (n == 0) n = cast_int(L->stack_.top_ - ra) - 1;
           if (c == 0) {
             assert(GET_OPCODE(*ci->savedpc) == OP_EXTRAARG);
@@ -1212,7 +1212,7 @@ void luaV_execute (lua_State *L) {
           // TODO(aappleby): we probably don't have to call barrierback every time through this loop
           for (; n > 0; n--) {
             ScopedMemChecker c;
-            h->set(TValue(last--), ra[n]);
+            h->set(LuaValue(last--), ra[n]);
             luaC_barrierback(h, ra[n]);
           }
           L->stack_.top_ = ci->getTop();  /* correct top (in case of previous open call) */
@@ -1221,12 +1221,12 @@ void luaV_execute (lua_State *L) {
 
       case OP_CLOSURE:
         {
-          Proto *p = cl->proto_->subprotos_[GETARG_Bx(i)];
-          Closure *ncl = getcached(p, cl->ppupvals_, base);  /* cached closure */
+          LuaProto *p = cl->proto_->subprotos_[GETARG_Bx(i)];
+          LuaClosure *ncl = getcached(p, cl->ppupvals_, base);  /* cached closure */
           if (ncl == NULL)  /* no match? */
             pushclosure(L, p, cl->ppupvals_, base, &base[A]);  /* create a new one */
           else {
-            base[A] = TValue(ncl);  /* push cashed closure */
+            base[A] = LuaValue(ncl);  /* push cashed closure */
           }
           break;
         }
@@ -1256,7 +1256,7 @@ void luaV_execute (lua_State *L) {
               ra[j] = base[j-n];
             }
             else {
-              ra[j] = TValue::Nil();
+              ra[j] = LuaValue::Nil();
             }
           }
           break;

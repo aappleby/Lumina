@@ -5,7 +5,7 @@
 
 #include "lmem.h"
 
-Udata::Udata(size_t len) : LuaObject(LUA_TUSERDATA) {
+LuaBlob::LuaBlob(size_t len) : LuaObject(LUA_TBLOB) {
   assert(l_memcontrol.limitDisabled);
   linkGC(getGlobalGCHead());
   buf_ = (uint8_t*)luaM_alloc_nocheck(len);
@@ -14,13 +14,13 @@ Udata::Udata(size_t len) : LuaObject(LUA_TUSERDATA) {
   env_ = NULL;
 }
 
-Udata::~Udata() {
+LuaBlob::~LuaBlob() {
   luaM_free(buf_);
   buf_ = NULL;
   len_ = NULL;
 }
 
-void Udata::VisitGC(GCVisitor& visitor) {
+void LuaBlob::VisitGC(LuaGCVisitor& visitor) {
   setColor(LuaObject::GRAY);
   visitor.MarkObject(metatable_);
   visitor.MarkObject(env_);
@@ -28,7 +28,7 @@ void Udata::VisitGC(GCVisitor& visitor) {
   return;
 }
 
-int Udata::PropagateGC(GCVisitor&) {
+int LuaBlob::PropagateGC(LuaGCVisitor&) {
   assert(false);
   return 0;
 }

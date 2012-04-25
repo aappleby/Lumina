@@ -78,7 +78,7 @@
 
 
 
-static int os_execute (lua_State *L) {
+static int os_execute (LuaThread *L) {
   THREAD_CHECK(L);
   const char *cmd = luaL_optstring(L, 1, NULL);
   int stat = system(cmd);
@@ -91,14 +91,14 @@ static int os_execute (lua_State *L) {
 }
 
 
-static int os_remove (lua_State *L) {
+static int os_remove (LuaThread *L) {
   THREAD_CHECK(L);
   const char *filename = luaL_checkstring(L, 1);
   return luaL_fileresult(L, remove(filename) == 0, filename);
 }
 
 
-static int os_rename (lua_State *L) {
+static int os_rename (LuaThread *L) {
   THREAD_CHECK(L);
   const char *fromname = luaL_checkstring(L, 1);
   const char *toname = luaL_checkstring(L, 2);
@@ -106,7 +106,7 @@ static int os_rename (lua_State *L) {
 }
 
 
-static int os_tmpname (lua_State *L) {
+static int os_tmpname (LuaThread *L) {
   THREAD_CHECK(L);
   char buff[LUA_TMPNAMBUFSIZE];
   int err;
@@ -119,16 +119,16 @@ static int os_tmpname (lua_State *L) {
 }
 
 
-static int os_getenv (lua_State *L) {
+static int os_getenv (LuaThread *L) {
   THREAD_CHECK(L);
   lua_pushstring(L, getenv(luaL_checkstring(L, 1)));  /* if NULL push nil */
   return 1;
 }
 
 
-static int os_clock (lua_State *L) {
+static int os_clock (LuaThread *L) {
   THREAD_CHECK(L);
-  lua_pushnumber(L, ((lua_Number)clock())/(lua_Number)CLOCKS_PER_SEC);
+  lua_pushnumber(L, ((double)clock())/(double)CLOCKS_PER_SEC);
   return 1;
 }
 
@@ -141,13 +141,13 @@ static int os_clock (lua_State *L) {
 ** =======================================================
 */
 
-static void setfield (lua_State *L, const char *key, int value) {
+static void setfield (LuaThread *L, const char *key, int value) {
   THREAD_CHECK(L);
   lua_pushinteger(L, value);
   lua_setfield(L, -2, key);
 }
 
-static void setboolfield (lua_State *L, const char *key, int value) {
+static void setboolfield (LuaThread *L, const char *key, int value) {
   THREAD_CHECK(L);
   if (value < 0)  /* undefined? */
     return;  /* does not set field */
@@ -155,7 +155,7 @@ static void setboolfield (lua_State *L, const char *key, int value) {
   lua_setfield(L, -2, key);
 }
 
-static int getboolfield (lua_State *L, const char *key) {
+static int getboolfield (LuaThread *L, const char *key) {
   THREAD_CHECK(L);
   int res;
   lua_getfield(L, -1, key);
@@ -165,7 +165,7 @@ static int getboolfield (lua_State *L, const char *key) {
 }
 
 
-static int getfield (lua_State *L, const char *key, int d) {
+static int getfield (LuaThread *L, const char *key, int d) {
   THREAD_CHECK(L);
   int res, isnum;
   lua_getfield(L, -1, key);
@@ -180,7 +180,7 @@ static int getfield (lua_State *L, const char *key, int d) {
 }
 
 
-static const char *checkoption (lua_State *L, const char *conv, char *buff) {
+static const char *checkoption (LuaThread *L, const char *conv, char *buff) {
   THREAD_CHECK(L);
   static const char *const options[] = LUA_STRFTIMEOPTIONS;
   unsigned int i;
@@ -205,7 +205,7 @@ static const char *checkoption (lua_State *L, const char *conv, char *buff) {
 }
 
 
-static int os_date (lua_State *L) {
+static int os_date (LuaThread *L) {
   THREAD_CHECK(L);
   const char *s = luaL_optstring(L, 1, "%c");
   time_t t = luaL_opt(L, (time_t)luaL_checknumber, 2, time(NULL));
@@ -218,7 +218,7 @@ static int os_date (lua_State *L) {
     stm = l_localtime(&t, &tmr);
   if (stm == NULL) {
     /* invalid date? */
-    L->stack_.push(TValue::Nil());
+    L->stack_.push(LuaValue::Nil());
   }
   else if (strcmp(s, "*t") == 0) {
     lua_createtable(L, 0, 9);  /* 9 = number of fields */
@@ -254,7 +254,7 @@ static int os_date (lua_State *L) {
 }
 
 
-static int os_time (lua_State *L) {
+static int os_time (LuaThread *L) {
   THREAD_CHECK(L);
   time_t t;
   if (lua_isnoneornil(L, 1))  /* called without args? */
@@ -273,14 +273,14 @@ static int os_time (lua_State *L) {
     t = mktime(&ts);
   }
   if (t == (time_t)(-1))
-    L->stack_.push(TValue::Nil());
+    L->stack_.push(LuaValue::Nil());
   else
-    lua_pushnumber(L, (lua_Number)t);
+    lua_pushnumber(L, (double)t);
   return 1;
 }
 
 
-static int os_difftime (lua_State *L) {
+static int os_difftime (LuaThread *L) {
   THREAD_CHECK(L);
   lua_pushnumber(L, difftime((time_t)(luaL_checknumber(L, 1)),
                              (time_t)(luaL_optnumber(L, 2, 0))));
@@ -290,7 +290,7 @@ static int os_difftime (lua_State *L) {
 /* }====================================================== */
 
 
-static int os_setlocale (lua_State *L) {
+static int os_setlocale (LuaThread *L) {
   THREAD_CHECK(L);
   static const int cat[] = {LC_ALL, LC_COLLATE, LC_CTYPE, LC_MONETARY,
                       LC_NUMERIC, LC_TIME};
@@ -303,7 +303,7 @@ static int os_setlocale (lua_State *L) {
 }
 
 
-static int os_exit (lua_State *L) {
+static int os_exit (LuaThread *L) {
   THREAD_CHECK(L);
   int status;
   if (lua_isboolean(L, 1))
@@ -336,7 +336,7 @@ static const luaL_Reg syslib[] = {
 
 
 
-int luaopen_os (lua_State *L) {
+int luaopen_os (LuaThread *L) {
   THREAD_CHECK(L);
 
   lua_createtable(L, 0, sizeof(syslib)/sizeof((syslib)[0]) - 1);

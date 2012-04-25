@@ -18,7 +18,7 @@
 
 #include "LuaObject.h"
 
-CallInfo *luaE_extendCI (lua_State *L);
+LuaStackFrame *luaE_extendCI (LuaThread *L);
 
 
 #endif

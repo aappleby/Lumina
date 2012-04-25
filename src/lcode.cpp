@@ -228,7 +228,7 @@ void luaK_concat (FuncState *fs, int *l1, int l2) {
 
 static int luaK_code (FuncState *fs, Instruction i) {
   THREAD_CHECK(fs->ls->L);
-  Proto *f = fs->f;
+  LuaProto *f = fs->f;
   dischargejpc(fs);  /* `pc' will change */
   /* put new instruction in code array */
   if(fs->pc >= (int)f->code.size()) {
@@ -318,13 +318,13 @@ static void freeexp (FuncState *fs, expdesc *e) {
 }
 
 
-static int addk (FuncState *fs, TValue *key, TValue *v) {
+static int addk (FuncState *fs, LuaValue *key, LuaValue *v) {
   THREAD_CHECK(fs->ls->L);
-  TValue idx = fs->constant_map->get(*key);
-  Proto *f = fs->f;
+  LuaValue idx = fs->constant_map->get(*key);
+  LuaProto *f = fs->f;
   int k, oldsize;
   if (idx.isNumber()) {
-    lua_Number n = idx.getNumber();
+    double n = idx.getNumber();
     lua_number2int(k, n);
     if (f->constants[k] == *v)
       return k;
@@ -338,7 +338,7 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
      table has no metatable, so it does not need to invalidate cache */
   {
     ScopedMemChecker c;
-    fs->constant_map->set(*key, TValue(k));
+    fs->constant_map->set(*key, LuaValue(k));
   }
   
   if (k >= (int)f->constants.size()) {
@@ -347,7 +347,7 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   }
   
   while (oldsize < (int)f->constants.size()) {
-    f->constants[oldsize++] = TValue::Nil();
+    f->constants[oldsize++] = LuaValue::Nil();
   }
   f->constants[k] = *v;
   fs->num_constants++;
@@ -356,27 +356,27 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
 }
 
 
-int luaK_stringK (FuncState *fs, TString *s) {
+int luaK_stringK (FuncState *fs, LuaString *s) {
   THREAD_CHECK(fs->ls->L);
-  TValue o;
+  LuaValue o;
   o = s;
   return addk(fs, &o, &o);
 }
 
 // TODO(aappleby): negative zero and NaN stuff here, investigate.
-int luaK_numberK (FuncState *fs, lua_Number r) {
+int luaK_numberK (FuncState *fs, double r) {
   THREAD_CHECK(fs->ls->L);
   int n;
-  lua_State *L = fs->ls->L;
-  TValue o = TValue(r);
+  LuaThread *L = fs->ls->L;
+  LuaValue o = LuaValue(r);
   if (r == 0 || (r != r)) {  /* handle -0 and NaN */
     /* use raw representation as key to avoid numeric problems */
     
     LuaResult result;
     {
       ScopedMemChecker c;
-      TString* s = thread_G->strings_->Create((char *)&r, sizeof(r));
-      result = L->stack_.push_reserve2(TValue(s));
+      LuaString* s = thread_G->strings_->Create((char *)&r, sizeof(r));
+      result = L->stack_.push_reserve2(LuaValue(s));
     }
     handleResult(result);
 
@@ -392,7 +392,7 @@ int luaK_numberK (FuncState *fs, lua_Number r) {
 
 static int boolK (FuncState *fs, int b) {
   THREAD_CHECK(fs->ls->L);
-  TValue o;
+  LuaValue o;
   o = b ? true : false;
   return addk(fs, &o, &o);
 }
@@ -400,7 +400,7 @@ static int boolK (FuncState *fs, int b) {
 
 static int nilK (FuncState *fs) {
   THREAD_CHECK(fs->ls->L);
-  TValue k, v;
+  LuaValue k, v;
   /* cannot use nil as key; instead use table itself to represent nil */
   k = fs->constant_map;
   return addk(fs, &k, &v);
@@ -782,7 +782,7 @@ void luaK_indexed (FuncState *fs, expdesc *t, expdesc *k) {
 
 
 static int constfolding (OpCode op, expdesc *e1, expdesc *e2) {
-  lua_Number r;
+  double r;
   if (!isnumeral(e1) || !isnumeral(e2)) return 0;
   if ((op == OP_DIV || op == OP_MOD) && e2->nval == 0)
     return 0;  /* do not attempt to divide by 0 */

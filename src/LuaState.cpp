@@ -14,7 +14,7 @@ l_noret luaG_runerror (const char *fmt, ...);
 
 //-----------------------------------------------------------------------------
 
-ScopedCallDepth::ScopedCallDepth(lua_State* state) : state_(state) {
+ScopedCallDepth::ScopedCallDepth(LuaThread* state) : state_(state) {
   state_->l_G->call_depth_++;
 }
 
@@ -24,7 +24,7 @@ ScopedCallDepth::~ScopedCallDepth() {
 
 //-----------------------------------------------------------------------------
 
-lua_State::lua_State(global_State* g) : LuaObject(LUA_TTHREAD) {
+LuaThread::LuaThread(LuaVM* g) : LuaObject(LUA_TTHREAD) {
   assert(l_memcontrol.limitDisabled);
   l_G = g;
   linkGC(&l_G->allgc);
@@ -44,7 +44,7 @@ lua_State::lua_State(global_State* g) : LuaObject(LUA_TTHREAD) {
   stack_.init();  /* init stack */
 }
 
-lua_State::lua_State(lua_State* parent_thread) : LuaObject(LUA_TTHREAD) {
+LuaThread::LuaThread(LuaThread* parent_thread) : LuaObject(LUA_TTHREAD) {
   assert(l_memcontrol.limitDisabled);
   l_G = parent_thread->l_G;
   linkGC(&l_G->allgc);
@@ -69,7 +69,7 @@ lua_State::lua_State(lua_State* parent_thread) : LuaObject(LUA_TTHREAD) {
   hookcount = parent_thread->basehookcount;
 }
 
-lua_State::~lua_State() {
+LuaThread::~LuaThread() {
 
   stack_.closeUpvals(stack_.begin());
   assert(stack_.open_upvals_ == NULL);
@@ -89,7 +89,7 @@ lua_State::~lua_State() {
 
 //-----------------------------------------------------------------------------
 
-void lua_State::VisitGC(GCVisitor& visitor) {
+void LuaThread::VisitGC(LuaGCVisitor& visitor) {
   setColor(GRAY);
   visitor.PushGray(this);
 }
@@ -97,20 +97,20 @@ void lua_State::VisitGC(GCVisitor& visitor) {
 // TODO(aappleby): Always clearing the unused part of the stack
 // is safe, never clearing it is _not_ - something in the code
 // is failing to clear the stack when top is moved.
-int lua_State::PropagateGC(GCVisitor& visitor) {
+int LuaThread::PropagateGC(LuaGCVisitor& visitor) {
   if (stack_.empty()) {
     // why do threads go on the 'grayagain' list?
     visitor.PushGrayAgain(this);
     return 1;
   }
 
-  TValue* v = stack_.begin();
+  LuaValue* v = stack_.begin();
   for (; v < stack_.top_; v++) {
     visitor.MarkValue(*v);
   }
 
   for (; v < stack_.end(); v++) {
-    *v = TValue::Nil();
+    *v = LuaValue::Nil();
   }
 
   // why do threads go on the 'grayagain' list?
@@ -120,7 +120,7 @@ int lua_State::PropagateGC(GCVisitor& visitor) {
 
 //-----------------------------------------------------------------------------
 
-LuaExecutionState lua_State::saveState(StkId top) {
+LuaExecutionState LuaThread::saveState(StkId top) {
   LuaExecutionState s;
 
   s.callinfo_ = stack_.callinfo_;
@@ -132,20 +132,20 @@ LuaExecutionState lua_State::saveState(StkId top) {
   return s;
 }
 
-void lua_State::restoreState(LuaExecutionState s, int status, int nresults) {
+void LuaThread::restoreState(LuaExecutionState s, int status, int nresults) {
   if(status != LUA_OK) {
     // Error handling gets an exemption from the memory limit. Not doing so would mean that
     // reporting an out-of-memory error could itself cause another out-of-memory error, ad infinitum.
     l_memcontrol.disableLimit();
 
     // Grab the error object off the stack
-    TValue errobj;
+    LuaValue errobj;
 
     if(status == LUA_ERRMEM) {
-      errobj = TValue(l_G->memerrmsg);
+      errobj = LuaValue(l_G->memerrmsg);
     }
     else if(status == LUA_ERRERR) {
-      errobj = TValue(thread_G->strings_->Create("error in error handling"));
+      errobj = LuaValue(thread_G->strings_->Create("error in error handling"));
     }
     else {
       errobj = stack_.top_[-1];

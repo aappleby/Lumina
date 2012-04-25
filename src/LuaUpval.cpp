@@ -4,7 +4,7 @@
 
 #include "lmem.h" // for l_memcontrol
 
-UpVal::UpVal(LuaObject** gchead) : LuaObject(LUA_TUPVAL) {
+LuaUpvalue::LuaUpvalue(LuaObject** gchead) : LuaObject(LUA_TUPVALUE) {
   assert(l_memcontrol.limitDisabled);
   linkGC(gchead);
   v = &value;
@@ -12,11 +12,11 @@ UpVal::UpVal(LuaObject** gchead) : LuaObject(LUA_TUPVAL) {
   unext = NULL;
 }
 
-UpVal::~UpVal() {
+LuaUpvalue::~LuaUpvalue() {
   unlink();
 }
 
-void UpVal::unlink() {
+void LuaUpvalue::unlink() {
   if(unext) {
     assert(unext->uprev == this);
     unext->uprev = uprev;
@@ -31,7 +31,7 @@ void UpVal::unlink() {
   uprev = NULL;
 }
 
-void UpVal::VisitGC(GCVisitor& visitor) {
+void LuaUpvalue::VisitGC(LuaGCVisitor& visitor) {
   setColor(GRAY);
   visitor.MarkValue(*v);
   
@@ -41,7 +41,7 @@ void UpVal::VisitGC(GCVisitor& visitor) {
   }
 }
 
-int UpVal::PropagateGC(GCVisitor&) {
+int LuaUpvalue::PropagateGC(LuaGCVisitor&) {
   assert(false);
   return 0;
 }

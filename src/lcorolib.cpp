@@ -20,7 +20,7 @@
 
 
 
-static int auxresume (lua_State *L, lua_State *co, int narg) {
+static int auxresume (LuaThread *L, LuaThread *co, int narg) {
   THREAD_CHECK(L);
   int status;
 
@@ -70,9 +70,9 @@ static int auxresume (lua_State *L, lua_State *co, int narg) {
 }
 
 
-static int luaB_coresume (lua_State *L) {
+static int luaB_coresume (LuaThread *L) {
   THREAD_CHECK(L);
-  lua_State *co = lua_tothread(L, 1);
+  LuaThread *co = lua_tothread(L, 1);
   int r;
   luaL_argcheck(L, co, 1, "coroutine expected");
   r = auxresume(L, co, L->stack_.getTopIndex() - 1);
@@ -89,9 +89,9 @@ static int luaB_coresume (lua_State *L) {
 }
 
 
-static int luaB_auxwrap (lua_State *L) {
+static int luaB_auxwrap (LuaThread *L) {
   THREAD_CHECK(L);
-  lua_State *co = lua_tothread(L, lua_upvalueindex(1));
+  LuaThread *co = lua_tothread(L, lua_upvalueindex(1));
   int r = auxresume(L, co, L->stack_.getTopIndex());
   if (r < 0) {
     if (lua_isStringable(L, -1)) {  /* error object is a string? */
@@ -105,9 +105,9 @@ static int luaB_auxwrap (lua_State *L) {
 }
 
 
-static int luaB_cocreate (lua_State *L) {
+static int luaB_cocreate (LuaThread *L) {
   THREAD_CHECK(L);
-  lua_State *NL = lua_newthread(L);
+  LuaThread *NL = lua_newthread(L);
   luaL_checkIsFunction(L, 1);
   L->stack_.copy(1);  /* move function to top */
   lua_xmove(L, NL, 1);  /* move function from L to NL */
@@ -115,7 +115,7 @@ static int luaB_cocreate (lua_State *L) {
 }
 
 
-static int luaB_cowrap (lua_State *L) {
+static int luaB_cowrap (LuaThread *L) {
   THREAD_CHECK(L);
   luaB_cocreate(L);
   lua_pushcclosure(L, luaB_auxwrap, 1);
@@ -123,15 +123,15 @@ static int luaB_cowrap (lua_State *L) {
 }
 
 
-static int luaB_yield (lua_State *L) {
+static int luaB_yield (LuaThread *L) {
   THREAD_CHECK(L);
   return lua_yield(L, L->stack_.getTopIndex());
 }
 
 
-static int luaB_costatus (lua_State *L) {
+static int luaB_costatus (LuaThread *L) {
   THREAD_CHECK(L);
-  lua_State *co = lua_tothread(L, 1);
+  LuaThread *co = lua_tothread(L, 1);
   luaL_argcheck(L, co, 1, "coroutine expected");
   if (L == co) {
     lua_pushliteral(L, "running");
@@ -145,7 +145,7 @@ static int luaB_costatus (lua_State *L) {
         }
       case LUA_OK: {
         THREAD_CHANGE(co);
-        lua_Debug ar;
+        LuaDebug ar;
         if (lua_getstack(co, 0, &ar) > 0) {  /* does it have frames? */
           THREAD_CHANGE(L);
           lua_pushliteral(L, "normal");  /* it is running */
@@ -169,7 +169,7 @@ static int luaB_costatus (lua_State *L) {
 }
 
 
-static int luaB_corunning (lua_State *L) {
+static int luaB_corunning (LuaThread *L) {
   THREAD_CHECK(L);
   int ismain = lua_pushthread(L);
   lua_pushboolean(L, ismain);
@@ -189,7 +189,7 @@ static const luaL_Reg co_funcs[] = {
 
 
 
-int luaopen_coroutine (lua_State *L) {
+int luaopen_coroutine (LuaThread *L) {
   THREAD_CHECK(L);
   lua_createtable(L, 0, sizeof(co_funcs)/sizeof((co_funcs)[0]) - 1);
   luaL_setfuncs(L,co_funcs,0);

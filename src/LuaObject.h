@@ -39,8 +39,8 @@ public:
   void grayToBlack();
   void stringmark();
 
-  virtual void VisitGC(GCVisitor& visitor) = 0;
-  virtual int PropagateGC(GCVisitor& visitor) = 0;
+  virtual void VisitGC(LuaGCVisitor& visitor) = 0;
+  virtual int PropagateGC(LuaGCVisitor& visitor) = 0;
 
   static const Color colorA;
   static const Color colorB;
@@ -54,10 +54,10 @@ public:
   bool isTable()    { return type_ == LUA_TTABLE; }
   bool isLClosure() { return type_ == LUA_TLCL; }
   bool isCClosure() { return type_ == LUA_TCCL; }
-  bool isUserdata() { return type_ == LUA_TUSERDATA; }
+  bool isUserdata() { return type_ == LUA_TBLOB; }
   bool isThread()   { return type_ == LUA_TTHREAD; }
   bool isProto()    { return type_ == LUA_TPROTO; }
-  bool isUpval()    { return type_ == LUA_TUPVAL; }
+  bool isUpval()    { return type_ == LUA_TUPVALUE; }
 
   //----------
   // Flag read/write

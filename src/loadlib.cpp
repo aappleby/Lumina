@@ -112,8 +112,8 @@
 ** system-dependent functions
 */
 static void ll_unloadlib (void *lib);
-static void *ll_load (lua_State *L, const char *path, int seeglb);
-static lua_CFunction ll_sym (lua_State *L, void *lib, const char *sym);
+static void *ll_load (LuaThread *L, const char *path, int seeglb);
+static LuaCallback ll_sym (LuaThread *L, void *lib, const char *sym);
 
 
 
@@ -134,7 +134,7 @@ static void ll_unloadlib (void *lib) {
 }
 
 
-static void *ll_load (lua_State *L, const char *path, int seeglb) {
+static void *ll_load (LuaThread *L, const char *path, int seeglb) {
   void *lib = dlopen(path, RTLD_NOW | (seeglb ? RTLD_GLOBAL : RTLD_LOCAL));
   if (lib == NULL) {
     lua_pushstring(L, dlerror());
@@ -143,8 +143,8 @@ static void *ll_load (lua_State *L, const char *path, int seeglb) {
 }
 
 
-static lua_CFunction ll_sym (lua_State *L, void *lib, const char *sym) {
-  lua_CFunction f = (lua_CFunction)dlsym(lib, sym);
+static LuaCallback ll_sym (LuaThread *L, void *lib, const char *sym) {
+  LuaCallback f = (LuaCallback)dlsym(lib, sym);
   if (f == NULL) {
     lua_pushstring(L, dlerror());
   }
@@ -172,7 +172,7 @@ static lua_CFunction ll_sym (lua_State *L, void *lib, const char *sym) {
 #endif
 
 
-static void setprogdir (lua_State *L) {
+static void setprogdir (LuaThread *L) {
   THREAD_CHECK(L);
   char buff[MAX_PATH + 1];
   char *lb;
@@ -188,7 +188,7 @@ static void setprogdir (lua_State *L) {
 }
 
 
-static void pusherror (lua_State *L) {
+static void pusherror (LuaThread *L) {
   THREAD_CHECK(L);
   int error = GetLastError();
   char buffer[128];
@@ -206,7 +206,7 @@ static void ll_unloadlib (void *lib) {
 }
 
 
-static void *ll_load (lua_State *L, const char *path, int seeglb) {
+static void *ll_load (LuaThread *L, const char *path, int seeglb) {
   THREAD_CHECK(L);
   HMODULE lib = LoadLibraryExA(path, NULL, LUA_LLE_FLAGS);
   (void)(seeglb);  /* not used: symbols are 'global' by default */
@@ -215,9 +215,9 @@ static void *ll_load (lua_State *L, const char *path, int seeglb) {
 }
 
 
-static lua_CFunction ll_sym (lua_State *L, void *lib, const char *sym) {
+static LuaCallback ll_sym (LuaThread *L, void *lib, const char *sym) {
   THREAD_CHECK(L);
-  lua_CFunction f = (lua_CFunction)GetProcAddress((HMODULE)lib, sym);
+  LuaCallback f = (LuaCallback)GetProcAddress((HMODULE)lib, sym);
   if (f == NULL) pusherror(L);
   return f;
 }
@@ -244,14 +244,14 @@ static void ll_unloadlib (void *lib) {
 }
 
 
-static void *ll_load (lua_State *L, const char *path, int seeglb) {
+static void *ll_load (LuaThread *L, const char *path, int seeglb) {
   (void)(path); (void)(seeglb);  /* not used */
   lua_pushliteral(L, DLMSG);
   return NULL;
 }
 
 
-static lua_CFunction ll_sym (lua_State *L, void *lib, const char *sym) {
+static LuaCallback ll_sym (LuaThread *L, void *lib, const char *sym) {
   (void)(lib); (void)(sym);  /* not used */
   lua_pushliteral(L, DLMSG);
   return NULL;
@@ -262,7 +262,7 @@ static lua_CFunction ll_sym (lua_State *L, void *lib, const char *sym) {
 
 
 
-static void **ll_register (lua_State *L, const char *path) {
+static void **ll_register (LuaThread *L, const char *path) {
   THREAD_CHECK(L);
   void **plib;
   lua_pushfstring(L, "%s%s", LIBPREFIX, path);
@@ -286,7 +286,7 @@ static void **ll_register (lua_State *L, const char *path) {
 ** __gc tag method: calls library's `ll_unloadlib' function with the lib
 ** handle
 */
-static int gctm (lua_State *L) {
+static int gctm (LuaThread *L) {
   THREAD_CHECK(L);
   void **lib = (void **)luaL_checkudata(L, 1, "_LOADLIB");
   if (*lib) ll_unloadlib(*lib);
@@ -295,7 +295,7 @@ static int gctm (lua_State *L) {
 }
 
 
-static int ll_loadfunc (lua_State *L, const char *path, const char *sym) {
+static int ll_loadfunc (LuaThread *L, const char *path, const char *sym) {
   THREAD_CHECK(L);
   void **reg = ll_register(L, path);
   if (*reg == NULL) *reg = ll_load(L, path, *sym == '*');
@@ -305,7 +305,7 @@ static int ll_loadfunc (lua_State *L, const char *path, const char *sym) {
     return 0;  /* no errors */
   }
   else {
-    lua_CFunction f = ll_sym(L, *reg, sym);
+    LuaCallback f = ll_sym(L, *reg, sym);
     if (f == NULL)
       return ERRFUNC;  /* unable to find function */
     lua_pushcclosure(L, f, 0);  /* else create new function */
@@ -314,7 +314,7 @@ static int ll_loadfunc (lua_State *L, const char *path, const char *sym) {
 }
 
 
-static int ll_loadlib (lua_State *L) {
+static int ll_loadlib (LuaThread *L) {
   THREAD_CHECK(L);
   const char *path = luaL_checkstring(L, 1);
   const char *init = luaL_checkstring(L, 2);
@@ -322,7 +322,7 @@ static int ll_loadlib (lua_State *L) {
   if (stat == 0)  /* no errors? */
     return 1;  /* return the loaded function */
   else {  /* error; error message is on stack top */
-    L->stack_.push(TValue::Nil());
+    L->stack_.push(LuaValue::Nil());
     lua_insert(L, -2);
     lua_pushstring(L, (stat == ERRLIB) ?  LIB_FAIL : "init");
     return 3;  /* return nil, error message, and where */
@@ -346,7 +346,7 @@ static int readable (const char *filename) {
 }
 
 
-static const char *pushnexttemplate (lua_State *L, const char *path) {
+static const char *pushnexttemplate (LuaThread *L, const char *path) {
   THREAD_CHECK(L);
   const char *l;
   while (*path == *LUA_PATH_SEP) path++;  /* skip separators */
@@ -358,7 +358,7 @@ static const char *pushnexttemplate (lua_State *L, const char *path) {
 }
 
 
-static const char *searchpath (lua_State *L, const char *name,
+static const char *searchpath (LuaThread *L, const char *name,
                                              const char *path,
                                              const char *sep,
                                              const char *dirsep) {
@@ -384,7 +384,7 @@ static const char *searchpath (lua_State *L, const char *name,
 }
 
 
-static int ll_searchpath (lua_State *L) {
+static int ll_searchpath (LuaThread *L) {
   THREAD_CHECK(L);
   const char *f = searchpath(L, luaL_checkstring(L, 1),
                                 luaL_checkstring(L, 2),
@@ -392,14 +392,14 @@ static int ll_searchpath (lua_State *L) {
                                 luaL_optstring(L, 4, LUA_DIRSEP));
   if (f != NULL) return 1;
   else {  /* error message is on top of the stack */
-    L->stack_.push(TValue::Nil());
+    L->stack_.push(LuaValue::Nil());
     lua_insert(L, -2);
     return 2;  /* return nil + error message */
   }
 }
 
 
-static const char *findfile (lua_State *L, const char *name,
+static const char *findfile (LuaThread *L, const char *name,
                                            const char *pname,
                                            const char *dirsep) {
   THREAD_CHECK(L);
@@ -412,7 +412,7 @@ static const char *findfile (lua_State *L, const char *name,
 }
 
 
-static int checkload (lua_State *L, int stat, const char *filename) {
+static int checkload (LuaThread *L, int stat, const char *filename) {
   THREAD_CHECK(L);
   if (stat) {  /* module loaded successfully? */
     lua_pushstring(L, filename);  /* will be 2nd argument to module */
@@ -425,7 +425,7 @@ static int checkload (lua_State *L, int stat, const char *filename) {
 }
 
 
-static int searcher_Lua (lua_State *L) {
+static int searcher_Lua (LuaThread *L) {
   THREAD_CHECK(L);
   const char *filename;
   const char *name = luaL_checkstring(L, 1);
@@ -435,7 +435,7 @@ static int searcher_Lua (lua_State *L) {
 }
 
 
-static int loadfunc (lua_State *L, const char *filename, const char *modname) {
+static int loadfunc (LuaThread *L, const char *filename, const char *modname) {
   THREAD_CHECK(L);
   const char *funcname;
   const char *mark;
@@ -454,7 +454,7 @@ static int loadfunc (lua_State *L, const char *filename, const char *modname) {
 }
 
 
-static int searcher_C (lua_State *L) {
+static int searcher_C (LuaThread *L) {
   THREAD_CHECK(L);
   const char *name = luaL_checkstring(L, 1);
   const char *filename = findfile(L, name, "cpath", LUA_CSUBSEP);
@@ -463,7 +463,7 @@ static int searcher_C (lua_State *L) {
 }
 
 
-static int searcher_Croot (lua_State *L) {
+static int searcher_Croot (LuaThread *L) {
   THREAD_CHECK(L);
   const char *filename;
   const char *name = luaL_checkstring(L, 1);
@@ -487,7 +487,7 @@ static int searcher_Croot (lua_State *L) {
 }
 
 
-static int searcher_preload (lua_State *L) {
+static int searcher_preload (LuaThread *L) {
   THREAD_CHECK(L);
   const char *name = luaL_checkstring(L, 1);
   lua_getfield(L, LUA_REGISTRYINDEX, "_PRELOAD");
@@ -500,7 +500,7 @@ static int searcher_preload (lua_State *L) {
 }
 
 
-static void findloader (lua_State *L, const char *name) {
+static void findloader (LuaThread *L, const char *name) {
   THREAD_CHECK(L);
   int i;
   luaL_Buffer msg;  /* to build error message */
@@ -531,7 +531,7 @@ static void findloader (lua_State *L, const char *name) {
 }
 
 
-static int ll_require (lua_State *L) {
+static int ll_require (LuaThread *L) {
   THREAD_CHECK(L);
   const char *name = luaL_checkstring(L, 1);
   L->stack_.setTopIndex(1);  /* _LOADED table will be at index 2 */
@@ -567,7 +567,7 @@ static int ll_require (lua_State *L) {
 /*
 ** return registry.LUA_NOENV as a boolean
 */
-static int noenv (lua_State *L) {
+static int noenv (LuaThread *L) {
   THREAD_CHECK(L);
   int b;
   lua_getfield(L, LUA_REGISTRYINDEX, "LUA_NOENV");
@@ -577,7 +577,7 @@ static int noenv (lua_State *L) {
 }
 
 
-static void setpath (lua_State *L, const char *fieldname, const char *envname1,
+static void setpath (LuaThread *L, const char *fieldname, const char *envname1,
                                    const char *envname2, const char *def) {
   THREAD_CHECK(L);
   const char *path = getenv(envname1);
@@ -618,11 +618,11 @@ static const luaL_Reg ll_funcs[] = {
 };
 
 
-static const lua_CFunction searchers[] =
+static const LuaCallback searchers[] =
   {searcher_preload, searcher_Lua, searcher_C, searcher_Croot, NULL};
 
 
-int luaopen_package (lua_State *L) {
+int luaopen_package (LuaThread *L) {
   THREAD_CHECK(L);
   int i;
   /* create new type _LOADLIB */

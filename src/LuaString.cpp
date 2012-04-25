@@ -19,9 +19,9 @@ uint32_t hashString(const char* str, size_t len) {
 }
 
 //-----------------------------------------------------------------------------
-// TString
+// LuaString
 
-TString::TString(uint32_t hash, const char* str, int len)
+LuaString::LuaString(uint32_t hash, const char* str, int len)
 : LuaObject(LUA_TSTRING),
   buf_(NULL),
   reserved_(0),
@@ -33,7 +33,7 @@ TString::TString(uint32_t hash, const char* str, int len)
   buf_[len_] = '\0'; // terminating null
 }
 
-TString::~TString() {
+LuaString::~LuaString() {
   luaM_free(buf_);
   buf_ = NULL;
   len_ = NULL;
@@ -41,11 +41,11 @@ TString::~TString() {
 
 //-----------------------------------------------------------------------------
 
-void TString::VisitGC(GCVisitor&) {
+void LuaString::VisitGC(LuaGCVisitor&) {
   setColor(GRAY);
 }
 
-int TString::PropagateGC(GCVisitor&) {
+int LuaString::PropagateGC(LuaGCVisitor&) {
   assert(false);
   return 0;
 }
@@ -53,18 +53,18 @@ int TString::PropagateGC(GCVisitor&) {
 //-----------------------------------------------------------------------------
 // Stringtable
 
-stringtable::stringtable() {
+LuaStringTable::LuaStringTable() {
   nuse_ = 0;
 }
 
-stringtable::~stringtable() {
+LuaStringTable::~LuaStringTable() {
 }
 
-TString* stringtable::find(uint32_t hash, const char *str, size_t len) {
+LuaString* LuaStringTable::find(uint32_t hash, const char *str, size_t len) {
   LuaObject* o = hash_[hash & (hash_.size()-1)];
 
   for (; o != NULL; o = o->next_) {
-    TString *ts = dynamic_cast<TString*>(o);
+    LuaString *ts = dynamic_cast<LuaString*>(o);
     if(ts->getHash() != hash) continue;
     if(ts->getLen() != len) continue;
 
@@ -76,7 +76,7 @@ TString* stringtable::find(uint32_t hash, const char *str, size_t len) {
   return NULL;
 }
 
-void stringtable::Resize(int newsize) {
+void LuaStringTable::Resize(int newsize) {
   assert(l_memcontrol.limitDisabled);
 
   int oldsize = (int)hash_.size();
@@ -86,11 +86,11 @@ void stringtable::Resize(int newsize) {
   }
   /* rehash */
   for (int i=0; i < oldsize; i++) {
-    TString *p = hash_[i];
+    LuaString *p = hash_[i];
     hash_[i] = NULL;
     while (p) {  /* for each node in the list */
-      TString *next = (TString*)p->next_;  /* save next */
-      unsigned int hash = dynamic_cast<TString*>(p)->getHash();
+      LuaString *next = (LuaString*)p->next_;  /* save next */
+      unsigned int hash = dynamic_cast<LuaString*>(p)->getHash();
       p->next_ = hash_[hash & (newsize-1)];  /* chain it */
       hash_[hash & (newsize-1)] = p;
       p->clearOld();  /* see MOVE OLD rule */
@@ -108,17 +108,17 @@ void stringtable::Resize(int newsize) {
 
 //-----------------------------------------------------------------------------
 
-TString* stringtable::Create( const char* str )
+LuaString* LuaStringTable::Create( const char* str )
 {
   assert(l_memcontrol.limitDisabled);
   return Create(str, strlen(str));
 }
 
-TString* stringtable::Create(const char *str, int len) {
+LuaString* LuaStringTable::Create(const char *str, int len) {
   assert(l_memcontrol.limitDisabled);
   uint32_t hash = hashString(str,len);
 
-  TString* old_string = find(hash, str, len);
+  LuaString* old_string = find(hash, str, len);
   if(old_string) {
     if(old_string->isDead()) old_string->makeLive();
     return old_string;
@@ -128,9 +128,9 @@ TString* stringtable::Create(const char *str, int len) {
     Resize(hash_.size() * 2);
   }
   
-  TString* new_string = new TString(hash, str, len);
+  LuaString* new_string = new LuaString(hash, str, len);
 
-  TString** list = &hash_[hash & (hash_.size() - 1)];
+  LuaString** list = &hash_[hash & (hash_.size() - 1)];
   new_string->linkGC((LuaObject**)list);
   nuse_++;
   return new_string;
@@ -138,16 +138,16 @@ TString* stringtable::Create(const char *str, int len) {
 
 //-----------------------------------------------------------------------------
 
-bool stringtable::Sweep(bool generational) {
+bool LuaStringTable::Sweep(bool generational) {
 
   if(sweepCursor_ >= (int)hash_.size()) sweepCursor_ = 0;
 
-  TString** cursor = &hash_[sweepCursor_];
+  LuaString** cursor = &hash_[sweepCursor_];
 
   while(*cursor) {
     LuaObject* s = *cursor;
     if (s->isDead()) {
-      *cursor = (TString*)s->next_;
+      *cursor = (LuaString*)s->next_;
       delete s;
       nuse_--;
     }
@@ -159,7 +159,7 @@ bool stringtable::Sweep(bool generational) {
       else {
         s->makeLive();
       }
-      cursor = (TString**)&s->next_;
+      cursor = (LuaString**)&s->next_;
     }
   }
 
@@ -170,25 +170,25 @@ bool stringtable::Sweep(bool generational) {
 
 //-----------------------------------------------------------------------------
 
-void stringtable::Shrink() {
+void LuaStringTable::Shrink() {
   ScopedMemChecker c;
   if (nuse_ < (uint32_t)(hash_.size() / 2)) {
     Resize(hash_.size() / 2);
   }
 }
 
-void stringtable::RestartSweep() {
+void LuaStringTable::RestartSweep() {
   sweepCursor_ = 0;
 }
 
 //-----------------------------------------------------------------------------
 
-void stringtable::Clear() {
+void LuaStringTable::Clear() {
 
   for(int i = 0; i < (int)hash_.size(); i++) {
     while(hash_[i]) {
       LuaObject* dead = hash_[i];
-      hash_[i] = (TString*)hash_[i]->next_;
+      hash_[i] = (LuaString*)hash_[i]->next_;
       delete dead;
     }
   }

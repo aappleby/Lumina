@@ -75,13 +75,13 @@ void luaC_runtilstate (int statesmask);
 void luaC_fullgc (int isemergency);
 
 // Force GC traversal of 'v' so we dont' have a black object referring to a white object.
-void luaC_barrier (LuaObject *o, TValue v);
+void luaC_barrier (LuaObject *o, LuaValue v);
 
 // Put 'o' back on the grey list so we don't have a black object referring to a white object.
-void luaC_barrierback(LuaObject *o, TValue v);
+void luaC_barrierback(LuaObject *o, LuaValue v);
 
-void luaC_barrierproto (Proto *p, Closure *c);
-void luaC_checkfinalizer (LuaObject *o, Table *mt);
-void luaC_changemode (lua_State *L, int mode);
+void luaC_barrierproto (LuaProto *p, LuaClosure *c);
+void luaC_checkfinalizer (LuaObject *o, LuaTable *mt);
+void luaC_changemode (LuaThread *L, int mode);
 
 #endif

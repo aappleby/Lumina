@@ -4,17 +4,17 @@
 /*
 ** Header for userdata; memory area follows the end of this structure
 */
-__declspec(align(8)) class Udata : public LuaObject {
+__declspec(align(8)) class LuaBlob : public LuaObject {
 public:
 
-  Udata(size_t len);
-  ~Udata();
+  LuaBlob(size_t len);
+  ~LuaBlob();
 
-  virtual void VisitGC(GCVisitor& visitor);
-  virtual int PropagateGC(GCVisitor& visitor);
+  virtual void VisitGC(LuaGCVisitor& visitor);
+  virtual int PropagateGC(LuaGCVisitor& visitor);
 
-  Table* metatable_;
-  Table* env_;
+  LuaTable* metatable_;
+  LuaTable* env_;
   uint8_t* buf_;
   size_t len_;  /* number of bytes */
 };

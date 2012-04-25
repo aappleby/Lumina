@@ -28,7 +28,7 @@
 #define cast(t, exp)	((t)(exp))
 
 #define cast_byte(i)	cast(uint8_t, (i))
-#define cast_num(i)	cast(lua_Number, (i))
+#define cast_num(i)	cast(double, (i))
 #define cast_int(i)	cast(int, (i))
 #define cast_uchar(i)	cast(unsigned char, (i))
 
@@ -63,16 +63,16 @@
 
 
 /*
-** lua_number2int is a macro to convert lua_Number to int.
-** lua_number2integer is a macro to convert lua_Number to lua_Integer.
-** lua_number2unsigned is a macro to convert a lua_Number to a lua_Unsigned.
-** lua_unsigned2number is a macro to convert a lua_Unsigned to a lua_Number.
+** lua_number2int is a macro to convert double to int.
+** lua_number2integer is a macro to convert double to ptrdiff_t.
+** lua_number2unsigned is a macro to convert a double to a uint32_t.
+** lua_unsigned2number is a macro to convert a uint32_t to a double.
 ** The hash must be deterministic and give reasonable values for
 ** both small and large values (outside the range of integers).
 */
 
 #define lua_number2int(i,n)	       ((i)=(int32_t)(n))
-#define lua_number2integer(i,n)	   ((i)=(lua_Integer)(n))
+#define lua_number2integer(i,n)	   ((i)=(ptrdiff_t)(n))
 #define lua_number2unsigned(i,n)	 ((i)=(uint32_t)(n))
 #define lua_unsigned2number(u)     ((double)(u))
 

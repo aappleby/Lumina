@@ -36,11 +36,11 @@
 
 
 
-static int str_len (lua_State *L) {
+static int str_len (LuaThread *L) {
   THREAD_CHECK(L);
   size_t l;
   luaL_checklstring(L, 1, &l);
-  lua_pushinteger(L, (lua_Integer)l);
+  lua_pushinteger(L, (ptrdiff_t)l);
   return 1;
 }
 
@@ -53,7 +53,7 @@ static size_t posrelat (ptrdiff_t pos, size_t len) {
 }
 
 
-static int str_sub (lua_State *L) {
+static int str_sub (LuaThread *L) {
   THREAD_CHECK(L);
   size_t l;
   const char *s = luaL_checklstring(L, 1, &l);
@@ -71,7 +71,7 @@ static int str_sub (lua_State *L) {
 }
 
 
-static int str_reverse (lua_State *L) {
+static int str_reverse (LuaThread *L) {
   THREAD_CHECK(L);
   size_t l, i;
   luaL_Buffer b;
@@ -84,7 +84,7 @@ static int str_reverse (lua_State *L) {
 }
 
 
-static int str_lower (lua_State *L) {
+static int str_lower (LuaThread *L) {
   THREAD_CHECK(L);
   size_t l;
   size_t i;
@@ -99,7 +99,7 @@ static int str_lower (lua_State *L) {
 }
 
 
-static int str_upper (lua_State *L) {
+static int str_upper (LuaThread *L) {
   THREAD_CHECK(L);
   size_t l;
   size_t i;
@@ -117,7 +117,7 @@ static int str_upper (lua_State *L) {
 /* reasonable limit to avoid arithmetic overflow */
 #define MAXSIZE		((~(size_t)0) >> 1)
 
-static int str_rep (lua_State *L) {
+static int str_rep (LuaThread *L) {
   THREAD_CHECK(L);
   size_t l, lsep;
   const char *s = luaL_checklstring(L, 1, &l);
@@ -143,7 +143,7 @@ static int str_rep (lua_State *L) {
 }
 
 
-static int str_byte (lua_State *L) {
+static int str_byte (LuaThread *L) {
   THREAD_CHECK(L);
   size_t l;
   const char *s = luaL_checklstring(L, 1, &l);
@@ -163,7 +163,7 @@ static int str_byte (lua_State *L) {
 }
 
 
-static int str_char (lua_State *L) {
+static int str_char (LuaThread *L) {
   THREAD_CHECK(L);
   int n = L->stack_.getTopIndex();  /* number of arguments */
   int i;
@@ -179,7 +179,7 @@ static int str_char (lua_State *L) {
 }
 
 
-static int writer (lua_State *L, const void* b, size_t size, void* B) {
+static int writer (LuaThread *L, const void* b, size_t size, void* B) {
   THREAD_CHECK(L);
   (void)L;
   luaL_addlstring((luaL_Buffer*) B, (const char *)b, size);
@@ -187,7 +187,7 @@ static int writer (lua_State *L, const void* b, size_t size, void* B) {
 }
 
 
-static int str_dump (lua_State *L) {
+static int str_dump (LuaThread *L) {
   THREAD_CHECK(L);
   luaL_Buffer b;
   luaL_checkIsFunction(L, 1);
@@ -215,7 +215,7 @@ typedef struct MatchState {
   const char *src_init;  /* init of source string */
   const char *src_end;  /* end ('\0') of source string */
   const char *p_end;  /* end ('\0') of pattern */
-  lua_State *L;
+  LuaThread *L;
   int level;  /* total number of captures (finished or unfinished) */
   struct {
     const char *init;
@@ -553,7 +553,7 @@ static int nospecials (const char *p, size_t l) {
 }
 
 
-static int str_find_aux (lua_State *L, int find) {
+static int str_find_aux (LuaThread *L, int find) {
   THREAD_CHECK(L);
   size_t ls, lp;
   const char *s = luaL_checklstring(L, 1, &ls);
@@ -561,7 +561,7 @@ static int str_find_aux (lua_State *L, int find) {
   size_t init = posrelat(luaL_optinteger(L, 3, 1), ls);
   if (init < 1) init = 1;
   else if (init > ls + 1) {  /* start after string's end? */
-    L->stack_.push(TValue::Nil());  /* cannot find anything */
+    L->stack_.push(LuaValue::Nil());  /* cannot find anything */
     return 1;
   }
   /* explicit request or no special characters? */
@@ -599,24 +599,24 @@ static int str_find_aux (lua_State *L, int find) {
       }
     } while (s1++ < ms.src_end && !anchor);
   }
-  L->stack_.push(TValue::Nil());  /* not found */
+  L->stack_.push(LuaValue::Nil());  /* not found */
   return 1;
 }
 
 
-static int str_find (lua_State *L) {
+static int str_find (LuaThread *L) {
   THREAD_CHECK(L);
   return str_find_aux(L, 1);
 }
 
 
-static int str_match (lua_State *L) {
+static int str_match (LuaThread *L) {
   THREAD_CHECK(L);
   return str_find_aux(L, 0);
 }
 
 
-static int gmatch_aux (lua_State *L) {
+static int gmatch_aux (LuaThread *L) {
   THREAD_CHECK(L);
   MatchState ms;
   size_t ls, lp;
@@ -633,7 +633,7 @@ static int gmatch_aux (lua_State *L) {
     const char *e;
     ms.level = 0;
     if ((e = match(&ms, src, p)) != NULL) {
-      lua_Integer newstart = e-s;
+      ptrdiff_t newstart = e-s;
       if (e == src) newstart++;  /* empty match? go at least one position */
       lua_pushinteger(L, newstart);
       lua_replace(L, lua_upvalueindex(3));
@@ -644,7 +644,7 @@ static int gmatch_aux (lua_State *L) {
 }
 
 
-static int gmatch (lua_State *L) {
+static int gmatch (LuaThread *L) {
   THREAD_CHECK(L);
   luaL_checkstring(L, 1);
   luaL_checkstring(L, 2);
@@ -682,8 +682,8 @@ static void add_s (MatchState *ms, luaL_Buffer *b, const char *s,
 
 
 static void add_value (MatchState *ms, luaL_Buffer *b, const char *s,
-                                       const char *e, TValue v) {
-  lua_State *L = ms->L;
+                                       const char *e, LuaValue v) {
+  LuaThread *L = ms->L;
   if(v.isFunction()) {
     int n;
     L->stack_.copy(3);
@@ -705,13 +705,13 @@ static void add_value (MatchState *ms, luaL_Buffer *b, const char *s,
   luaL_addvalue(b);  /* add result to accumulator */
 }
 
-static int str_gsub (lua_State *L) {
+static int str_gsub (LuaThread *L) {
   THREAD_CHECK(L);
   size_t srcl, lp;
   const char *src = luaL_checklstring(L, 1, &srcl);
   const char *p = luaL_checklstring(L, 2, &lp);
-  TValue* pv = index2addr(L, 3); 
-  TValue v = pv ? *pv : TValue::Nil();
+  LuaValue* pv = index2addr(L, 3); 
+  LuaValue v = pv ? *pv : LuaValue::Nil();
   size_t max_s = luaL_optinteger(L, 4, srcl+1);
   int anchor = (*p == '^');
   size_t n = 0;
@@ -782,9 +782,9 @@ static int str_gsub (lua_State *L) {
 #endif
 #endif				/* } */
 
-#define MAX_UINTFRM	((lua_Number)(~(unsigned LUA_INTFRM_T)0))
-#define MAX_INTFRM	((lua_Number)((~(unsigned LUA_INTFRM_T)0)/2))
-#define MIN_INTFRM	(-(lua_Number)((~(unsigned LUA_INTFRM_T)0)/2) - 1)
+#define MAX_UINTFRM	((double)(~(unsigned LUA_INTFRM_T)0))
+#define MAX_INTFRM	((double)((~(unsigned LUA_INTFRM_T)0)/2))
+#define MIN_INTFRM	(-(double)((~(unsigned LUA_INTFRM_T)0)/2) - 1)
 
 /*
 ** LUA_FLTFRMLEN is the length modifier for float conversions in
@@ -810,7 +810,7 @@ static int str_gsub (lua_State *L) {
 #define MAX_FORMAT	(sizeof(FLAGS) + sizeof(LUA_INTFRMLEN) + 10)
 
 
-static void addquoted (lua_State *L, luaL_Buffer *b, int arg) {
+static void addquoted (LuaThread *L, luaL_Buffer *b, int arg) {
   THREAD_CHECK(L);
   size_t l;
   const char *s = luaL_checklstring(L, arg, &l);
@@ -835,7 +835,7 @@ static void addquoted (lua_State *L, luaL_Buffer *b, int arg) {
   luaL_addchar(b, '"');
 }
 
-static const char *scanformat (lua_State *L, const char *strfrmt, char *form) {
+static const char *scanformat (LuaThread *L, const char *strfrmt, char *form) {
   THREAD_CHECK(L);
   const char *p = strfrmt;
   while (*p != '\0' && strchr(FLAGS, *p) != NULL) p++;  /* skip flags */
@@ -871,7 +871,7 @@ static void addlenmod (char *form, const char *lenmod) {
 }
 
 
-static int str_format (lua_State *L) {
+static int str_format (LuaThread *L) {
   THREAD_CHECK(L);
   int top = L->stack_.getTopIndex();
   int arg = 1;
@@ -898,7 +898,7 @@ static int str_format (lua_State *L) {
           break;
         }
         case 'd':  case 'i': {
-          lua_Number n = luaL_checknumber(L, arg);
+          double n = luaL_checknumber(L, arg);
           luaL_argcheck(L, (MIN_INTFRM - 1) < n && n < (MAX_INTFRM + 1), arg,
                         "not a number in proper range");
           addlenmod(form, LUA_INTFRMLEN);
@@ -906,7 +906,7 @@ static int str_format (lua_State *L) {
           break;
         }
         case 'o':  case 'u':  case 'x':  case 'X': {
-          lua_Number n = luaL_checknumber(L, arg);
+          double n = luaL_checknumber(L, arg);
           luaL_argcheck(L, 0 <= n && n < (MAX_UINTFRM + 1), arg,
                         "not a non-negative number in proper range");
           addlenmod(form, LUA_INTFRMLEN);
@@ -975,7 +975,7 @@ static const luaL_Reg strlib[] = {
 };
 
 
-static void createmetatable (lua_State *L) {
+static void createmetatable (LuaThread *L) {
   THREAD_CHECK(L);
   lua_createtable(L, 0, 1);  /* table to be metatable for strings */
   lua_pushliteral(L, "");  /* dummy string */
@@ -991,7 +991,7 @@ static void createmetatable (lua_State *L) {
 /*
 ** Open string library
 */
-int luaopen_string (lua_State *L) {
+int luaopen_string (LuaThread *L) {
   THREAD_CHECK(L);
 
   lua_createtable(L, 0, sizeof(strlib)/sizeof((strlib)[0]) - 1);

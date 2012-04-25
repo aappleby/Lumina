@@ -28,11 +28,11 @@
 
 #include "lstate.h" // for THREAD_CHECK
 
-TValue *index2addr (lua_State *L, int idx);
+LuaValue *index2addr (LuaThread *L, int idx);
 
-const char* luaL_typename(lua_State* L, int index) {
+const char* luaL_typename(LuaThread* L, int index) {
   THREAD_CHECK(L);
-  TValue v = index2addr3(L, index);
+  LuaValue v = index2addr3(L, index);
   return v.typeName();
 }
 
@@ -52,11 +52,11 @@ const char* luaL_typename(lua_State* L, int index) {
 ** search for 'objidx' in table at index -1.
 ** return 1 + string at top if find a good name.
 */
-static int findfield (lua_State *L, int objidx, int level) {
+static int findfield (LuaThread *L, int objidx, int level) {
   THREAD_CHECK(L);
   if (level == 0 || !lua_istable(L, -1))
     return 0;  /* not found */
-  L->stack_.push(TValue::Nil());  /* start 'next' loop */
+  L->stack_.push(LuaValue::Nil());  /* start 'next' loop */
   while (lua_next(L, -2)) {  /* for each pair in table */
     if (lua_type(L, -2) == LUA_TSTRING) {  /* ignore non-string keys */
       if (lua_rawequal(L, objidx, -1)) {  /* found object? */
@@ -77,7 +77,7 @@ static int findfield (lua_State *L, int objidx, int level) {
 }
 
 
-static int pushglobalfuncname (lua_State *L, lua_Debug *ar) {
+static int pushglobalfuncname (LuaThread *L, LuaDebug *ar) {
   THREAD_CHECK(L);
   int top = L->stack_.getTopIndex();
   lua_getinfo(L, "f", ar);  /* push function */
@@ -94,7 +94,7 @@ static int pushglobalfuncname (lua_State *L, lua_Debug *ar) {
 }
 
 
-static void pushfuncname (lua_State *L, lua_Debug *ar) {
+static void pushfuncname (LuaThread *L, LuaDebug *ar) {
   THREAD_CHECK(L);
   if (*ar->namewhat != '\0') {
     /* is there a name? */
@@ -119,9 +119,9 @@ static void pushfuncname (lua_State *L, lua_Debug *ar) {
 }
 
 
-static int countlevels (lua_State *L) {
+static int countlevels (LuaThread *L) {
   THREAD_CHECK(L);
-  lua_Debug ar;
+  LuaDebug ar;
   int li = 1, le = 1;
   /* find an upper bound */
   while (lua_getstack(L, le, &ar)) { li = le; le *= 2; }
@@ -135,10 +135,10 @@ static int countlevels (lua_State *L) {
 }
 
 
-void luaL_traceback (lua_State *L, lua_State *L1,
+void luaL_traceback (LuaThread *L, LuaThread *L1,
                                 const char *msg, int level) {
   THREAD_CHECK(L);
-  lua_Debug ar;
+  LuaDebug ar;
   int top = L->stack_.getTopIndex();
   int numlevels;
   {
@@ -190,9 +190,9 @@ void luaL_traceback (lua_State *L, lua_State *L1,
 ** =======================================================
 */
 
-int luaL_argerror (lua_State *L, int narg, const char *extramsg) {
+int luaL_argerror (LuaThread *L, int narg, const char *extramsg) {
   THREAD_CHECK(L);
-  lua_Debug ar;
+  LuaDebug ar;
   if (!lua_getstack(L, 0, &ar))  /* no stack frame? */
     return luaL_error(L, "bad argument #%d (%s)", narg, extramsg);
   lua_getinfo(L, "n", &ar);
@@ -208,7 +208,7 @@ int luaL_argerror (lua_State *L, int narg, const char *extramsg) {
 }
 
 
-static int typeerror (lua_State *L, int narg, const char* type1) {
+static int typeerror (LuaThread *L, int narg, const char* type1) {
   THREAD_CHECK(L);
   const char* type2 = luaL_typename(L, narg);
   const char *msg = lua_pushfstring(L, "%s expected, got %s", type1, type2);
@@ -216,15 +216,15 @@ static int typeerror (lua_State *L, int narg, const char* type1) {
 }
 
 
-static void tag_error (lua_State *L, int narg, int tag) {
+static void tag_error (LuaThread *L, int narg, int tag) {
   THREAD_CHECK(L);
   typeerror(L, narg, lua_typename(L, tag));
 }
 
 
-void luaL_where (lua_State *L, int level) {
+void luaL_where (LuaThread *L, int level) {
   THREAD_CHECK(L);
-  lua_Debug ar;
+  LuaDebug ar;
   if (lua_getstack(L, level, &ar)) {  /* check function at level */
     lua_getinfo(L, "Sl", &ar);  /* get info about it */
     if (ar.currentline > 0) {  /* is there info? */
@@ -236,7 +236,7 @@ void luaL_where (lua_State *L, int level) {
 }
 
 
-int luaL_error (lua_State *L, const char *fmt, ...) {
+int luaL_error (LuaThread *L, const char *fmt, ...) {
   THREAD_CHECK(L);
   va_list argp;
   va_start(argp, fmt);
@@ -248,7 +248,7 @@ int luaL_error (lua_State *L, const char *fmt, ...) {
 }
 
 
-int luaL_fileresult (lua_State *L, int stat, const char *fname) {
+int luaL_fileresult (LuaThread *L, int stat, const char *fname) {
   THREAD_CHECK(L);
   int en = errno;  /* calls to Lua API may change this value */
   if (stat) {
@@ -256,7 +256,7 @@ int luaL_fileresult (lua_State *L, int stat, const char *fname) {
     return 1;
   }
   else {
-    L->stack_.push(TValue::Nil());
+    L->stack_.push(LuaValue::Nil());
     if (fname) {
       lua_pushfstring(L, "%s: %s", fname, strerror(en));
     }
@@ -269,7 +269,7 @@ int luaL_fileresult (lua_State *L, int stat, const char *fname) {
 }
 
 
-int luaL_execresult (lua_State *L, int stat) {
+int luaL_execresult (LuaThread *L, int stat) {
   THREAD_CHECK(L);
   const char *what = "exit";  /* type of termination */
   if (stat == -1)  /* error? */
@@ -280,7 +280,7 @@ int luaL_execresult (lua_State *L, int stat) {
       lua_pushboolean(L, 1);
     }
     else {
-      L->stack_.push(TValue::Nil());
+      L->stack_.push(LuaValue::Nil());
     }
     lua_pushstring(L, what);
     lua_pushinteger(L, stat);
@@ -297,7 +297,7 @@ int luaL_execresult (lua_State *L, int stat) {
 ** =======================================================
 */
 
-int luaL_newmetatable (lua_State *L, const char *tname) {
+int luaL_newmetatable (LuaThread *L, const char *tname) {
   THREAD_CHECK(L);
   luaL_getmetatable(L, tname);  /* try to get metatable */
   if (!lua_isnil(L, -1))  /* name already in use? */
@@ -310,14 +310,14 @@ int luaL_newmetatable (lua_State *L, const char *tname) {
 }
 
 
-void luaL_setmetatable (lua_State *L, const char *tname) {
+void luaL_setmetatable (LuaThread *L, const char *tname) {
   THREAD_CHECK(L);
   luaL_getmetatable(L, tname);
   lua_setmetatable(L, -2);
 }
 
 
-void *luaL_testudata (lua_State *L, int ud, const char *tname) {
+void *luaL_testudata (LuaThread *L, int ud, const char *tname) {
   THREAD_CHECK(L);
   void *p = lua_touserdata(L, ud);
   if (p != NULL) {  /* value is a userdata? */
@@ -333,7 +333,7 @@ void *luaL_testudata (lua_State *L, int ud, const char *tname) {
 }
 
 
-void *luaL_checkudata (lua_State *L, int ud, const char *tname) {
+void *luaL_checkudata (LuaThread *L, int ud, const char *tname) {
   THREAD_CHECK(L);
   void *p = luaL_testudata(L, ud, tname);
   if (p == NULL) typeerror(L, ud, tname);
@@ -349,7 +349,7 @@ void *luaL_checkudata (lua_State *L, int ud, const char *tname) {
 ** =======================================================
 */
 
-int luaL_checkoption (lua_State *L,
+int luaL_checkoption (LuaThread *L,
                       int narg,
                       const char *def,
                       const char *const lst[]) {
@@ -365,7 +365,7 @@ int luaL_checkoption (lua_State *L,
 }
 
 
-void luaL_checkstack (lua_State *L, int space, const char *msg) {
+void luaL_checkstack (LuaThread *L, int space, const char *msg) {
   THREAD_CHECK(L);
   /* keep some extra space to run error routines, if needed */
   const int extra = LUA_MINSTACK;
@@ -377,43 +377,43 @@ void luaL_checkstack (lua_State *L, int space, const char *msg) {
   }
 }
 
-void luaL_checkIsFunction(lua_State *L, int narg) {
+void luaL_checkIsFunction(LuaThread *L, int narg) {
   THREAD_CHECK(L);
-  TValue* pv = index2addr(L, narg);
+  LuaValue* pv = index2addr(L, narg);
   assert(pv);
-  TValue v = *pv;
+  LuaValue v = *pv;
   if(v.isFunction()) return;
   const char* actualType = v.typeName();
   const char *msg = lua_pushfstring(L, "Expected a function, got a %s", actualType);
   luaL_argerror(L, narg, msg);
 }
 
-void luaL_checkIsTable(lua_State* L, int narg) {
+void luaL_checkIsTable(LuaThread* L, int narg) {
   THREAD_CHECK(L);
-  TValue v = *index2addr(L, narg);
+  LuaValue v = *index2addr(L, narg);
   if(v.isTable()) return;
   const char* actualType = v.typeName();
   const char *msg = lua_pushfstring(L, "Expected a table, got a %s", actualType);
   luaL_argerror(L, narg, msg);
 }
 
-void luaL_checktype (lua_State *L, int narg, int t) {
+void luaL_checktype (LuaThread *L, int narg, int t) {
   THREAD_CHECK(L);
   if (lua_type(L, narg) != t)
     tag_error(L, narg, t);
 }
 
 
-void luaL_checkany (lua_State *L, int narg) {
+void luaL_checkany (LuaThread *L, int narg) {
   THREAD_CHECK(L);
-  TValue* v = index2addr2(L, narg);
+  LuaValue* v = index2addr2(L, narg);
   if(v == NULL) {
     luaL_argerror(L, narg, "value expected");
   }
 }
 
 
-const char *luaL_checklstring (lua_State *L, int narg, size_t *len) {
+const char *luaL_checklstring (LuaThread *L, int narg, size_t *len) {
   THREAD_CHECK(L);
   const char *s = lua_tolstring(L, narg, len);
   if (!s) tag_error(L, narg, LUA_TSTRING);
@@ -421,7 +421,7 @@ const char *luaL_checklstring (lua_State *L, int narg, size_t *len) {
 }
 
 
-const char *luaL_optlstring (lua_State *L,
+const char *luaL_optlstring (LuaThread *L,
                              int narg,
                              const char * default_string,
                              size_t *len) {
@@ -435,10 +435,10 @@ const char *luaL_optlstring (lua_State *L,
 }
 
 
-lua_Number luaL_checknumber (lua_State *L, int narg) {
+double luaL_checknumber (LuaThread *L, int narg) {
   THREAD_CHECK(L);
-  TValue v1 = index2addr3(L, narg);
-  TValue v2 = v1.convertToNumber();
+  LuaValue v1 = index2addr3(L, narg);
+  LuaValue v2 = v1.convertToNumber();
   if(v2.isNone()) {
     tag_error(L, narg, LUA_TNUMBER);
   }
@@ -446,39 +446,39 @@ lua_Number luaL_checknumber (lua_State *L, int narg) {
 }
 
 
-lua_Number luaL_optnumber (lua_State *L, int narg, lua_Number def) {
+double luaL_optnumber (LuaThread *L, int narg, double def) {
   THREAD_CHECK(L);
   return luaL_opt(L, luaL_checknumber, narg, def);
 }
 
 
-lua_Integer luaL_checkinteger (lua_State *L, int narg) {
+ptrdiff_t luaL_checkinteger (LuaThread *L, int narg) {
   THREAD_CHECK(L);
   int isnum;
-  lua_Integer d = lua_tointegerx(L, narg, &isnum);
+  ptrdiff_t d = lua_tointegerx(L, narg, &isnum);
   if (!isnum)
     tag_error(L, narg, LUA_TNUMBER);
   return d;
 }
 
 
-lua_Unsigned luaL_checkunsigned (lua_State *L, int narg) {
+uint32_t luaL_checkunsigned (LuaThread *L, int narg) {
   THREAD_CHECK(L);
   int isnum;
-  lua_Unsigned d = lua_tounsignedx(L, narg, &isnum);
+  uint32_t d = lua_tounsignedx(L, narg, &isnum);
   if (!isnum)
     tag_error(L, narg, LUA_TNUMBER);
   return d;
 }
 
 
-lua_Integer luaL_optinteger (lua_State *L, int narg, lua_Integer def) {
+ptrdiff_t luaL_optinteger (LuaThread *L, int narg, ptrdiff_t def) {
   THREAD_CHECK(L);
   return luaL_opt(L, luaL_checkinteger, narg, def);
 }
 
 
-lua_Unsigned luaL_optunsigned (lua_State *L, int narg, lua_Unsigned def) {
+uint32_t luaL_optunsigned (LuaThread *L, int narg, uint32_t def) {
   THREAD_CHECK(L);
   return luaL_opt(L, luaL_checkunsigned, narg, def);
 }
@@ -503,7 +503,7 @@ lua_Unsigned luaL_optunsigned (lua_State *L, int narg, lua_Unsigned def) {
 ** returns a pointer to a free area with at least 'sz' bytes
 */
 char *luaL_prepbuffsize (luaL_Buffer *B, size_t sz) {
-  lua_State *L = B->L;
+  LuaThread *L = B->L;
   if (B->size - B->n < sz) {  /* not enough space? */
     char *newbuff;
     size_t newsize = B->size * 2;  /* double buffer size */
@@ -537,7 +537,7 @@ void luaL_addstring (luaL_Buffer *B, const char *s) {
 
 
 void luaL_pushresult (luaL_Buffer *B) {
-  lua_State *L = B->L;
+  LuaThread *L = B->L;
   lua_pushlstring(L, B->b, B->n);
   if (buffonstack(B))
     L->stack_.remove(-2);  /* remove old buffer */
@@ -551,7 +551,7 @@ void luaL_pushresultsize (luaL_Buffer *B, size_t sz) {
 
 
 void luaL_addvalue (luaL_Buffer *B) {
-  lua_State *L = B->L;
+  LuaThread *L = B->L;
   size_t l;
   const char *s = lua_tolstring(L, -1, &l);
   if (buffonstack(B))
@@ -561,7 +561,7 @@ void luaL_addvalue (luaL_Buffer *B) {
 }
 
 
-void luaL_buffinit (lua_State *L, luaL_Buffer *B) {
+void luaL_buffinit (LuaThread *L, luaL_Buffer *B) {
   THREAD_CHECK(L);
   B->L = L;
   B->b = B->initb;
@@ -570,7 +570,7 @@ void luaL_buffinit (lua_State *L, luaL_Buffer *B) {
 }
 
 
-char *luaL_buffinitsize (lua_State *L, luaL_Buffer *B, size_t sz) {
+char *luaL_buffinitsize (LuaThread *L, luaL_Buffer *B, size_t sz) {
   THREAD_CHECK(L);
   luaL_buffinit(L, B);
   return luaL_prepbuffsize(B, sz);
@@ -589,7 +589,7 @@ char *luaL_buffinitsize (lua_State *L, luaL_Buffer *B, size_t sz) {
 #define freelist	0
 
 
-int luaL_ref (lua_State *L, int t) {
+int luaL_ref (LuaThread *L, int t) {
   THREAD_CHECK(L);
   int ref;
   t = lua_absindex(L, t);
@@ -611,7 +611,7 @@ int luaL_ref (lua_State *L, int t) {
 }
 
 
-void luaL_unref (lua_State *L, int t, int ref) {
+void luaL_unref (LuaThread *L, int t, int ref) {
   THREAD_CHECK(L);
   if (ref >= 0) {
     t = lua_absindex(L, t);
@@ -638,7 +638,7 @@ typedef struct LoadF {
 } LoadF;
 
 
-static const char *getF (lua_State *L, void *ud, size_t *size) {
+static const char *getF (LuaThread *L, void *ud, size_t *size) {
   THREAD_CHECK(L);
   LoadF *lf = (LoadF *)ud;
   (void)L;  /* not used */
@@ -657,7 +657,7 @@ static const char *getF (lua_State *L, void *ud, size_t *size) {
 }
 
 
-static int errfile (lua_State *L, const char *what, int fnameindex) {
+static int errfile (LuaThread *L, const char *what, int fnameindex) {
   THREAD_CHECK(L);
   const char *serr = strerror(errno);
   const char *filename = lua_tostring(L, fnameindex) + 1;
@@ -698,7 +698,7 @@ static int skipcomment (LoadF *lf, int *cp) {
 }
 
 
-int luaL_loadfilex (lua_State *L, const char *filename,
+int luaL_loadfilex (LuaThread *L, const char *filename,
                                              const char *mode) {
   THREAD_CHECK(L);
   LoadF lf;
@@ -743,7 +743,7 @@ typedef struct LoadS {
 } LoadS;
 
 
-static const char *getS (lua_State *L, void *ud, size_t *size) {
+static const char *getS (LuaThread *L, void *ud, size_t *size) {
   THREAD_CHECK(L);
   LoadS *ls = (LoadS *)ud;
   (void)L;  /* not used */
@@ -754,7 +754,7 @@ static const char *getS (lua_State *L, void *ud, size_t *size) {
 }
 
 
-int luaL_loadbufferx (lua_State *L, const char *buff, size_t size,
+int luaL_loadbufferx (LuaThread *L, const char *buff, size_t size,
                                  const char *name, const char *mode) {
   THREAD_CHECK(L);
   LoadS ls;
@@ -764,7 +764,7 @@ int luaL_loadbufferx (lua_State *L, const char *buff, size_t size,
 }
 
 
-int luaL_loadstring (lua_State *L, const char *s) {
+int luaL_loadstring (LuaThread *L, const char *s) {
   THREAD_CHECK(L);
   return luaL_loadbuffer(L, s, strlen(s), s);
 }
@@ -773,7 +773,7 @@ int luaL_loadstring (lua_State *L, const char *s) {
 
 
 
-int luaL_getmetafield (lua_State *L, int obj, const char *event) {
+int luaL_getmetafield (LuaThread *L, int obj, const char *event) {
   THREAD_CHECK(L);
   if (!lua_getmetatable(L, obj)) {
     /* no metatable? */
@@ -792,7 +792,7 @@ int luaL_getmetafield (lua_State *L, int obj, const char *event) {
 }
 
 
-int luaL_callmeta (lua_State *L, int obj, const char *event) {
+int luaL_callmeta (LuaThread *L, int obj, const char *event) {
   THREAD_CHECK(L);
   obj = lua_absindex(L, obj);
   if (!luaL_getmetafield(L, obj, event))  /* no metafield? */
@@ -803,7 +803,7 @@ int luaL_callmeta (lua_State *L, int obj, const char *event) {
 }
 
 
-int luaL_len (lua_State *L, int idx) {
+int luaL_len (LuaThread *L, int idx) {
   THREAD_CHECK(L);
   int l;
   int isnum;
@@ -816,12 +816,12 @@ int luaL_len (lua_State *L, int idx) {
 }
 
 
-const char *luaL_tolstring (lua_State *L, int idx, size_t *len) {
+const char *luaL_tolstring (LuaThread *L, int idx, size_t *len) {
   THREAD_CHECK(L);
   if (!luaL_callmeta(L, idx, "__tostring")) {  /* no metafield? */
-    TValue* pv = index2addr(L, idx); 
+    LuaValue* pv = index2addr(L, idx); 
     assert(pv);
-    TValue v = *pv;
+    LuaValue v = *pv;
 
     if(v.isNumber() || v.isString()) {
       L->stack_.copy(idx);
@@ -845,7 +845,7 @@ const char *luaL_tolstring (lua_State *L, int idx, size_t *len) {
 ** function gets the 'nup' elements at the top as upvalues.
 ** Returns with only the table at the stack.
 */
-void luaL_setfuncs (lua_State *L, const luaL_Reg *l, int nup) {
+void luaL_setfuncs (LuaThread *L, const luaL_Reg *l, int nup) {
   THREAD_CHECK(L);
   luaL_checkstack(L, nup, "too many upvalues");
   for (; l->name != NULL; l++) {  /* fill the table with given functions */
@@ -865,7 +865,7 @@ void luaL_setfuncs (lua_State *L, const luaL_Reg *l, int nup) {
 ** ensure that stack[idx][fname] has a table and push that table
 ** into the stack
 */
-int luaL_getsubtable (lua_State *L, int idx, const char *fname) {
+int luaL_getsubtable (LuaThread *L, int idx, const char *fname) {
   THREAD_CHECK(L);
   lua_getfield(L, idx, fname);
   if (lua_istable(L, -1)) return 1;  /* table already there */
@@ -886,8 +886,8 @@ int luaL_getsubtable (lua_State *L, int idx, const char *fname) {
 ** is true, also registers the result in the global table.
 ** Leaves resulting module on the top.
 */
-void luaL_requiref (lua_State *L, const char *modname,
-                               lua_CFunction openf, int glb) {
+void luaL_requiref (LuaThread *L, const char *modname,
+                               LuaCallback openf, int glb) {
   THREAD_CHECK(L);
   lua_pushcclosure(L, openf, 0);
   lua_pushstring(L, modname);  /* argument to open function */
@@ -905,7 +905,7 @@ void luaL_requiref (lua_State *L, const char *modname,
 }
 
 
-const char *luaL_gsub (lua_State *L, const char *s, const char *p,
+const char *luaL_gsub (LuaThread *L, const char *s, const char *p,
                                                                const char *r) {
   THREAD_CHECK(L);
   const char *wild;
@@ -923,7 +923,7 @@ const char *luaL_gsub (lua_State *L, const char *s, const char *p,
 }
 
 
-static int panic (lua_State *L) {
+static int panic (LuaThread *L) {
   THREAD_CHECK(L);
   luai_writestringerror("PANIC: unprotected error in call to Lua API (%s)\n",
                    lua_tostring(L, -1));
@@ -931,8 +931,8 @@ static int panic (lua_State *L) {
 }
 
 
-lua_State *luaL_newstate (void) {
-  lua_State *L = lua_newstate();
+LuaThread *luaL_newstate (void) {
+  LuaThread *L = lua_newstate();
   if (L) {
     GLOBAL_CHANGE(L);
     lua_atpanic(L, &panic);
@@ -941,18 +941,18 @@ lua_State *luaL_newstate (void) {
 }
 
 
-void luaL_checkversion_ (lua_State *L, lua_Number ver) {
+void luaL_checkversion_ (LuaThread *L, double ver) {
   THREAD_CHECK(L);
-  const lua_Number *v = lua_version(L);
+  const double *v = lua_version(L);
   if (v != lua_version(NULL))
     luaL_error(L, "multiple Lua VMs detected");
   else if (*v != ver)
     luaL_error(L, "version mismatch: app. needs %f, Lua core provides %f",
                   ver, *v);
   /* check conversions number -> integer types */
-  lua_pushnumber(L, -(lua_Number)0x1234);
+  lua_pushnumber(L, -(double)0x1234);
   if (lua_tointeger(L, -1) != -0x1234 ||
-      lua_tounsigned(L, -1) != (lua_Unsigned)-0x1234)
+      lua_tounsigned(L, -1) != (uint32_t)-0x1234)
     luaL_error(L, "bad conversion number->int;"
                   " must recompile Lua with proper settings");
   L->stack_.pop();

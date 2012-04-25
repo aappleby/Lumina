@@ -12,9 +12,9 @@
 #include "LuaTypes.h"
 
 const char* ttypename(int tag);
-const char* objtypename(const TValue* v);
+const char* objtypename(const LuaValue* v);
 
-TValue luaT_gettmbyobj2 (TValue v, TMS event);
-TValue fasttm2 ( Table* table, TMS tag);
+LuaValue luaT_gettmbyobj2 (LuaValue v, TMS event);
+LuaValue fasttm2 ( LuaTable* table, TMS tag);
 
 #endif

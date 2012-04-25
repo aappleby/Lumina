@@ -6,54 +6,54 @@
 #include "LuaString.h"
 
 uint32_t hash64 (uint32_t a, uint32_t b);
-int luaO_str2d (const char *s, size_t len, lua_Number *result);
+int luaO_str2d (const char *s, size_t len, double *result);
 
-TValue TValue::LightUserdata(const void * p) {
-  TValue v;
-  v.type_ = LUA_TLIGHTUSERDATA;
+LuaValue LuaValue::LightUserdata(const void * p) {
+  LuaValue v;
+  v.type_ = LUA_TVOID;
   v.bytes_ = 0;
   v.pointer_ = (void*)p;
   return v;
 }
 
-TValue TValue::LightFunction(lua_CFunction f) {
-  TValue v;
-  v.type_ = LUA_TLCF;
+LuaValue LuaValue::LightFunction(LuaCallback f) {
+  LuaValue v;
+  v.type_ = LUA_TCALLBACK;
   v.bytes_ = 0;
   v.callback_ = f;
   return v;
 }
 
-TValue TValue::convertToNumber() const {
+LuaValue LuaValue::convertToNumber() const {
   if(isNumber()) return *this;
 
   if(isString()) {
-    TString* s = getString();
+    LuaString* s = getString();
 
     double result;
     if(luaO_str2d(s->c_str(), s->getLen(), &result)) {
-      return TValue(result);
+      return LuaValue(result);
     }
   }
 
   return None();
 }
 
-TValue TValue::convertToString() const {
+LuaValue LuaValue::convertToString() const {
   if(isString()) return *this;
 
   if (isNumber()) {
-    lua_Number n = getNumber();
+    double n = getNumber();
     char s[LUAI_MAXNUMBER2STR];
     int l = lua_number2str(s, n);
-    return TValue(thread_G->strings_->Create(s, l));
+    return LuaValue(thread_G->strings_->Create(s, l));
   }
 
   return None();
 }
 
 
-void TValue::sanityCheck() const {
+void LuaValue::sanityCheck() const {
   if(isCollectable()) {
     object_->sanityCheck();
     assert(type_ == object_->type());
@@ -61,27 +61,27 @@ void TValue::sanityCheck() const {
   }
 }
 
-void TValue::typeCheck() const {
+void LuaValue::typeCheck() const {
   if(isCollectable()) {
     assert(type_ == object_->type());
   }
 }
 
-bool TValue::isWhite() const {
+bool LuaValue::isWhite() const {
   if(!isCollectable()) return false;
   return object_->isWhite();
 }
 
-bool TValue::isLiveColor() const {
+bool LuaValue::isLiveColor() const {
   if(!isCollectable()) return false;
   return object_->isLiveColor();
 }
 
-uint32_t TValue::hashValue() const {
+uint32_t LuaValue::hashValue() const {
   return hash64(twobytes.lowbytes_, twobytes.highbytes_);
 }
 
 extern char** luaT_typenames;
-const char * TValue::typeName() const {
+const char * LuaValue::typeName() const {
   return luaT_typenames[type_];
 }

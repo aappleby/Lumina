@@ -5,9 +5,9 @@
 #include "LuaState.h"
 
 
-void CallInfo::sanityCheck() {
+void LuaStackFrame::sanityCheck() {
   if(isLua()) {
-    Proto *p = getFunc()->getLClosure()->proto_;
+    LuaProto *p = getFunc()->getLClosure()->proto_;
     assert(p->code.begin() <= savedpc);
     assert(savedpc <= p->code.end());
   }

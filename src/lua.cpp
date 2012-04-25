@@ -87,13 +87,13 @@
 
 
 
-static lua_State *globalL = NULL;
+static LuaThread *globalL = NULL;
 
 static const char *progname = LUA_PROGNAME;
 
 
 
-static void lstop (lua_State *L, lua_Debug *ar) {
+static void lstop (LuaThread *L, LuaDebug *ar) {
   (void)ar;  /* unused arg. */
   lua_sethook(L, NULL, 0, 0);
   luaL_error(L, "interrupted!");
@@ -134,7 +134,7 @@ static void l_message (const char *pname, const char *msg) {
 }
 
 
-static int report (lua_State *L, int status) {
+static int report (LuaThread *L, int status) {
   if (status != LUA_OK && !lua_isnil(L, -1)) {
     const char *msg = lua_tostring(L, -1);
     if (msg == NULL) msg = "(error object is not a string)";
@@ -148,7 +148,7 @@ static int report (lua_State *L, int status) {
 
 
 /* the next function is called unprotected, so it must avoid errors */
-static void finalreport (lua_State *L, int status) {
+static void finalreport (LuaThread *L, int status) {
   if (status != LUA_OK) {
     const char *msg = (lua_type(L, -1) == LUA_TSTRING) ? lua_tostring(L, -1)
                                                        : NULL;
@@ -159,7 +159,7 @@ static void finalreport (lua_State *L, int status) {
 }
 
 
-static int traceback (lua_State *L) {
+static int traceback (LuaThread *L) {
   const char *msg = lua_tostring(L, 1);
   if (msg)
     luaL_traceback(L, L, msg, 1);
@@ -173,7 +173,7 @@ static int traceback (lua_State *L) {
 }
 
 
-static int docall (lua_State *L, int narg, int nres) {
+static int docall (LuaThread *L, int narg, int nres) {
   int status;
   int base = L->stack_.getTopIndex() - narg;  /* function index */
   lua_pushcclosure(L, traceback, 0);  /* push traceback function */
@@ -193,7 +193,7 @@ static void print_version (void) {
 }
 
 
-static int getargs (lua_State *L, char **argv, int n) {
+static int getargs (LuaThread *L, char **argv, int n) {
   int narg;
   int i;
   int argc = 0;
@@ -212,21 +212,21 @@ static int getargs (lua_State *L, char **argv, int n) {
 }
 
 
-static int dofile (lua_State *L, const char *name) {
+static int dofile (LuaThread *L, const char *name) {
   int status = luaL_loadfile(L, name);
   if (status == LUA_OK) status = docall(L, 0, 0);
   return report(L, status);
 }
 
 
-static int dostring (lua_State *L, const char *s, const char *name) {
+static int dostring (LuaThread *L, const char *s, const char *name) {
   int status = luaL_loadbuffer(L, s, strlen(s), name);
   if (status == LUA_OK) status = docall(L, 0, 0);
   return report(L, status);
 }
 
 
-static int dolibrary (lua_State *L, const char *name) {
+static int dolibrary (LuaThread *L, const char *name) {
   int status;
   lua_pushglobaltable(L);
   lua_getfield(L, -1, "require");
@@ -242,7 +242,7 @@ static int dolibrary (lua_State *L, const char *name) {
 }
 
 
-static const char *get_prompt (lua_State *L, int firstline) {
+static const char *get_prompt (LuaThread *L, int firstline) {
   const char *p;
   lua_getglobal(L, firstline ? "_PROMPT" : "_PROMPT2");
   p = lua_tostring(L, -1);
@@ -255,7 +255,7 @@ static const char *get_prompt (lua_State *L, int firstline) {
 #define EOFMARK		"<eof>"
 #define marklen		(sizeof(EOFMARK)/sizeof(char) - 1)
 
-static int incomplete (lua_State *L, int status) {
+static int incomplete (LuaThread *L, int status) {
   if (status == LUA_ERRSYNTAX) {
     size_t lmsg;
     const char *msg = lua_tolstring(L, -1, &lmsg);
@@ -268,7 +268,7 @@ static int incomplete (lua_State *L, int status) {
 }
 
 
-static int pushline (lua_State *L, int firstline) {
+static int pushline (LuaThread *L, int firstline) {
   char buffer[LUA_MAXINPUT];
   char *b = buffer;
   size_t l;
@@ -291,7 +291,7 @@ static int pushline (lua_State *L, int firstline) {
 }
 
 
-static int loadline (lua_State *L) {
+static int loadline (LuaThread *L) {
   int status;
   L->stack_.setTopIndex(0);
   if (!pushline(L, 1))
@@ -313,7 +313,7 @@ static int loadline (lua_State *L) {
 }
 
 
-static void dotty (lua_State *L) {
+static void dotty (LuaThread *L) {
   int status;
   const char *oldprogname = progname;
   progname = NULL;
@@ -337,7 +337,7 @@ static void dotty (lua_State *L) {
 }
 
 
-static int handle_script (lua_State *L, char **argv, int n) {
+static int handle_script (LuaThread *L, char **argv, int n) {
   int status;
   const char *fname;
   int narg = getargs(L, argv, n);  /* collect arguments */
@@ -406,7 +406,7 @@ static int collectargs (char **argv, int *args) {
 }
 
 
-static int runargs (lua_State *L, char **argv, int n) {
+static int runargs (LuaThread *L, char **argv, int n) {
   int i;
   for (i = 1; i < n; i++) {
     assert(argv[i][0] == '-');
@@ -434,7 +434,7 @@ static int runargs (lua_State *L, char **argv, int n) {
 }
 
 
-static int handle_luainit (lua_State *L) {
+static int handle_luainit (LuaThread *L) {
   const char *name = "=" LUA_INITVERSION;
   const char *init = getenv(name + 1);
   if (init == NULL) {
@@ -449,7 +449,7 @@ static int handle_luainit (lua_State *L) {
 }
 
 
-static int pmain (lua_State *L) {
+static int pmain (LuaThread *L) {
   int argc = (int)lua_tointeger(L, 1);
   char **argv = (char **)lua_touserdata(L, 2);
   int script;
@@ -493,13 +493,13 @@ static int pmain (lua_State *L) {
 
 int main (int argc, char **argv) {
   {
-    lua_State *L = luaL_newstate();  /* create state */
+    LuaThread *L = luaL_newstate();  /* create state */
     GLOBAL_CHANGE(L);
     lua_close(L);
   }
 
   int status, result;
-  lua_State *L = luaL_newstate();  /* create state */
+  LuaThread *L = luaL_newstate();  /* create state */
   GLOBAL_CHANGE(L);
   if (L == NULL) {
     l_message(argv[0], "cannot create state: not enough memory");

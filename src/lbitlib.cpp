@@ -22,7 +22,7 @@
 #endif
 
 
-#define ALLONES		(~(((~(lua_Unsigned)0) << (LUA_NBITS - 1)) << 1))
+#define ALLONES		(~(((~(uint32_t)0) << (LUA_NBITS - 1)) << 1))
 
 /* macro to trim extra bits */
 #define trim(x)		((x) & ALLONES)
@@ -32,11 +32,11 @@
 #define mask(n)		(~((ALLONES << 1) << ((n) - 1)))
 
 
-typedef lua_Unsigned b_uint;
+typedef uint32_t b_uint;
 
 
 
-static b_uint andaux (lua_State *L) {
+static b_uint andaux (LuaThread *L) {
   THREAD_CHECK(L);
   int i, n = L->stack_.getTopIndex();
   b_uint r = ~(b_uint)0;
@@ -46,7 +46,7 @@ static b_uint andaux (lua_State *L) {
 }
 
 
-static int b_and (lua_State *L) {
+static int b_and (LuaThread *L) {
   THREAD_CHECK(L);
   b_uint r = andaux(L);
   lua_pushunsigned(L, r);
@@ -54,7 +54,7 @@ static int b_and (lua_State *L) {
 }
 
 
-static int b_test (lua_State *L) {
+static int b_test (LuaThread *L) {
   THREAD_CHECK(L);
   b_uint r = andaux(L);
   lua_pushboolean(L, r != 0);
@@ -62,7 +62,7 @@ static int b_test (lua_State *L) {
 }
 
 
-static int b_or (lua_State *L) {
+static int b_or (LuaThread *L) {
   THREAD_CHECK(L);
   int i, n = L->stack_.getTopIndex();
   b_uint r = 0;
@@ -73,7 +73,7 @@ static int b_or (lua_State *L) {
 }
 
 
-static int b_xor (lua_State *L) {
+static int b_xor (LuaThread *L) {
   THREAD_CHECK(L);
   int i, n = L->stack_.getTopIndex();
   b_uint r = 0;
@@ -84,7 +84,7 @@ static int b_xor (lua_State *L) {
 }
 
 
-static int b_not (lua_State *L) {
+static int b_not (LuaThread *L) {
   THREAD_CHECK(L);
   b_uint r = ~luaL_checkunsigned(L, 1);
   lua_pushunsigned(L, trim(r));
@@ -92,7 +92,7 @@ static int b_not (lua_State *L) {
 }
 
 
-static int b_shift (lua_State *L, b_uint r, int i) {
+static int b_shift (LuaThread *L, b_uint r, int i) {
   THREAD_CHECK(L);
   if (i < 0) {  /* shift right? */
     i = -i;
@@ -110,19 +110,19 @@ static int b_shift (lua_State *L, b_uint r, int i) {
 }
 
 
-static int b_lshift (lua_State *L) {
+static int b_lshift (LuaThread *L) {
   THREAD_CHECK(L);
   return b_shift(L, luaL_checkunsigned(L, 1), luaL_checkint(L, 2));
 }
 
 
-static int b_rshift (lua_State *L) {
+static int b_rshift (LuaThread *L) {
   THREAD_CHECK(L);
   return b_shift(L, luaL_checkunsigned(L, 1), -luaL_checkint(L, 2));
 }
 
 
-static int b_arshift (lua_State *L) {
+static int b_arshift (LuaThread *L) {
   THREAD_CHECK(L);
   b_uint r = luaL_checkunsigned(L, 1);
   int i = luaL_checkint(L, 2);
@@ -138,7 +138,7 @@ static int b_arshift (lua_State *L) {
 }
 
 
-static int b_rot (lua_State *L, int i) {
+static int b_rot (LuaThread *L, int i) {
   THREAD_CHECK(L);
   b_uint r = luaL_checkunsigned(L, 1);
   i &= (LUA_NBITS - 1);  /* i = i % NBITS */
@@ -149,13 +149,13 @@ static int b_rot (lua_State *L, int i) {
 }
 
 
-static int b_lrot (lua_State *L) {
+static int b_lrot (LuaThread *L) {
   THREAD_CHECK(L);
   return b_rot(L, luaL_checkint(L, 2));
 }
 
 
-static int b_rrot (lua_State *L) {
+static int b_rrot (LuaThread *L) {
   THREAD_CHECK(L);
   return b_rot(L, -luaL_checkint(L, 2));
 }
@@ -165,7 +165,7 @@ static int b_rrot (lua_State *L) {
 ** get field and width arguments for field-manipulation functions,
 ** checking whether they are valid
 */
-static int fieldargs (lua_State *L, int farg, int *width) {
+static int fieldargs (LuaThread *L, int farg, int *width) {
   THREAD_CHECK(L);
   int f = luaL_checkint(L, farg);
   int w = luaL_optint(L, farg + 1, 1);
@@ -178,7 +178,7 @@ static int fieldargs (lua_State *L, int farg, int *width) {
 }
 
 
-static int b_extract (lua_State *L) {
+static int b_extract (LuaThread *L) {
   THREAD_CHECK(L);
   int w;
   b_uint r = luaL_checkunsigned(L, 1);
@@ -189,7 +189,7 @@ static int b_extract (lua_State *L) {
 }
 
 
-static int b_replace (lua_State *L) {
+static int b_replace (LuaThread *L) {
   THREAD_CHECK(L);
   int w;
   b_uint r = luaL_checkunsigned(L, 1);
@@ -221,7 +221,7 @@ static const luaL_Reg bitlib[] = {
 
 
 
-int luaopen_bit32 (lua_State *L) {
+int luaopen_bit32 (LuaThread *L) {
   THREAD_CHECK(L);
   lua_createtable(L, 0, sizeof(bitlib)/sizeof((bitlib)[0]) - 1);
   luaL_setfuncs(L,bitlib,0);

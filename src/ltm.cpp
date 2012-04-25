@@ -15,24 +15,24 @@
 #include "lstate.h"
 #include "ltm.h"
 
-Table* lua_getmetatable (TValue v);
+LuaTable* lua_getmetatable (LuaValue v);
 
-TValue luaT_gettmbyobj2 (TValue v, TMS event) {
-  Table* mt = lua_getmetatable(v);
-  if(mt == NULL) return TValue::None();
-  TValue temp(thread_G->tagmethod_names_[event]);
+LuaValue luaT_gettmbyobj2 (LuaValue v, TMS event) {
+  LuaTable* mt = lua_getmetatable(v);
+  if(mt == NULL) return LuaValue::None();
+  LuaValue temp(thread_G->tagmethod_names_[event]);
   return mt->get(temp);
 }
 
-TValue fasttm2 ( Table* table, TMS tag) {
-  if(table == NULL) return TValue::None();
+LuaValue fasttm2 ( LuaTable* table, TMS tag) {
+  if(table == NULL) return LuaValue::None();
 
-  TValue temp(thread_G->tagmethod_names_[tag]);
-  TValue tm = table->get(temp);
+  LuaValue temp(thread_G->tagmethod_names_[tag]);
+  LuaValue tm = table->get(temp);
 
   assert(tag <= TM_EQ);
   if (tm.isNone() || tm.isNil()) {  /* no tag method? */
-    return TValue::None();
+    return LuaValue::None();
   }
   else return tm;
 }

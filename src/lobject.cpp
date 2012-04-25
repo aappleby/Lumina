@@ -68,7 +68,7 @@ int luaO_ceillog2 (unsigned int x) {
 }
 
 
-lua_Number luaO_arith (int op, lua_Number v1, lua_Number v2) {
+double luaO_arith (int op, double v1, double v2) {
   switch (op) {
     case LUA_OPADD: return v1 + v2;
     case LUA_OPSUB: return v1 - v2;
@@ -100,7 +100,7 @@ static int isneg (const char **s) {
 }
 
 
-static lua_Number readhexa (const char **s, lua_Number r, int *count) {
+static double readhexa (const char **s, double r, int *count) {
   for (; lisxdigit(cast_uchar(**s)); (*s)++) {  /* read integer part */
     r = (r * 16.0) + cast_num(luaO_hexavalue(cast_uchar(**s)));
     (*count)++;
@@ -113,8 +113,8 @@ static lua_Number readhexa (const char **s, lua_Number r, int *count) {
 ** convert an hexadecimal numeric string to a number, following
 ** C99 specification for 'strtod'
 */
-static lua_Number lua_strx2number (const char *s, char **endptr) {
-  lua_Number r = 0.0;
+static double lua_strx2number (const char *s, char **endptr) {
+  double r = 0.0;
   int e = 0, i = 0;
   int neg = 0;  /* 1 if number is negative */
   *endptr = cast(char *, s);  /* nothing is valid yet */
@@ -153,7 +153,7 @@ static lua_Number lua_strx2number (const char *s, char **endptr) {
 #endif
 
 
-int luaO_str2d (const char *s, size_t len, lua_Number *result) {
+int luaO_str2d (const char *s, size_t len, double *result) {
   char *endptr;
   if (strpbrk(s, "nN"))  /* reject 'inf' and 'nan' */
     return 0;
@@ -168,13 +168,13 @@ int luaO_str2d (const char *s, size_t len, lua_Number *result) {
 
 
 
-static void pushstr (lua_State *L, const char *str, size_t l) {
+static void pushstr (LuaThread *L, const char *str, int l) {
   THREAD_CHECK(L);
   LuaResult result;
   {
     ScopedMemChecker c;
-    TString* s = thread_G->strings_->Create(str, l);
-    result = L->stack_.push_reserve2(TValue(s));
+    LuaString* s = thread_G->strings_->Create(str, l);
+    result = L->stack_.push_reserve2(LuaValue(s));
   }
   handleResult(result);
 }
@@ -182,7 +182,7 @@ static void pushstr (lua_State *L, const char *str, size_t l) {
 
 /* this function handles only `%d', `%c', %f, %p, and `%s' formats */
 const char *luaO_pushvfstring (const char *fmt, va_list argp) {
-  lua_State* L = thread_L;
+  LuaThread* L = thread_L;
   int n = 0;
   for (;;) {
     const char *e = strchr(fmt, '%');
@@ -191,8 +191,8 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
     LuaResult result;
     {
       ScopedMemChecker c;
-      TString* s = thread_G->strings_->Create(fmt, e-fmt);
-      result = L->stack_.push_reserve2(TValue(s));
+      LuaString* s = thread_G->strings_->Create(fmt, int(e - fmt));
+      result = L->stack_.push_reserve2(LuaValue(s));
     }
     handleResult(result);
 
@@ -200,7 +200,7 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
       case 's': {
         const char *s = va_arg(argp, char *);
         if (s == NULL) s = "(null)";
-        pushstr(L, s, strlen(s));
+        pushstr(L, s, (int)strlen(s));
         break;
       }
       case 'c': {
@@ -214,7 +214,7 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
           LuaResult result;
           {
             ScopedMemChecker c;
-            result = L->stack_.push_reserve2( TValue(va_arg(argp, int)) );
+            result = L->stack_.push_reserve2( LuaValue(va_arg(argp, int)) );
           }
           handleResult(result);
           break;
@@ -224,7 +224,7 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
           LuaResult result;
           {
             ScopedMemChecker c;
-            result = L->stack_.push_reserve2( TValue(va_arg(argp, lua_Number)) );
+            result = L->stack_.push_reserve2( LuaValue(va_arg(argp, double)) );
           }
           handleResult(result);
           break;
@@ -246,13 +246,13 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
     n += 2;
     fmt = e+2;
   }
-  pushstr(L, fmt, strlen(fmt));
+  pushstr(L, fmt, (int)strlen(fmt));
   if (n > 0) luaV_concat(L, n + 1);
   return L->stack_.top_[-1].getString()->c_str();
 }
 
 
-const char *luaO_pushfstring (lua_State *L, const char *fmt, ...) {
+const char *luaO_pushfstring (LuaThread *L, const char *fmt, ...) {
   THREAD_CHECK(L);
   const char *msg;
   va_list argp;

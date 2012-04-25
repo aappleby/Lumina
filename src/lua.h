@@ -21,16 +21,16 @@
 
 #include "LuaTypes.h"
 
-TValue* index2addr (lua_State *L, int idx);
-TValue* index2addr2 (lua_State *L, int idx);
-TValue  index2addr3 (lua_State *L, int idx);
+LuaValue* index2addr (LuaThread *L, int idx);
+LuaValue* index2addr2 (LuaThread *L, int idx);
+LuaValue  index2addr3 (LuaThread *L, int idx);
 
 /*
 ** functions that read/write blocks when loading/dumping Lua chunks
 */
-typedef const char * (*lua_Reader) (lua_State *L, void *ud, size_t *sz);
+typedef const char * (*lua_Reader) (LuaThread *L, void *ud, size_t *sz);
 
-typedef int (*lua_Writer) (lua_State *L, const void* p, size_t sz, void* ud);
+typedef int (*lua_Writer) (LuaThread *L, const void* p, size_t sz, void* ud);
 
 
 /*
@@ -52,50 +52,50 @@ typedef void * (*lua_Alloc) (void *ptr, size_t osize, size_t nsize);
 /*
 ** state manipulation
 */
-lua_State *(lua_newstate) ();
-void       (lua_close) (lua_State *L);
-lua_State *(lua_newthread) (lua_State *L);
+LuaThread *(lua_newstate) ();
+void       (lua_close) (LuaThread *L);
+LuaThread *(lua_newthread) (LuaThread *L);
 
-lua_CFunction (lua_atpanic) (lua_State *L, lua_CFunction panicf);
+LuaCallback (lua_atpanic) (LuaThread *L, LuaCallback panicf);
 
 
-const lua_Number *(lua_version) (lua_State *L);
+const double *(lua_version) (LuaThread *L);
 
 
 /*
 ** basic stack manipulation
 */
-int   (lua_absindex) (lua_State *L, int idx);
-void  (lua_insert) (lua_State *L, int idx);
-void  (lua_replace) (lua_State *L, int idx);
-void  (lua_copy) (lua_State *L, int fromidx, int toidx);
-int   (lua_checkstack) (lua_State *L, int sz);
+int   (lua_absindex) (LuaThread *L, int idx);
+void  (lua_insert) (LuaThread *L, int idx);
+void  (lua_replace) (LuaThread *L, int idx);
+void  (lua_copy) (LuaThread *L, int fromidx, int toidx);
+int   (lua_checkstack) (LuaThread *L, int sz);
 
-void  (lua_xmove) (lua_State *from, lua_State *to, int n);
+void  (lua_xmove) (LuaThread *from, LuaThread *to, int n);
 
 
 /*
 ** access functions (stack -> C)
 */
 
-int             (lua_isNumberable) (lua_State *L, int idx);
-int             (lua_isStringable) (lua_State *L, int idx);
+int             (lua_isNumberable) (LuaThread *L, int idx);
+int             (lua_isStringable) (LuaThread *L, int idx);
 
-int             (lua_iscfunction) (lua_State *L, int idx);
-int             (lua_isuserdata) (lua_State *L, int idx);
-int             (lua_type) (lua_State *L, int idx);
-const char     *(lua_typename) (lua_State *L, int tp);
+int             (lua_iscfunction) (LuaThread *L, int idx);
+int             (lua_isuserdata) (LuaThread *L, int idx);
+int             (lua_type) (LuaThread *L, int idx);
+const char     *(lua_typename) (LuaThread *L, int tp);
 
-lua_Number      (lua_tonumberx) (lua_State *L, int idx, int *isnum);
-lua_Integer     (lua_tointegerx) (lua_State *L, int idx, int *isnum);
-lua_Unsigned    (lua_tounsignedx) (lua_State *L, int idx, int *isnum);
-int             (lua_toboolean) (lua_State *L, int idx);
-const char     *(lua_tolstring) (lua_State *L, int idx, size_t *len);
-size_t          (lua_rawlen) (lua_State *L, int idx);
-lua_CFunction   (lua_tocfunction) (lua_State *L, int idx);
-void	       *(lua_touserdata) (lua_State *L, int idx);
-lua_State      *(lua_tothread) (lua_State *L, int idx);
-const void     *(lua_topointer) (lua_State *L, int idx);
+double      (lua_tonumberx) (LuaThread *L, int idx, int *isnum);
+ptrdiff_t     (lua_tointegerx) (LuaThread *L, int idx, int *isnum);
+uint32_t    (lua_tounsignedx) (LuaThread *L, int idx, int *isnum);
+int             (lua_toboolean) (LuaThread *L, int idx);
+const char     *(lua_tolstring) (LuaThread *L, int idx, size_t *len);
+size_t          (lua_rawlen) (LuaThread *L, int idx);
+LuaCallback   (lua_tocfunction) (LuaThread *L, int idx);
+void	       *(lua_touserdata) (LuaThread *L, int idx);
+LuaThread      *(lua_tothread) (LuaThread *L, int idx);
+const void     *(lua_topointer) (LuaThread *L, int idx);
 
 
 /*
@@ -110,92 +110,92 @@ const void     *(lua_topointer) (lua_State *L, int idx);
 #define LUA_OPPOW	5
 #define LUA_OPUNM	6
 
-void  (lua_arith) (lua_State *L, int op);
+void  (lua_arith) (LuaThread *L, int op);
 
 #define LUA_OPEQ	0
 #define LUA_OPLT	1
 #define LUA_OPLE	2
 
-int   (lua_rawequal) (lua_State *L, int idx1, int idx2);
-int   (lua_compare) (lua_State *L, int idx1, int idx2, int op);
+int   (lua_rawequal) (LuaThread *L, int idx1, int idx2);
+int   (lua_compare) (LuaThread *L, int idx1, int idx2, int op);
 
 
 /*
 ** push functions (C -> stack)
 */
-void        (lua_pushnumber) (lua_State *L, lua_Number n);
-void        (lua_pushinteger) (lua_State *L, lua_Integer n);
-void        (lua_pushunsigned) (lua_State *L, lua_Unsigned n);
-const char *(lua_pushlstring) (lua_State *L, const char *s, size_t l);
-const char *(lua_pushstring) (lua_State *L, const char *s);
-const char *(lua_pushvfstring) (lua_State *L, const char *fmt,
+void        (lua_pushnumber) (LuaThread *L, double n);
+void        (lua_pushinteger) (LuaThread *L, ptrdiff_t n);
+void        (lua_pushunsigned) (LuaThread *L, uint32_t n);
+const char *(lua_pushlstring) (LuaThread *L, const char *s, size_t l);
+const char *(lua_pushstring) (LuaThread *L, const char *s);
+const char *(lua_pushvfstring) (LuaThread *L, const char *fmt,
                                                       va_list argp);
-const char *(lua_pushfstring) (lua_State *L, const char *fmt, ...);
-void  (lua_pushcclosure) (lua_State *L, lua_CFunction fn, int n);
-void  (lua_pushboolean) (lua_State *L, int b);
-void  (lua_pushlightuserdata) (lua_State *L, void *p);
-int   (lua_pushthread) (lua_State *L);
+const char *(lua_pushfstring) (LuaThread *L, const char *fmt, ...);
+void  (lua_pushcclosure) (LuaThread *L, LuaCallback fn, int n);
+void  (lua_pushboolean) (LuaThread *L, int b);
+void  (lua_pushlightuserdata) (LuaThread *L, void *p);
+int   (lua_pushthread) (LuaThread *L);
 
 
 /*
 ** get functions (Lua -> stack)
 */
-void  (lua_getglobal) (lua_State *L, const char *var);
-void  (lua_gettable) (lua_State *L, int idx);
-void  (lua_getfield) (lua_State *L, int idx, const char *k);
-void  (lua_rawget) (lua_State *L, int idx);
-void  (lua_rawgeti) (lua_State *L, int idx, int n);
-void  (lua_rawgetp) (lua_State *L, int idx, const void *p);
-void  (lua_createtable) (lua_State *L, int narr, int nrec);
-void *(lua_newuserdata) (lua_State *L, size_t sz);
-int   (lua_getmetatable) (lua_State *L, int objindex);
-void  (lua_getuservalue) (lua_State *L, int idx);
+void  (lua_getglobal) (LuaThread *L, const char *var);
+void  (lua_gettable) (LuaThread *L, int idx);
+void  (lua_getfield) (LuaThread *L, int idx, const char *k);
+void  (lua_rawget) (LuaThread *L, int idx);
+void  (lua_rawgeti) (LuaThread *L, int idx, int n);
+void  (lua_rawgetp) (LuaThread *L, int idx, const void *p);
+void  (lua_createtable) (LuaThread *L, int narr, int nrec);
+void *(lua_newuserdata) (LuaThread *L, size_t sz);
+int   (lua_getmetatable) (LuaThread *L, int objindex);
+void  (lua_getuservalue) (LuaThread *L, int idx);
 
 
 /*
 ** set functions (stack -> Lua)
 */
-void  (lua_setglobal) (lua_State *L, const char *var);
-void  (lua_settable) (lua_State *L, int idx);
-void  (lua_setfield) (lua_State *L, int idx, const char *k);
-void  (lua_rawset) (lua_State *L, int idx);
-void  (lua_rawseti) (lua_State *L, int idx, int n);
-void  (lua_rawsetp) (lua_State *L, int idx, const void *p);
-int   (lua_setmetatable) (lua_State *L, int objindex);
-void  (lua_setuservalue) (lua_State *L, int idx);
+void  (lua_setglobal) (LuaThread *L, const char *var);
+void  (lua_settable) (LuaThread *L, int idx);
+void  (lua_setfield) (LuaThread *L, int idx, const char *k);
+void  (lua_rawset) (LuaThread *L, int idx);
+void  (lua_rawseti) (LuaThread *L, int idx, int n);
+void  (lua_rawsetp) (LuaThread *L, int idx, const void *p);
+int   (lua_setmetatable) (LuaThread *L, int objindex);
+void  (lua_setuservalue) (LuaThread *L, int idx);
 
 
 /*
 ** 'load' and 'call' functions (load and run Lua code)
 */
-void  (lua_callk) (lua_State *L, int nargs, int nresults, int ctx,
-                           lua_CFunction k);
+void  (lua_callk) (LuaThread *L, int nargs, int nresults, int ctx,
+                           LuaCallback k);
 #define lua_call(L,n,r)		lua_callk(L, (n), (r), 0, NULL)
 
-int   (lua_getctx) (lua_State *L, int *ctx);
+int   (lua_getctx) (LuaThread *L, int *ctx);
 
-int   (lua_pcallk) (lua_State *L, int nargs, int nresults, int errfunc,
-                            int ctx, lua_CFunction k);
+int   (lua_pcallk) (LuaThread *L, int nargs, int nresults, int errfunc,
+                            int ctx, LuaCallback k);
 
-int   (lua_pcall) (lua_State *L, int nargs, int nresults, int errfunc);
+int   (lua_pcall) (LuaThread *L, int nargs, int nresults, int errfunc);
 //#define lua_pcall(L,n,r,f)	lua_pcallk(L, (n), (r), (f), 0, NULL)
 
-int   (lua_load) (lua_State *L, lua_Reader reader, void *dt,
+int   (lua_load) (LuaThread *L, lua_Reader reader, void *dt,
                                         const char *chunkname,
                                         const char *mode);
 
-int (lua_dump) (lua_State *L, lua_Writer writer, void *data);
+int (lua_dump) (LuaThread *L, lua_Writer writer, void *data);
 
 
 /*
 ** coroutine functions
 */
-int  (lua_yieldk) (lua_State *L, int nresults, int ctx,
-                           lua_CFunction k);
+int  (lua_yieldk) (LuaThread *L, int nresults, int ctx,
+                           LuaCallback k);
 
-int  (lua_yield)  (lua_State *L, int nresults);
+int  (lua_yield)  (LuaThread *L, int nresults);
 
-int  (lua_resume) (lua_State *L, lua_State *from, int narg);
+int  (lua_resume) (LuaThread *L, LuaThread *from, int narg);
 
 /*
 ** garbage-collection function and options
@@ -214,19 +214,19 @@ int  (lua_resume) (lua_State *L, lua_State *from, int narg);
 #define LUA_GCGEN		10
 #define LUA_GCINC		11
 
-int (lua_gc) (lua_State *L, int what, int data);
+int (lua_gc) (LuaThread *L, int what, int data);
 
 
 /*
 ** miscellaneous functions
 */
 
-int   (lua_error) (lua_State *L);
+int   (lua_error) (LuaThread *L);
 
-int   (lua_next) (lua_State *L, int idx);
+int   (lua_next) (LuaThread *L, int idx);
 
-void  (lua_concat) (lua_State *L, int n);
-void  (lua_len)    (lua_State *L, int idx);
+void  (lua_concat) (LuaThread *L, int n);
+void  (lua_len)    (LuaThread *L, int idx);
 
 
 /*
@@ -247,35 +247,35 @@ void  (lua_len)    (lua_State *L, int idx);
 
 //#define lua_pushcfunction(L,f)	lua_pushcclosure(L, (f), 0)
 
-inline bool lua_isfunction(lua_State* L, int n) {
-  TValue* v = index2addr2(L,n);
+inline bool lua_isfunction(LuaThread* L, int n) {
+  LuaValue* v = index2addr2(L,n);
   return v && v->isFunction();
 }
 
 #define lua_istable(L,n)	(lua_type(L, (n)) == LUA_TTABLE)
-#define lua_islightuserdata(L,n)	(lua_type(L, (n)) == LUA_TLIGHTUSERDATA)
+#define lua_islightuserdata(L,n)	(lua_type(L, (n)) == LUA_TVOID)
 #define lua_isboolean(L,n)	(lua_type(L, (n)) == LUA_TBOOLEAN)
 #define lua_isthread(L,n)	(lua_type(L, (n)) == LUA_TTHREAD)
 
-inline bool lua_isnil(lua_State* L, int n) {
-  TValue* v = index2addr2(L, n);
+inline bool lua_isnil(LuaThread* L, int n) {
+  LuaValue* v = index2addr2(L, n);
   return v && v->isNil();
 }
 
-inline bool lua_isnone(lua_State* L, int n) {
-  TValue* v = index2addr2(L, n);
+inline bool lua_isnone(LuaThread* L, int n) {
+  LuaValue* v = index2addr2(L, n);
   return (v == NULL);
 }
 
-inline bool lua_isnoneornil(lua_State* L, int n) {
-  TValue* v = index2addr2(L, n);
+inline bool lua_isnoneornil(LuaThread* L, int n) {
+  LuaValue* v = index2addr2(L, n);
 
   if(v == NULL) return true;
   if(v->isNil()) return true;
   return false;
 }
 
-inline void lua_pushliteral(lua_State* L, const char* s) {
+inline void lua_pushliteral(LuaThread* L, const char* s) {
   lua_pushlstring(L, s, strlen(s) );
 }
 
@@ -311,36 +311,36 @@ inline void lua_pushliteral(lua_State* L, const char* s) {
 #define LUA_MASKLINE	(1 << LUA_HOOKLINE)
 #define LUA_MASKCOUNT	(1 << LUA_HOOKCOUNT)
 
-class lua_Debug;  /* activation record */
+class LuaDebug;  /* activation record */
 
 
 /* Functions to be called by the debugger in specific events */
 
 
-int (lua_getstack) (lua_State *L, int level, lua_Debug *ar);
-int (lua_getinfo) (lua_State *L, const char *what, lua_Debug *ar);
-const char *(lua_getlocal) (lua_State *L, const lua_Debug *ar, int n);
-const char *(lua_setlocal) (lua_State *L, const lua_Debug *ar, int n);
-const char *(lua_getupvalue) (lua_State *L, int funcindex, int n);
-const char *(lua_setupvalue) (lua_State *L, int funcindex, int n);
+int (lua_getstack) (LuaThread *L, int level, LuaDebug *ar);
+int (lua_getinfo) (LuaThread *L, const char *what, LuaDebug *ar);
+const char *(lua_getlocal) (LuaThread *L, const LuaDebug *ar, int n);
+const char *(lua_setlocal) (LuaThread *L, const LuaDebug *ar, int n);
+const char *(lua_getupvalue) (LuaThread *L, int funcindex, int n);
+const char *(lua_setupvalue) (LuaThread *L, int funcindex, int n);
 
-void *(lua_upvalueid) (lua_State *L, int fidx, int n);
-void  (lua_upvaluejoin) (lua_State *L, int fidx1, int n1,
+void *(lua_upvalueid) (LuaThread *L, int fidx, int n);
+void  (lua_upvaluejoin) (LuaThread *L, int fidx1, int n1,
                                                int fidx2, int n2);
 
-int (lua_sethook) (lua_State *L, lua_Hook func, int mask, int count);
-lua_Hook (lua_gethook) (lua_State *L);
-int (lua_gethookmask) (lua_State *L);
-int (lua_gethookcount) (lua_State *L);
+int (lua_sethook) (LuaThread *L, LuaHook func, int mask, int count);
+LuaHook (lua_gethook) (LuaThread *L);
+int (lua_gethookmask) (LuaThread *L);
+int (lua_gethookcount) (LuaThread *L);
 
-class CallInfo;
+class LuaStackFrame;
 
-class lua_Debug {
+class LuaDebug {
 public:
 
-  lua_Debug() {}
+  LuaDebug() {}
 
-  lua_Debug(int event2, int line2, CallInfo* ci2) {
+  LuaDebug(int event2, int line2, LuaStackFrame* ci2) {
     event = event2;
     currentline = line2;
     i_ci = ci2;
@@ -360,7 +360,7 @@ public:
   int istailcall;	/* (t) */
   char short_src[LUA_IDSIZE]; /* (S) */
   /* private part */
-  CallInfo *i_ci;  /* active function */
+  LuaStackFrame *i_ci;  /* active function */
 };
 
 /* }====================================================================== */

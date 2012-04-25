@@ -22,23 +22,23 @@
 #include "ltm.h"
 
 
-lua_State *lua_newthread (lua_State *L) {
+LuaThread *lua_newthread (LuaThread *L) {
   THREAD_CHECK(L);
   ScopedMemChecker c;
 
-  lua_State* L1 = new lua_State(L);
-  L->stack_.push(TValue(L1));
+  LuaThread* L1 = new LuaThread(L);
+  L->stack_.push(LuaValue(L1));
 
   return L1;
 }
 
 
-lua_State *lua_newstate () {
+LuaThread *lua_newstate () {
   GLOBAL_CHANGE(NULL);
   
   l_memcontrol.disableLimit();
 
-  global_State* g = new global_State();
+  LuaVM* g = new LuaVM();
 
   l_memcontrol.enableLimit();
 
@@ -53,9 +53,9 @@ lua_State *lua_newstate () {
 }
 
 
-void lua_close (lua_State *L) {
+void lua_close (LuaThread *L) {
   THREAD_CHECK(L);
-  global_State* g = L->l_G;
+  LuaVM* g = L->l_G;
   delete g;
 }
 

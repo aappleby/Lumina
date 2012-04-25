@@ -43,7 +43,7 @@ struct expdesc {
   int tr;  /* table (register or upvalue) */
   int vt;  /* whether 't' is register (VLOCAL) or upvalue (VUPVAL) */
   int info;  /* for generic use */
-  lua_Number nval;  /* for VKNUM */
+  double nval;  /* for VKNUM */
   int t;  /* patch list of `exit when true' */
   int f;  /* patch list of `exit when false' */
 };
@@ -57,7 +57,7 @@ struct Vardesc {
 
 /* description of pending goto statements and label statements */
 struct Labeldesc {
-  TString *name;  /* label identifier */
+  LuaString *name;  /* label identifier */
   int pc;  /* position in code */
   int line;  /* line where it appeared */
   int nactvar;  /* local level where it appears in current block */
@@ -89,11 +89,11 @@ class LexState;
 /* state needed to generate code for a given function */
 class FuncState {
 public:
-  Proto *f;  /* current function header */
+  LuaProto *f;  /* current function header */
 
   // This table maps constants to indexes into the constants array, and
   // is used to de-duplicate constants during compilation.
-  Table* constant_map;  /* table to find (and reuse) elements in `k' */
+  LuaTable* constant_map;  /* table to find (and reuse) elements in `k' */
 
   FuncState *prev;  /* enclosing function */
   LexState *ls;  /* lexical state */
@@ -111,7 +111,7 @@ public:
 };
 
 
-Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
+LuaProto *luaY_parser (LuaThread *L, ZIO *z, Mbuffer *buff,
                               Dyndata *dyd, const char *name, int firstchar);
 
 

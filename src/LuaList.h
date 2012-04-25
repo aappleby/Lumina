@@ -182,7 +182,7 @@ public:
 
   // Propagate marks through all objects on this graylist, removing them
   // from the list as we go.
-  void PropagateGC(GCVisitor& visitor) {
+  void PropagateGC(LuaGCVisitor& visitor) {
     while(head_) {
       LuaObject *o = Pop();
       o->PropagateGC(visitor);

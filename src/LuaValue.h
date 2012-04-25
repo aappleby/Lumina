@@ -5,40 +5,40 @@
 
 #include <assert.h>
 
-class TValue {
+class LuaValue {
 public:
 
-  TValue() {
+  LuaValue() {
     type_ = LUA_TNIL;
     bytes_ = 0;
   }
 
-  TValue(LuaType type, uint64_t data) {
+  LuaValue(LuaType type, uint64_t data) {
     type_ = type;
     bytes_ = data;
   }
 
-  //static TValue nil;
-  //static TValue none;
+  //static LuaValue nil;
+  //static LuaValue none;
 
-  static TValue Nil()   { return TValue(LUA_TNIL, 0); }
-  static TValue None()  { return TValue(LUA_TNONE, 0); }
+  static LuaValue Nil()   { return LuaValue(LUA_TNIL, 0); }
+  static LuaValue None()  { return LuaValue(LUA_TNONE, 0); }
 
-  static TValue LightUserdata(const void* p);
-  static TValue LightFunction(lua_CFunction f);
+  static LuaValue LightUserdata(const void* p);
+  static LuaValue LightFunction(LuaCallback f);
 
-  explicit TValue(LuaObject* o)  { type_ = o->type(); bytes_ = 0; object_ = o; }
-  explicit TValue(bool v)        { type_ = LUA_TBOOLEAN; bytes_ = v ? 1 : 0; }
-  explicit TValue(int32_t v)     { type_ = LUA_TNUMBER; number_ = v; }
-  explicit TValue(int64_t v)     { type_ = LUA_TNUMBER; number_ = (double)v; }
-  explicit TValue(uint32_t v)    { type_ = LUA_TNUMBER; number_ = v; }
-  explicit TValue(uint64_t v)    { type_ = LUA_TNUMBER; number_ = (double)v; }
-  explicit TValue(double v)      { type_ = LUA_TNUMBER; number_ = v; }
+  explicit LuaValue(LuaObject* o)  { type_ = o->type(); bytes_ = 0; object_ = o; }
+  explicit LuaValue(bool v)        { type_ = LUA_TBOOLEAN; bytes_ = v ? 1 : 0; }
+  explicit LuaValue(int32_t v)     { type_ = LUA_TNUMBER; number_ = v; }
+  explicit LuaValue(int64_t v)     { type_ = LUA_TNUMBER; number_ = (double)v; }
+  explicit LuaValue(uint32_t v)    { type_ = LUA_TNUMBER; number_ = v; }
+  explicit LuaValue(uint64_t v)    { type_ = LUA_TNUMBER; number_ = (double)v; }
+  explicit LuaValue(double v)      { type_ = LUA_TNUMBER; number_ = v; }
 
   // Assignment operators
 
   void operator = (LuaObject* o) { type_ = o->type(); bytes_ = 0; object_ = o; }
-  void operator = (TValue v)     { type_ = v.type_; bytes_ = v.bytes_; }
+  void operator = (LuaValue v)     { type_ = v.type_; bytes_ = v.bytes_; }
   void operator = (double v)     { type_ = LUA_TNUMBER; number_ = v; }
   void operator = (int v)        { type_ = LUA_TNUMBER; number_ = (double)v; }
   void operator = (size_t v)     { type_ = LUA_TNUMBER; number_ = (double)v; }
@@ -48,11 +48,11 @@ public:
   // Comparison operators.
 
   // This will return false for positive and negative zero, that's a known issue.
-  bool operator == (TValue const& v) const {
+  bool operator == (LuaValue const& v) const {
     return (type_ == v.type_) && (bytes_ == v.bytes_);
   }
 
-  bool operator != (TValue const& v) const {
+  bool operator != (LuaValue const& v) const {
     return !(*this == v);
   }
 
@@ -64,7 +64,7 @@ public:
   // stuff
 
   bool isCollectable() const   { return type_ >= LUA_TSTRING; }
-  bool isFunction() const      { return (type_ == LUA_TCCL) || (type_ == LUA_TLCL) || (type_ == LUA_TLCF); }
+  bool isFunction() const      { return (type_ == LUA_TCCL) || (type_ == LUA_TLCL) || (type_ == LUA_TCALLBACK); }
 
   bool isNil() const           { return type_ == LUA_TNIL; }
   bool isNotNil() const        { return type_ != LUA_TNIL; }
@@ -75,18 +75,18 @@ public:
 
   bool isInteger() const       { return isNumber() && (number_ == (int)number_); }
 
-  bool isLightUserdata() const { return type_ == LUA_TLIGHTUSERDATA; }
+  bool isLightUserdata() const { return type_ == LUA_TVOID; }
 
   bool isString() const        { return type_ == LUA_TSTRING; }
   bool isTable() const         { return type_ == LUA_TTABLE; }
-  bool isUserdata() const      { return type_ == LUA_TUSERDATA; }
+  bool isUserdata() const      { return type_ == LUA_TBLOB; }
   bool isThread() const        { return type_ == LUA_TTHREAD; }
-  bool isUpval() const         { return type_ == LUA_TUPVAL; }
+  bool isUpval() const         { return type_ == LUA_TUPVALUE; }
   bool isProto() const         { return type_ == LUA_TPROTO; }
 
   bool isCClosure() const      { return type_ == LUA_TCCL; }
   bool isLClosure() const      { return type_ == LUA_TLCL; }
-  bool isLightFunction() const { return type_ == LUA_TLCF; }
+  bool isLightFunction() const { return type_ == LUA_TCALLBACK; }
 
   // A 'true' value is either a true boolean or a non-Nil.
   // TODO(aappleby): this means that a None is true... might want to fix that.
@@ -110,8 +110,8 @@ public:
   //----------
   // These conversion operations return None if they fail.
 
-  TValue convertToNumber() const;
-  TValue convertToString() const;
+  LuaValue convertToNumber() const;
+  LuaValue convertToString() const;
 
   //----------
 
@@ -125,14 +125,14 @@ public:
   int        getInteger() const       { return (int)number_; }
   double     getNumber() const        { assert(isNumber()); return number_; }
   LuaObject* getObject() const        { assert(isCollectable()); return object_; }
-  Closure*   getCClosure()            { assert(isCClosure()); return reinterpret_cast<Closure*>(object_); }
-  Closure*   getLClosure()            { assert(isLClosure()); return reinterpret_cast<Closure*>(object_); }
-  TString*   getString() const        { assert(isString()); return reinterpret_cast<TString*>(object_); }
-  Table*     getTable() const         { assert(isTable()); return reinterpret_cast<Table*>(object_); }
-  Udata*     getUserdata() const      { assert(isUserdata()); return reinterpret_cast<Udata*>(object_); }
+  LuaClosure*   getCClosure()            { assert(isCClosure()); return reinterpret_cast<LuaClosure*>(object_); }
+  LuaClosure*   getLClosure()            { assert(isLClosure()); return reinterpret_cast<LuaClosure*>(object_); }
+  LuaString*   getString() const        { assert(isString()); return reinterpret_cast<LuaString*>(object_); }
+  LuaTable*     getTable() const         { assert(isTable()); return reinterpret_cast<LuaTable*>(object_); }
+  LuaBlob*     getUserdata() const      { assert(isUserdata()); return reinterpret_cast<LuaBlob*>(object_); }
   void*      getLightUserdata() const { assert(isLightUserdata()); return pointer_; }
-  lua_State* getThread() const        { assert(isThread()); return reinterpret_cast<lua_State*>(object_); }
-  lua_CFunction getLightFunction() const { assert(isLightFunction()); return callback_; }
+  LuaThread* getThread() const        { assert(isThread()); return reinterpret_cast<LuaThread*>(object_); }
+  LuaCallback getLightFunction() const { assert(isLightFunction()); return callback_; }
 
   uint64_t   getRawBytes() const { return bytes_; }
 
@@ -144,7 +144,7 @@ public:
   void clear() { bytes_ = 0; type_ = LUA_TNIL; }
 
   void setBool  (int x)     { bytes_ = x ? 1 : 0; type_ = LUA_TBOOLEAN; }
-  void setValue (TValue* x) { bytes_ = x->bytes_; type_ = x->type_; }
+  void setValue (LuaValue* x) { bytes_ = x->bytes_; type_ = x->type_; }
 
   void sanityCheck() const;
   void typeCheck() const;
@@ -156,7 +156,7 @@ private:
   union {
     LuaObject* object_;
     void* pointer_;
-    lua_CFunction callback_;
+    LuaCallback callback_;
     double number_;
     uint64_t bytes_;
     struct {

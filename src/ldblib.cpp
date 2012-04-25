@@ -26,26 +26,26 @@
 
 
 
-static int db_getregistry (lua_State *L) {
+static int db_getregistry (LuaThread *L) {
   THREAD_CHECK(L);
   L->stack_.push(thread_G->l_registry);
   return 1;
 }
 
 
-static int db_getmetatable (lua_State *L) {
+static int db_getmetatable (LuaThread *L) {
   THREAD_CHECK(L);
   luaL_checkany(L, 1);
   if (!lua_getmetatable(L, 1)) {
-    L->stack_.push(TValue::Nil());  /* no metatable */
+    L->stack_.push(LuaValue::Nil());  /* no metatable */
   }
   return 1;
 }
 
 
-static int db_setmetatable (lua_State *L) {
+static int db_setmetatable (LuaThread *L) {
   THREAD_CHECK(L);
-  TValue v = index2addr3(L, 2);
+  LuaValue v = index2addr3(L, 2);
   luaL_argcheck(L,
                 v.isNil() ||
                 v.isTable(),
@@ -57,21 +57,21 @@ static int db_setmetatable (lua_State *L) {
 }
 
 
-static int db_getuservalue (lua_State *L) {
+static int db_getuservalue (LuaThread *L) {
   THREAD_CHECK(L);
-  if (lua_type(L, 1) != LUA_TUSERDATA)
-    L->stack_.push(TValue::Nil());
+  if (lua_type(L, 1) != LUA_TBLOB)
+    L->stack_.push(LuaValue::Nil());
   else
     lua_getuservalue(L, 1);
   return 1;
 }
 
 
-static int db_setuservalue (lua_State *L) {
+static int db_setuservalue (LuaThread *L) {
   THREAD_CHECK(L);
-  if (lua_type(L, 1) == LUA_TLIGHTUSERDATA)
+  if (lua_type(L, 1) == LUA_TVOID)
     luaL_argerror(L, 1, "full userdata expected, got light userdata");
-  luaL_checktype(L, 1, LUA_TUSERDATA);
+  luaL_checktype(L, 1, LUA_TBLOB);
   if (!lua_isnoneornil(L, 2))
     luaL_checktype(L, 2, LUA_TTABLE);
   L->stack_.setTopIndex(2);
@@ -80,28 +80,28 @@ static int db_setuservalue (lua_State *L) {
 }
 
 
-static void settabss (lua_State *L, const char *i, const char *v) {
+static void settabss (LuaThread *L, const char *i, const char *v) {
   THREAD_CHECK(L);
   lua_pushstring(L, v);
   lua_setfield(L, -2, i);
 }
 
 
-static void settabsi (lua_State *L, const char *i, int v) {
+static void settabsi (LuaThread *L, const char *i, int v) {
   THREAD_CHECK(L);
   lua_pushinteger(L, v);
   lua_setfield(L, -2, i);
 }
 
 
-static void settabsb (lua_State *L, const char *i, int v) {
+static void settabsb (LuaThread *L, const char *i, int v) {
   THREAD_CHECK(L);
   lua_pushboolean(L, v);
   lua_setfield(L, -2, i);
 }
 
 
-static lua_State *getthread (lua_State *L, int *arg) {
+static LuaThread *getthread (LuaThread *L, int *arg) {
   THREAD_CHECK(L);
   if (lua_isthread(L, 1)) {
     *arg = 1;
@@ -114,7 +114,7 @@ static lua_State *getthread (lua_State *L, int *arg) {
 }
 
 
-static void treatstackoption (lua_State *L, lua_State *L1, const char *fname) {
+static void treatstackoption (LuaThread *L, LuaThread *L1, const char *fname) {
   THREAD_CHECK(L);
   if (L == L1) {
     L->stack_.copy(-2);
@@ -128,11 +128,11 @@ static void treatstackoption (lua_State *L, lua_State *L1, const char *fname) {
 }
 
 
-static int db_getinfo (lua_State *L) {
+static int db_getinfo (LuaThread *L) {
   THREAD_CHECK(L);
-  lua_Debug ar;
+  LuaDebug ar;
   int arg;
-  lua_State *L1 = getthread(L, &arg);
+  LuaThread *L1 = getthread(L, &arg);
   const char *options = luaL_optstring(L, arg+2, "flnStu");
   if (lua_isNumberable(L, arg+1)) {
     int idx = (int)lua_tointeger(L, arg+1);
@@ -142,7 +142,7 @@ static int db_getinfo (lua_State *L) {
       result = lua_getstack(L1, idx, &ar);
     }
     if (!result) {
-      L->stack_.push(TValue::Nil());  /* level out of range */
+      L->stack_.push(LuaValue::Nil());  /* level out of range */
       return 1;
     }
   }
@@ -190,11 +190,11 @@ static int db_getinfo (lua_State *L) {
 }
 
 
-static int db_getlocal (lua_State *L) {
+static int db_getlocal (LuaThread *L) {
   THREAD_CHECK(L);
   int arg;
-  lua_State *L1 = getthread(L, &arg);
-  lua_Debug ar;
+  LuaThread *L1 = getthread(L, &arg);
+  LuaDebug ar;
   const char *name;
   int nvar = luaL_checkint(L, arg+2);  /* local-variable index */
   if (lua_isfunction(L, arg + 1)) {  /* function argument? */
@@ -225,18 +225,18 @@ static int db_getlocal (lua_State *L) {
       return 2;
     }
     else {
-      L->stack_.push(TValue::Nil());  /* no name (nor value) */
+      L->stack_.push(LuaValue::Nil());  /* no name (nor value) */
       return 1;
     }
   }
 }
 
 
-static int db_setlocal (lua_State *L) {
+static int db_setlocal (LuaThread *L) {
   THREAD_CHECK(L);
   int arg;
-  lua_State *L1 = getthread(L, &arg);
-  lua_Debug ar;
+  LuaThread *L1 = getthread(L, &arg);
+  LuaDebug ar;
   int idx = luaL_checkint(L, arg+1);
   int result;
   {
@@ -259,7 +259,7 @@ static int db_setlocal (lua_State *L) {
 }
 
 
-static int auxupvalue (lua_State *L, int get) {
+static int auxupvalue (LuaThread *L, int get) {
   THREAD_CHECK(L);
   const char *name;
   int n = luaL_checkint(L, 2);
@@ -272,22 +272,22 @@ static int auxupvalue (lua_State *L, int get) {
 }
 
 
-static int db_getupvalue (lua_State *L) {
+static int db_getupvalue (LuaThread *L) {
   THREAD_CHECK(L);
   return auxupvalue(L, 1);
 }
 
 
-static int db_setupvalue (lua_State *L) {
+static int db_setupvalue (LuaThread *L) {
   THREAD_CHECK(L);
   luaL_checkany(L, 3);
   return auxupvalue(L, 0);
 }
 
 
-static int checkupval (lua_State *L, int argf, int argnup) {
+static int checkupval (LuaThread *L, int argf, int argnup) {
   THREAD_CHECK(L);
-  lua_Debug ar;
+  LuaDebug ar;
   int nup = luaL_checkint(L, argnup);
   luaL_checkIsFunction(L, argf);
   L->stack_.copy(argf);
@@ -297,7 +297,7 @@ static int checkupval (lua_State *L, int argf, int argnup) {
 }
 
 
-static int db_upvalueid (lua_State *L) {
+static int db_upvalueid (LuaThread *L) {
   THREAD_CHECK(L);
   int n = checkupval(L, 1, 2);
   lua_pushlightuserdata(L, lua_upvalueid(L, 1, n));
@@ -305,7 +305,7 @@ static int db_upvalueid (lua_State *L) {
 }
 
 
-static int db_upvaluejoin (lua_State *L) {
+static int db_upvaluejoin (LuaThread *L) {
   THREAD_CHECK(L);
   int n1 = checkupval(L, 1, 2);
   int n2 = checkupval(L, 3, 4);
@@ -319,7 +319,7 @@ static int db_upvaluejoin (lua_State *L) {
 #define gethooktable(L)	luaL_getsubtable(L, LUA_REGISTRYINDEX, HOOKKEY);
 
 
-static void hookf (lua_State *L, lua_Debug *ar) {
+static void hookf (LuaThread *L, LuaDebug *ar) {
   THREAD_CHECK(L);
   static const char *const hooknames[] =
     {"call", "return", "line", "count", "tail call"};
@@ -329,7 +329,7 @@ static void hookf (lua_State *L, lua_Debug *ar) {
     lua_pushstring(L, hooknames[(int)ar->event]);
     if (ar->currentline >= 0)
       lua_pushinteger(L, ar->currentline);
-    else L->stack_.push(TValue::Nil());
+    else L->stack_.push(LuaValue::Nil());
     assert(lua_getinfo(L, "lS", ar));
     lua_call(L, 2, 0);
   }
@@ -356,11 +356,11 @@ static char *unmakemask (int mask, char *smask) {
 }
 
 
-static int db_sethook (lua_State *L) {
+static int db_sethook (LuaThread *L) {
   THREAD_CHECK(L);
   int arg, mask, count;
-  lua_Hook func;
-  lua_State *L1 = getthread(L, &arg);
+  LuaHook func;
+  LuaThread *L1 = getthread(L, &arg);
   if (lua_isnoneornil(L, arg+1)) {
     L->stack_.setTopIndex(arg+1);
     func = NULL; mask = 0; count = 0;  /* turn off hooks */
@@ -383,13 +383,13 @@ static int db_sethook (lua_State *L) {
 }
 
 
-static int db_gethook (lua_State *L) {
+static int db_gethook (LuaThread *L) {
   THREAD_CHECK(L);
   int arg;
-  lua_State *L1 = getthread(L, &arg);
+  LuaThread *L1 = getthread(L, &arg);
   char buff[5];
   int mask;
-  lua_Hook hook;
+  LuaHook hook;
   {
     THREAD_CHANGE(L1);
     mask = lua_gethookmask(L1);
@@ -415,7 +415,7 @@ static int db_gethook (lua_State *L) {
 }
 
 
-static int db_debug (lua_State *L) {
+static int db_debug (LuaThread *L) {
   THREAD_CHECK(L);
   for (;;) {
     char buffer[250];
@@ -431,10 +431,10 @@ static int db_debug (lua_State *L) {
 }
 
 
-static int db_traceback (lua_State *L) {
+static int db_traceback (LuaThread *L) {
   THREAD_CHECK(L);
   int arg;
-  lua_State *L1 = getthread(L, &arg);
+  LuaThread *L1 = getthread(L, &arg);
   const char *msg = lua_tostring(L, arg + 1);
   if (msg == NULL && !lua_isnoneornil(L, arg + 1))  /* non-string 'msg'? */
     L->stack_.copy(arg + 1);  /* return it untouched */
@@ -467,7 +467,7 @@ static const luaL_Reg dblib[] = {
 };
 
 
-int luaopen_debug (lua_State *L) {
+int luaopen_debug (LuaThread *L) {
   THREAD_CHECK(L);
 
   lua_createtable(L, 0, sizeof(dblib)/sizeof((dblib)[0]) - 1);

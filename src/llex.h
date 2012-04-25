@@ -35,8 +35,8 @@ enum RESERVED {
 
 
 struct SemInfo{
-  lua_Number r;
-  TString *ts;
+  double r;
+  LuaString *ts;
 };  /* semantics information */
 
 
@@ -57,19 +57,19 @@ public:
   Token t;  /* current token */
   Token lookahead;  /* look ahead token */
   FuncState *fs;  /* current function (parser) */
-  lua_State *L;
+  LuaThread *L;
   ZIO *z;  /* input stream */
   Mbuffer *buff;  /* buffer for tokens */
   struct Dyndata *dyd;  /* dynamic structures used by the parser */
-  TString *source;  /* current source name */
-  TString *envn;  /* environment variable name */
+  LuaString *source;  /* current source name */
+  LuaString *envn;  /* environment variable name */
   char decpoint;  /* locale decimal point */
 };
 
 
-void luaX_setinput (lua_State *L, LexState *ls, ZIO *z,
-                              TString *source, int firstchar);
-TString *luaX_newstring (LexState *ls, const char *str, size_t l);
+void luaX_setinput (LuaThread *L, LexState *ls, ZIO *z,
+                              LuaString *source, int firstchar);
+LuaString *luaX_newstring (LexState *ls, const char *str, size_t l);
 void luaX_next (LexState *ls);
 int luaX_lookahead (LexState *ls);
 l_noret luaX_syntaxerror (LexState *ls, const char *s);
