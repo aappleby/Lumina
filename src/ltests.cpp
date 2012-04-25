@@ -432,13 +432,13 @@ static int get_limits (LuaThread *L) {
 static int mem_query (LuaThread *L) {
   THREAD_CHECK(L);
   if (lua_isnone(L, 1)) {
-    lua_pushinteger(L, l_memcontrol.total);
-    lua_pushinteger(L, l_memcontrol.numblocks);
-    lua_pushinteger(L, l_memcontrol.maxmem);
+    lua_pushinteger(L, l_memcontrol.mem_total);
+    lua_pushinteger(L, l_memcontrol.mem_blocks);
+    lua_pushinteger(L, l_memcontrol.mem_max);
     return 3;
   }
   else if (lua_isNumberable(L, 1)) {
-    l_memcontrol.memlimit = luaL_checkint(L, 1);
+    l_memcontrol.mem_limit = luaL_checkint(L, 1);
     return 0;
   }
   else {
@@ -1436,8 +1436,8 @@ static const struct luaL_Reg tests_funcs[] = {
 
 
 static void checkfinalmem (void) {
-  assert(l_memcontrol.numblocks == 0);
-  assert(l_memcontrol.total == 0);
+  assert(l_memcontrol.mem_blocks == 0);
+  assert(l_memcontrol.mem_total == 0);
 }
 
 

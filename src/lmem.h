@@ -14,22 +14,15 @@
 struct Memcontrol {
   Memcontrol();
 
-  bool alloc(size_t size);
-  bool free(size_t size);
-
-  bool isOverLimit();
   bool canAlloc(size_t size);
-
-  bool newObject(int type);
-  bool delObject(int type);
 
   // THROWS AN EXCEPTION if the memory limit has been exceeded.
   void checkLimit();
 
-  size_t numblocks;
-  size_t total;
-  size_t maxmem;
-  size_t memlimit;
+  size_t mem_blocks;
+  size_t mem_total;
+  size_t mem_max;
+  size_t mem_limit;
 };
 
 extern Memcontrol l_memcontrol;

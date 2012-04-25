@@ -39,7 +39,7 @@ LuaThread *lua_newstate () {
 
   // TODO(aappleby): Need to investigate why removing this check and letting the
   // checkLimit in luaV_execute handle it doesn't work.
-  if(l_memcontrol.isOverLimit()) {
+  if(l_memcontrol.mem_total > l_memcontrol.mem_limit) {
     delete g;
     return NULL;
   }

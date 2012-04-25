@@ -20,38 +20,18 @@ void luaC_fullgc (int isemergency);
 Memcontrol l_memcontrol;
 
 Memcontrol::Memcontrol() {
-  numblocks = 0;
-  total = 0;
-  maxmem = 0;
-  memlimit = 0;
-
-  char *limit = getenv("MEMLIMIT");  /* initialize memory limit */
-  memlimit = limit ? strtoul(limit, NULL, 10) : ULONG_MAX;
-}
-
-bool Memcontrol::free(size_t size) {
-  numblocks--;
-  total -= size;
-  return true;
-}
-
-bool Memcontrol::alloc(size_t size) {
-  numblocks++;
-  total += (uint32_t)size;
-  maxmem = std::max(maxmem, total);
-  return true;
+  mem_blocks = 0;
+  mem_total = 0;
+  mem_max = 0;
+  mem_limit = ULONG_MAX;
 }
 
 bool Memcontrol::canAlloc(size_t size) {
-  return total+size <= memlimit;
-}
-
-bool Memcontrol::isOverLimit() {
-  return total > memlimit;
+  return (mem_total + size) <= mem_limit;
 }
 
 void Memcontrol::checkLimit() {
-  if(!isOverLimit()) return;
+  if(mem_total <= mem_limit) return;
 
   // Limit in place and we're over it. Try running an emergency garbage
   // collection cycle.
@@ -60,7 +40,7 @@ void Memcontrol::checkLimit() {
   }
 
   // If we're still over, throw the out-of-memory error.
-  if(isOverLimit()) {
+  if(mem_total > mem_limit) {
     throwError(LUA_ERRMEM);
   }
 }
@@ -82,7 +62,10 @@ void *luaM_alloc_nocheck (size_t size) {
 
   //memset(buf + 16, -MARK, size);
   //memset(buf + 16 + size, MARK, MARKSIZE);
-  l_memcontrol.alloc(size);
+
+  l_memcontrol.mem_blocks++;
+  l_memcontrol.mem_total += (uint32_t)size;
+  l_memcontrol.mem_max = std::max(l_memcontrol.mem_max, l_memcontrol.mem_total);
 
   if(thread_G) thread_G->incTotalBytes((int)size);
 
@@ -96,7 +79,8 @@ void luaM_free(void * blob) {
   if(blob == NULL) return;
   Header* block = reinterpret_cast<Header*>(blob) - 1;
   
-  l_memcontrol.free((size_t)block->size);
+  l_memcontrol.mem_blocks--;
+  l_memcontrol.mem_total -= (size_t)block->size;
 
   if(thread_G) thread_G->incTotalBytes(-(int)block->size);
 
