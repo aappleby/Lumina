@@ -78,22 +78,14 @@ static LuaString* LoadString(LoadState* S)
   else {
     char* s=luaZ_openspace(S->L,S->b,size);
     LoadBlock(S,s,size*sizeof(char));
-    LuaString* result;
-    {
-      ScopedMemChecker c;
-      result = thread_G->strings_->Create(s,size-1); /* remove trailing '\0' */
-    }
-    return result;
+    return thread_G->strings_->Create(s,size-1); /* remove trailing '\0' */
   }
 }
 
 static void LoadCode(LoadState* S, LuaProto* f)
 {
   int n=LoadInt(S);
-  {
-    ScopedMemChecker c;
-    f->code.resize_nocheck(n);
-  }
+  f->code.resize_nocheck(n);
   LoadVector(S,&f->code[0],n,sizeof(Instruction));
 }
 
@@ -103,10 +95,8 @@ static void LoadConstants(LoadState* S, LuaProto* f)
 {
   int i,n;
   n=LoadInt(S);
-  {
-    ScopedMemChecker c;
-    f->constants.resize_nocheck(n);
-  }
+  f->constants.resize_nocheck(n);
+
   for (i=0; i<n; i++)
   {
     switch(LoadChar(S))
@@ -128,10 +118,9 @@ static void LoadConstants(LoadState* S, LuaProto* f)
     }
   }
   n=LoadInt(S);
-  {
-    ScopedMemChecker c;
-    f->subprotos_.resize_nocheck(n);
-  }
+
+  f->subprotos_.resize_nocheck(n);
+
   for (i=0; i<n; i++) f->subprotos_[i]=NULL;
   for (i=0; i<n; i++) f->subprotos_[i]=LoadFunction(S);
 }
@@ -139,10 +128,8 @@ static void LoadConstants(LoadState* S, LuaProto* f)
 static void LoadUpvalues(LoadState* S, LuaProto* f)
 {
   int n=LoadInt(S);
-  {
-    ScopedMemChecker c;
-    f->upvalues.resize_nocheck(n);
-  }
+
+  f->upvalues.resize_nocheck(n);
   
   for (int i=0; i<n; i++) {
     f->upvalues[i].name=NULL;
@@ -158,17 +145,13 @@ static void LoadDebug(LoadState* S, LuaProto* f)
 {
   f->source=LoadString(S);
   int n = LoadInt(S);
-  {
-    ScopedMemChecker c;
-    f->lineinfo.resize_nocheck(n);
-  }
+
+  f->lineinfo.resize_nocheck(n);
 
   LoadVector(S,f->lineinfo.begin(),n,sizeof(int));
   n=LoadInt(S);
-  {
-    ScopedMemChecker c;
-    f->locvars.resize_nocheck(n);
-  }
+
+  f->locvars.resize_nocheck(n);
 
   for (int i=0; i < n; i++) {
     f->locvars[i].varname=NULL;
@@ -190,14 +173,9 @@ static void LoadDebug(LoadState* S, LuaProto* f)
 
 static LuaProto* LoadFunction(LoadState* S)
 {
-  LuaProto* f = NULL;
-  LuaResult result;
-  {
-    ScopedMemChecker c;
-    f = new LuaProto();
-    f->linkGC(getGlobalGCHead());
-    result = S->L->stack_.push_reserve2(LuaValue(f));
-  }
+  LuaProto* f = new LuaProto();
+  f->linkGC(getGlobalGCHead());
+  LuaResult result = S->L->stack_.push_reserve2(LuaValue(f));
   handleResult(result);
 
   f->linedefined=LoadInt(S);

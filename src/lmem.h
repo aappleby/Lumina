@@ -23,14 +23,8 @@ struct Memcontrol {
   bool newObject(int type);
   bool delObject(int type);
 
-  void enableLimit();
-  void disableLimit();
-
   // THROWS AN EXCEPTION if the memory limit has been exceeded.
   void checkLimit();
-
-  // calls to enable/disble limit can be nested.
-  int limitDisabled;
 
   size_t numblocks;
   size_t total;
@@ -39,22 +33,6 @@ struct Memcontrol {
 };
 
 extern Memcontrol l_memcontrol;
-
-class ScopedMemChecker {
-public:
-  ScopedMemChecker() {
-    old = l_memcontrol.limitDisabled;
-    l_memcontrol.disableLimit();
-  }
-
-  ~ScopedMemChecker() {
-    l_memcontrol.enableLimit();
-    assert(old == l_memcontrol.limitDisabled);
-    //l_memcontrol.checkLimit();
-  }
-
-  int old;
-};
 
 void* luaM_alloc_nocheck(size_t size);
 

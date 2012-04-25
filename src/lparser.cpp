@@ -167,7 +167,6 @@ static int registerlocalvar (LexState *ls, LuaString *varname) {
   LuaProto *f = fs->f;
   int oldsize = (int)f->locvars.size();
   if(fs->nlocvars >= (int)f->locvars.size()) {
-    ScopedMemChecker c;
     f->locvars.grow();
   }
   
@@ -185,7 +184,6 @@ static void new_localvar (LexState *ls, LuaString *name) {
   checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal,
                   MAXVARS, "local variables");
   if(dyd->actvar.n+1 >= (int)dyd->actvar.arr.size()) {
-    ScopedMemChecker c;
     dyd->actvar.arr.grow();
   }
   dyd->actvar.arr[dyd->actvar.n++].idx = cast(short, reg);
@@ -238,7 +236,6 @@ static int newupvalue (FuncState *fs, LuaString *name, expdesc *v) {
   int oldsize = (int)f->upvalues.size();
   checklimit(fs, fs->num_upvals + 1, MAXUPVAL, "upvalues");
   if(fs->num_upvals >= (int)f->upvalues.size()) {
-    ScopedMemChecker c;
     f->upvalues.grow();
   }
   while (oldsize < (int)f->upvalues.size()) f->upvalues[oldsize++].name = NULL;
@@ -383,7 +380,6 @@ static int newlabelentry (LexState *ls, Labellist *l, LuaString *name,
                           int line, int pc) {
   int n = l->n;
   if(n >= (int)l->arr.size()) {
-    ScopedMemChecker c;
     l->arr.grow();
   }
   l->arr[n].name = name;
@@ -451,11 +447,7 @@ static void enterblock (FuncState *fs, BlockCnt *bl, uint8_t isloop) {
 ** create a label named "break" to resolve break statements
 */
 static void breaklabel (LexState *ls) {
-  LuaString* n;
-  {
-    ScopedMemChecker c;
-    n = thread_G->strings_->Create("break");
-  }
+  LuaString* n = thread_G->strings_->Create("break");
   int l = newlabelentry(ls, &ls->dyd->label, n, 0, ls->fs->pc);
   findgotos(ls, &ls->dyd->label.arr[l]);
 }
@@ -506,7 +498,6 @@ static void codeclosure (LexState *ls, LuaProto *clp, expdesc *v) {
   if (fs->num_protos >= (int)f->subprotos_.size()) {
     int oldsize = (int)f->subprotos_.size();
     if(fs->num_protos >= (int)f->subprotos_.size()) {
-      ScopedMemChecker c;
       f->subprotos_.grow();
     }
     while (oldsize < (int)f->subprotos_.size()) f->subprotos_[oldsize++] = NULL;
@@ -521,7 +512,7 @@ static void codeclosure (LexState *ls, LuaProto *clp, expdesc *v) {
 static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
 
   LuaThread *L = ls->L;
-  LuaProto *f;
+
   fs->prev = ls->fs;  /* linked list of funcstates */
   fs->ls = ls;
   ls->fs = fs;
@@ -537,28 +528,21 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   fs->firstlocal = ls->dyd->actvar.n;
   fs->bl = NULL;
 
-  LuaResult result = LUA_OK;
-  {
-    ScopedMemChecker c;
-    f = new LuaProto();
-    f->linkGC(getGlobalGCHead());
+  LuaProto* f = new LuaProto();
+  f->linkGC(getGlobalGCHead());
 
-    /* anchor prototype (to avoid being collected) */
-    result = L->stack_.push_reserve2(LuaValue(f));
-  }
+  /* anchor prototype (to avoid being collected) */
+  LuaResult result = L->stack_.push_reserve2(LuaValue(f));
   handleResult(result);
 
-  {
-    ScopedMemChecker c;
-    fs->f = f;
-    f->source = ls->source;
-    f->maxstacksize = 2;  /* registers 0/1 are always valid */
+  fs->f = f;
+  f->source = ls->source;
+  f->maxstacksize = 2;  /* registers 0/1 are always valid */
 
-    fs->constant_map = new LuaTable();
-    /* anchor table of constants (to avoid being collected) */
-    
-    result = L->stack_.push_reserve2(LuaValue(fs->constant_map));
-  }
+  fs->constant_map = new LuaTable();
+  /* anchor table of constants (to avoid being collected) */
+  
+  result = L->stack_.push_reserve2(LuaValue(fs->constant_map));
   handleResult(result);
 
   enterblock(fs, bl, 0);
@@ -571,15 +555,13 @@ static void close_func (LexState *ls) {
   LuaProto *f = fs->f;
   luaK_ret(fs, 0, 0);  /* final return */
   leaveblock(fs);
-  {
-    ScopedMemChecker c;
-    f->code.resize_nocheck(fs->pc);
-    f->lineinfo.resize_nocheck(fs->pc);
-    f->constants.resize_nocheck(fs->num_constants);
-    f->subprotos_.resize_nocheck(fs->num_protos);
-    f->locvars.resize_nocheck(fs->nlocvars);
-    f->upvalues.resize_nocheck(fs->num_upvals);
-  }
+
+  f->code.resize_nocheck(fs->pc);
+  f->lineinfo.resize_nocheck(fs->pc);
+  f->constants.resize_nocheck(fs->num_constants);
+  f->subprotos_.resize_nocheck(fs->num_protos);
+  f->locvars.resize_nocheck(fs->nlocvars);
+  f->upvalues.resize_nocheck(fs->num_upvals);
 
   assert(fs->bl == NULL);
   ls->fs = fs->prev;
@@ -1217,10 +1199,7 @@ static void gotostat (LexState *ls, int pc) {
     label = str_checkname(ls);
   else {
     luaX_next(ls);  /* skip break */
-    {
-      ScopedMemChecker c;
-      label = thread_G->strings_->Create("break");
-    }
+    label = thread_G->strings_->Create("break");
   }
   g = newlabelentry(ls, &ls->dyd->gt, label, line, pc);
   findlabel(ls, g);  /* close it if label already defined */
@@ -1643,14 +1622,12 @@ LuaProto *luaY_parser (LuaThread *L, ZIO *z, Mbuffer *buff,
   FuncState funcstate;
   BlockCnt bl;
   LuaString* tname = NULL;
-  LuaResult result;
-  {
-    ScopedMemChecker c;
-    tname = thread_G->strings_->Create(name);
-    /* push name to protect it */
-    result = L->stack_.push_reserve2(LuaValue(tname));
-  }
+
+  tname = thread_G->strings_->Create(name);
+  /* push name to protect it */
+  LuaResult result = L->stack_.push_reserve2(LuaValue(tname));
   handleResult(result);
+
   lexstate.buff = buff;
   lexstate.dyd = dyd;
   dyd->actvar.n = dyd->gt.n = dyd->label.n = 0;

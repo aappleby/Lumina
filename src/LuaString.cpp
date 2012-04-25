@@ -77,8 +77,6 @@ LuaString* LuaStringTable::find(uint32_t hash, const char *str, size_t len) {
 }
 
 void LuaStringTable::Resize(int newsize) {
-  assert(l_memcontrol.limitDisabled);
-
   int oldsize = (int)hash_.size();
 
   if (newsize > oldsize) {
@@ -110,12 +108,10 @@ void LuaStringTable::Resize(int newsize) {
 
 LuaString* LuaStringTable::Create( const char* str )
 {
-  assert(l_memcontrol.limitDisabled);
   return Create(str, strlen(str));
 }
 
 LuaString* LuaStringTable::Create(const char *str, int len) {
-  assert(l_memcontrol.limitDisabled);
   uint32_t hash = hashString(str,len);
 
   LuaString* old_string = find(hash, str, len);
@@ -171,7 +167,6 @@ bool LuaStringTable::Sweep(bool generational) {
 //-----------------------------------------------------------------------------
 
 void LuaStringTable::Shrink() {
-  ScopedMemChecker c;
   if (nuse_ < (uint32_t)(hash_.size() / 2)) {
     Resize(hash_.size() / 2);
   }

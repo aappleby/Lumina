@@ -25,7 +25,6 @@ ScopedCallDepth::~ScopedCallDepth() {
 //-----------------------------------------------------------------------------
 
 LuaThread::LuaThread(LuaVM* g) : LuaObject(LUA_TTHREAD) {
-  assert(l_memcontrol.limitDisabled);
   l_G = g;
   linkGC(&l_G->allgc);
 
@@ -45,7 +44,6 @@ LuaThread::LuaThread(LuaVM* g) : LuaObject(LUA_TTHREAD) {
 }
 
 LuaThread::LuaThread(LuaThread* parent_thread) : LuaObject(LUA_TTHREAD) {
-  assert(l_memcontrol.limitDisabled);
   l_G = parent_thread->l_G;
   linkGC(&l_G->allgc);
 
@@ -134,10 +132,6 @@ LuaExecutionState LuaThread::saveState(StkId top) {
 
 void LuaThread::restoreState(LuaExecutionState s, int status, int nresults) {
   if(status != LUA_OK) {
-    // Error handling gets an exemption from the memory limit. Not doing so would mean that
-    // reporting an out-of-memory error could itself cause another out-of-memory error, ad infinitum.
-    l_memcontrol.disableLimit();
-
     // Grab the error object off the stack
     LuaValue errobj;
 
@@ -158,10 +152,7 @@ void LuaThread::restoreState(LuaExecutionState s, int status, int nresults) {
 
     // Put the error object on the restored stack
     stack_.push_nocheck(errobj);
-    
     stack_.shrink();
-
-    l_memcontrol.enableLimit();
   }
 
   stack_.callinfo_ = s.callinfo_;

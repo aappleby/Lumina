@@ -24,7 +24,6 @@ Memcontrol::Memcontrol() {
   total = 0;
   maxmem = 0;
   memlimit = 0;
-  limitDisabled = 0;
 
   char *limit = getenv("MEMLIMIT");  /* initialize memory limit */
   memlimit = limit ? strtoul(limit, NULL, 10) : ULONG_MAX;
@@ -51,18 +50,7 @@ bool Memcontrol::isOverLimit() {
   return total > memlimit;
 }
 
-void Memcontrol::enableLimit() {
-  assert(limitDisabled);
-  limitDisabled--;
-}
-
-void Memcontrol::disableLimit() { 
-  assert(!limitDisabled);
-  limitDisabled++;
-}
-
 void Memcontrol::checkLimit() {
-  assert(!limitDisabled);
   if(!isOverLimit()) return;
 
   // Limit in place and we're over it. Try running an emergency garbage
@@ -88,7 +76,6 @@ struct Header {
 };
 
 void *luaM_alloc_nocheck (size_t size) {
-  assert(l_memcontrol.limitDisabled);
 
   uint8_t* buf = (uint8_t*)malloc(16 + size + MARKSIZE);
   assert(buf);

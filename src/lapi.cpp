@@ -144,11 +144,7 @@ int lua_checkstack (LuaThread *L, int size) {
 
   /* try to grow stack */
   try {
-    LuaResult result = LUA_OK;
-    {
-      ScopedMemChecker c;
-      result = L->stack_.grow2(size);
-    }
+    LuaResult result = L->stack_.grow2(size);
     handleResult(result);
   }
   catch(...) { 
@@ -412,12 +408,9 @@ const char *lua_tolstring (LuaThread *L, int idx, size_t *len) {
 
   double n = o->getNumber();
 
-  {
-    ScopedMemChecker c;
-    char s[LUAI_MAXNUMBER2STR];
-    int l = lua_number2str(s, n);
-    *o = thread_G->strings_->Create(s,l);
-  }
+  char s[LUAI_MAXNUMBER2STR];
+  int l = lua_number2str(s, n);
+  *o = thread_G->strings_->Create(s,l);
 
   o = index2addr(L, idx);  /* luaC_checkGC may reallocate the stack */
   if(o == NULL) return NULL;
@@ -501,28 +494,19 @@ void lua_pushnumber (LuaThread *L, double n) {
 
 void lua_pushinteger (LuaThread *L, ptrdiff_t n) {
   THREAD_CHECK(L);
-  LuaResult result;
-  {
-    ScopedMemChecker c;
-    result = L->stack_.push_reserve2(LuaValue(n));
-  }
+  LuaResult result = L->stack_.push_reserve2(LuaValue(n));
   handleResult(result);
 }
 
 
 void lua_pushunsigned (LuaThread *L, uint32_t u) {
   THREAD_CHECK(L);
-  LuaResult result;
-  {
-    ScopedMemChecker c;
-    result = L->stack_.push_reserve2(LuaValue(u));
-  }
+  LuaResult result = L->stack_.push_reserve2(LuaValue(u));
   handleResult(result);
 }
 
 
 const char *lua_pushlstring (LuaThread *L, const char *s, size_t len) {
-  ScopedMemChecker c;
   THREAD_CHECK(L);
   LuaString* ts = thread_G->strings_->Create(s, len);
   L->stack_.push(LuaValue(ts));
@@ -531,7 +515,6 @@ const char *lua_pushlstring (LuaThread *L, const char *s, size_t len) {
 
 
 const char *lua_pushstring (LuaThread *L, const char *s) {
-  ScopedMemChecker c;
   THREAD_CHECK(L);
   if (s == NULL) {
     L->stack_.push(LuaValue::Nil());
@@ -566,7 +549,6 @@ const char *lua_pushfstring (LuaThread *L, const char *fmt, ...) {
 
 
 void lua_pushcclosure (LuaThread *L, LuaCallback fn, int n) {
-  ScopedMemChecker c;
   THREAD_CHECK(L);
   if (n == 0) {
     L->stack_.push(LuaValue::LightFunction(fn));
@@ -612,13 +594,9 @@ int lua_pushthread (LuaThread *L) {
 
 void lua_getglobal (LuaThread *L, const char *var) {
   THREAD_CHECK(L);
-  LuaValue globals;
 
-  {
-    ScopedMemChecker c;
-    globals = thread_G->getRegistry()->get(LuaValue(LUA_RIDX_GLOBALS));
-    L->stack_.push(LuaValue(thread_G->strings_->Create(var)));
-  }
+  LuaValue globals = thread_G->getRegistry()->get(LuaValue(LUA_RIDX_GLOBALS));
+  L->stack_.push(LuaValue(thread_G->strings_->Create(var)));
   
   LuaValue val;
   LuaResult r = luaV_gettable2(L, globals, L->stack_.top_[-1], val);
@@ -652,11 +630,8 @@ void lua_getfield (LuaThread *L, int idx, const char *k) {
   StkId t;
   t = index2addr_checked(L, idx);
 
-  {
-    ScopedMemChecker c;
-    LuaString* s = thread_G->strings_->Create(k);
-    L->stack_.push(LuaValue(s));
-  }
+  LuaString* s = thread_G->strings_->Create(k);
+  L->stack_.push(LuaValue(s));
 
   LuaValue val;
   LuaResult r = luaV_gettable2(L, *t, L->stack_.top_[-1], val);
@@ -707,12 +682,8 @@ void lua_rawgetp (LuaThread *L, int idx, const void *p) {
 void lua_createtable (LuaThread *L, int narray, int nrec) {
   THREAD_CHECK(L);
 
-  {
-    ScopedMemChecker c;
-
-    LuaTable* t = new LuaTable(narray, nrec);
-    L->stack_.push(LuaValue(t));
-  }
+  LuaTable* t = new LuaTable(narray, nrec);
+  L->stack_.push(LuaValue(t));
 }
 
 LuaTable* lua_getmetatable(LuaValue v) {
@@ -765,11 +736,8 @@ void lua_setglobal (LuaThread *L, const char *var) {
 
   LuaValue globals = thread_G->l_registry.getTable()->get(LuaValue(LUA_RIDX_GLOBALS));
 
-  {
-    ScopedMemChecker c;
-    LuaString* s = thread_G->strings_->Create(var);
-    L->stack_.push(LuaValue(s));
-  }
+  LuaString* s = thread_G->strings_->Create(var);
+  L->stack_.push(LuaValue(s));
 
   luaV_settable(L, &globals, L->stack_.top_ - 1, L->stack_.top_ - 2);
   L->stack_.top_ -= 2;  /* pop value and key */
@@ -792,11 +760,8 @@ void lua_setfield (LuaThread *L, int idx, const char *k) {
   L->stack_.checkArgs(1);
   t = index2addr_checked(L, idx);
 
-  {
-    ScopedMemChecker c;
-    LuaString* s = thread_G->strings_->Create(k);
-    L->stack_.push(LuaValue(s));
-  }
+  LuaString* s = thread_G->strings_->Create(k);
+  L->stack_.push(LuaValue(s));
 
   luaV_settable(L, t, L->stack_.top_ - 1, L->stack_.top_ - 2);
   L->stack_.top_ -= 2;  /* pop value and key */
@@ -810,10 +775,9 @@ void lua_rawset (LuaThread *L, int idx) {
   t = index2addr(L, idx);
   assert(t);
   api_check(t->isTable(), "table expected");
-  {
-    ScopedMemChecker c;
-    t->getTable()->set(L->stack_.top_[-2], L->stack_.top_[-1]);
-  }
+
+  t->getTable()->set(L->stack_.top_[-2], L->stack_.top_[-1]);
+
   luaC_barrierback(t->getObject(), L->stack_.top_[-1]);
   luaC_barrierback(t->getObject(), L->stack_.top_[-2]);
   L->stack_.top_ -= 2;
@@ -827,10 +791,9 @@ void lua_rawseti (LuaThread *L, int idx, int n) {
   t = index2addr(L, idx);
   assert(t);
   api_check(t->isTable(), "table expected");
-  {
-    ScopedMemChecker c;
-    t->getTable()->set(LuaValue(n), L->stack_.top_[-1]);
-  }
+
+  t->getTable()->set(LuaValue(n), L->stack_.top_[-1]);
+
   luaC_barrierback(t->getObject(), L->stack_.top_[-1]);
   L->stack_.pop();
 }
@@ -845,10 +808,9 @@ void lua_rawsetp (LuaThread *L, int idx, const void *p) {
   assert(t);
   api_check(t->isTable(), "table expected");
   k = LuaValue::LightUserdata((void*)p);
-  {
-    ScopedMemChecker c;
-    t->getTable()->set(k, L->stack_.top_[-1]);
-  }
+
+  t->getTable()->set(k, L->stack_.top_[-1]);
+
   luaC_barrierback(t->getObject(), L->stack_.top_[-1]);
   L->stack_.pop();
 }
@@ -1221,7 +1183,6 @@ void lua_concat (LuaThread *L, int n) {
     luaV_concat(L, n);
   }
   else if (n == 0) {  /* push empty string */
-    ScopedMemChecker c;
     LuaString* s = thread_G->strings_->Create("", 0);
     L->stack_.push(LuaValue(s));
   }
@@ -1250,13 +1211,8 @@ void *lua_newuserdata (LuaThread *L, size_t size) {
     throwError(LUA_ERRMEM);
   }
 
-  LuaBlob* u = NULL;
-  {
-    ScopedMemChecker c;
-    u = new LuaBlob(size);
-    assert(u);
-    L->stack_.push(LuaValue(u));
-  }
+  LuaBlob* u = new LuaBlob(size);
+  L->stack_.push(LuaValue(u));
 
   return u->buf_;
 }

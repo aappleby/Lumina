@@ -27,7 +27,6 @@ LuaStack::~LuaStack() {
 // Set up our starting stack & callinfo.
 
 void LuaStack::init() {
-  assert(l_memcontrol.limitDisabled);
   assert(empty());
   resize_nocheck(BASIC_STACK_SIZE);
 
@@ -47,8 +46,6 @@ void LuaStack::init() {
 // to the correct locations.
 
 void LuaStack::realloc (int newsize) {
-  assert(l_memcontrol.limitDisabled);
-
   assert(newsize <= LUAI_MAXSTACK || newsize == ERRORSTACKSIZE);
 
   // Remember where the old stack was. This will be a dangling pointer
@@ -113,8 +110,6 @@ void LuaStack::free() {
 // LUAI_MAXSTACK though.
 
 LuaResult LuaStack::grow2(int extrasize) {
-  assert(l_memcontrol.limitDisabled);
-
   // Asking for more stack when we're already over the limit is  an error.
   if ((int)size() > LUAI_MAXSTACK) {
     return LUA_ERRERR;
@@ -140,8 +135,6 @@ LuaResult LuaStack::grow2(int extrasize) {
 // everything currently in use.
 
 void LuaStack::shrink() {
-  assert(l_memcontrol.limitDisabled);
-
   size_t inuse = countInUse();
   size_t goodsize = inuse + (inuse / 8) + 2*EXTRA_STACK;
   if (goodsize > LUAI_MAXSTACK) goodsize = LUAI_MAXSTACK;
@@ -154,7 +147,6 @@ void LuaStack::shrink() {
 //------------------------------------------------------------------------------
 
 LuaResult LuaStack::reserve2(int newsize) {
-  assert(l_memcontrol.limitDisabled);
   if ((last() - top_) <= newsize) {
     return grow2(newsize);
   }
@@ -262,7 +254,6 @@ void LuaStack::push(const LuaValue* v) {
 }
 
 LuaResult LuaStack::push_reserve2(LuaValue v) {
-  assert(l_memcontrol.limitDisabled);
   top_[0] = v;
   top_++;
   return reserve2(0);
@@ -341,7 +332,6 @@ void LuaStack::checkArgs(int count) {
 //------------------------------------------------------------------------------
 
 LuaStackFrame* LuaStack::extendCallinfo() {
-  assert(l_memcontrol.limitDisabled);
   LuaStackFrame *ci = new LuaStackFrame();
   ci->stack_ = this;
   assert(callinfo_->next == NULL);
@@ -352,7 +342,6 @@ LuaStackFrame* LuaStack::extendCallinfo() {
 }
 
 LuaStackFrame* LuaStack::nextCallinfo() {
-  assert(l_memcontrol.limitDisabled);
   if(callinfo_->next == NULL) {
     callinfo_ = extendCallinfo();
   } else {
@@ -374,7 +363,6 @@ void LuaStack::sweepCallinfo() {
 //------------------------------------------------------------------------------
 
 LuaUpvalue* LuaStack::createUpvalFor(StkId level) {
-  assert(l_memcontrol.limitDisabled);
   LuaObject **pp = &open_upvals_;
   LuaUpvalue *p;
   LuaUpvalue *uv;
@@ -460,9 +448,7 @@ LuaStackFrame* LuaStack::findProtectedCall() {
   return NULL;  /* no pending pcall */
 }
 
-LuaResult LuaStack::createCCall2(StkId func, int nresults, int nstack)
-{
-  assert(l_memcontrol.limitDisabled);
+LuaResult LuaStack::createCCall2(StkId func, int nresults, int nstack) {
   // ensure minimum stack size
   ptrdiff_t func_index = func - begin();
   LuaResult result = reserve2(nstack);

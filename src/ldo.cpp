@@ -66,11 +66,7 @@ void luaD_hook (LuaThread *L, int event, int line) {
     ptrdiff_t ci_top = savestack(L, ci->getTop());
     
     // Make sure the stack can hold enough values for a C call
-    LuaResult result = LUA_OK;
-    {
-      ScopedMemChecker c;
-      result = L->stack_.reserve2(LUA_MINSTACK);
-    }
+    LuaResult result = L->stack_.reserve2(LUA_MINSTACK);
     handleResult(result);
 
     ci->setTop( L->stack_.top_ + LUA_MINSTACK );
@@ -123,11 +119,7 @@ static StkId tryfuncTM (LuaThread *L, StkId func) {
   ptrdiff_t funcr = func - L->stack_.begin();
   L->stack_.top_++;
 
-  LuaResult result = LUA_OK;
-  {
-    ScopedMemChecker c;
-    result = L->stack_.reserve2(0);
-  }
+  LuaResult result = L->stack_.reserve2(0);
   handleResult(result);
 
   func = L->stack_.begin() + funcr; /* previous call may change stack */
@@ -139,11 +131,7 @@ static StkId tryfuncTM (LuaThread *L, StkId func) {
 void luaD_precallLightC(LuaThread* L, StkId func, int nresults) {
   LuaCallback f = func->getLightFunction();
 
-  LuaResult result = LUA_OK;
-  {
-    ScopedMemChecker c;
-    result = L->stack_.createCCall2(func, nresults, LUA_MINSTACK);
-  }
+  LuaResult result = L->stack_.createCCall2(func, nresults, LUA_MINSTACK);
   handleResult(result);
 
   if (L->hookmask & LUA_MASKCALL) luaD_hook(L, LUA_HOOKCALL, -1);
@@ -165,11 +153,7 @@ void luaD_precallLightC(LuaThread* L, StkId func, int nresults) {
 void luaD_precallC(LuaThread* L, StkId func, int nresults) {
   LuaCallback f = func->getCClosure()->cfunction_;
 
-  LuaResult result = LUA_OK;
-  {
-    ScopedMemChecker c;
-    L->stack_.createCCall2(func, nresults, LUA_MINSTACK);
-  }
+  LuaResult result = L->stack_.createCCall2(func, nresults, LUA_MINSTACK);
   handleResult(result);
 
   if (L->hookmask & LUA_MASKCALL) luaD_hook(L, LUA_HOOKCALL, -1);
@@ -192,13 +176,8 @@ void luaD_precallLua(LuaThread* L, StkId func, int nresults) {
   LuaProto *p = func->getLClosure()->proto_;
 
   ptrdiff_t funcr = savestack(L, func);
-  LuaResult result = LUA_OK;
-  {
-    ScopedMemChecker c;
-    result = L->stack_.reserve2(p->maxstacksize);
-  }
+  LuaResult result = L->stack_.reserve2(p->maxstacksize);
   handleResult(result);
-
 
   func = restorestack(L, funcr);
 
@@ -222,18 +201,15 @@ void luaD_precallLua(LuaThread* L, StkId func, int nresults) {
 
   LuaStackFrame* ci = NULL;
 
-  {
-    ScopedMemChecker c;
-    ci = L->stack_.nextCallinfo();  /* now 'enter' new function */
-    ci->nresults = nresults;
-    ci->setFunc(func);
-    ci->setBase(base);
-    ci->setTop(base + p->maxstacksize);
-    assert(ci->getTop() <= L->stack_.last());
-    ci->savedpc = p->code.begin();
-    ci->callstatus = CIST_LUA;
-    L->stack_.top_ = ci->getTop();
-  }
+  ci = L->stack_.nextCallinfo();  /* now 'enter' new function */
+  ci->nresults = nresults;
+  ci->setFunc(func);
+  ci->setBase(base);
+  ci->setTop(base + p->maxstacksize);
+  assert(ci->getTop() <= L->stack_.last());
+  ci->savedpc = p->code.begin();
+  ci->callstatus = CIST_LUA;
+  L->stack_.top_ = ci->getTop();
 
   if (L->hookmask & LUA_MASKCALL) callhook(L, ci);
 }
@@ -377,10 +353,9 @@ static int recover (LuaThread *L, int status) {
   L->stack_.callinfo_ = ci;
   L->allowhook = ci->old_allowhook;
   L->nonyieldable_count_ = 0;  /* should be zero to be yieldable */
-  {
-    ScopedMemChecker c;
-    L->stack_.shrink();
-  }
+
+  L->stack_.shrink();
+
   L->errfunc = ci->old_errfunc;
   ci->callstatus |= CIST_STAT;  /* call has error status */
   ci->status = status;  /* (here it is) */
@@ -395,15 +370,12 @@ static int recover (LuaThread *L, int status) {
 */
 static l_noret resume_error (LuaThread *L, const char *msg, StkId firstArg) {
   THREAD_CHECK(L);
-  LuaResult result;
-  {
-    ScopedMemChecker c;
-    L->stack_.top_ = firstArg;  /* remove args from the stack */
 
-    /* push error message */
-    LuaString* s = thread_G->strings_->Create(msg);
-    result = L->stack_.push_reserve2(LuaValue(s));
-  }
+  L->stack_.top_ = firstArg;  /* remove args from the stack */
+
+  /* push error message */
+  LuaString* s = thread_G->strings_->Create(msg);
+  LuaResult result = L->stack_.push_reserve2(LuaValue(s));
   handleResult(result);
 
   throwError((LuaResult)-1);  /* jump back to 'lua_resume' */
@@ -595,21 +567,14 @@ int luaD_protectedparser (LuaThread *L, ZIO *z, const char *name, const char *mo
       new_proto = luaY_parser(L, z, &buff, &dyd, name, c);
     }
     
-    LuaResult result;
-    {
-      ScopedMemChecker c;
-      result = L->stack_.push_reserve2(LuaValue(new_proto));
-    }
+    LuaResult result = L->stack_.push_reserve2(LuaValue(new_proto));
     handleResult(result);
 
-    {
-      ScopedMemChecker c;
-      LuaClosure* cl = new LuaClosure(new_proto, (int)new_proto->upvalues.size());
-      L->stack_.top_[-1] = LuaValue(cl);
-      // initialize upvalues
-      for (int i = 0; i < (int)new_proto->upvalues.size(); i++) {
-        cl->ppupvals_[i] = new LuaUpvalue(getGlobalGCHead());
-      }
+    LuaClosure* cl = new LuaClosure(new_proto, (int)new_proto->upvalues.size());
+    L->stack_.top_[-1] = LuaValue(cl);
+    // initialize upvalues
+    for (int i = 0; i < (int)new_proto->upvalues.size(); i++) {
+      cl->ppupvals_[i] = new LuaUpvalue(getGlobalGCHead());
     }
   }
   catch(LuaResult error) {

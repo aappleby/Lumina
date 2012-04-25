@@ -2,10 +2,7 @@
 
 #include "LuaCollector.h"
 
-#include "lmem.h" // for l_memcontrol
-
 LuaUpvalue::LuaUpvalue(LuaObject** gchead) : LuaObject(LUA_TUPVALUE) {
-  assert(l_memcontrol.limitDisabled);
   linkGC(gchead);
   v = &value;
   uprev = NULL;

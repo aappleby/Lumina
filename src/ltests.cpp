@@ -566,11 +566,7 @@ static int string_query (LuaThread *L) {
     LuaObject *ts;
     int n = 0;
     for (ts = tb->getStringAt(s); ts; ts = ts->next_) {
-      LuaResult result;
-      {
-        ScopedMemChecker c;
-        result = L->stack_.push_reserve2(LuaValue(ts));
-      }
+      LuaResult result = L->stack_.push_reserve2(LuaValue(ts));
       handleResult(result);
       n++;
     }

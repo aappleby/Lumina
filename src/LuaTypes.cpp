@@ -73,10 +73,6 @@ void throwError(LuaResult err) {
 
 void handleResult(LuaResult err, const LuaValue* val)
 {
-  // Handling errors can throw exceptions and must be done
-  // outside of memory allocation blocks.
-  assert(!l_memcontrol.limitDisabled);
-
   switch(err) {
     case LUA_OK:
       return;

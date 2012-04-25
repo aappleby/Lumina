@@ -67,7 +67,6 @@ size_t luaZ_read (ZIO *z, void *b, size_t n) {
 char *luaZ_openspace (LuaThread *L, Mbuffer *buff, size_t n) {
   THREAD_CHECK(L);
   if (n > buff->buffer.size()) {
-    ScopedMemChecker c;
     if (n < LUA_MINBUFFER) n = LUA_MINBUFFER;
     buff->buffer.resize_nocheck(n);
   }

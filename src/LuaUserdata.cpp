@@ -6,7 +6,6 @@
 #include "lmem.h"
 
 LuaBlob::LuaBlob(size_t len) : LuaObject(LUA_TBLOB) {
-  assert(l_memcontrol.limitDisabled);
   linkGC(getGlobalGCHead());
   buf_ = (uint8_t*)luaM_alloc_nocheck(len);
   len_ = len;

@@ -232,13 +232,11 @@ static int luaK_code (FuncState *fs, Instruction i) {
   dischargejpc(fs);  /* `pc' will change */
   /* put new instruction in code array */
   if(fs->pc >= (int)f->code.size()) {
-    ScopedMemChecker c;
     f->code.grow();
   }
   f->code[fs->pc] = i;
   /* save corresponding line information */
   if(fs->pc >= (int)f->lineinfo.size()) {
-    ScopedMemChecker c;
     f->lineinfo.grow();
   }
   f->lineinfo[fs->pc] = fs->ls->lastline;
@@ -336,13 +334,10 @@ static int addk (FuncState *fs, LuaValue *key, LuaValue *v) {
   k = fs->num_constants;
   /* numerical value does not need GC barrier;
      table has no metatable, so it does not need to invalidate cache */
-  {
-    ScopedMemChecker c;
-    fs->constant_map->set(*key, LuaValue(k));
-  }
-  
+
+  fs->constant_map->set(*key, LuaValue(k));
+
   if (k >= (int)f->constants.size()) {
-    ScopedMemChecker c;
     f->constants.grow();
   }
   
@@ -372,12 +367,8 @@ int luaK_numberK (FuncState *fs, double r) {
   if (r == 0 || (r != r)) {  /* handle -0 and NaN */
     /* use raw representation as key to avoid numeric problems */
     
-    LuaResult result;
-    {
-      ScopedMemChecker c;
-      LuaString* s = thread_G->strings_->Create((char *)&r, sizeof(r));
-      result = L->stack_.push_reserve2(LuaValue(s));
-    }
+    LuaString* s = thread_G->strings_->Create((char *)&r, sizeof(r));
+    LuaResult result = L->stack_.push_reserve2(LuaValue(s));
     handleResult(result);
 
     n = addk(fs, L->stack_.top_ - 1, &o);

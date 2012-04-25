@@ -170,12 +170,8 @@ int luaO_str2d (const char *s, size_t len, double *result) {
 
 static void pushstr (LuaThread *L, const char *str, int l) {
   THREAD_CHECK(L);
-  LuaResult result;
-  {
-    ScopedMemChecker c;
-    LuaString* s = thread_G->strings_->Create(str, l);
-    result = L->stack_.push_reserve2(LuaValue(s));
-  }
+  LuaString* s = thread_G->strings_->Create(str, l);
+  LuaResult result = L->stack_.push_reserve2(LuaValue(s));
   handleResult(result);
 }
 
@@ -188,12 +184,8 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
     const char *e = strchr(fmt, '%');
     if (e == NULL) break;
 
-    LuaResult result;
-    {
-      ScopedMemChecker c;
-      LuaString* s = thread_G->strings_->Create(fmt, int(e - fmt));
-      result = L->stack_.push_reserve2(LuaValue(s));
-    }
+    LuaString* s = thread_G->strings_->Create(fmt, int(e - fmt));
+    LuaResult result = L->stack_.push_reserve2(LuaValue(s));
     handleResult(result);
 
     switch (*(e+1)) {
@@ -211,21 +203,13 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
       }
       case 'd': 
         {
-          LuaResult result;
-          {
-            ScopedMemChecker c;
-            result = L->stack_.push_reserve2( LuaValue(va_arg(argp, int)) );
-          }
+          LuaResult result = L->stack_.push_reserve2( LuaValue(va_arg(argp, int)) );
           handleResult(result);
           break;
         }
       case 'f': 
         {
-          LuaResult result;
-          {
-            ScopedMemChecker c;
-            result = L->stack_.push_reserve2( LuaValue(va_arg(argp, double)) );
-          }
+          LuaResult result = L->stack_.push_reserve2( LuaValue(va_arg(argp, double)) );
           handleResult(result);
           break;
         }

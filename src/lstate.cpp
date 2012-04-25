@@ -24,7 +24,6 @@
 
 LuaThread *lua_newthread (LuaThread *L) {
   THREAD_CHECK(L);
-  ScopedMemChecker c;
 
   LuaThread* L1 = new LuaThread(L);
   L->stack_.push(LuaValue(L1));
@@ -36,11 +35,7 @@ LuaThread *lua_newthread (LuaThread *L) {
 LuaThread *lua_newstate () {
   GLOBAL_CHANGE(NULL);
   
-  l_memcontrol.disableLimit();
-
   LuaVM* g = new LuaVM();
-
-  l_memcontrol.enableLimit();
 
   // TODO(aappleby): Need to investigate why removing this check and letting the
   // checkLimit in luaV_execute handle it doesn't work.

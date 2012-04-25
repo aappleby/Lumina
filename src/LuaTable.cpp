@@ -36,7 +36,6 @@ uint32_t hash64 (uint32_t a, uint32_t b) {
 LuaTable::LuaTable(int arrayLength, int hashLength) 
 : LuaObject(LUA_TTABLE),
   lastfree(-1) {
-  assert(l_memcontrol.limitDisabled);
   metatable = NULL;
   linkGC(getGlobalGCHead());
 
@@ -215,7 +214,6 @@ LuaTable::Node* LuaTable::getFreeNode() {
 //
 
 int LuaTable::set(LuaValue key, LuaValue val) {
-  assert(l_memcontrol.limitDisabled);
   // Check for nil keys
   if (key.isNil()) {
     assert(false);
@@ -348,8 +346,6 @@ void LuaTable::computeOptimalSizes(LuaValue newkey, int& outArraySize, int& outH
 // #TODO - LuaTable resize should be effectively atomic...
 
 int LuaTable::resize(int nasize, int nhsize) {
-  assert(l_memcontrol.limitDisabled);
-
   int oldasize = (int)array_.size();
   //int oldhsize = (int)hash_.size();
 

@@ -7,7 +7,6 @@
 // Lua closure
 LuaClosure::LuaClosure(LuaProto* proto, int n) 
 : LuaObject(LUA_TLCL) {
-  assert(l_memcontrol.limitDisabled);
   linkGC(getGlobalGCHead());
 
   isC = 0;
@@ -23,7 +22,6 @@ LuaClosure::LuaClosure(LuaProto* proto, int n)
 // C closure
 LuaClosure::LuaClosure(LuaCallback func, int n) 
 : LuaObject(LUA_TCCL) {
-  assert(l_memcontrol.limitDisabled);
   linkGC(getGlobalGCHead());
 
   isC = 1;

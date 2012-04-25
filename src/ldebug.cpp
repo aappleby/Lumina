@@ -188,32 +188,18 @@ static void funcinfo (LuaDebug *ar, LuaClosure *cl) {
 static void collectvalidlines (LuaThread *L, LuaClosure *f) {
   THREAD_CHECK(L);
   if (f == NULL || f->isC) {
-    LuaResult result;
-    {
-      ScopedMemChecker c;
-      result = L->stack_.push_reserve2(LuaValue::Nil());
-    }
+    LuaResult result = L->stack_.push_reserve2(LuaValue::Nil());
     handleResult(result);
   }
   else {
-    int i;
-    LuaValue v;
-
-    LuaTable* t = NULL;
-    LuaResult result;
-    {
-      ScopedMemChecker c;
-      t = new LuaTable();  /* new table to store active lines */
-      result = L->stack_.push_reserve2(LuaValue(t));
-    }
+    LuaTable* t = new LuaTable();  /* new table to store active lines */
+    LuaResult result = L->stack_.push_reserve2(LuaValue(t));
     handleResult(result);
 
-    v = true;
-    for (i = 0; i < (int)f->proto_->lineinfo.size(); i++) {
+    LuaValue v = LuaValue(true);
+    for (int i = 0; i < (int)f->proto_->lineinfo.size(); i++) {
       /* for all lines with code */
       LuaValue key(f->proto_->lineinfo[i]);
-
-      ScopedMemChecker c;
       t->set(key, v);  /* table[line] = true */
     }
   }
@@ -300,7 +286,6 @@ int lua_getinfo (LuaThread *L, const char *what, LuaDebug *ar) {
   
   LuaResult result = LUA_OK;
   if (strchr(what, 'f')) {
-    ScopedMemChecker c;
     result = L->stack_.push_reserve2(*func);
   }
   handleResult(result);
@@ -580,11 +565,7 @@ l_noret luaG_errormsg () {
     L->stack_.top_[0] = L->stack_.top_[-1];  /* move argument */
     L->stack_.top_[-1] = *errfunc;  /* push function */
     L->stack_.top_++;
-    LuaResult result;
-    {
-      ScopedMemChecker c;
-      result = L->stack_.reserve2(0);
-    }
+    LuaResult result = L->stack_.reserve2(0);
     handleResult(result);
     luaD_call(L, L->stack_.top_ - 2, 1, 0);  /* call it */
   }

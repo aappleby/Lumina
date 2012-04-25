@@ -58,7 +58,6 @@ static void save (LexState *ls, int c) {
       lexerror(ls, "lexical element too long", 0);
     newsize = luaZ_sizebuffer(b) * 2;
 
-    ScopedMemChecker c;
     b->buffer.resize_nocheck(newsize);
   }
   b->buffer[luaZ_bufflen(b)++] = cast(char, c);
@@ -127,20 +126,14 @@ LuaString *luaX_newstring (LexState *ls, const char *str, size_t l) {
   THREAD_CHECK(ls->L);
   LuaThread *L = ls->L;
 
-  LuaString* ts = NULL;
-  {
-    ScopedMemChecker c;
-    ts = thread_G->strings_->Create(str, l);  /* create new string */
-    L->stack_.push_nocheck(LuaValue(ts));  /* temporarily anchor it in stack */
-  }
+  LuaString* ts = thread_G->strings_->Create(str, l);  /* create new string */
+  L->stack_.push_nocheck(LuaValue(ts));  /* temporarily anchor it in stack */
 
   // TODO(aappleby): Save string in 'ls->fs->h'. Why it does so exactly this way, I don't
   // know. Will have to investigate in the future.
   LuaValue s(ts);
-  {
-    ScopedMemChecker c;
-    ls->fs->constant_map->set(s, LuaValue(true));
-  }
+  ls->fs->constant_map->set(s, LuaValue(true));
+
   luaC_barrierback(ls->fs->constant_map, s);
 
   L->stack_.pop();  /* remove string from stack */
@@ -165,7 +158,6 @@ static void inclinenumber (LexState *ls) {
 
 
 void luaX_setinput (LuaThread *L, LexState *ls, ZIO *z, LuaString *source, int firstchar) {
-  ScopedMemChecker c;
   THREAD_CHECK(L);
 
   ls->decpoint = '.';

@@ -34,8 +34,6 @@
 
 // Converts value to string in-place, returning 1 if successful.
 int luaV_tostring (LuaValue* v) {
-  assert(l_memcontrol.limitDisabled);
-
   if(v->isString()) return 1;
 
   if (v->isNumber()) {
@@ -85,12 +83,10 @@ static void callTM (LuaThread *L, const LuaValue *f, const LuaValue *p1,
   if (!hasres) { // no result? 'p3' is third argument
     L->stack_.push_nocheck(*p3);  // 3rd argument
   }
-  LuaResult result2 = LUA_OK;
-  {
-    ScopedMemChecker c;
-    result2 = L->stack_.reserve2(0);
-  }
+
+  LuaResult result2 = L->stack_.reserve2(0);
   handleResult(result2);
+
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - (4 - hasres), hasres, L->stack_.callinfo_->isLua());
   if (hasres) {  /* if has result, move it to its place */
@@ -105,15 +101,13 @@ static void callTM3 (LuaThread *L,
                      LuaValue p2,
                      LuaValue& result) {
   THREAD_CHECK(L);
-  LuaResult result2;
-  {
-    ScopedMemChecker c;
-    L->stack_.push_nocheck(f); // push function
-    L->stack_.push_nocheck(p1); // 1st argument
-    L->stack_.push_nocheck(p2); // 2nd argument
-    result2 = L->stack_.reserve2(0);
-  }
+
+  L->stack_.push_nocheck(f); // push function
+  L->stack_.push_nocheck(p1); // 1st argument
+  L->stack_.push_nocheck(p2); // 2nd argument
+  LuaResult result2 = L->stack_.reserve2(0);
   handleResult(result2);
+
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - 3, 1, L->stack_.callinfo_->isLua());
   result = L->stack_.pop();
@@ -125,16 +119,14 @@ static void callTM1 (LuaThread *L,
                      LuaValue arg2,
                      LuaValue arg3) {
   THREAD_CHECK(L);
-  LuaResult result = LUA_OK;
-  {
-    ScopedMemChecker c;
-    L->stack_.push_nocheck(func);
-    L->stack_.push_nocheck(arg1);
-    L->stack_.push_nocheck(arg2);
-    L->stack_.push_nocheck(arg3);
-    result = L->stack_.reserve2(0);
-  }
+
+  L->stack_.push_nocheck(func);
+  L->stack_.push_nocheck(arg1);
+  L->stack_.push_nocheck(arg2);
+  L->stack_.push_nocheck(arg3);
+  LuaResult result = L->stack_.reserve2(0);
   handleResult(result);
+
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - 4, 0, L->stack_.callinfo_->isLua());
 }
@@ -235,10 +227,8 @@ void luaV_settable (LuaThread *L, const LuaValue *t2, LuaValue *key, StkId val) 
             luaG_runerror("Key is invalid (either nil or NaN)");
           }
         }
-        {
-          ScopedMemChecker c;
-          h->set(*key,*val);
-        }
+
+        h->set(*key,*val);
         luaC_barrierback(h, *key);
         luaC_barrierback(h, *val);
         return;
@@ -256,10 +246,8 @@ void luaV_settable (LuaThread *L, const LuaValue *t2, LuaValue *key, StkId val) 
             luaG_runerror("Key is invalid (either nil or NaN)");
           }
         }
-        {
-          ScopedMemChecker c;
-          h->set(*key,*val);
-        }
+
+        h->set(*key,*val);
         luaC_barrierback(h, *key);
         luaC_barrierback(h, *val);
         return;
@@ -445,10 +433,7 @@ void luaV_concat (LuaThread *L, int total) {
     }
 
     int tostring_result = 0;
-    {
-      ScopedMemChecker c;
-      tostring_result = luaV_tostring(top-1);
-    }
+    tostring_result = luaV_tostring(top-1);
 
     if (!tostring_result) {
       if (!call_binTM(L, top-2, top-1, top-2, TM_CONCAT)) {
@@ -460,7 +445,6 @@ void luaV_concat (LuaThread *L, int total) {
     }
 
     if (top[-1].getString()->getLen() == 0) { /* second operand is empty? */
-      ScopedMemChecker c;
       luaV_tostring(top-2);
       total -= n-1;  /* got 'n' strings to create 1 new */
       L->stack_.top_ -= n-1;  /* popped 'n' strings and pushed one */
@@ -481,7 +465,6 @@ void luaV_concat (LuaThread *L, int total) {
     /* collect total length */
     for (i = 1; i < total; i++) {
       {
-        ScopedMemChecker c;
         LuaValue temp = top[-i-1].convertToString();
         if(temp.isNone()) break;
         top[-i-1] = temp;
@@ -501,10 +484,7 @@ void luaV_concat (LuaThread *L, int total) {
       tl += l;
     } while (--i > 0);
 
-    {
-      ScopedMemChecker c;
-      top[-n] = thread_G->strings_->Create(buffer, tl);
-    }
+    top[-n] = thread_G->strings_->Create(buffer, tl);
 
     total -= n-1;  /* got 'n' strings to create 1 new */
     L->stack_.top_ -= n-1;  /* popped 'n' strings and pushed one */
@@ -595,7 +575,6 @@ static void pushclosure (LuaThread *L,
                          LuaUpvalue **encup,
                          StkId base,
                          StkId ra) {
-  ScopedMemChecker c;
   THREAD_CHECK(L);
 
   LuaClosure *ncl = new LuaClosure(p, (int)p->upvalues.size());
@@ -710,8 +689,6 @@ void luaV_execute (LuaThread *L) {
 
   /* main loop of interpreter */
   for (int cycle = 0;; cycle++) {
-    assert(!l_memcontrol.limitDisabled);
-
     if(thread_G->getGCDebt() > 0) {
       luaC_step();
     }
@@ -822,11 +799,8 @@ void luaV_execute (LuaThread *L) {
           int b = luaO_fb2int( GETARG_B(i) );
           int c = luaO_fb2int( GETARG_C(i) );
 
-          {
-            ScopedMemChecker c2;
-            LuaTable* t = new LuaTable(b, c);
-            base[A] = t;
-          }
+          LuaTable* t = new LuaTable(b, c);
+          base[A] = t;
 
           break;
         }
@@ -1205,13 +1179,11 @@ void luaV_execute (LuaThread *L) {
           // NOTE(aappleby): This is mostly a performance optimization, but the
           // nextvar.lua tests break if it's removed.
           if (last > (int)h->getArraySize()) {
-            ScopedMemChecker c;
             h->resize(last, (int)h->getHashSize());
           }
 
           // TODO(aappleby): we probably don't have to call barrierback every time through this loop
           for (; n > 0; n--) {
-            ScopedMemChecker c;
             h->set(LuaValue(last--), ra[n]);
             luaC_barrierback(h, ra[n]);
           }
@@ -1239,11 +1211,7 @@ void luaV_execute (LuaThread *L) {
 
           if (b < 0) {  /* B == 0? */
             b = n;  /* get all var. arguments */
-            LuaResult result;
-            {
-              ScopedMemChecker c;
-              result = L->stack_.reserve2(n);
-            }
+            LuaResult result = L->stack_.reserve2(n);
             handleResult(result);
             base = ci->getBase();
 
