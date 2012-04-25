@@ -38,9 +38,6 @@ public:
   global_State();
   ~global_State();
 
-  // must be called from a safe context
-  void init(lua_State* mainthread2);
-
   // actual number of total bytes allocated
   size_t getTotalBytes() {
     return totalbytes_;

@@ -18,6 +18,7 @@ class lua_State : public LuaObject {
 public:
 
   lua_State(global_State* g);
+  lua_State(lua_State* parent_thread);
   ~lua_State();
 
   virtual void VisitGC(GCVisitor& visitor);

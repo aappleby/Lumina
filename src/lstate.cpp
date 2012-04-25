@@ -22,33 +22,11 @@
 #include "ltm.h"
 
 
-static void close_state (lua_State *L) {
-  THREAD_CHECK(L);
-
-  thread_G->gc_.ClearGraylists();
-
-  luaC_freeallobjects();  /* collect all objects */
-
-  delete L;
-  thread_L = NULL;
-
-  delete thread_G;
-  thread_G = NULL;
-}
-
-
 lua_State *lua_newthread (lua_State *L) {
   THREAD_CHECK(L);
   ScopedMemChecker c;
 
-  lua_State* L1 = new lua_State(thread_G);
-  L1->linkGC(getGlobalGCHead());
-
-  L1->hookmask = L->hookmask;
-  L1->basehookcount = L->basehookcount;
-  L1->hook = L->hook;
-  L1->hookcount = L1->basehookcount;
-  
+  lua_State* L1 = new lua_State(L);
   L->stack_.push(TValue(L1));
 
   return L1;
@@ -61,28 +39,24 @@ lua_State *lua_newstate () {
   l_memcontrol.disableLimit();
 
   global_State* g = new global_State();
-  thread_G = g;
-
-  lua_State* L = new lua_State(g);
-  thread_L = L;
-
-  g->init(L);
 
   l_memcontrol.enableLimit();
 
+  // TODO(aappleby): Need to investigate why removing this check and letting the
+  // checkLimit in luaV_execute handle it doesn't work.
   if(l_memcontrol.isOverLimit()) {
-    close_state(L);
+    delete g;
     return NULL;
   }
 
-  return L;
+  return g->mainthread;
 }
 
 
 void lua_close (lua_State *L) {
   THREAD_CHECK(L);
-  L = G(L)->mainthread;  /* only the main thread can be closed */
-  close_state(L);
+  global_State* g = L->l_G;
+  delete g;
 }
 
 

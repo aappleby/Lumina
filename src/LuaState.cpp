@@ -27,6 +27,8 @@ ScopedCallDepth::~ScopedCallDepth() {
 lua_State::lua_State(global_State* g) : LuaObject(LUA_TTHREAD) {
   assert(l_memcontrol.limitDisabled);
   l_G = g;
+  linkGC(&l_G->allgc);
+
   oldpc = NULL;
   hookmask = 0;
   basehookcount = 0;
@@ -37,9 +39,34 @@ lua_State::lua_State(global_State* g) : LuaObject(LUA_TTHREAD) {
   nonyieldable_count_ = 1;
   status = LUA_OK;
 
-  setColor(g->livecolor);
+  setColor(l_G->livecolor);
 
   stack_.init();  /* init stack */
+}
+
+lua_State::lua_State(lua_State* parent_thread) : LuaObject(LUA_TTHREAD) {
+  assert(l_memcontrol.limitDisabled);
+  l_G = parent_thread->l_G;
+  linkGC(&l_G->allgc);
+
+  oldpc = NULL;
+  hookmask = 0;
+  basehookcount = 0;
+  hookcount = 0;
+  hook = NULL;
+  errfunc = 0;
+  allowhook = 1;
+  nonyieldable_count_ = 1;
+  status = LUA_OK;
+
+  setColor(l_G->livecolor);
+
+  stack_.init();  /* init stack */
+
+  hookmask = parent_thread->hookmask;
+  basehookcount = parent_thread->basehookcount;
+  hook = parent_thread->hook;
+  hookcount = parent_thread->basehookcount;
 }
 
 lua_State::~lua_State() {
@@ -51,6 +78,10 @@ lua_State::~lua_State() {
     if(this == l_G->mainthread) {
       l_G->mainthread = NULL;
     }
+  }
+
+  if(thread_L == this) {
+    thread_L = NULL;
   }
 
   stack_.free();

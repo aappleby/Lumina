@@ -16,6 +16,8 @@ extern int luaX_tokens_count;
 
 const lua_Number *lua_version (lua_State *L);
 
+void luaC_freeallobjects();
+
 /* ORDER TM */
 const char *const gk_tagmethod_names[] = {
   "__index",
@@ -74,30 +76,15 @@ global_State::global_State()
   anchor_head_ = NULL;
   anchor_tail_ = NULL;
 
-  strings_ = NULL;
-  mainthread = NULL;
-  memerrmsg = NULL;
-
-  memset(tagmethod_names_,0,sizeof(tagmethod_names_));
   memset(base_metatables_,0,sizeof(base_metatables_));
-
   memset(instanceCounts,0,sizeof(instanceCounts));
-}
 
-global_State::~global_State() {
-  delete strings_;
-  strings_ = NULL;
+  // Make this global state the active one in this thread
+  thread_G = this;
 
-  buff.buffer.clear();
-
-  assert(thread_G->getTotalBytes() == sizeof(global_State));
-
-  assert(mainthread == NULL);
-  assert(anchor_head_ == NULL);
-  assert(anchor_tail_ == NULL);
-}
-
-void global_State::init(lua_State* mainthread2) {
+  // Create the main thread
+  mainthread = new lua_State(this);
+  thread_L = mainthread;
 
   // Create global registry.
   Table* registry = new Table(LUA_RIDX_LAST, 0);
@@ -108,7 +95,6 @@ void global_State::init(lua_State* mainthread2) {
   registry->set(TValue(LUA_RIDX_GLOBALS), TValue(globals));
 
   // Store main thread in the registry.
-  mainthread = mainthread2;
   registry->set(TValue(LUA_RIDX_MAINTHREAD), TValue(mainthread));
 
   // Create global string table.
@@ -120,6 +106,7 @@ void global_State::init(lua_State* mainthread2) {
   memerrmsg->setFixed();
 
   // Create tagmethod name strings.
+  memset(tagmethod_names_,0,sizeof(tagmethod_names_));
   int tm_count = sizeof(gk_tagmethod_names) / sizeof(gk_tagmethod_names[0]);
   for (int i=0; i < tm_count; i++) {
     tagmethod_names_[i] = strings_->Create(gk_tagmethod_names[i]);
@@ -135,6 +122,27 @@ void global_State::init(lua_State* mainthread2) {
 
   // Global state has been created, start up the garbage collector.
   gcrunning = 1;
+}
+
+global_State::~global_State() {
+  gc_.ClearGraylists();
+
+  luaC_freeallobjects();  /* collect all objects */
+
+  delete mainthread;
+  mainthread = NULL;
+  thread_L = NULL;
+
+  delete strings_;
+  strings_ = NULL;
+
+  buff.buffer.clear();
+
+  assert(thread_G->getTotalBytes() == sizeof(global_State));
+
+  assert(mainthread == NULL);
+  assert(anchor_head_ == NULL);
+  assert(anchor_tail_ == NULL);
 }
 
 void global_State::setGCDebt(size_t debt) {
