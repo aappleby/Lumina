@@ -999,6 +999,12 @@ int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc) {
     if (!luaD_precall(L, func, nresults)) {
       luaV_execute(L);
     }
+
+    // IMPORTANT - If we ran out of memory during this pcall, make sure the error
+    // is thrown before we leave this try() block - otherwise the exception will get
+    // thrown in the parent context, which may not be what the user expects.
+
+    l_memcontrol.checkLimit();
   }
   catch(LuaResult error) {
     status = error;
