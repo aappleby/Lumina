@@ -62,7 +62,8 @@ void Memcontrol::disableLimit() {
 }
 
 void Memcontrol::checkLimit() {
-  if(limitDisabled || !isOverLimit()) return;
+  assert(!limitDisabled);
+  if(!isOverLimit()) return;
 
   // Limit in place and we're over it. Try running an emergency garbage
   // collection cycle.

@@ -118,41 +118,49 @@ TValue* index2addr_checked(lua_State* L, int idx) {
   return result;
 }
 
-
+// Expand the current stack frame so it can hold 'size' elements,
+// extending the stack if needed.
 int lua_checkstack (lua_State *L, int size) {
   THREAD_CHECK(L);
-  int res = 1;
   CallInfo *ci = L->stack_.callinfo_;
+
   /* stack large enough? */
-  if (L->stack_.last() - L->stack_.top_ > size) {
-    res = 1;  /* yes; check is OK */
-  }
-  else {  /* no; need to grow stack */
-    int inuse = cast_int(L->stack_.top_ - L->stack_.begin()) + EXTRA_STACK;
-    /* can grow without overflow? */
-    if (inuse > LUAI_MAXSTACK - size) {
-      res = 0;  /* no */
+  TValue* newtop = L->stack_.top_ + size;
+  if (newtop < L->stack_.last()) {
+    if (ci->getTop() < newtop) {
+      ci->setTop(newtop);
     }
-    else  /* try to grow stack */
+    return 1;
+  }
+
+  /* no; need to grow stack */
+  int inuse = cast_int(L->stack_.top_ - L->stack_.begin()) + EXTRA_STACK;
+  
+  /* can grow without overflow? */
+  if (inuse + size > LUAI_MAXSTACK) {
+    /* no */
+    return 0;
+  }
+
+  /* try to grow stack */
+  try {
+    LuaResult result = LUA_OK;
     {
-      try {
-        LuaResult result = LUA_OK;
-        {
-          ScopedMemChecker c;
-          result = L->stack_.grow2(size);
-        }
-        handleResult(result);
-      }
-      catch(...) { 
-        res = 0;
-      }
+      ScopedMemChecker c;
+      result = L->stack_.grow2(size);
     }
+    handleResult(result);
   }
-  if (res && ci->getTop() < L->stack_.top_ + size) {
-    // adjust frame top
-    ci->setTop( L->stack_.top_ + size );
+  catch(...) { 
+    return 0;
   }
-  return res;
+
+  // adjust frame top
+  newtop = L->stack_.top_ + size;
+  if (ci->getTop() < newtop) {
+    ci->setTop(newtop);
+  }
+  return 1;
 }
 
 

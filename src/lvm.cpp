@@ -716,6 +716,8 @@ void luaV_execute (lua_State *L) {
       luaC_step();
     }
 
+    l_memcontrol.checkLimit();
+
     Instruction i = *(ci->savedpc++);
     OpCode opcode = (OpCode)(i & 0x0000003F);
 

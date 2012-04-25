@@ -50,7 +50,7 @@ public:
   ~ScopedMemChecker() {
     l_memcontrol.enableLimit();
     assert(old == l_memcontrol.limitDisabled);
-    l_memcontrol.checkLimit();
+    //l_memcontrol.checkLimit();
   }
 
   int old;
