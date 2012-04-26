@@ -912,6 +912,7 @@ int luaL_getregistrytable (LuaThread *L, const char *fname) {
   val = LuaValue( new LuaTable() );
   registry->set(fname, val);
   L->stack_.push(val);
+
   return 0;
 }
 
@@ -941,8 +942,7 @@ void luaL_requiref (LuaThread *L, const char *modname,
 }
 
 
-const char *luaL_gsub (LuaThread *L, const char *s, const char *p,
-                                                               const char *r) {
+const char *luaL_gsub (LuaThread *L, const char *s, const char *p, const char *r) {
   THREAD_CHECK(L);
   const char *wild;
   size_t l = strlen(p);

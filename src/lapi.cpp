@@ -930,6 +930,24 @@ void lua_callk (LuaThread *L, int nargs, int nresults, int ctx, LuaCallback k) {
   adjustresults(L, nresults);
 }
 
+void lua_call (LuaThread *L, int nargs, int nresults) {
+  THREAD_CHECK(L);
+  api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
+
+  L->stack_.checkArgs(nargs+1);
+  checkresults(L, nargs, nresults);
+
+  StkId func = L->stack_.top_ - (nargs+1);
+  
+  L->nonyieldable_count_++;
+  if (!luaD_precall(L, func, nresults)) {
+    luaV_execute(L);
+  }
+  L->nonyieldable_count_--;
+
+
+  adjustresults(L, nresults);
+}
 
 
 /*

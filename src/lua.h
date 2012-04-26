@@ -168,9 +168,11 @@ void  (lua_setuservalue) (LuaThread *L, int idx);
 /*
 ** 'load' and 'call' functions (load and run Lua code)
 */
-void  (lua_callk) (LuaThread *L, int nargs, int nresults, int ctx,
-                           LuaCallback k);
-#define lua_call(L,n,r)		lua_callk(L, (n), (r), 0, NULL)
+void  (lua_callk) (LuaThread *L, int nargs, int nresults, int ctx, LuaCallback continuation);
+
+//#define lua_call(L,n,r)		lua_callk(L, (n), (r), 0, NULL)
+
+void lua_call(LuaThread* L, int nargs, int nresults);
 
 int   (lua_getctx) (LuaThread *L, int *ctx);
 
