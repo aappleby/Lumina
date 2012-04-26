@@ -49,7 +49,6 @@ LuaThread *lua_newstate () {
 
 
 void lua_close (LuaThread *L) {
-  THREAD_CHECK(L);
   LuaVM* g = L->l_G;
   delete g;
 }

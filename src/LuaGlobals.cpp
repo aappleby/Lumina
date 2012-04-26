@@ -48,6 +48,12 @@ LuaObject** getGlobalGCHead() {
 LuaVM::LuaVM()
 : uvhead(NULL)
 {
+  LuaVM* oldVM = thread_G;
+  LuaThread* oldThread = thread_L;
+
+  thread_G = NULL;
+  thread_L = NULL;
+
   GCdebt_ = 0;
   totalbytes_ = sizeof(LuaVM);
   call_depth_ = 0;
@@ -122,9 +128,18 @@ LuaVM::LuaVM()
 
   // Global state has been created, start up the garbage collector.
   gcrunning = 1;
+
+  thread_L = oldThread;
+  thread_G = oldVM;
 }
 
 LuaVM::~LuaVM() {
+  LuaVM* oldVM = thread_G;
+  LuaThread* oldThread = thread_L;
+
+  thread_G = this;
+  thread_L = mainthread;
+
   gc_.ClearGraylists();
 
   luaC_freeallobjects();  /* collect all objects */
@@ -138,11 +153,13 @@ LuaVM::~LuaVM() {
 
   buff.buffer.clear();
 
-  assert(thread_G->getTotalBytes() == sizeof(LuaVM));
-
+  assert(getTotalBytes() == sizeof(LuaVM));
   assert(mainthread == NULL);
   assert(anchor_head_ == NULL);
   assert(anchor_tail_ == NULL);
+
+  thread_L = oldThread;
+  thread_G = oldVM;
 }
 
 void LuaVM::setGCDebt(size_t debt) {
