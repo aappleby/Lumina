@@ -1,6 +1,8 @@
 #include "LuaTable.h"
 
 #include "LuaCollector.h"
+#include "LuaGlobals.h"
+#include "LuaString.h"
 
 void getTableMode(LuaTable* t, bool& outWeakKey, bool& outWeakVal);
 int luaO_ceillog2 (unsigned int x);
@@ -268,6 +270,20 @@ void LuaTable::set(LuaValue key, LuaValue val) {
   primary_node->i_key = key;
   primary_node->i_val = val;
   primary_node->next = new_node;
+}
+
+//-----------------------------------------------------------------------------
+
+LuaValue LuaTable::get(const char* keystring) {
+  LuaString* key = thread_G->strings_->Create(keystring);
+
+  return get(LuaValue(key));
+}
+
+void LuaTable::set(const char* keystring, LuaValue val) {
+  LuaString* key = thread_G->strings_->Create(keystring);
+
+  set(LuaValue(key), val);
 }
 
 //-----------------------------------------------------------------------------

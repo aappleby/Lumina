@@ -28,6 +28,10 @@ public:
   // Main get/set methods, which we'll gradually be transitioning to.
   LuaValue get(LuaValue key) const;
   void     set(LuaValue key, LuaValue val);
+
+  // This creates dependencies, but it's used everywhere.
+  LuaValue get(const char* key);
+  void     set(const char* key, LuaValue val);
   
   // This is used in a few places
   int resize(int arrayssize, int hashsize);
