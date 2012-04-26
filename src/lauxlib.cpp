@@ -297,18 +297,55 @@ int luaL_execresult (LuaThread *L, int stat) {
 ** =======================================================
 */
 
+LuaValue luaL_getmetatable2(LuaThread* L, const char* tname) {
+  LuaTable* registry = L->l_G->getRegistry();
+
+  LuaString* key = L->l_G->strings_->Create(tname);
+
+  LuaValue v = registry->get(LuaValue(key));
+
+  if(v.isNone()) v = LuaValue::Nil();
+
+  return v;
+}
+
+void luaL_getmetatable(LuaThread* L, const char* tname) {
+  L->stack_.push( luaL_getmetatable2(L, tname) );
+}
+
 int luaL_newmetatable (LuaThread *L, const char *tname) {
   THREAD_CHECK(L);
-  luaL_getmetatable(L, tname);  /* try to get metatable */
-  if (!lua_isnil(L, -1))  /* name already in use? */
-    return 0;  /* leave previous value on top, but return 0 */
+
+  /*
+  luaL_getmetatable(L, tname);  // try to get metatable
+  if (!lua_isnil(L, -1))  // name already in use?
+    return 0;  // leave previous value on top, but return 0
   L->stack_.pop();
   lua_createtable(L, 0, 0);
   L->stack_.copy(-1);
-  lua_setfield(L, LUA_REGISTRYINDEX, tname);  /* registry.name = metatable */
+  lua_setfield(L, LUA_REGISTRYINDEX, tname);  // registry.name = metatable
+  return 1;
+  */
+
+  LuaValue oldTable = luaL_getmetatable2(L, tname);
+
+  if(!oldTable.isNil() && !oldTable.isNone()) {
+    L->stack_.push(oldTable);
+    return 0;
+  }
+
+  LuaTable* newTable = new LuaTable();
+
+  LuaString* key = L->l_G->strings_->Create(tname);
+
+  LuaTable* registry = L->l_G->getRegistry();
+
+  registry->set( LuaValue(key), LuaValue(newTable) );
+
+  L->stack_.push( LuaValue(newTable) );
+
   return 1;
 }
-
 
 void luaL_setmetatable (LuaThread *L, const char *tname) {
   THREAD_CHECK(L);

@@ -172,7 +172,7 @@ int LuaStack::countInUse() {
 
 //------------------------------------------------------------------------------
 // Positive stack indices are indexed from the current call frame.
-// The first item in a call frame is the closure for the current function.
+// The first item in a stack frame is the closure for the current function.
 // Negative stack indices are indexed from the stack top.
 // Negative indices less than or equal to LUA_REGISTRYINDEX are special.
 

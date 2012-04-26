@@ -390,7 +390,7 @@ int luaV_equalobj_ (LuaThread *L, const LuaValue *t1, const LuaValue *t2) {
   // userdata, try the tag methods.
 
   if(L == NULL) {
-    //assert(false);
+    assert(false);
     return 0;
   }
 
