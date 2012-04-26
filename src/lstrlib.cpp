@@ -4,6 +4,7 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaGlobals.h"
 #include "LuaState.h"
 
 #include <ctype.h>
@@ -975,29 +976,35 @@ static const luaL_Reg strlib[] = {
 };
 
 
-static void createmetatable (LuaThread *L) {
-  THREAD_CHECK(L);
-  lua_createtable(L, 0, 1);  /* table to be metatable for strings */
-  lua_pushliteral(L, "");  /* dummy string */
-  L->stack_.copy(-2);  /* copy table */
-  lua_setmetatable(L, -2);  /* set table as metatable for strings */
-  L->stack_.pop();  /* pop dummy string */
-  L->stack_.copy(-2);  /* get string library */
-  lua_setfield(L, -2, "__index");  /* metatable.__index = string */
-  L->stack_.pop();  /* pop metatable */
-}
-
-
 /*
 ** Open string library
 */
 int luaopen_string (LuaThread *L) {
   THREAD_CHECK(L);
 
-  lua_createtable(L, 0, sizeof(strlib)/sizeof((strlib)[0]) - 1);
-  luaL_setfuncs(L,strlib,0);
+  // Create the library table
+  LuaTable* lib = new LuaTable();
 
-  createmetatable(L);
+  // Add all the library functions to it
+  for(const luaL_Reg* cursor = strlib; cursor->name; cursor++) {
+    LuaString* name = thread_G->strings_->Create(cursor->name);
+    lib->set( LuaValue(name), LuaValue(cursor->func) );
+  }
+
+  // Create an empty metatable,
+  LuaTable* meta = new LuaTable();
+
+  // set the string library as the '__index' metamethod.
+  LuaString* index = thread_G->strings_->Create("__index");
+  meta->set( LuaValue(index), LuaValue(lib) );
+
+  // and set it as the base string metatable.
+  thread_G->base_metatables_[LUA_TSTRING] = meta;
+
+  // The caller expects the library to get pushed onto the stack, so do that
+  // too.
+  L->stack_.push(LuaValue(lib));
+
   return 1;
 }
 

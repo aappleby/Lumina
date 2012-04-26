@@ -734,8 +734,12 @@ void luaC_fullgc (int isemergency) {
   LuaVM *g = G(L);
   int origkind = g->gckind;
   assert(origkind != KGC_EMERGENCY);
-  if (!isemergency)   /* do not run finalizers during emergency GC */
+  
+  // do not run finalizers during emergency GC
+  if (!isemergency) {   
     callallpendingfinalizers(1);
+  }
+
   if (keepinvariant(g)) {  /* marking phase? */
     /* must sweep all objects to turn them back to white
        (as white has not changed, nothing will be collected) */

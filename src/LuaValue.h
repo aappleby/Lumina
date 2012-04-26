@@ -25,7 +25,7 @@ public:
   static LuaValue None()  { return LuaValue(LUA_TNONE, 0); }
 
   static LuaValue LightUserdata(const void* p);
-  static LuaValue LightFunction(LuaCallback f);
+  static LuaValue Callback(LuaCallback f);
 
   explicit LuaValue(LuaObject* o)  { type_ = o->type(); bytes_ = 0; object_ = o; }
   explicit LuaValue(bool v)        { type_ = LUA_TBOOLEAN; bytes_ = v ? 1 : 0; }
@@ -34,6 +34,7 @@ public:
   explicit LuaValue(uint32_t v)    { type_ = LUA_TNUMBER; number_ = v; }
   explicit LuaValue(uint64_t v)    { type_ = LUA_TNUMBER; number_ = (double)v; }
   explicit LuaValue(double v)      { type_ = LUA_TNUMBER; number_ = v; }
+  explicit LuaValue(LuaCallback f) { type_ = LUA_TCALLBACK; bytes_ = 0; callback_ = f; }
 
   // Assignment operators
 

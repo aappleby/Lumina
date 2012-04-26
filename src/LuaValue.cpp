@@ -16,7 +16,7 @@ LuaValue LuaValue::LightUserdata(const void * p) {
   return v;
 }
 
-LuaValue LuaValue::LightFunction(LuaCallback f) {
+LuaValue LuaValue::Callback(LuaCallback f) {
   LuaValue v;
   v.type_ = LUA_TCALLBACK;
   v.bytes_ = 0;

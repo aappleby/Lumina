@@ -551,7 +551,7 @@ const char *lua_pushfstring (LuaThread *L, const char *fmt, ...) {
 void lua_pushcclosure (LuaThread *L, LuaCallback fn, int n) {
   THREAD_CHECK(L);
   if (n == 0) {
-    L->stack_.push(LuaValue::LightFunction(fn));
+    L->stack_.push(LuaValue::Callback(fn));
     return;
   }
 
@@ -689,9 +689,15 @@ void lua_createtable (LuaThread *L, int narray, int nrec) {
 LuaTable* lua_getmetatable(LuaValue v) {
   int type = v.type();
   switch (type) {
-    case LUA_TTABLE:    return v.getTable()->metatable;
-    case LUA_TBLOB: return v.getUserdata()->metatable_;
-    default:            return thread_G->base_metatables_[type];
+
+    case LUA_TTABLE:
+      return v.getTable()->metatable;
+
+    case LUA_TBLOB:
+      return v.getUserdata()->metatable_;
+
+    default:
+      return thread_G->base_metatables_[type];
   }
 }
 
