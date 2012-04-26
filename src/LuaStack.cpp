@@ -195,8 +195,8 @@ LuaValue LuaStack::at(int idx) {
   }
 
 
-  // Light C functions have no upvals
-  if (callinfo_->getFunc()->isLightFunction()) {
+  // Callbacks have no upvals
+  if (callinfo_->getFunc()->isCallback()) {
     // can't assert here, some test code is intentionally trying to do this and
     // expecting to fail.
     //assert(false);

@@ -66,7 +66,7 @@ enum LuaType {
   LUA_TNONE     = 1,   // None - invalid value, what you get if you read past the end of an array.
   LUA_TBOOLEAN  = 2,   // Boolean
   LUA_TNUMBER   = 3,   // Double-precision floating point number
-  LUA_TVOID     = 4,   // User-supplied void*
+  LUA_TPOINTER  = 4,   // User-supplied void*
   LUA_TCALLBACK = 5,   // C function pointer, used like a callback.
 
   LUA_TSTRING   = 6,   // String

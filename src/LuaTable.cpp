@@ -205,19 +205,13 @@ LuaTable::Node* LuaTable::getFreeNode() {
 }
 
 //-----------------------------------------------------------------------------
+// Adds a key-value pair to the table. Trying to use Nil or None as a key is
+// an error.
 
-// inserts a new key into a hash table; first, check whether key's main
-// position is free. If not, check whether colliding node is in its main
-// position or not: if it is not, move colliding node to an empty place and
-// put new key in its main position; otherwise (colliding node is in its main
-// position), new key goes to an empty position.
-//
-
-int LuaTable::set(LuaValue key, LuaValue val) {
+void LuaTable::set(LuaValue key, LuaValue val) {
   // Check for nil keys
   if (key.isNil()) {
     assert(false);
-    return LUA_ERRKEY;
   }
 
   // Check for NaN keys
@@ -225,7 +219,6 @@ int LuaTable::set(LuaValue key, LuaValue val) {
     double n = key.getNumber();
     if(n != n) {
       assert(false);
-      return LUA_ERRKEY;
     }
   }
 
@@ -235,7 +228,7 @@ int LuaTable::set(LuaValue key, LuaValue val) {
     int index = key.getInteger() - 1;
     if((index >= 0) && (index < (int)array_.size())) {
       array_[index] = val;
-      return LUA_OK;
+      return;
     }
   }
 
@@ -244,7 +237,7 @@ int LuaTable::set(LuaValue key, LuaValue val) {
   Node* node = findNode(key);
   if(node) {
     node->i_val = val;
-    return LUA_OK;
+    return;
   }
   
   // No node for that key. Can we just put the key in its primary position?
@@ -252,7 +245,7 @@ int LuaTable::set(LuaValue key, LuaValue val) {
   if(primary_node && primary_node->i_val.isNil()) {
     primary_node->i_key = key;
     primary_node->i_val = val;
-    return LUA_OK;
+    return;
   }
 
   // Nope, primary position occupied. Get a free node in the hash_
@@ -275,7 +268,6 @@ int LuaTable::set(LuaValue key, LuaValue val) {
   primary_node->i_key = key;
   primary_node->i_val = val;
   primary_node->next = new_node;
-  return LUA_OK;
 }
 
 //-----------------------------------------------------------------------------

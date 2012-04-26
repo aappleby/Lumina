@@ -69,7 +69,7 @@ static int db_getuservalue (LuaThread *L) {
 
 static int db_setuservalue (LuaThread *L) {
   THREAD_CHECK(L);
-  if (lua_type(L, 1) == LUA_TVOID)
+  if (lua_type(L, 1) == LUA_TPOINTER)
     luaL_argerror(L, 1, "full userdata expected, got light userdata");
   luaL_checktype(L, 1, LUA_TBLOB);
   if (!lua_isnoneornil(L, 2))

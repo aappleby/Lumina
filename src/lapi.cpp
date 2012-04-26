@@ -53,8 +53,8 @@ LuaValue index2addr3(LuaThread* L, int idx) {
   }
 
 
-  // Light C functions have no upvals
-  if (ci->getFunc()->isLightFunction()) {
+  // Callbacks have no upvals
+  if (ci->getFunc()->isCallback()) {
     return LuaValue::None();
   }
 
@@ -89,8 +89,8 @@ LuaValue* index2addr2 (LuaThread *L, int idx) {
   }
 
 
-  // Light C functions have no upvals
-  if (ci->getFunc()->isLightFunction()) {
+  // Callbacks have no upvals
+  if (ci->getFunc()->isCallback()) {
     return NULL;
   }
 
@@ -266,7 +266,7 @@ const char *lua_typename (LuaThread *L, int t) {
 int lua_iscfunction (LuaThread *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr2(L, idx);
-  return o && (o->isLightFunction() || o->isCClosure());
+  return o && (o->isCallback() || o->isCClosure());
 }
 
 // To determine if a string can be converted to a number, we convert it to a number. :)
@@ -289,7 +289,7 @@ int lua_isStringable (LuaThread *L, int idx) {
 int lua_isuserdata (LuaThread *L, int idx) {
   THREAD_CHECK(L);
   const LuaValue *o = index2addr(L, idx);
-  return o && (o->isUserdata() || o->isLightUserdata());
+  return o && (o->isBlob() || o->isPointer());
 }
 
 
@@ -424,8 +424,8 @@ size_t lua_rawlen (LuaThread *L, int idx) {
   if(o == NULL) return NULL;
   switch (o->type()) {
     case LUA_TSTRING: return o->getString()->getLen();
-    case LUA_TBLOB: return o->getUserdata()->len_;
-    case LUA_TTABLE: return o->getTable()->getLength();
+    case LUA_TBLOB:   return o->getBlob()->len_;
+    case LUA_TTABLE:  return o->getTable()->getLength();
     default: return 0;
   }
 }
@@ -435,7 +435,7 @@ LuaCallback lua_tocfunction (LuaThread *L, int idx) {
   THREAD_CHECK(L);
   StkId o = index2addr(L, idx);
   if(o == NULL) return NULL;
-  if (o->isLightFunction()) return o->getLightFunction();
+  if (o->isCallback()) return o->getCallback();
   else if (o->isCClosure())
     return o->getCClosure()->cfunction_;
   else return NULL;  /* not a C function */
@@ -447,8 +447,8 @@ void *lua_touserdata (LuaThread *L, int idx) {
   StkId o = index2addr(L, idx);
   if(o == NULL) return NULL;
   switch (o->type()) {
-    case LUA_TBLOB: return (o->getUserdata()->buf_);
-    case LUA_TVOID: return o->getLightUserdata();
+    case LUA_TBLOB:    return (o->getBlob()->buf_);
+    case LUA_TPOINTER: return o->getPointer();
     default: return NULL;
   }
 }
@@ -470,10 +470,10 @@ const void *lua_topointer (LuaThread *L, int idx) {
     case LUA_TTABLE: return o->getTable();
     case LUA_TLCL: return o->getLClosure();
     case LUA_TCCL: return o->getCClosure();
-    case LUA_TCALLBACK: return cast(void *, cast(size_t, o->getLightFunction()));
+    case LUA_TCALLBACK: return cast(void *, cast(size_t, o->getCallback()));
     case LUA_TTHREAD: return o->getThread();
     case LUA_TBLOB:
-    case LUA_TVOID:
+    case LUA_TPOINTER:
       return lua_touserdata(L, idx);
     default: return NULL;
   }
@@ -694,7 +694,7 @@ LuaTable* lua_getmetatable(LuaValue v) {
       return v.getTable()->metatable;
 
     case LUA_TBLOB:
-      return v.getUserdata()->metatable_;
+      return v.getBlob()->metatable_;
 
     default:
       return thread_G->base_metatables_[type];
@@ -722,9 +722,9 @@ void lua_getuservalue (LuaThread *L, int idx) {
   THREAD_CHECK(L);
   StkId o;
   o = index2addr_checked(L, idx);
-  api_check(o->isUserdata(), "userdata expected");
-  if (o->getUserdata()->env_) {
-    L->stack_.push(LuaValue(o->getUserdata()->env_));
+  api_check(o->isBlob(), "userdata expected");
+  if (o->getBlob()->env_) {
+    L->stack_.push(LuaValue(o->getBlob()->env_));
   } else {
     L->stack_.push(LuaValue::Nil());
   }
@@ -852,9 +852,9 @@ int lua_setmetatable (LuaThread *L, int objindex) {
       }
     case LUA_TBLOB:
       {
-        obj->getUserdata()->metatable_ = mt;
+        obj->getBlob()->metatable_ = mt;
         if (mt) {
-          luaC_barrier(obj->getUserdata(), LuaValue(mt));
+          luaC_barrier(obj->getBlob(), LuaValue(mt));
           luaC_checkfinalizer(obj->getObject(), mt);
         }
         break;
@@ -876,12 +876,12 @@ void lua_setuservalue (LuaThread *L, int idx) {
   StkId o;
   L->stack_.checkArgs(1);
   o = index2addr_checked(L, idx);
-  api_check(o->isUserdata(), "userdata expected");
+  api_check(o->isBlob(), "userdata expected");
   if (L->stack_.top_[-1].isNil())
-    o->getUserdata()->env_ = NULL;
+    o->getBlob()->env_ = NULL;
   else {
     api_check(L->stack_.top_[-1].isTable(), "table expected");
-    o->getUserdata()->env_ = L->stack_.top_[-1].getTable();
+    o->getBlob()->env_ = L->stack_.top_[-1].getTable();
     luaC_barrier(o->getObject(), L->stack_.top_[-1]);
   }
   L->stack_.pop();

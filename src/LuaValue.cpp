@@ -10,7 +10,7 @@ int luaO_str2d (const char *s, size_t len, double *result);
 
 LuaValue LuaValue::LightUserdata(const void * p) {
   LuaValue v;
-  v.type_ = LUA_TVOID;
+  v.type_ = LUA_TPOINTER;
   v.bytes_ = 0;
   v.pointer_ = (void*)p;
   return v;

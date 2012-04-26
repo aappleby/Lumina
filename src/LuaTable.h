@@ -27,7 +27,7 @@ public:
 
   // Main get/set methods, which we'll gradually be transitioning to.
   LuaValue get(LuaValue key) const;
-  int    set(LuaValue key, LuaValue val);
+  void     set(LuaValue key, LuaValue val);
   
   // This is used in a few places
   int resize(int arrayssize, int hashsize);

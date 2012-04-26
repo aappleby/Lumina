@@ -18,9 +18,6 @@ public:
     bytes_ = data;
   }
 
-  //static LuaValue nil;
-  //static LuaValue none;
-
   static LuaValue Nil()   { return LuaValue(LUA_TNIL, 0); }
   static LuaValue None()  { return LuaValue(LUA_TNONE, 0); }
 
@@ -64,30 +61,28 @@ public:
 
   // stuff
 
-  bool isCollectable() const   { return type_ >= LUA_TSTRING; }
-  bool isFunction() const      { return (type_ == LUA_TCCL) || (type_ == LUA_TLCL) || (type_ == LUA_TCALLBACK); }
+  bool isCollectable() const  { return type_ >= LUA_TSTRING; }
+  bool isFunction() const     { return (type_ == LUA_TCCL) || (type_ == LUA_TLCL) || (type_ == LUA_TCALLBACK); }
 
-  bool isNil() const           { return type_ == LUA_TNIL; }
-  bool isNotNil() const        { return type_ != LUA_TNIL; }
-  bool isNone() const          { return type_ == LUA_TNONE; }
+  bool isNil() const          { return type_ == LUA_TNIL; }
+  bool isNotNil() const       { return type_ != LUA_TNIL; }
+  bool isNone() const         { return type_ == LUA_TNONE; }
 
-  bool isBool() const          { return type_ == LUA_TBOOLEAN; }
-  bool isNumber() const        { return type_ == LUA_TNUMBER; }
+  bool isBool() const         { return type_ == LUA_TBOOLEAN; }
+  bool isNumber() const       { return type_ == LUA_TNUMBER; }
+  bool isInteger() const      { return isNumber() && (number_ == (int)number_); }
 
-  bool isInteger() const       { return isNumber() && (number_ == (int)number_); }
+  bool isPointer() const      { return type_ == LUA_TPOINTER; }
+  bool isString() const       { return type_ == LUA_TSTRING; }
+  bool isTable() const        { return type_ == LUA_TTABLE; }
+  bool isBlob() const         { return type_ == LUA_TBLOB; }
+  bool isThread() const       { return type_ == LUA_TTHREAD; }
+  bool isUpval() const        { return type_ == LUA_TUPVALUE; }
+  bool isProto() const        { return type_ == LUA_TPROTO; }
 
-  bool isLightUserdata() const { return type_ == LUA_TVOID; }
-
-  bool isString() const        { return type_ == LUA_TSTRING; }
-  bool isTable() const         { return type_ == LUA_TTABLE; }
-  bool isUserdata() const      { return type_ == LUA_TBLOB; }
-  bool isThread() const        { return type_ == LUA_TTHREAD; }
-  bool isUpval() const         { return type_ == LUA_TUPVALUE; }
-  bool isProto() const         { return type_ == LUA_TPROTO; }
-
-  bool isCClosure() const      { return type_ == LUA_TCCL; }
-  bool isLClosure() const      { return type_ == LUA_TLCL; }
-  bool isLightFunction() const { return type_ == LUA_TCALLBACK; }
+  bool isCClosure() const     { return type_ == LUA_TCCL; }
+  bool isLClosure() const     { return type_ == LUA_TLCL; }
+  bool isCallback() const     { return type_ == LUA_TCALLBACK; }
 
   // A 'true' value is either a true boolean or a non-Nil.
   // TODO(aappleby): this means that a None is true... might want to fix that.
@@ -122,18 +117,18 @@ public:
 
   //----------
 
-  bool       getBool() const          { assert(isBool()); return bytes_ ? true : false; }
-  int        getInteger() const       { return (int)number_; }
-  double     getNumber() const        { assert(isNumber()); return number_; }
-  LuaObject* getObject() const        { assert(isCollectable()); return object_; }
-  LuaClosure*   getCClosure()            { assert(isCClosure()); return reinterpret_cast<LuaClosure*>(object_); }
-  LuaClosure*   getLClosure()            { assert(isLClosure()); return reinterpret_cast<LuaClosure*>(object_); }
-  LuaString*   getString() const        { assert(isString()); return reinterpret_cast<LuaString*>(object_); }
-  LuaTable*     getTable() const         { assert(isTable()); return reinterpret_cast<LuaTable*>(object_); }
-  LuaBlob*     getUserdata() const      { assert(isUserdata()); return reinterpret_cast<LuaBlob*>(object_); }
-  void*      getLightUserdata() const { assert(isLightUserdata()); return pointer_; }
-  LuaThread* getThread() const        { assert(isThread()); return reinterpret_cast<LuaThread*>(object_); }
-  LuaCallback getLightFunction() const { assert(isLightFunction()); return callback_; }
+  bool         getBool() const      { assert(isBool()); return bytes_ ? true : false; }
+  int          getInteger() const   { assert(isNumber()); return (int)number_; }
+  double       getNumber() const    { assert(isNumber()); return number_; }
+  LuaObject*   getObject() const    { assert(isCollectable()); return object_; }
+  LuaClosure*  getCClosure()        { assert(isCClosure()); return reinterpret_cast<LuaClosure*>(object_); }
+  LuaClosure*  getLClosure()        { assert(isLClosure()); return reinterpret_cast<LuaClosure*>(object_); }
+  LuaString*   getString() const    { assert(isString()); return reinterpret_cast<LuaString*>(object_); }
+  LuaTable*    getTable() const     { assert(isTable()); return reinterpret_cast<LuaTable*>(object_); }
+  LuaBlob*     getBlob() const      { assert(isBlob()); return reinterpret_cast<LuaBlob*>(object_); }
+  void*        getPointer() const   { assert(isPointer()); return pointer_; }
+  LuaThread*   getThread() const    { assert(isThread()); return reinterpret_cast<LuaThread*>(object_); }
+  LuaCallback  getCallback() const  { assert(isCallback()); return callback_; }
 
   uint64_t   getRawBytes() const { return bytes_; }
 

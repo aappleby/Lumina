@@ -129,7 +129,7 @@ static StkId tryfuncTM (LuaThread *L, StkId func) {
 
 
 void luaD_precallLightC(LuaThread* L, StkId func, int nresults) {
-  LuaCallback f = func->getLightFunction();
+  LuaCallback f = func->getCallback();
 
   LuaResult result = L->stack_.createCCall2(func, nresults, LUA_MINSTACK);
   handleResult(result);

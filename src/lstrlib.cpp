@@ -981,13 +981,14 @@ static const luaL_Reg strlib[] = {
 */
 int luaopen_string (LuaThread *L) {
   THREAD_CHECK(L);
+  LuaVM* vm = L->l_G;
 
   // Create the library table
   LuaTable* lib = new LuaTable();
 
   // Add all the library functions to it
   for(const luaL_Reg* cursor = strlib; cursor->name; cursor++) {
-    LuaString* name = thread_G->strings_->Create(cursor->name);
+    LuaString* name = vm->strings_->Create(cursor->name);
     lib->set( LuaValue(name), LuaValue(cursor->func) );
   }
 
@@ -995,11 +996,11 @@ int luaopen_string (LuaThread *L) {
   LuaTable* meta = new LuaTable();
 
   // set the string library as the '__index' metamethod.
-  LuaString* index = thread_G->strings_->Create("__index");
+  LuaString* index = vm->strings_->Create("__index");
   meta->set( LuaValue(index), LuaValue(lib) );
 
   // and set it as the base string metatable.
-  thread_G->base_metatables_[LUA_TSTRING] = meta;
+  vm->base_metatables_[LUA_TSTRING] = meta;
 
   // The caller expects the library to get pushed onto the stack, so do that
   // too.

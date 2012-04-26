@@ -253,7 +253,7 @@ inline bool lua_isfunction(LuaThread* L, int n) {
 }
 
 #define lua_istable(L,n)	(lua_type(L, (n)) == LUA_TTABLE)
-#define lua_islightuserdata(L,n)	(lua_type(L, (n)) == LUA_TVOID)
+#define lua_islightuserdata(L,n)	(lua_type(L, (n)) == LUA_TPOINTER)
 #define lua_isboolean(L,n)	(lua_type(L, (n)) == LUA_TBOOLEAN)
 #define lua_isthread(L,n)	(lua_type(L, (n)) == LUA_TTHREAD)
 
