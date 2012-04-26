@@ -886,15 +886,33 @@ void luaL_setfuncs (LuaThread *L, const luaL_Reg *l, int nup) {
 int luaL_getsubtable (LuaThread *L, int idx, const char *fname) {
   THREAD_CHECK(L);
   lua_getfield(L, idx, fname);
-  if (lua_istable(L, -1)) return 1;  /* table already there */
+  if (lua_istable(L, -1)) return 1;  // table already there
   else {
     idx = lua_absindex(L, idx);
-    L->stack_.pop();  /* remove previous result */
+    L->stack_.pop();  // remove previous result
     lua_createtable(L, 0, 0);
-    L->stack_.copy(-1);  /* copy to be left at top */
-    lua_setfield(L, idx, fname);  /* assign new table to field */
-    return 0;  /* false, because did not find table there */
+    L->stack_.copy(-1);  // copy to be left at top
+    lua_setfield(L, idx, fname);  // assign new table to field
+    return 0;  // false, because did not find table there
   }
+}
+
+int luaL_getregistrytable (LuaThread *L, const char *fname) {
+  THREAD_CHECK(L);
+
+  LuaTable* registry = L->l_G->getRegistry();
+
+  LuaValue val = registry->get(fname);
+
+  if(val.isTable()) {
+    L->stack_.push(val);
+    return 1;
+  }
+
+  val = LuaValue( new LuaTable() );
+  registry->set(fname, val);
+  L->stack_.push(val);
+  return 0;
 }
 
 
@@ -910,7 +928,7 @@ void luaL_requiref (LuaThread *L, const char *modname,
   lua_pushcclosure(L, openf, 0);
   lua_pushstring(L, modname);  /* argument to open function */
   lua_call(L, 1, 1);  /* open module */
-  luaL_getsubtable(L, LUA_REGISTRYINDEX, "_LOADED");
+  luaL_getregistrytable(L, "_LOADED");
   L->stack_.copy(-2);  /* make copy of module (call result) */
   lua_setfield(L, -2, modname);  /* _LOADED[modname] = module */
   L->stack_.pop();  /* remove _LOADED table */

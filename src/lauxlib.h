@@ -138,8 +138,6 @@ void luaL_typecheck(LuaThread* L, int index, LuaType a, LuaType b, LuaType c);
 #define luaL_dostring(L, s) \
 	(luaL_loadstring(L, s) || lua_pcall(L, 0, LUA_MULTRET, 0))
 
-//#define luaL_getmetatable(L,n)	(lua_getfield(L, LUA_REGISTRYINDEX, (n)))
-
 void luaL_getmetatable(LuaThread* L, const char* tname);
 
 #define luaL_opt(L,f,n,d)	(lua_isnoneornil(L,(n)) ? (d) : f(L,(n)))
