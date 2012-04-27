@@ -464,7 +464,7 @@ static int pmain (LuaThread *L) {
   if (args[has_v]) print_version();
   if (args[has_E]) {  /* option '-E'? */
     lua_pushboolean(L, 1);  /* signal for libraries to ignore env. vars. */
-    lua_setfield(L, LUA_REGISTRYINDEX, "LUA_NOENV");
+    lua_setregistryfield(L, "LUA_NOENV");
   }
   /* open standard libraries */
   luaL_checkversion(L);

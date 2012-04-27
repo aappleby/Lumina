@@ -266,11 +266,21 @@ static void **ll_register (LuaThread *L, const char *path) {
   THREAD_CHECK(L);
   void **plib;
   lua_pushfstring(L, "%s%s", LIBPREFIX, path);
-  lua_gettable(L, LUA_REGISTRYINDEX);  /* check library in registry? */
-  if (!lua_isnil(L, -1))  /* is there an entry? */
+
+  LuaValue key = L->stack_.top_[-1];
+  L->stack_.pop();
+
+  LuaTable* registry = L->l_G->getRegistry();
+  LuaValue val = registry->get(key);
+
+  //lua_gettable(L, LUA_REGISTRYINDEX);  /* check library in registry? */
+
+  if (!val.isNil() && !val.isNone()) {
+    /* is there an entry? */
+    L->stack_.push(val);
     plib = (void **)lua_touserdata(L, -1);
+  }
   else {  /* no entry yet; create one */
-    L->stack_.pop();  /* remove result from gettable */
     plib = (void **)lua_newuserdata(L, sizeof(const void *));
     *plib = NULL;
     luaL_setmetatable(L, "_LOADLIB");
