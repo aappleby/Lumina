@@ -101,6 +101,8 @@ LuaVM::LuaVM()
   registry->set(LuaValue(LUA_RIDX_GLOBALS), LuaValue(globals));
 
   // Store main thread in the registry.
+  // TODO(aappleby): There is no reason to keep it there, except that there is
+  // one test in api.lua that checks for it.
   registry->set(LuaValue(LUA_RIDX_MAINTHREAD), LuaValue(mainthread));
 
   // Create global string table.

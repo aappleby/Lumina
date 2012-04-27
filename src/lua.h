@@ -166,6 +166,7 @@ void  (lua_rawsetp) (LuaThread *L, int idx, const void *p);
 int   (lua_setmetatable) (LuaThread *L, int objindex);
 void  (lua_setuservalue) (LuaThread *L, int idx);
 
+void lua_setregistryfield (LuaThread *L, const char *key);
 
 /*
 ** 'load' and 'call' functions (load and run Lua code)

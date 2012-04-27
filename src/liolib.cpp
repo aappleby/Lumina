@@ -224,7 +224,7 @@ static int g_iofile (LuaThread *L, const char *f, const char *mode) {
       tofile(L);  /* check that it's a valid file handle */
       L->stack_.copy(1);
     }
-    lua_setfield(L, LUA_REGISTRYINDEX, f);
+    lua_setregistryfield(L, f);
   }
   /* return current value */
   lua_getregistryfield(L, f);
@@ -617,7 +617,7 @@ static void createstdfile (LuaThread *L, FILE *f, const char *k,
   p->closef = &io_noclose;
   if (k != NULL) {
     L->stack_.copy(-1);
-    lua_setfield(L, LUA_REGISTRYINDEX, k);  /* add file to registry */
+    lua_setregistryfield(L, k);  /* add file to registry */
   }
   lua_setfield(L, -2, fname);  /* add file to module */
 }

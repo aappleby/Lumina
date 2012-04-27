@@ -762,6 +762,18 @@ void lua_setfield (LuaThread *L, int idx, const char *k) {
   L->stack_.top_ -= 2;  /* pop value and key */
 }
 
+void lua_setregistryfield (LuaThread *L, const char *key) {
+  THREAD_CHECK(L);
+
+  LuaTable* t = L->l_G->getRegistry();
+
+  LuaValue val = L->stack_.top_[-1];
+
+  t->set(key,val);
+
+  L->stack_.pop();
+}
+
 
 void lua_rawset (LuaThread *L, int idx) {
   THREAD_CHECK(L);

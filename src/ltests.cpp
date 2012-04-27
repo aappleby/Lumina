@@ -1347,7 +1347,7 @@ static void sethookaux (LuaThread *L, int mask, int count, const char *scpt) {
     L->stack_.pop();  /* remove previous value */
     lua_createtable(L, 0, 0);  /* create new C_HOOK table */
     L->stack_.copy(-1);
-    lua_setfield(L, LUA_REGISTRYINDEX, "C_HOOK");  /* register it */
+    lua_setregistryfield(L, "C_HOOK");  /* register it */
   }
   lua_pushlightuserdata(L, L);
   lua_pushstring(L, scpt);
