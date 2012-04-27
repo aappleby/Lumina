@@ -627,15 +627,14 @@ int luaL_ref (LuaThread *L, int t) {
   return ref;
 }
 
-
-void luaL_unref (LuaThread *L, int t, int ref) {
+void luaL_unref(LuaThread* L, int ref) {
   THREAD_CHECK(L);
-  if (ref >= 0) {
-    t = lua_absindex(L, t);
-    lua_rawgeti(L, t, freelist);
-    lua_rawseti(L, t, ref);  /* t[ref] = t[freelist] */
-    lua_pushinteger(L, ref);
-    lua_rawseti(L, t, freelist);  /* t[freelist] = ref */
+
+  if(ref >= 0) {
+    LuaTable* registry = L->l_G->getRegistry();
+    LuaValue a = registry->get( LuaValue(freelist) );
+    registry->set( LuaValue(ref), a );
+    registry->set( LuaValue(freelist), LuaValue(ref) );
   }
 }
 

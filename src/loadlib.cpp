@@ -280,14 +280,24 @@ static void **ll_register (LuaThread *L, const char *path) {
     plib = (void**)val.getBlob()->buf_;
   }
   else {  /* no entry yet; create one */
-    plib = (void **)lua_newuserdata(L, sizeof(const void *));
+    LuaBlob* newBlob = new LuaBlob(sizeof(void*));
+
+    plib = (void **)newBlob->buf_;
     *plib = NULL;
-    luaL_setmetatable(L, "_LOADLIB");
+
+    // TODO(aappleby): Intentionally trying to break this code by not setting
+    // the metatable doesn't work. What is this doing and how can we test it?
+
+    LuaValue meta = registry->get("_LOADLIB");
+    newBlob->metatable_ = meta.getTable();
     
     lua_pushfstring(L, "%s%s", LIBPREFIX, path);
-    L->stack_.copy(-2);
+    LuaValue key = L->stack_.top_[-1];
+    L->stack_.pop();
 
-    lua_settable(L, LUA_REGISTRYINDEX);
+    registry->set(key, LuaValue(newBlob) );
+
+    L->stack_.push( LuaValue(newBlob) );
   }
   return plib;
 }

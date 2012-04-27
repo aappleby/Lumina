@@ -597,7 +597,7 @@ static int getref (LuaThread *L) {
 static int unref (LuaThread *L) {
   THREAD_CHECK(L);
   int level = L->stack_.getTopIndex();
-  luaL_unref(L, LUA_REGISTRYINDEX, luaL_checkint(L, 1));
+  luaL_unref(L, luaL_checkint(L, 1));
   assert(L->stack_.getTopIndex() == level);
   return 0;
 }
@@ -807,7 +807,9 @@ static const char *const delimits = " \t\n,;";
 
 static void skip (const char **pc) {
   for (;;) {
-    if (**pc != '\0' && strchr(delimits, **pc)) (*pc)++;
+    if (**pc != '\0' && strchr(delimits, **pc)) {
+      (*pc)++;
+    }
     else if (**pc == '#') {
       while (**pc != '\n' && **pc != '\0') (*pc)++;
     }
@@ -833,8 +835,9 @@ static int getnum_aux (LuaThread *L, LuaThread *L1, const char **pc) {
     sig = -1;
     (*pc)++;
   }
-  if (!lisdigit(cast_uchar(**pc)))
+  if (!lisdigit(cast_uchar(**pc))) {
     luaL_error(L, "number expected (%s)", *pc);
+  }
   while (lisdigit(cast_uchar(**pc))) res = res*10 + (*(*pc)++) - '0';
   return sig*res;
 }
@@ -1085,7 +1088,11 @@ static int runC (LuaThread *L, LuaThread *L1, const char *pc) {
     }
     else if EQ("rawgeti") {
       int t;
-      { GLOBAL_CHANGE(L); t = getindex; tempnum = getnum; }
+      {
+        GLOBAL_CHANGE(L);
+        t = getindex_aux(L, L1, &pc);
+        tempnum = getnum;
+      }
       lua_rawgeti(L1, t, tempnum);
     }
     else if EQ("settable") {

@@ -73,7 +73,7 @@ int (luaL_execresult) (LuaThread *L, int stat);
 #define LUA_REFNIL      (-1)
 
 int (luaL_ref) (LuaThread *L, int t);
-void (luaL_unref) (LuaThread *L, int t, int ref);
+void (luaL_unref) (LuaThread *L, int ref);
 
 int (luaL_loadfilex) (LuaThread *L, const char *filename,
                                                const char *mode);
