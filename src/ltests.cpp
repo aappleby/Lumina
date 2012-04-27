@@ -581,7 +581,7 @@ static int tref (LuaThread *L) {
   int level = L->stack_.getTopIndex();
   luaL_checkany(L, 1);
   L->stack_.copy(1);
-  lua_pushinteger(L, luaL_ref(L, LUA_REGISTRYINDEX));
+  lua_pushinteger(L, luaL_ref(L));
   assert(L->stack_.getTopIndex() == level+1);  /* +1 for result */
   return 1;
 }

@@ -72,7 +72,7 @@ int (luaL_execresult) (LuaThread *L, int stat);
 #define LUA_NOREF       (-2)
 #define LUA_REFNIL      (-1)
 
-int (luaL_ref) (LuaThread *L, int t);
+int (luaL_ref) (LuaThread *L);
 void (luaL_unref) (LuaThread *L, int ref);
 
 int (luaL_loadfilex) (LuaThread *L, const char *filename,

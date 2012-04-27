@@ -605,26 +605,57 @@ char *luaL_buffinitsize (LuaThread *L, luaL_Buffer *B, size_t sz) {
 /* index of free-list header */
 #define freelist	0
 
-
-int luaL_ref (LuaThread *L, int t) {
+/*
+int luaL_ref (LuaThread *L) {
   THREAD_CHECK(L);
   int ref;
-  t = lua_absindex(L, t);
+  int t = lua_absindex(L, LUA_REGISTRYINDEX);
   if (lua_isnil(L, -1)) {
-    L->stack_.pop();  /* remove from stack */
-    return LUA_REFNIL;  /* `nil' has a unique fixed reference */
+    L->stack_.pop();  // remove from stack
+    return LUA_REFNIL;  // `nil' has a unique fixed reference
   }
-  lua_rawgeti(L, t, freelist);  /* get first free element */
-  ref = (int)lua_tointeger(L, -1);  /* ref = t[freelist] */
-  L->stack_.pop();  /* remove it from stack */
-  if (ref != 0) {  /* any free element? */
-    lua_rawgeti(L, t, ref);  /* remove it from list */
-    lua_rawseti(L, t, freelist);  /* (t[freelist] = t[ref]) */
+  lua_rawgeti(L, t, freelist);  // get first free element
+  ref = (int)lua_tointeger(L, -1);  // ref = t[freelist]
+  L->stack_.pop();  // remove it from stack
+  if (ref != 0) {  // any free element?
+    lua_rawgeti(L, t, ref);  // remove it from list
+    lua_rawseti(L, t, freelist);  // (t[freelist] = t[ref])
+    lua_rawseti(L, t, ref);
+    return ref;
   }
-  else  /* no free elements */
-    ref = (int)lua_rawlen(L, t) + 1;  /* get a new reference */
-  lua_rawseti(L, t, ref);
-  return ref;
+  else {
+    // no free elements
+    ref = (int)lua_rawlen(L, t) + 1;  // get a new reference
+    lua_rawseti(L, t, ref);
+    return ref;
+  }
+}
+*/
+
+int luaL_ref(LuaThread* L) {
+
+  LuaTable* registry = L->l_G->getRegistry();
+
+  LuaValue val = L->stack_.top_[-1];
+  L->stack_.pop();
+
+  if(val.isNil()) return LUA_REFNIL;
+
+  LuaValue ref1 = registry->get(LuaValue(freelist));
+  int ref = ref1.isInteger() ? ref1.getInteger() : 0;
+
+  if (ref != 0) {  // any free element?
+    LuaValue temp = registry->get( LuaValue(ref) );
+    registry->set( LuaValue(freelist), temp );
+    registry->set( LuaValue(ref), val );
+    return ref;
+  }
+  else  {
+    // no free elements, get a new reference.
+    ref = (int)registry->getLength() + 1;
+    registry->set( LuaValue(ref), val );
+    return ref;
+  }
 }
 
 void luaL_unref(LuaThread* L, int ref) {
