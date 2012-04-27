@@ -33,43 +33,6 @@ const char lua_ident[] =
   "$LuaAuthors: " LUA_AUTHORS " $";
 
 
-LuaValue index2addr3(LuaThread* L, int idx) {
-  THREAD_CHECK(L);
-  LuaStackFrame *ci = L->stack_.callinfo_;
-  if (idx > 0) {
-    LuaValue *o = ci->getFunc() + idx;
-    if (o >= L->stack_.top_) {
-      return LuaValue::None();
-    }
-    else return *o;
-  }
-
-  if (idx > LUA_REGISTRYINDEX) {
-    return L->stack_.top_[idx];
-  }
-
-  if (idx == LUA_REGISTRYINDEX) {
-    assert(false);
-    return thread_G->l_registry;
-  }
-
-
-  // Callbacks have no upvals
-  if (ci->getFunc()->isCallback()) {
-    return LuaValue::None();
-  }
-
-  idx = LUA_REGISTRYINDEX - idx - 1;
-
-  LuaClosure* func = ci->getFunc()->getCClosure();
-  if(idx < func->nupvalues) {
-    return func->pupvals_[idx];
-  }
-
-  // Invalid stack index.
-  return LuaValue::None();
-}
-
 LuaValue* index2addr2 (LuaThread *L, int idx) {
   THREAD_CHECK(L);
   LuaStackFrame *ci = L->stack_.callinfo_;
@@ -230,8 +193,7 @@ void lua_copy (LuaThread *L, int fromidx, int toidx) {
 
 int lua_type (LuaThread *L, int idx) {
   THREAD_CHECK(L);
-  LuaValue v = index2addr3(L, idx);
-  return v.type();
+  return L->stack_.at(idx).type();
 }
 
 
@@ -274,8 +236,8 @@ int lua_isuserdata (LuaThread *L, int idx) {
 
 int lua_rawequal (LuaThread *L, int index1, int index2) {
   THREAD_CHECK(L);
-  LuaValue v1 = index2addr3(L, index1);
-  LuaValue v2 = index2addr3(L, index2);
+  LuaValue v1 = L->stack_.at(index1);
+  LuaValue v2 = L->stack_.at(index2);
   if(v1.isNone()) return 0;
   if(v2.isNone()) return 0;
   return (v1 == v2);
@@ -304,8 +266,8 @@ void  lua_arith (LuaThread *L, int op) {
 
 int lua_compare (LuaThread *L, int index1, int index2, int op) {
   THREAD_CHECK(L);
-  LuaValue v1 = index2addr3(L, index1);
-  LuaValue v2 = index2addr3(L, index2);
+  LuaValue v1 = L->stack_.at(index1);
+  LuaValue v2 = L->stack_.at(index2);
   if(v1.isNone()) return 0;
   if(v2.isNone()) return 0;
 
@@ -319,7 +281,7 @@ int lua_compare (LuaThread *L, int index1, int index2, int op) {
 
 double lua_tonumberx (LuaThread *L, int idx, int *isnum) {
   THREAD_CHECK(L);
-  LuaValue v1 = index2addr3(L, idx);
+  LuaValue v1 = L->stack_.at(idx);
   LuaValue v2 = v1.convertToNumber();
 
   if(v2.isNumber()) {
@@ -334,7 +296,7 @@ double lua_tonumberx (LuaThread *L, int idx, int *isnum) {
 
 ptrdiff_t lua_tointegerx (LuaThread *L, int idx, int *isnum) {
   THREAD_CHECK(L);
-  LuaValue v1 = index2addr3(L, idx);
+  LuaValue v1 = L->stack_.at(idx);
   LuaValue v2 = v1.convertToNumber();
 
   if(v2.isNumber()) {
@@ -349,7 +311,7 @@ ptrdiff_t lua_tointegerx (LuaThread *L, int idx, int *isnum) {
 
 uint32_t lua_tounsignedx (LuaThread *L, int idx, int *isnum) {
   THREAD_CHECK(L);
-  LuaValue v1 = index2addr3(L, idx);
+  LuaValue v1 = L->stack_.at(idx);
   LuaValue v2 = v1.convertToNumber();
 
   if(v2.isNumber()) {

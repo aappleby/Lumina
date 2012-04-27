@@ -45,7 +45,7 @@ static int db_getmetatable (LuaThread *L) {
 
 static int db_setmetatable (LuaThread *L) {
   THREAD_CHECK(L);
-  LuaValue v = index2addr3(L, 2);
+  LuaValue v = L->stack_.at(2);
   luaL_argcheck(L,
                 v.isNil() ||
                 v.isTable(),

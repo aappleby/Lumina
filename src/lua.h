@@ -23,7 +23,6 @@
 
 LuaValue* index2addr (LuaThread *L, int idx);
 LuaValue* index2addr2 (LuaThread *L, int idx);
-LuaValue  index2addr3 (LuaThread *L, int idx);
 
 /*
 ** functions that read/write blocks when loading/dumping Lua chunks

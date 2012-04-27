@@ -32,7 +32,7 @@ LuaValue *index2addr (LuaThread *L, int idx);
 
 const char* luaL_typename(LuaThread* L, int index) {
   THREAD_CHECK(L);
-  LuaValue v = index2addr3(L, index);
+  LuaValue v = L->stack_.at(index);
   return v.typeName();
 }
 
@@ -454,7 +454,7 @@ const char *luaL_optlstring (LuaThread *L,
 
 double luaL_checknumber (LuaThread *L, int narg) {
   THREAD_CHECK(L);
-  LuaValue v1 = index2addr3(L, narg);
+  LuaValue v1 = L->stack_.at(narg);
   LuaValue v2 = v1.convertToNumber();
   if(v2.isNone()) {
     tag_error(L, narg, LUA_TNUMBER);

@@ -190,7 +190,6 @@ LuaValue LuaStack::at(int idx) {
   if (idx > 0) {
     LuaValue *o = callinfo_->getFunc() + idx;
     if (o >= top_) {
-      assert(false);
       return LuaValue::None();
     }
     else return *o;
@@ -204,7 +203,6 @@ LuaValue LuaStack::at(int idx) {
     assert(false);
     return thread_G->l_registry;
   }
-
 
   // Callbacks have no upvals
   if (callinfo_->getFunc()->isCallback()) {
@@ -222,7 +220,6 @@ LuaValue LuaStack::at(int idx) {
   }
 
   // Invalid stack index.
-  assert(false);
   return LuaValue::None();
 }
 
