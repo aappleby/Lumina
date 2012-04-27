@@ -479,14 +479,13 @@ static const luaL_Reg base_funcs[] = {
 
 int luaopen_base (LuaThread *L) {
   THREAD_CHECK(L);
-  /* set global _G */
-  lua_pushglobaltable(L);
-  lua_pushglobaltable(L);
-  lua_setfield(L, -2, "_G");
-  /* open lib into global table */
-  luaL_setfuncs(L, base_funcs, 0);
-  lua_pushliteral(L, LUA_VERSION);
-  lua_setfield(L, -2, "_VERSION");  /* set global _VERSION */
+
+  LuaTable* globals = L->l_G->getGlobals();
+  for(const luaL_Reg* cursor = base_funcs; cursor->name; cursor++) {
+    globals->set( cursor->name, LuaValue(cursor->func) );
+  }
+
+  L->stack_.push( LuaValue(globals) );
   return 1;
 }
 

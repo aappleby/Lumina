@@ -228,8 +228,7 @@ static int dostring (LuaThread *L, const char *s, const char *name) {
 
 static int dolibrary (LuaThread *L, const char *name) {
   int status;
-  lua_pushglobaltable(L);
-  lua_getfield(L, -1, "require");
+  lua_getglobalfield(L, "require");
   lua_pushstring(L, name);
   status = docall(L, 1, 1);
   if (status == LUA_OK) {

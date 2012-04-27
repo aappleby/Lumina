@@ -152,6 +152,7 @@ int   (lua_getmetatable) (LuaThread *L, int objindex);
 void  (lua_getuservalue) (LuaThread *L, int idx);
 
 void lua_getregistryfield(LuaThread* L, const char* field);
+void lua_getglobalfield(LuaThread* L, const char* field);
 
 
 /*
@@ -166,7 +167,8 @@ void  (lua_rawsetp) (LuaThread *L, int idx, const void *p);
 int   (lua_setmetatable) (LuaThread *L, int objindex);
 void  (lua_setuservalue) (LuaThread *L, int idx);
 
-void lua_setregistryfield (LuaThread *L, const char *key);
+void lua_setregistryfield(LuaThread *L, const char* field);
+void lua_setglobalfield(LuaThread* L, const char* field);
 
 /*
 ** 'load' and 'call' functions (load and run Lua code)
@@ -284,8 +286,7 @@ inline void lua_pushliteral(LuaThread* L, const char* s) {
   lua_pushlstring(L, s, strlen(s) );
 }
 
-#define lua_pushglobaltable(L)  \
-	lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS)
+void lua_pushglobaltable(LuaThread* L);
 
 #define lua_tostring(L,i)	lua_tolstring(L, (i), NULL)
 

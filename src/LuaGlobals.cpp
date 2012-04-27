@@ -129,6 +129,13 @@ LuaVM::LuaVM()
     ts->setReserved(i+1);
   }
 
+  // Store global table in global table. Why?
+  globals->set("_G", LuaValue(globals) );
+
+  // Store version string in global table.
+  LuaString* version = strings_->Create(LUA_VERSION);
+  globals->set("_VERSION", LuaValue(version) );
+
   // Global state has been created, start up the garbage collector.
   gcrunning = 1;
 

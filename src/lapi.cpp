@@ -568,6 +568,9 @@ int lua_pushthread (LuaThread *L) {
 ** get functions (Lua -> stack)
 */
 
+void lua_pushglobaltable(LuaThread* L) {
+  L->stack_.push( LuaValue(L->l_G->getGlobals()) );
+}
 
 void lua_getglobal (LuaThread *L, const char *var) {
   THREAD_CHECK(L);
@@ -614,16 +617,25 @@ void lua_getfield (LuaThread *L, int idx, const char *k) {
   }
 }
 
-void lua_getregistryfield (LuaThread *L, const char *k) {
+void lua_getregistryfield (LuaThread *L, const char *field) {
   THREAD_CHECK(L);
 
-  LuaTable* registry = L->l_G->l_registry.getTable();
+  LuaTable* registry = L->l_G->getRegistry();
 
-  LuaValue result = registry->get(k);
+  LuaValue result = registry->get(field);
 
   L->stack_.push(result);
 }
 
+void lua_getglobalfield(LuaThread* L, const char* field) {
+  THREAD_CHECK(L);
+
+  LuaTable* globals = L->l_G->getGlobals();
+
+  LuaValue result = globals->get(field);
+
+  L->stack_.push(result);
+}
 
 void lua_rawget (LuaThread *L, int idx) {
   THREAD_CHECK(L);
@@ -1057,9 +1069,8 @@ int lua_load (LuaThread *L, lua_Reader reader, void *data,
   if (status == LUA_OK) {  /* no errors? */
     LuaClosure *f = L->stack_.top_[-1].getLClosure();  /* get newly created function */
     if (f->nupvalues == 1) {  /* does it have one upvalue? */
-      /* get global table from registry */
-      LuaValue globals = thread_G->l_registry.getTable()->get(LuaValue(LUA_RIDX_GLOBALS));
       /* set global table as 1st upvalue of 'f' (may be LUA_ENV) */
+      LuaValue globals = LuaValue( L->l_G->getGlobals() );
       *f->ppupvals_[0]->v = globals;
       luaC_barrier(f->ppupvals_[0], globals);
     }
