@@ -572,22 +572,6 @@ int lua_pushthread (LuaThread *L) {
 void lua_getglobal (LuaThread *L, const char *var) {
   THREAD_CHECK(L);
 
-  /*
-  LuaTable* registry = thread_G->getRegistry();
-
-  LuaValue globals = registry->get(LuaValue(LUA_RIDX_GLOBALS));
-  L->stack_.push(LuaValue(thread_G->strings_->Create(var)));
-  
-  LuaValue val;
-  LuaResult r = luaV_gettable2(L, globals, L->stack_.top_[-1], val);
-
-  if(r == LUA_OK) {
-    L->stack_.top_[-1] = val;
-  } else {
-    handleResult(r, &globals);
-  }
-  */
-
   LuaTable* globals = L->l_G->getGlobals();
 
   LuaValue v = globals->get(var);
@@ -735,15 +719,11 @@ void lua_getuservalue (LuaThread *L, int idx) {
 
 void lua_setglobal (LuaThread *L, const char *var) {
   THREAD_CHECK(L);
-  L->stack_.checkArgs(1);
 
-  LuaValue globals = thread_G->l_registry.getTable()->get(LuaValue(LUA_RIDX_GLOBALS));
+  LuaTable* globals = L->l_G->getGlobals();
 
-  LuaString* s = thread_G->strings_->Create(var);
-  L->stack_.push(LuaValue(s));
-
-  luaV_settable(L, &globals, L->stack_.top_ - 1, L->stack_.top_ - 2);
-  L->stack_.top_ -= 2;  /* pop value and key */
+  globals->set(var, L->stack_.top_[-1] );
+  L->stack_.pop();
 }
 
 
