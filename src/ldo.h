@@ -13,10 +13,6 @@
 #include "lzio.h"
 
 
-#define savestack(L,p)		((p) - L->stack_.begin())
-#define restorestack(L,n)	(L->stack_.begin() + (n))
-
-
 /* type of protected functions, to be ran by `runprotected' */
 typedef void (*Pfunc) (LuaThread *L, void *ud);
 

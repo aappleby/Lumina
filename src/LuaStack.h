@@ -17,6 +17,10 @@ public:
 
   //----------
 
+  ptrdiff_t indexOf(LuaValue* v) { return v - buf_; }
+  LuaValue* atIndex(ptrdiff_t i) { return buf_ + i; }
+
+  LuaValue& top(int index) { return top_[index]; }
   LuaValue* getTop() { return top_; }
   void    setTop(LuaValue* newtop) { top_ = newtop; }
 
@@ -73,12 +77,13 @@ public:
 
   //----------
 
-  LuaValue* top_;
   LuaStackFrame* callinfo_;  /* call info for current function */
 
   LuaObject *open_upvals_;  /* list of open upvalues in this stack */
 
   LuaStackFrame* callinfo_head_;  /* LuaStackFrame for first level (C calling Lua) */
+
+  LuaValue* top_;
 
 protected:
 

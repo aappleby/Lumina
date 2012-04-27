@@ -560,7 +560,7 @@ static void addinfo (const char *msg) {
 l_noret luaG_errormsg () {
   LuaThread *L = thread_L;
   if (L->errfunc != 0) {  /* is there an error handling function? */
-    StkId errfunc = restorestack(L, L->errfunc);
+    StkId errfunc = L->stack_.atIndex(L->errfunc);
     if (!errfunc->isFunction()) throwError(LUA_ERRERR);
     L->stack_.top_[0] = L->stack_.top_[-1];  /* move argument */
     L->stack_.top_[-1] = *errfunc;  /* push function */

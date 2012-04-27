@@ -984,7 +984,7 @@ int lua_pcall (LuaThread *L, int nargs, int nresults, int errfunc) {
   ptrdiff_t errfunc_index = 0;
   if (errfunc) {
     StkId o = index2addr_checked(L, errfunc);
-    errfunc_index = savestack(L, o);
+    errfunc_index = L->stack_.indexOf(o);
   }
 
   StkId func = L->stack_.top_ - (nargs+1);
@@ -1032,7 +1032,7 @@ int lua_pcallk (LuaThread *L, int nargs, int nresults, int errfunc,
   ptrdiff_t errfunc_index = 0;
   if (errfunc) {
     StkId o = index2addr_checked(L, errfunc);
-    errfunc_index = savestack(L, o);
+    errfunc_index = L->stack_.indexOf(o);
   }
 
   StkId func = L->stack_.top_ - (nargs+1);  /* function to be called */
@@ -1043,7 +1043,7 @@ int lua_pcallk (LuaThread *L, int nargs, int nresults, int errfunc,
   ci->continuation_context_ = ctx;  /* save context */
 
   /* save information for error recovery */
-  ci->old_func_ = savestack(L, func);
+  ci->old_func_ = L->stack_.indexOf(func);
   ci->old_allowhook = L->allowhook;
   ci->old_errfunc = L->errfunc;
 

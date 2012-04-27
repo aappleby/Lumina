@@ -125,7 +125,7 @@ LuaExecutionState LuaThread::saveState(StkId top) {
   s.allowhook = allowhook;
   s.nonyieldable_count_ = nonyieldable_count_;
   s.errfunc = errfunc;
-  s.old_top = savestack(this, top);
+  s.old_top = stack_.indexOf(top);
 
   return s;
 }
@@ -146,7 +146,7 @@ void LuaThread::restoreState(LuaExecutionState s, int status, int nresults) {
     }
 
     // Restore the stack to where it was before the call
-    StkId oldtop = restorestack(this, s.old_top);
+    StkId oldtop = stack_.atIndex(s.old_top);
     stack_.closeUpvals(oldtop);
     stack_.top_ = oldtop;
 

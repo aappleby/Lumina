@@ -76,7 +76,7 @@ static void traceexec (LuaThread *L) {
 static void callTM (LuaThread *L, const LuaValue *f, const LuaValue *p1,
                     const LuaValue *p2, LuaValue *p3, int hasres) {
   THREAD_CHECK(L);
-  ptrdiff_t result = savestack(L, p3);
+  ptrdiff_t result = L->stack_.indexOf(p3);
   L->stack_.push_nocheck(*f); // push function
   L->stack_.push_nocheck(*p1); // 1st argument
   L->stack_.push_nocheck(*p2); // 2nd argument
@@ -90,7 +90,7 @@ static void callTM (LuaThread *L, const LuaValue *f, const LuaValue *p1,
   /* metamethod may yield only when called from Lua code */
   luaD_call(L, L->stack_.top_ - (4 - hasres), hasres, L->stack_.callinfo_->isLua());
   if (hasres) {  /* if has result, move it to its place */
-    p3 = restorestack(L, result);
+    p3 = L->stack_.atIndex(result);
     *p3 = L->stack_.pop();
   }
 }

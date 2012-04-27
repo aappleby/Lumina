@@ -43,13 +43,13 @@ static LuaValue geterrorobj (LuaThread *L, int errcode ) {
   THREAD_CHECK(L);
   if(errcode == LUA_ERRMEM) return LuaValue(thread_G->memerrmsg);
   if(errcode == LUA_ERRERR) return LuaValue(thread_G->strings_->Create("error in error handling"));
-  return L->stack_.top_[-1];
+  return L->stack_.top(-1);
 }
 
 static void seterrorobj (LuaThread *L, int errcode, StkId oldtop) {
   THREAD_CHECK(L);
   LuaValue errobj = geterrorobj(L,errcode);
-  L->stack_.top_ = oldtop;
+  L->stack_.setTop(oldtop);
   L->stack_.push_nocheck(errobj);
 }
 
@@ -64,8 +64,8 @@ void luaD_hook (LuaThread *L, int event, int line) {
     LuaDebug ar(event, line, ci);
 
     // Save the stack and callinfo tops.
-    ptrdiff_t top = savestack(L, L->stack_.top_);
-    ptrdiff_t ci_top = savestack(L, ci->getTop());
+    ptrdiff_t top = L->stack_.indexOf(L->stack_.top_);
+    ptrdiff_t ci_top = L->stack_.indexOf(ci->getTop());
     
     // Make sure the stack can hold enough values for a C call
     LuaResult result = L->stack_.reserve2(LUA_MINSTACK);
@@ -85,8 +85,8 @@ void luaD_hook (LuaThread *L, int event, int line) {
     ci->callstatus &= ~CIST_HOOKED;
 
     // Clean up - restore the callinfo & stack tops.
-    ci->setTop( restorestack(L, ci_top) );
-    L->stack_.top_ = restorestack(L, top);
+    ci->setTop( L->stack_.atIndex(ci_top) );
+    L->stack_.top_ = L->stack_.atIndex(top);
   }
 }
 
@@ -177,11 +177,11 @@ void luaD_precallC(LuaThread* L, StkId func, int nresults) {
 void luaD_precallLua(LuaThread* L, StkId func, int nresults) {
   LuaProto *p = func->getLClosure()->proto_;
 
-  ptrdiff_t funcr = savestack(L, func);
+  ptrdiff_t funcr = L->stack_.indexOf(func);
   LuaResult result = L->stack_.reserve2(p->maxstacksize);
   handleResult(result);
 
-  func = restorestack(L, funcr);
+  func = L->stack_.atIndex(funcr);
 
   int nargs = cast_int(L->stack_.top_ - func) - 1;  /* number of real arguments */
   for (; nargs < p->numparams; nargs++) {
@@ -255,9 +255,9 @@ int luaD_postcall (LuaThread *L, StkId firstResult) {
   LuaStackFrame *ci = L->stack_.callinfo_;
   if (L->hookmask & (LUA_MASKRET | LUA_MASKLINE)) {
     if (L->hookmask & LUA_MASKRET) {
-      ptrdiff_t fr = savestack(L, firstResult);  /* hook may change stack */
+      ptrdiff_t fr = L->stack_.indexOf(firstResult);  /* hook may change stack */
       luaD_hook(L, LUA_HOOKRET, -1);
-      firstResult = restorestack(L, fr);
+      firstResult = L->stack_.atIndex(fr);
     }
     L->oldpc = ci->previous->savedpc;  /* 'oldpc' for caller function */
   }
@@ -349,7 +349,7 @@ static int recover (LuaThread *L, int status) {
   LuaStackFrame *ci = L->stack_.findProtectedCall();
   if (ci == NULL) return 0;  /* no recovery point */
   /* "finish" luaD_pcall */
-  oldtop = restorestack(L, ci->old_func_);
+  oldtop = L->stack_.atIndex(ci->old_func_);
   L->stack_.closeUpvals(oldtop);
   seterrorobj(L, status, oldtop);
   L->stack_.callinfo_ = ci;
@@ -421,7 +421,7 @@ static void resume (LuaThread *L, void *ud) {
   }
 
   // 'common' yield
-  L->stack_.callinfo_->setFunc(restorestack(L, L->stack_.callinfo_->old_func_));
+  L->stack_.callinfo_->setFunc(L->stack_.atIndex(L->stack_.callinfo_->old_func_));
   if (L->stack_.callinfo_->continuation_ != NULL) {  /* does it have a continuation? */
     int n;
     L->stack_.callinfo_->status = LUA_YIELD;  /* 'default' status */
@@ -497,7 +497,7 @@ int lua_yield (LuaThread *L, int nresults) {
 
   if (!ci->isLua()) {
     ci->continuation_ = NULL;
-    ci->old_func_ = savestack(L, ci->getFunc());  /* save current 'func' */
+    ci->old_func_ = L->stack_.indexOf(ci->getFunc());  /* save current 'func' */
     ci->setFunc(L->stack_.top_ - nresults - 1);  /* protect stack below results */
     throwError(LUA_YIELD);
   }
@@ -527,7 +527,7 @@ int lua_yieldk (LuaThread *L, int nresults, int ctx, LuaCallback k) {
   L->stack_.callinfo_->continuation_ = k;
   L->stack_.callinfo_->continuation_context_ = ctx;  /* save context */
 
-  L->stack_.callinfo_->old_func_ = savestack(L, L->stack_.callinfo_->getFunc());  /* save current 'func' */
+  L->stack_.callinfo_->old_func_ = L->stack_.indexOf(L->stack_.callinfo_->getFunc());  /* save current 'func' */
   L->stack_.callinfo_->setFunc(L->stack_.top_ - nresults - 1);  /* protect stack below results */
 
   throwError(LUA_YIELD);
