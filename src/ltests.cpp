@@ -726,7 +726,7 @@ static int loadlib (LuaThread *L) {
   {
     GLOBAL_CHANGE(L1);
     luaL_requiref(L1, "package", luaopen_package, 1);
-    luaL_getsubtable(L1, LUA_REGISTRYINDEX, "_PRELOAD");
+    luaL_getregistrytable(L1, "_PRELOAD");
     for (i = 0; libs[i].name; i++) {
       lua_pushcclosure(L1, libs[i].func, 0);
       lua_setfield(L1, -2, libs[i].name);
@@ -1322,7 +1322,7 @@ static void Chook (LuaThread *L, LuaDebug *ar) {
   THREAD_CHECK(L);
   const char *scpt;
   const char *const events [] = {"call", "ret", "line", "count", "tailcall"};
-  lua_getfield(L, LUA_REGISTRYINDEX, "C_HOOK");
+  lua_getregistryfield(L, "C_HOOK");
   lua_pushlightuserdata(L, L);
   lua_gettable(L, -2);  /* get C_HOOK[L] (script saved by sethookaux) */
   scpt = lua_tostring(L, -1);  /* not very religious (string will be popped) */
@@ -1342,7 +1342,7 @@ static void sethookaux (LuaThread *L, int mask, int count, const char *scpt) {
     lua_sethook(L, NULL, 0, 0);  /* turn off hooks */
     return;
   }
-  lua_getfield(L, LUA_REGISTRYINDEX, "C_HOOK");  /* get C_HOOK table */
+  lua_getregistryfield(L, "C_HOOK");  /* get C_HOOK table */
   if (!lua_istable(L, -1)) {  /* no hook table? */
     L->stack_.pop();  /* remove previous value */
     lua_createtable(L, 0, 0);  /* create new C_HOOK table */

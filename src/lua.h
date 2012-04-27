@@ -151,6 +151,8 @@ void *(lua_newuserdata) (LuaThread *L, size_t sz);
 int   (lua_getmetatable) (LuaThread *L, int objindex);
 void  (lua_getuservalue) (LuaThread *L, int idx);
 
+void lua_getregistryfield(LuaThread* L, const char* field);
+
 
 /*
 ** set functions (stack -> Lua)

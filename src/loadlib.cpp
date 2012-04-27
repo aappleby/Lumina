@@ -490,7 +490,7 @@ static int searcher_Croot (LuaThread *L) {
 static int searcher_preload (LuaThread *L) {
   THREAD_CHECK(L);
   const char *name = luaL_checkstring(L, 1);
-  lua_getfield(L, LUA_REGISTRYINDEX, "_PRELOAD");
+  lua_getregistryfield(L, "_PRELOAD");
   lua_getfield(L, -1, name);
   if (lua_isnil(L, -1)) {
     /* not found? */
@@ -535,7 +535,7 @@ static int ll_require (LuaThread *L) {
   THREAD_CHECK(L);
   const char *name = luaL_checkstring(L, 1);
   L->stack_.setTopIndex(1);  /* _LOADED table will be at index 2 */
-  lua_getfield(L, LUA_REGISTRYINDEX, "_LOADED");
+  lua_getregistryfield(L, "_LOADED");
   lua_getfield(L, 2, name);  /* _LOADED[name] */
   if (lua_toboolean(L, -1))  /* is it there? */
     return 1;  /* package is already loaded */
@@ -570,7 +570,7 @@ static int ll_require (LuaThread *L) {
 static int noenv (LuaThread *L) {
   THREAD_CHECK(L);
   int b;
-  lua_getfield(L, LUA_REGISTRYINDEX, "LUA_NOENV");
+  lua_getregistryfield(L, "LUA_NOENV");
   b = lua_toboolean(L, -1);
   L->stack_.pop();  /* remove value */
   return b;
@@ -656,10 +656,10 @@ int luaopen_package (LuaThread *L) {
                      LUA_EXEC_DIR "\n" LUA_IGMARK "\n");
   lua_setfield(L, -2, "config");
   /* set field `loaded' */
-  luaL_getsubtable(L, LUA_REGISTRYINDEX, "_LOADED");
+  luaL_getregistrytable(L, "_LOADED");
   lua_setfield(L, -2, "loaded");
   /* set field `preload' */
-  luaL_getsubtable(L, LUA_REGISTRYINDEX, "_PRELOAD");
+  luaL_getregistrytable(L, "_PRELOAD");
   lua_setfield(L, -2, "preload");
   lua_pushglobaltable(L);
   L->stack_.copy(-2);  /* set 'package' as upvalue for next lib */

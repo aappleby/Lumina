@@ -386,8 +386,7 @@ int luaL_checkoption (LuaThread *L,
 void luaL_checkstack (LuaThread *L, int space, const char *msg) {
   THREAD_CHECK(L);
   /* keep some extra space to run error routines, if needed */
-  const int extra = LUA_MINSTACK;
-  if (!lua_checkstack(L, space + extra)) {
+  if (!lua_checkstack(L, space + LUA_MINSTACK)) {
     if (msg)
       luaL_error(L, "stack overflow (%s)", msg);
     else

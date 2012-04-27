@@ -60,7 +60,7 @@ void luaL_openlibs (LuaThread *L) {
     L->stack_.pop();  /* remove lib */
   }
   /* add open functions from 'preloadedlibs' into 'package.preload' table */
-  luaL_getsubtable(L, LUA_REGISTRYINDEX, "_PRELOAD");
+  luaL_getregistrytable(L, "_PRELOAD");
   for (lib = preloadedlibs; lib->func; lib++) {
     lua_pushcclosure(L, lib->func, 0);
     lua_setfield(L, -2, lib->name);

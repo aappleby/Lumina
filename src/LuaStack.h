@@ -63,7 +63,6 @@ public:
 
   void init();
   void free();
-  LuaResult grow2(int size);
   void shrink();
   LuaResult reserve2(int newsize);
 
@@ -83,6 +82,7 @@ public:
 
 protected:
 
+  LuaResult grow2(int size);
   LuaStackFrame* extendCallinfo();
 
   int countInUse();

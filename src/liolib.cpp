@@ -112,7 +112,7 @@ static int aux_close (LuaThread *L) {
 static int io_close (LuaThread *L) {
   THREAD_CHECK(L);
   if (lua_isnone(L, 1))  /* no argument? */
-    lua_getfield(L, LUA_REGISTRYINDEX, IO_OUTPUT);  /* use standard output */
+    lua_getregistryfield(L, IO_OUTPUT);  /* use standard output */
   tofile(L);  /* make sure argument is an open stream */
   return aux_close(L);
 }
@@ -206,7 +206,7 @@ static int io_tmpfile (LuaThread *L) {
 static FILE *getiofile (LuaThread *L, const char *findex) {
   THREAD_CHECK(L);
   LStream *p;
-  lua_getfield(L, LUA_REGISTRYINDEX, findex);
+  lua_getregistryfield(L, findex);
   p = (LStream *)lua_touserdata(L, -1);
   if (isclosed(p))
     luaL_error(L, "standard %s file is closed", findex + strlen(IO_PREFIX));
@@ -227,7 +227,7 @@ static int g_iofile (LuaThread *L, const char *f, const char *mode) {
     lua_setfield(L, LUA_REGISTRYINDEX, f);
   }
   /* return current value */
-  lua_getfield(L, LUA_REGISTRYINDEX, f);
+  lua_getregistryfield(L, f);
   return 1;
 }
 
@@ -274,7 +274,7 @@ static int io_lines (LuaThread *L) {
   int toclose;
   if (lua_isnone(L, 1)) L->stack_.push(LuaValue::Nil());  /* at least one argument */
   if (lua_isnil(L, 1)) {  /* no file name? */
-    lua_getfield(L, LUA_REGISTRYINDEX, IO_INPUT);  /* get default input */
+    lua_getregistryfield(L, IO_INPUT);  /* get default input */
     lua_replace(L, 1);  /* put it at index 1 */
     tofile(L);  /* check that it's a valid file handle */
     toclose = 0;  /* do not close it after iteration */

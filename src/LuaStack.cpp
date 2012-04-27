@@ -146,8 +146,18 @@ void LuaStack::shrink() {
 
 //------------------------------------------------------------------------------
 
+int maxNewSize = 0;
+
 LuaResult LuaStack::reserve2(int newsize) {
+  if(newsize > maxNewSize) {
+    maxNewSize = newsize;
+  }
+
   if ((last() - top_) <= newsize) {
+    if(newsize == 0) {
+      int b = 0;
+      b++;
+    }
     return grow2(newsize);
   }
 

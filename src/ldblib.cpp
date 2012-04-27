@@ -316,7 +316,7 @@ static int db_upvaluejoin (LuaThread *L) {
 }
 
 
-#define gethooktable(L)	luaL_getsubtable(L, LUA_REGISTRYINDEX, HOOKKEY);
+#define gethooktable(L)	luaL_getregistrytable(L, HOOKKEY);
 
 
 static void hookf (LuaThread *L, LuaDebug *ar) {

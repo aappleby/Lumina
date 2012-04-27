@@ -122,37 +122,14 @@ LuaValue* index2addr_checked(LuaThread* L, int idx) {
 // extending the stack if needed.
 int lua_checkstack (LuaThread *L, int size) {
   THREAD_CHECK(L);
-  LuaStackFrame *ci = L->stack_.callinfo_;
 
-  /* stack large enough? */
-  LuaValue* newtop = L->stack_.top_ + size;
-  if (newtop < L->stack_.last()) {
-    if (ci->getTop() < newtop) {
-      ci->setTop(newtop);
-    }
-    return 1;
-  }
+  LuaResult result = L->stack_.reserve2(size);
 
-  /* no; need to grow stack */
-  int inuse = cast_int(L->stack_.top_ - L->stack_.begin()) + EXTRA_STACK;
-  
-  /* can grow without overflow? */
-  if (inuse + size > LUAI_MAXSTACK) {
-    /* no */
-    return 0;
-  }
-
-  /* try to grow stack */
-  try {
-    LuaResult result = L->stack_.grow2(size);
-    handleResult(result);
-  }
-  catch(...) { 
-    return 0;
-  }
+  if(result != LUA_OK) return 0;
 
   // adjust frame top
-  newtop = L->stack_.top_ + size;
+  LuaValue* newtop = L->stack_.top_ + size;
+  LuaStackFrame *ci = L->stack_.callinfo_;
   if (ci->getTop() < newtop) {
     ci->setTop(newtop);
   }
@@ -595,7 +572,9 @@ int lua_pushthread (LuaThread *L) {
 void lua_getglobal (LuaThread *L, const char *var) {
   THREAD_CHECK(L);
 
-  LuaValue globals = thread_G->getRegistry()->get(LuaValue(LUA_RIDX_GLOBALS));
+  LuaTable* registry = thread_G->getRegistry();
+
+  LuaValue globals = registry->get(LuaValue(LUA_RIDX_GLOBALS));
   L->stack_.push(LuaValue(thread_G->strings_->Create(var)));
   
   LuaValue val;
@@ -641,6 +620,16 @@ void lua_getfield (LuaThread *L, int idx, const char *k) {
   } else {
     handleResult(r, t);
   }
+}
+
+void lua_getregistryfield (LuaThread *L, const char *k) {
+  THREAD_CHECK(L);
+
+  LuaTable* registry = L->l_G->l_registry.getTable();
+
+  LuaValue result = registry->get(k);
+
+  L->stack_.push(result);
 }
 
 
