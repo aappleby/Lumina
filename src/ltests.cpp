@@ -589,7 +589,16 @@ static int tref (LuaThread *L) {
 static int getref (LuaThread *L) {
   THREAD_CHECK(L);
   int level = L->stack_.getTopIndex();
-  lua_rawgeti(L, LUA_REGISTRYINDEX, luaL_checkint(L, 1));
+  
+  //lua_rawgeti(L, LUA_REGISTRYINDEX, luaL_checkint(L, 1));
+
+  LuaValue key = L->stack_.top_[-1];
+  int ref = key.isInteger() ? key.getInteger() : 0;
+  LuaTable* registry = L->l_G->getRegistry();
+  LuaValue val = registry->get( LuaValue(ref) );
+  if(val.isNone()) val = LuaValue::Nil();
+  L->stack_.push(val);
+
   assert(L->stack_.getTopIndex() == level+1);
   return 1;
 }
