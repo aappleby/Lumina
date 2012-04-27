@@ -572,6 +572,7 @@ int lua_pushthread (LuaThread *L) {
 void lua_getglobal (LuaThread *L, const char *var) {
   THREAD_CHECK(L);
 
+  /*
   LuaTable* registry = thread_G->getRegistry();
 
   LuaValue globals = registry->get(LuaValue(LUA_RIDX_GLOBALS));
@@ -585,6 +586,13 @@ void lua_getglobal (LuaThread *L, const char *var) {
   } else {
     handleResult(r, &globals);
   }
+  */
+
+  LuaTable* globals = L->l_G->getGlobals();
+
+  LuaValue v = globals->get(var);
+
+  L->stack_.push(v);
 }
 
 

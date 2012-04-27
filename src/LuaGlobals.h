@@ -76,6 +76,9 @@ public:
   LuaValue l_registry;
   LuaTable* getRegistry() { return l_registry.getTable(); }
 
+  LuaValue l_globals;
+  LuaTable* getGlobals() { return l_globals.getTable(); }
+
   size_t lastmajormem;  /* memory in use after last major collection */
   LuaObject::Color livecolor;
   LuaObject::Color deadcolor;

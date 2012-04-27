@@ -99,6 +99,7 @@ LuaVM::LuaVM()
   // Create global variable table.
   LuaTable* globals = new LuaTable();
   registry->set(LuaValue(LUA_RIDX_GLOBALS), LuaValue(globals));
+  l_globals = LuaValue(globals);
 
   // Store main thread in the registry.
   // TODO(aappleby): There is no reason to keep it there, except that there is
