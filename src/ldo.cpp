@@ -31,6 +31,8 @@
 #include "lvm.h"
 #include "lzio.h"
 
+void adjustresults(LuaThread* L, int nres);
+
 /*
 ** {======================================================
 ** Error-recovery functions

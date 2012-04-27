@@ -907,6 +907,18 @@ int lua_getctx (LuaThread *L, int *ctx) {
   else return LUA_OK;
 }
 
+void adjustresults(LuaThread* L, int nres) {
+  if(L->stack_.callinfo_->getTop() < L->stack_.top_) {
+    if (nres == LUA_MULTRET) {
+      L->stack_.callinfo_->setTop(L->stack_.top_);
+    }
+    else {
+      // This case never happens
+      int b = 0;
+      b++;
+    }
+  }
+}
 
 void lua_callk (LuaThread *L, int nargs, int nresults, int ctx, LuaCallback k) {
   THREAD_CHECK(L);
