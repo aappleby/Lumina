@@ -590,8 +590,6 @@ static int getref (LuaThread *L) {
   THREAD_CHECK(L);
   int level = L->stack_.getTopIndex();
   
-  //lua_rawgeti(L, LUA_REGISTRYINDEX, luaL_checkint(L, 1));
-
   LuaValue key = L->stack_.top_[-1];
   int ref = key.isInteger() ? key.getInteger() : 0;
   LuaTable* registry = L->l_G->getRegistry();
@@ -1049,8 +1047,16 @@ static int runC (LuaThread *L, LuaThread *L1, const char *pc) {
       lua_pushboolean(L1, lua_toboolean(L1, tempindex));
     }
     else if EQ("pushvalue") {
-      { GLOBAL_CHANGE(L); tempindex = getindex; }
-      L1->stack_.copy(tempindex);
+      {
+        GLOBAL_CHANGE(L);
+        tempindex = getindex;
+      }
+      if(tempindex == LUA_REGISTRYINDEX) {
+        L1->stack_.push( LuaValue(L1->l_G->getRegistry()) );
+      }
+      else {
+        L1->stack_.copy(tempindex);
+      }
     }
     else if EQ("pushcclosure") {
       { GLOBAL_CHANGE(L); tempnum = getnum; }
@@ -1078,8 +1084,19 @@ static int runC (LuaThread *L, LuaThread *L1, const char *pc) {
       lua_copy(L1, f, tempindex);
     }
     else if EQ("gettable") {
-      { GLOBAL_CHANGE(L); tempindex = getindex; }
-      lua_gettable(L1, tempindex);
+      {
+        GLOBAL_CHANGE(L);
+        tempindex = getindex;
+      }
+      if(tempindex == LUA_REGISTRYINDEX) {
+        LuaValue key = L1->stack_.top_[-1];
+        L1->stack_.pop();
+        LuaValue val = L1->l_G->getRegistry()->get(key);
+        L1->stack_.push(val);
+      }
+      else {
+        lua_gettable(L1, tempindex);
+      }
     }
     else if EQ("getglobal") {
       { GLOBAL_CHANGE(L); tempstring = getstring; }
@@ -1102,7 +1119,13 @@ static int runC (LuaThread *L, LuaThread *L1, const char *pc) {
         t = getindex_aux(L, L1, &pc);
         tempnum = getnum;
       }
-      lua_rawgeti(L1, t, tempnum);
+      if(t == LUA_REGISTRYINDEX) {
+        LuaValue val = L1->l_G->getRegistry()->get( LuaValue(tempnum) );
+        L1->stack_.push(val);
+      }
+      else {
+        lua_rawgeti(L1, t, tempnum);
+      }
     }
     else if EQ("settable") {
       { GLOBAL_CHANGE(L); tempindex = getindex; }

@@ -201,6 +201,7 @@ LuaValue LuaStack::at(int idx) {
   }
 
   if (idx == LUA_REGISTRYINDEX) {
+    assert(false);
     return thread_G->l_registry;
   }
 

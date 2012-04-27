@@ -49,6 +49,7 @@ LuaValue index2addr3(LuaThread* L, int idx) {
   }
 
   if (idx == LUA_REGISTRYINDEX) {
+    assert(false);
     return thread_G->l_registry;
   }
 
@@ -85,6 +86,7 @@ LuaValue* index2addr2 (LuaThread *L, int idx) {
   }
 
   if (idx == LUA_REGISTRYINDEX) {
+    assert(false);
     return &thread_G->l_registry;
   }
 
