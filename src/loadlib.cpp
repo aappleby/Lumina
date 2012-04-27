@@ -10,6 +10,7 @@
 
 #include "LuaGlobals.h"
 #include "LuaState.h"
+#include "LuaUserdata.h"
 
 /*
 ** if needed, includes windows header before everything else
@@ -273,19 +274,19 @@ static void **ll_register (LuaThread *L, const char *path) {
   LuaTable* registry = L->l_G->getRegistry();
   LuaValue val = registry->get(key);
 
-  //lua_gettable(L, LUA_REGISTRYINDEX);  /* check library in registry? */
-
   if (!val.isNil() && !val.isNone()) {
     /* is there an entry? */
     L->stack_.push(val);
-    plib = (void **)lua_touserdata(L, -1);
+    plib = (void**)val.getBlob()->buf_;
   }
   else {  /* no entry yet; create one */
     plib = (void **)lua_newuserdata(L, sizeof(const void *));
     *plib = NULL;
     luaL_setmetatable(L, "_LOADLIB");
+    
     lua_pushfstring(L, "%s%s", LIBPREFIX, path);
     L->stack_.copy(-2);
+
     lua_settable(L, LUA_REGISTRYINDEX);
   }
   return plib;
