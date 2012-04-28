@@ -96,7 +96,8 @@ int pushglobalfuncname (LuaThread *L, LuaDebug *ar) {
 
 static void pushfuncname (LuaThread *L, LuaDebug *ar) {
   THREAD_CHECK(L);
-  if (*ar->namewhat != '\0') {
+  //if (*ar->namewhat != '\0') {
+  if(!ar->namewhat2.empty()) {
     /* is there a name? */
     lua_pushfstring(L, "function " LUA_QS, ar->name2.c_str());
   }
@@ -196,7 +197,7 @@ int luaL_argerror (LuaThread *L, int narg, const char *extramsg) {
   if (!lua_getstack(L, 0, &ar))  /* no stack frame? */
     return luaL_error(L, "bad argument #%d (%s)", narg, extramsg);
   lua_getinfo(L, "n", &ar);
-  if (strcmp(ar.namewhat, "method") == 0) {
+  if (strcmp(ar.namewhat2.c_str(), "method") == 0) {
     narg--;  /* do not count `self' */
     if (narg == 0)  /* error is in the self argument itself? */
       return luaL_error(L, "calling " LUA_QS " on bad self", ar.name2.c_str());

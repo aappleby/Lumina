@@ -186,7 +186,8 @@ static int db_getinfo (LuaThread *L) {
     else {
       settabss(L, "name", ar.name2.c_str());
     }
-    settabss(L, "namewhat", ar.namewhat);
+
+    settabss(L, "namewhat", ar.namewhat2.c_str());
   }
   if (strchr(options, 't'))
     settabsb(L, "istailcall", ar.istailcall);

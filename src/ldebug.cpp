@@ -243,12 +243,19 @@ static int auxgetinfo (LuaThread *L, const char *what, LuaDebug *ar,
       }
       case 'n': {
         /* calling function is a known Lua function? */
-        if (ci && !(ci->callstatus & CIST_TAIL) && ci->previous->isLua())
-          ar->namewhat = getfuncname2(L, ci->previous, ar->name2);
-        else
-          ar->namewhat = NULL;
-        if (ar->namewhat == NULL) {
-          ar->namewhat = "";  /* not found */
+        if (ci && !(ci->callstatus & CIST_TAIL) && ci->previous->isLua()) {
+          const char* temp = getfuncname2(L, ci->previous, ar->name2);
+          if(temp) {
+            ar->namewhat2 = temp;
+          }
+          else {
+            ar->namewhat2.clear();
+          }
+        }
+        else {
+          ar->namewhat2.clear();
+        }
+        if (ar->namewhat2.empty()) {
           ar->name2.clear();
         }
         break;

@@ -357,7 +357,9 @@ public:
   //const char *name;	/* (n) */
   std::string name2;
 
-  const char *namewhat;	/* (n) 'global', 'local', 'field', 'method' */
+  //const char *namewhat;	/* (n) 'global', 'local', 'field', 'method' */
+  std::string namewhat2;
+
   const char *what;	/* (S) 'Lua', 'C', 'main', 'tail' */
   const char *source;	/* (S) */
   
