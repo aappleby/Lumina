@@ -149,7 +149,6 @@ void  (lua_rawgetp) (LuaThread *L, int idx, const void *p);
 void  (lua_createtable) (LuaThread *L, int narr, int nrec);
 void *(lua_newuserdata) (LuaThread *L, size_t sz);
 int   (lua_getmetatable) (LuaThread *L, int objindex);
-void  (lua_getuservalue) (LuaThread *L, int idx);
 
 void lua_getregistryfield(LuaThread* L, const char* field);
 void lua_getglobalfield(LuaThread* L, const char* field);

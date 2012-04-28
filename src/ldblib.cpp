@@ -6,6 +6,7 @@
 
 #include "LuaGlobals.h"
 #include "LuaState.h"
+#include "LuaUserdata.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,27 +60,41 @@ static int db_setmetatable (LuaThread *L) {
 
 static int db_getuservalue (LuaThread *L) {
   THREAD_CHECK(L);
-  if (lua_type(L, 1) != LUA_TBLOB)
+
+  LuaValue arg = L->stack_.at(1);
+
+  if(arg.isBlob() && arg.getBlob()->env_) {
+    L->stack_.push( LuaValue(arg.getBlob()->env_) );
+  }
+  else {
     L->stack_.push(LuaValue::Nil());
-  else
-    lua_getuservalue(L, 1);
+  }
+
   return 1;
 }
 
 
 static int db_setuservalue (LuaThread *L) {
   THREAD_CHECK(L);
-  if (lua_type(L, 1) == LUA_TPOINTER) {
+
+  LuaValue arg1 = L->stack_.at(1);
+  LuaValue arg2 = L->stack_.at(2);
+  L->stack_.pop();
+
+  if(arg1.isPointer()) {
     luaL_argerror(L, 1, "full userdata expected, got light userdata");
   }
-  luaL_checktype(L, 1, LUA_TBLOB);
 
-  if (!lua_isnoneornil(L, 2)) {
-    luaL_checktype(L, 2, LUA_TTABLE);
+  if(!arg1.isBlob()) {
+    luaL_argerror(L, 1, "full userdata expected");
   }
 
-  L->stack_.setTopIndex(2);
-  lua_setuservalue(L, 1);
+  if(!arg2.isTable() && !arg2.isNil()) {
+    luaL_argerror(L, 2, "expected table or Nil");
+  }
+
+  LuaBlob* blob = arg1.getBlob();
+  blob->env_ = arg2.isTable() ? arg2.getTable() : NULL;
   return 1;
 }
 

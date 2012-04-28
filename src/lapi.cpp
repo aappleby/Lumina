@@ -675,19 +675,6 @@ int lua_getmetatable (LuaThread *L, int objindex) {
 }
 
 
-void lua_getuservalue (LuaThread *L, int idx) {
-  THREAD_CHECK(L);
-  StkId o;
-  o = index2addr_checked(L, idx);
-  api_check(o->isBlob(), "userdata expected");
-  if (o->getBlob()->env_) {
-    L->stack_.push(LuaValue(o->getBlob()->env_));
-  } else {
-    L->stack_.push(LuaValue::Nil());
-  }
-}
-
-
 /*
 ** set functions (stack -> Lua)
 */
