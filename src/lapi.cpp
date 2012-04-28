@@ -776,63 +776,40 @@ void lua_rawsetp (LuaThread *L, int idx, const void *p) {
 
 int lua_setmetatable (LuaThread *L, int objindex) {
   THREAD_CHECK(L);
-  LuaValue *obj;
-  LuaTable *mt;
+
   L->stack_.checkArgs(1);
-  obj = index2addr_checked(L, objindex);
-  if (L->stack_.top_[-1].isNil()) {
-    mt = NULL;
-  }
-  else {
-    api_check(L->stack_.top_[-1].isTable(), "table expected");
-    mt = L->stack_.top_[-1].getTable();
-  }
+  LuaValue obj = L->stack_.at(objindex);
+  LuaValue meta = L->stack_.at(-1);
+  L->stack_.pop();
+
+  assert(meta.isNil() || meta.isTable());
+
+  LuaTable* mt = meta.isTable() ? meta.getTable() : NULL;
 
   // This is a little weird, tables and userdata get their
   // own metatables, but trying to set a metatable for anything
   // else overrides the _global_ metatable.
 
-  switch (obj->type()) {
-    case LUA_TTABLE:
-      {
-        obj->getTable()->metatable = mt;
-        if (mt) {
-          luaC_barrierback(obj->getObject(), LuaValue(mt));
-          luaC_checkfinalizer(obj->getObject(), mt);
-        }
-        break;
-      }
-    case LUA_TBLOB:
-      {
-        obj->getBlob()->metatable_ = mt;
-        if (mt) {
-          luaC_barrier(obj->getBlob(), LuaValue(mt));
-          luaC_checkfinalizer(obj->getObject(), mt);
-        }
-        break;
-      }
-    default: 
-      {
-        thread_G->base_metatables_[obj->type()] = mt;
-        break;
-      }
+  if(obj.isTable()) {
+    obj.getTable()->metatable = mt;
+    if (mt) {
+      luaC_barrierback(obj.getObject(), meta);
+      luaC_checkfinalizer(obj.getObject(), mt);
+    }
+    return 1;
   }
 
-  L->stack_.pop();
+  if(obj.isBlob()) {
+    obj.getBlob()->metatable_ = mt;
+    if (mt) {
+      luaC_barrier(obj.getObject(), LuaValue(mt));
+      luaC_checkfinalizer(obj.getObject(), mt);
+    }
+    return 1;
+  }
+
+  thread_G->base_metatables_[obj.type()] = mt;
   return 1;
-}
-
-
-void lua_setuservalue (LuaThread *L, int idx) {
-  THREAD_CHECK(L);
-  L->stack_.checkArgs(1);
-
-  LuaValue blob = L->stack_.at(idx);
-  LuaValue env = L->stack_.at(-1);
-  L->stack_.pop();
-
-  blob.getBlob()->env_ = env.isNil() ? NULL : env.getTable();
-  luaC_barrier(blob.getBlob(), env);
 }
 
 

@@ -164,7 +164,6 @@ void  (lua_rawset) (LuaThread *L, int idx);
 void  (lua_rawseti) (LuaThread *L, int idx, int n);
 void  (lua_rawsetp) (LuaThread *L, int idx, const void *p);
 int   (lua_setmetatable) (LuaThread *L, int objindex);
-void  (lua_setuservalue) (LuaThread *L, int idx);
 
 void lua_setregistryfield(LuaThread *L, const char* field);
 void lua_setglobalfield(LuaThread* L, const char* field);
