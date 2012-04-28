@@ -186,7 +186,7 @@ static void funcinfo (LuaDebug *ar, LuaClosure *cl) {
     ar->lastlinedefined = p->lastlinedefined;
     ar->what2 = (ar->linedefined == 0) ? "main" : "Lua";
   }
-  ar->short_src2 = luaO_chunkid2(ar->source2.c_str());
+  ar->short_src2 = luaO_chunkid2(ar->source2);
 }
 
 

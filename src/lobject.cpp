@@ -248,34 +248,34 @@ const char *luaO_pushfstring (LuaThread *L, const char *fmt, ...) {
   return msg;
 }
 
-std::string luaO_chunkid2 (const char *source) {
-  int len = strlen(source);
+std::string luaO_chunkid2 (std::string source) {
   int bufflen = LUA_IDSIZE - 1;
 
   if (source[0] == '=') {
-    source++;
-    len--;
-    if(len > bufflen) len = bufflen;
-    return std::string(source, len);
+    source.erase(source.begin());
+    if(source.size() > LUA_IDSIZE-1) source.resize(LUA_IDSIZE-1);
+    return source;
   }
 
   if (source[0] == '@') {
-    source++;
-    len--;
-    if(len <= bufflen) {
-      return std::string(source, len);
+    source.erase(source.begin());
+    if(source.size() <= LUA_IDSIZE - 1) {
+      return source;
     }
     else {
       bufflen -= 3;
-      return "..." + std::string(source + len - bufflen, bufflen);
+      source = std::string(source.end() - bufflen, source.end());
+      return "..." + source;
     }
   }
 
   bufflen -= strlen("[string \"...\"]");
 
-  const char *nl = strchr(source, '\n');
-  if(nl) len = nl - source;
-  std::string line(source,len);
+  int len = source.size();
+
+  const char *nl = strchr(source.c_str(), '\n');
+  if(nl) len = nl - source.c_str();
+  std::string line(source.c_str(),len);
 
   if((nl == NULL) && (line.size() <= (size_t)bufflen)) {
     return "[string \"" + line + "\"]";
@@ -284,10 +284,4 @@ std::string luaO_chunkid2 (const char *source) {
     if(line.size() > (size_t)bufflen) line.resize(bufflen);
     return "[string \"" + line + "...\"]";
   }
-}
-
-void luaO_chunkid (char *out2, const char *source2, size_t bufflen2) {
-  std::string result = luaO_chunkid2(source2);
-  memset(out2,0,bufflen2);
-  memcpy(out2, result.c_str(), result.size());
 }
