@@ -488,11 +488,17 @@ const char *lua_pushfstring (LuaThread *L, const char *fmt, ...) {
   return ret;
 }
 
-
 void lua_pushcclosure (LuaThread *L, LuaCallback fn, int n) {
   THREAD_CHECK(L);
   if (n == 0) {
     L->stack_.push(LuaValue::Callback(fn));
+    return;
+  }
+
+  if(n == 1) {
+    L->stack_.top_ -= 1;
+    LuaClosure* cl = new LuaClosure(fn, L->stack_.top_[0]);
+    L->stack_.push(LuaValue(cl));
     return;
   }
 

@@ -647,9 +647,11 @@ int luaopen_package (LuaThread *L) {
   THREAD_CHECK(L);
   int i;
   /* create new type _LOADLIB */
-  luaL_newmetatable(L, "_LOADLIB");
-  lua_pushcclosure(L, gctm, 0);
-  lua_setfield(L, -2, "__gc");
+  LuaTable* meta = new LuaTable();
+  L->l_G->getRegistry()->set("_LOADLIB", LuaValue(meta) );
+  L->stack_.push( LuaValue(meta) );
+
+  meta->set("__gc", LuaValue::Callback(gctm) );
 
   /* create `package' table */
   lua_createtable(L, 0, sizeof(pk_funcs)/sizeof((pk_funcs)[0]) - 1);

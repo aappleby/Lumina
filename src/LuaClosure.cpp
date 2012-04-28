@@ -32,6 +32,20 @@ LuaClosure::LuaClosure(LuaCallback func, int n)
   proto_ = NULL;
 }
 
+LuaClosure::LuaClosure(LuaCallback func, LuaValue upval1)
+: LuaObject(LUA_TCCL) {
+  linkGC(getGlobalGCHead());
+
+  isC = 1;
+  nupvalues = 1;
+  pupvals_ = (LuaValue*)luaM_alloc_nocheck(sizeof(LuaValue));
+  ppupvals_ = NULL;
+  cfunction_ = func;
+  proto_ = NULL;
+
+  pupvals_[0] = upval1;
+}
+
 LuaClosure::~LuaClosure() {
   luaM_free(pupvals_);
   luaM_free(ppupvals_);

@@ -7,6 +7,9 @@ public:
 
   LuaClosure(LuaProto* proto, int n);
   LuaClosure(LuaCallback func, int n);
+
+  LuaClosure(LuaCallback func, LuaValue upval1);
+
   ~LuaClosure();
 
   virtual void VisitGC(LuaGCVisitor& visitor);
