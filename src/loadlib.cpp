@@ -654,8 +654,11 @@ int luaopen_package (LuaThread *L) {
   meta->set("__gc", LuaValue::Callback(gctm) );
 
   /* create `package' table */
-  lua_createtable(L, 0, sizeof(pk_funcs)/sizeof((pk_funcs)[0]) - 1);
-  luaL_setfuncs(L,pk_funcs,0);
+  LuaTable* package = new LuaTable(0, sizeof(pk_funcs)/sizeof((pk_funcs)[0]) - 1);
+  L->stack_.push( LuaValue(package) );
+  for(const luaL_Reg* cursor = pk_funcs; cursor->name; cursor++) {
+    package->set( cursor->name, LuaValue(cursor->func) );
+  }
 
   /* create 'searchers' table */
   lua_createtable(L, sizeof(searchers)/sizeof(searchers[0]) - 1, 0);
