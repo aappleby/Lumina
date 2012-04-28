@@ -12,7 +12,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <string.h>
-
+#include <string>
 
 #define ldebug_c
 
@@ -539,10 +539,66 @@ l_noret luaG_ordererror (const LuaValue *p1, const LuaValue *p2) {
     luaG_runerror("attempt to compare %s with %s", t1, t2);
 }
 
+l_noret luaG_errormsg () {
+  LuaThread *L = thread_L;
 
-static void addinfo (const char *msg) {
+  LuaValue error_arg = L->stack_.at(-1);
+  L->stack_.pop();
+
+  if (L->errfunc != 0) {  /* is there an error handling function? */
+    StkId errfunc = L->stack_.atIndex(L->errfunc);
+    if (!errfunc->isFunction()) throwError(LUA_ERRERR);
+
+    L->stack_.push_nocheck(*errfunc);
+    L->stack_.push_nocheck(error_arg);
+
+    LuaResult result = L->stack_.reserve2(0);
+    handleResult(result);
+    luaD_call(L, L->stack_.top_ - 2, 1, 0);  /* call it */
+    throwError(LUA_ERRRUN);
+  }
+  else {
+    L->stack_.push_nocheck(error_arg);
+    throwError(LUA_ERRRUN);
+  }
+}
+
+l_noret luaG_errormsg2 ( const char* message ) {
+  LuaThread *L = thread_L;
+
+  LuaString* s = L->l_G->strings_->Create(message);
+  LuaValue error_arg = LuaValue(s);
+
+  if (L->errfunc != 0) {  /* is there an error handling function? */
+    StkId errfunc = L->stack_.atIndex(L->errfunc);
+    if (!errfunc->isFunction()) throwError(LUA_ERRERR);
+
+    L->stack_.push_nocheck(*errfunc);
+    L->stack_.push_nocheck(error_arg);
+
+    LuaResult result = L->stack_.reserve2(0);
+    handleResult(result);
+    luaD_call(L, L->stack_.top_ - 2, 1, 0);  /* call it */
+    throwError(LUA_ERRRUN);
+  }
+  else {
+    L->stack_.push_nocheck(error_arg);
+    throwError(LUA_ERRRUN);
+  }
+}
+
+l_noret luaG_runerror (const char* fmt, ...) {
+  char buffer1[256];
+  char buffer2[256];
+  
+  va_list argp;
+  va_start(argp, fmt);
+  vsnprintf(buffer1, 256, fmt, argp);
+  va_end(argp);
+
   LuaThread* L = thread_L;
   LuaStackFrame *ci = L->stack_.callinfo_;
+
   if (ci->isLua()) {  /* is Lua code? */
     char buff[LUA_IDSIZE];  /* add file:line information */
     int line = currentline(ci);
@@ -552,32 +608,11 @@ static void addinfo (const char *msg) {
     else {  /* no source available; use "?" instead */
       buff[0] = '?'; buff[1] = '\0';
     }
-    luaO_pushfstring(L, "%s:%d: %s", buff, line, msg);
+
+    _snprintf(buffer2, 256, "%s:%d: %s", buff, line, buffer1);
+    luaG_errormsg2(buffer2);
+  }
+  else {
+    luaG_errormsg2(buffer1);
   }
 }
-
-
-l_noret luaG_errormsg () {
-  LuaThread *L = thread_L;
-  if (L->errfunc != 0) {  /* is there an error handling function? */
-    StkId errfunc = L->stack_.atIndex(L->errfunc);
-    if (!errfunc->isFunction()) throwError(LUA_ERRERR);
-    L->stack_.top_[0] = L->stack_.top_[-1];  /* move argument */
-    L->stack_.top_[-1] = *errfunc;  /* push function */
-    L->stack_.top_++;
-    LuaResult result = L->stack_.reserve2(0);
-    handleResult(result);
-    luaD_call(L, L->stack_.top_ - 2, 1, 0);  /* call it */
-  }
-  throwError(LUA_ERRRUN);
-}
-
-
-l_noret luaG_runerror (const char *fmt, ...) {
-  va_list argp;
-  va_start(argp, fmt);
-  addinfo(luaO_pushvfstring(fmt, argp));
-  va_end(argp);
-  luaG_errormsg();
-}
-

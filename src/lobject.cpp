@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
+#include <algorithm>
 
 #define lobject_c
 
@@ -256,39 +258,54 @@ const char *luaO_pushfstring (LuaThread *L, const char *fmt, ...) {
 
 #define addstr(a,b,l)	( memcpy(a,b,(l) * sizeof(char)), a += (l) )
 
-void luaO_chunkid (char *out, const char *source, size_t bufflen) {
-  size_t l = strlen(source);
-  if (*source == '=') {  /* 'literal' source */
-    if (l <= bufflen)  /* small enough? */
-      memcpy(out, source + 1, l * sizeof(char));
-    else {  /* truncate it */
-      addstr(out, source + 1, bufflen - 1);
-      *out = '\0';
-    }
+
+std::string luaO_chunkid2 (const char *source) {
+  int len = strlen(source);
+  int bufflen = LUA_IDSIZE - 1;
+
+  if (source[0] == '=') {
+    source++;
+    len--;
+    if(len > bufflen) len = bufflen;
+    return std::string(source, len);
   }
-  else if (*source == '@') {  /* file name */
-    if (l <= bufflen)  /* small enough? */
-      memcpy(out, source + 1, l * sizeof(char));
-    else {  /* add '...' before rest of name */
-      addstr(out, RETS, LL(RETS));
-      bufflen -= LL(RETS);
-      memcpy(out, source + 1 + l - bufflen, bufflen * sizeof(char));
-    }
-  }
-  else {  /* string; format as [string "source"] */
-    const char *nl = strchr(source, '\n');  /* find first new line (if any) */
-    addstr(out, PRE, LL(PRE));  /* add prefix */
-    bufflen -= LL(PRE RETS POS) + 1;  /* save space for prefix+suffix+'\0' */
-    if (l < bufflen && nl == NULL) {  /* small one-line source? */
-      addstr(out, source, l);  /* keep it */
+
+  if (source[0] == '@') {
+    source++;
+    len--;
+    if(len <= bufflen) {
+      return std::string(source, len);
     }
     else {
-      if (nl != NULL) l = nl - source;  /* stop at first newline */
-      if (l > bufflen) l = bufflen;
-      addstr(out, source, l);
-      addstr(out, RETS, LL(RETS));
+      bufflen -= 3;
+      return "..." + std::string(source + len - bufflen, bufflen);
     }
-    memcpy(out, POS, (LL(POS) + 1) * sizeof(char));
   }
+
+  bufflen -= LL(PRE RETS POS);
+
+  const char *nl = strchr(source, '\n');
+  if(nl) len = nl - source;
+  std::string line(source,len);
+
+  if(nl) {
+    if(line.size() > (size_t)bufflen) line.resize(bufflen);
+    return "[string \"" + line + "...\"]";
+  }
+  else {
+    if(line.size() > (size_t)bufflen) {
+      line.resize(bufflen);
+      return "[string \"" + line + "...\"]";
+    }
+    else {
+      return "[string \"" + line + "\"]";
+    }
+  }
+
 }
 
+void luaO_chunkid (char *out2, const char *source2, size_t bufflen2) {
+  std::string result = luaO_chunkid2(source2);
+  memset(out2,0,bufflen2);
+  memcpy(out2, result.c_str(), result.size());
+}
