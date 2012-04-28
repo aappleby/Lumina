@@ -95,7 +95,10 @@ static LStream *newprefile (LuaThread *L) {
   THREAD_CHECK(L);
   LStream *p = (LStream *)lua_newuserdata(L, sizeof(LStream));
   p->closef = NULL;  /* mark file handle as 'closed' */
-  luaL_setmetatable(L, LUA_FILEHANDLE);
+  
+  luaL_getmetatable(L, LUA_FILEHANDLE);
+  lua_setmetatable(L, -2);
+  
   return p;
 }
 

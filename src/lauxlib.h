@@ -55,7 +55,6 @@ void luaL_checkIsFunction (LuaThread *L, int narg);
 void luaL_checkIsTable    (LuaThread *L, int narg);
 
 int   (luaL_newmetatable) (LuaThread *L, const char *tname);
-void  (luaL_setmetatable) (LuaThread *L, const char *tname);
 void *(luaL_testudata) (LuaThread *L, int ud, const char *tname);
 void *(luaL_checkudata) (LuaThread *L, int ud, const char *tname);
 

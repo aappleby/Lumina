@@ -318,7 +318,7 @@ int luaL_newmetatable (LuaThread *L, const char *tname) {
   LuaTable* registry = L->l_G->getRegistry();
   LuaValue oldTable = registry->get(tname);
 
-  if(!oldTable.isNil() && !oldTable.isNone()) {
+  if(oldTable.isTable()) {
     L->stack_.push(oldTable);
     return 0;
   }
@@ -328,12 +328,6 @@ int luaL_newmetatable (LuaThread *L, const char *tname) {
 
   L->stack_.push( LuaValue(newTable) );
   return 1;
-}
-
-void luaL_setmetatable (LuaThread *L, const char *tname) {
-  THREAD_CHECK(L);
-  luaL_getmetatable(L, tname);
-  lua_setmetatable(L, -2);
 }
 
 
