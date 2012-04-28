@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "stdint.h"
+#include <string>
 
 #include "LuaDefines.h"
 
@@ -352,10 +353,14 @@ public:
   }
 
   int event;
-  const char *name;	/* (n) */
+  
+  //const char *name;	/* (n) */
+  std::string name2;
+
   const char *namewhat;	/* (n) 'global', 'local', 'field', 'method' */
   const char *what;	/* (S) 'Lua', 'C', 'main', 'tail' */
   const char *source;	/* (S) */
+  
   int currentline;	/* (l) */
   int linedefined;	/* (S) */
   int lastlinedefined;	/* (S) */
@@ -363,7 +368,10 @@ public:
   int nparams;/* (u) number of parameters */
   int isvararg;        /* (u) */
   int istailcall;	/* (t) */
-  char short_src[LUA_IDSIZE]; /* (S) */
+  
+  //char short_src[LUA_IDSIZE]; /* (S) */
+  std::string short_src2;
+
   /* private part */
   LuaStackFrame *i_ci;  /* active function */
 };

@@ -167,7 +167,7 @@ static int db_getinfo (LuaThread *L) {
   lua_createtable(L, 0, 2);
   if (strchr(options, 'S')) {
     settabss(L, "source", ar.source);
-    settabss(L, "short_src", ar.short_src);
+    settabss(L, "short_src", ar.short_src2.c_str());
     settabsi(L, "linedefined", ar.linedefined);
     settabsi(L, "lastlinedefined", ar.lastlinedefined);
     settabss(L, "what", ar.what);
@@ -180,7 +180,12 @@ static int db_getinfo (LuaThread *L) {
     settabsb(L, "isvararg", ar.isvararg);
   }
   if (strchr(options, 'n')) {
-    settabss(L, "name", ar.name);
+    if(ar.name2.empty()) {
+      settabss(L, "name", NULL);
+    }
+    else {
+      settabss(L, "name", ar.name2.c_str());
+    }
     settabss(L, "namewhat", ar.namewhat);
   }
   if (strchr(options, 't'))

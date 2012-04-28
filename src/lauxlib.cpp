@@ -98,7 +98,7 @@ static void pushfuncname (LuaThread *L, LuaDebug *ar) {
   THREAD_CHECK(L);
   if (*ar->namewhat != '\0') {
     /* is there a name? */
-    lua_pushfstring(L, "function " LUA_QS, ar->name);
+    lua_pushfstring(L, "function " LUA_QS, ar->name2.c_str());
   }
   else if (*ar->what == 'm') {
     /* main? */
@@ -114,7 +114,7 @@ static void pushfuncname (LuaThread *L, LuaDebug *ar) {
     }
   }
   else {
-    lua_pushfstring(L, "function <%s:%d>", ar->short_src, ar->linedefined);
+    lua_pushfstring(L, "function <%s:%d>", ar->short_src2.c_str(), ar->linedefined);
   }
 }
 
@@ -164,7 +164,7 @@ void luaL_traceback (LuaThread *L, LuaThread *L1,
         lua_getinfo(L1, "Slnt", &ar);
         {
           THREAD_CHANGE(L);
-          lua_pushfstring(L, "\n\t%s:", ar.short_src);
+          lua_pushfstring(L, "\n\t%s:", ar.short_src2.c_str());
           if (ar.currentline > 0) {
             lua_pushfstring(L, "%d:", ar.currentline);
           }
@@ -199,13 +199,13 @@ int luaL_argerror (LuaThread *L, int narg, const char *extramsg) {
   if (strcmp(ar.namewhat, "method") == 0) {
     narg--;  /* do not count `self' */
     if (narg == 0)  /* error is in the self argument itself? */
-      return luaL_error(L, "calling " LUA_QS " on bad self", ar.name);
+      return luaL_error(L, "calling " LUA_QS " on bad self", ar.name2.c_str());
   }
-  if (ar.name == NULL) {
-    ar.name = (pushglobalfuncname(L, &ar)) ? lua_tostring(L, -1) : "?";
+  if (ar.name2.empty()) {
+    ar.name2 = (pushglobalfuncname(L, &ar)) ? lua_tostring(L, -1) : "?";
   }
   return luaL_error(L, "bad argument #%d to " LUA_QS " (%s)",
-                        narg, ar.name, extramsg);
+                        narg, ar.name2.c_str(), extramsg);
 }
 
 
@@ -229,7 +229,7 @@ void luaL_where (LuaThread *L, int level) {
   if (lua_getstack(L, level, &ar)) {  /* check function at level */
     lua_getinfo(L, "Sl", &ar);  /* get info about it */
     if (ar.currentline > 0) {  /* is there info? */
-      lua_pushfstring(L, "%s:%d: ", ar.short_src, ar.currentline);
+      lua_pushfstring(L, "%s:%d: ", ar.short_src2.c_str(), ar.currentline);
       return;
     }
   }
