@@ -174,19 +174,19 @@ const char *lua_setlocal (LuaThread *L, const LuaDebug *ar, int n) {
 
 static void funcinfo (LuaDebug *ar, LuaClosure *cl) {
   if (cl == NULL || cl->isC) {
-    ar->source = "=[C]";
+    ar->source2 = "=[C]";
     ar->linedefined = -1;
     ar->lastlinedefined = -1;
     ar->what2 = "C";
   }
   else {
     LuaProto *p = cl->proto_;
-    ar->source = p->source ? p->source->c_str() : "=?";
+    ar->source2 = p->source ? p->source->c_str() : "=?";
     ar->linedefined = p->linedefined;
     ar->lastlinedefined = p->lastlinedefined;
     ar->what2 = (ar->linedefined == 0) ? "main" : "Lua";
   }
-  ar->short_src2 = luaO_chunkid2(ar->source);
+  ar->short_src2 = luaO_chunkid2(ar->source2.c_str());
 }
 
 

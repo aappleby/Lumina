@@ -166,7 +166,7 @@ static int db_getinfo (LuaThread *L) {
 
   lua_createtable(L, 0, 2);
   if (strchr(options, 'S')) {
-    settabss(L, "source", ar.source);
+    settabss(L, "source", ar.source2.c_str());
     settabss(L, "short_src", ar.short_src2.c_str());
     settabsi(L, "linedefined", ar.linedefined);
     settabsi(L, "lastlinedefined", ar.lastlinedefined);

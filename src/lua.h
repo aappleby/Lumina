@@ -363,7 +363,11 @@ public:
   //const char *what;	/* (S) 'Lua', 'C', 'main', 'tail' */
   std::string what2;
 
-  const char *source;	/* (S) */
+  //const char *source;	/* (S) */
+  // TODO(aappleby): This could be wasting a bit of memory (making an
+  // additional copy of the source), but since it's only in the debug tool
+  // I don't think it matters.
+  std::string source2;
   
   int currentline;	/* (l) */
   int linedefined;	/* (S) */

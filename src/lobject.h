@@ -31,7 +31,6 @@ int luaO_hexavalue (int c);
 const char *luaO_pushvfstring (const char *fmt, va_list argp);
 const char *luaO_pushfstring (LuaThread *L, const char *fmt, ...);
 
-void luaO_chunkid (char *out, const char *source, size_t len);
 std::string luaO_chunkid2(const char* source);
 
 
