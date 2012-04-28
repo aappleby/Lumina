@@ -673,7 +673,6 @@ void luaV_finishOp (LuaThread *L) {
 #define RKC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgK, ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
 #define KBx(i)  (k + (GETARG_Bx(i) != 0 ? GETARG_Bx(i) - 1 : GETARG_Ax(*ci->savedpc++)))
 
-
 void luaV_execute (LuaThread *L) {
   THREAD_CHECK(L);
   LuaStackFrame *ci = L->stack_.callinfo_;

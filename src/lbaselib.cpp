@@ -336,6 +336,7 @@ static int luaB_load (LuaThread *L) {
   int top = L->stack_.getTopIndex();
   const char *s = lua_tolstring(L, 1, &l);
   const char *mode = luaL_optstring(L, 3, "bt");
+
   if (s != NULL) {  /* loading a string? */
     const char *chunkname = luaL_optstring(L, 2, s);
     status = luaL_loadbufferx(L, s, l, chunkname, mode);
@@ -346,6 +347,7 @@ static int luaB_load (LuaThread *L) {
     L->stack_.setTopIndex(RESERVEDSLOT);  /* create reserved slot */
     status = lua_load(L, generic_reader, NULL, chunkname, mode);
   }
+
   if (status == LUA_OK && top >= 4) {  /* is there an 'env' argument */
     L->stack_.copy(4);  /* environment for loaded function */
     lua_setupvalue(L, -2, 1);  /* set it as 1st upvalue */
