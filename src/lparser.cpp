@@ -579,7 +579,7 @@ static void close_func (LexState *ls) {
 static void open_mainfunc (LexState *ls, FuncState *fs, BlockCnt *bl) {
   expdesc v;
   open_func(ls, fs, bl);
-  fs->f->is_vararg = 1;  /* main function is always vararg */
+  fs->f->is_vararg = true;  /* main function is always vararg */
   init_exp(&v, VLOCAL, 0);
   newupvalue(fs, ls->envn, &v);  /* create environment upvalue */
 }
@@ -767,7 +767,7 @@ static void parlist (LexState *ls) {
   FuncState *fs = ls->fs;
   LuaProto *f = fs->f;
   int nparams = 0;
-  f->is_vararg = 0;
+  f->is_vararg = false;
   if (ls->t.token != ')') {  /* is `parlist' not empty? */
     do {
       switch (ls->t.token) {
@@ -778,7 +778,7 @@ static void parlist (LexState *ls) {
         }
         case TK_DOTS: {  /* param -> `...' */
           luaX_next(ls);
-          f->is_vararg = 1;
+          f->is_vararg = true;
           break;
         }
         default: luaX_syntaxerror(ls, "<name> or " LUA_QL("...") " expected");

@@ -136,7 +136,7 @@ static void DumpFunction(const LuaProto* f, DumpState* D)
  DumpInt(f->linedefined,D);
  DumpInt(f->lastlinedefined,D);
  DumpChar(f->numparams,D);
- DumpChar(f->is_vararg,D);
+ DumpChar(f->is_vararg ? 1 : 0,D);
  DumpChar(f->maxstacksize,D);
  DumpCode(f,D);
  DumpConstants(f,D);

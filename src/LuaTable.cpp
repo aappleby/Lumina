@@ -287,10 +287,11 @@ void LuaTable::set(const char* keystring, LuaValue val) {
 }
 
 void LuaTable::set(const char* keystring, const char* valstring) {
-  LuaString* key = thread_G->strings_->Create(keystring);
-  LuaString* val = thread_G->strings_->Create(valstring);
-
-  set(LuaValue(key), LuaValue(val));
+  if(keystring && valstring) {
+    LuaString* key = thread_G->strings_->Create(keystring);
+    LuaString* val = thread_G->strings_->Create(valstring);
+    set(LuaValue(key), LuaValue(val));
+  }
 }
 
 //-----------------------------------------------------------------------------

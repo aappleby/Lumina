@@ -181,7 +181,7 @@ static LuaProto* LoadFunction(LoadState* S)
   f->linedefined=LoadInt(S);
   f->lastlinedefined=LoadInt(S);
   f->numparams=LoadByte(S);
-  f->is_vararg=LoadByte(S);
+  f->is_vararg=LoadByte(S) ? true : false;
   f->maxstacksize=LoadByte(S);
   LoadCode(S,f);
   LoadConstants(S,f);

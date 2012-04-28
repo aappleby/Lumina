@@ -56,7 +56,7 @@ public:
   int linedefined;
   int lastlinedefined;
   uint8_t numparams;  /* number of fixed parameters */
-  uint8_t is_vararg;
+  bool is_vararg;
   uint8_t maxstacksize;  /* maximum stack used by this function */
 };
 

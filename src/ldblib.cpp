@@ -69,35 +69,18 @@ static int db_getuservalue (LuaThread *L) {
 
 static int db_setuservalue (LuaThread *L) {
   THREAD_CHECK(L);
-  if (lua_type(L, 1) == LUA_TPOINTER)
+  if (lua_type(L, 1) == LUA_TPOINTER) {
     luaL_argerror(L, 1, "full userdata expected, got light userdata");
+  }
   luaL_checktype(L, 1, LUA_TBLOB);
-  if (!lua_isnoneornil(L, 2))
+
+  if (!lua_isnoneornil(L, 2)) {
     luaL_checktype(L, 2, LUA_TTABLE);
+  }
+
   L->stack_.setTopIndex(2);
   lua_setuservalue(L, 1);
   return 1;
-}
-
-
-static void settabss (LuaThread *L, const char *i, const char *v) {
-  THREAD_CHECK(L);
-  lua_pushstring(L, v);
-  lua_setfield(L, -2, i);
-}
-
-
-static void settabsi (LuaThread *L, const char *i, int v) {
-  THREAD_CHECK(L);
-  lua_pushinteger(L, v);
-  lua_setfield(L, -2, i);
-}
-
-
-static void settabsb (LuaThread *L, const char *i, int v) {
-  THREAD_CHECK(L);
-  lua_pushboolean(L, v);
-  lua_setfield(L, -2, i);
 }
 
 
@@ -134,6 +117,7 @@ static int db_getinfo (LuaThread *L) {
   int arg;
   LuaThread *L1 = getthread(L, &arg);
   const char *options = luaL_optstring(L, arg+2, "flnStu");
+
   if (lua_isNumberable(L, arg+1)) {
     int idx = (int)lua_tointeger(L, arg+1);
     int result;
@@ -152,8 +136,10 @@ static int db_getinfo (LuaThread *L) {
     L->stack_.copy(arg+1);
     lua_xmove(L, L1, 1);
   }
-  else
+  else {
     return luaL_argerror(L, arg+1, "function or level expected");
+  }
+
   int result;
   {
     THREAD_CHANGE(L1);
@@ -166,45 +152,25 @@ static int db_getinfo (LuaThread *L) {
 
   LuaTable* t = new LuaTable(0, 2);
   L->stack_.push(LuaValue(t));
+ 
+  t->set("source",          ar.source2.c_str());
+  t->set("short_src",       ar.short_src2.c_str());
+  t->set("linedefined",     LuaValue(ar.linedefined) );
+  t->set("lastlinedefined", LuaValue(ar.lastlinedefined) );
+  t->set("what",            ar.what2.c_str());
+  t->set("currentline",     LuaValue(ar.currentline));
+  t->set("nups",            LuaValue(ar.nups));
+  t->set("nparams",         LuaValue(ar.nparams));
+  t->set("isvararg",        LuaValue(ar.isvararg));
+  t->set("name",            ar.name2.empty() ? NULL : ar.name2.c_str());
+  t->set("namewhat",        ar.namewhat2.c_str());
+  t->set("istailcall",      LuaValue(ar.istailcall));
 
-  if (strchr(options, 'S')) {
-    /*
-    settabss(L, "source", ar.source2.c_str());
-    settabss(L, "short_src", ar.short_src2.c_str());
-    settabsi(L, "linedefined", ar.linedefined);
-    settabsi(L, "lastlinedefined", ar.lastlinedefined);
-    settabss(L, "what", ar.what2.c_str());
-    */
-    t->set("source", ar.source2.c_str());
-    t->set("short_src", ar.short_src2.c_str());
-    t->set("linedefined", LuaValue(ar.linedefined) );
-    t->set("lastlinedefined", LuaValue(ar.lastlinedefined) );
-    t->set("what", ar.what2.c_str());
-  }
-  if (strchr(options, 'l')) {
-    settabsi(L, "currentline", ar.currentline);
-  }
-  if (strchr(options, 'u')) {
-    settabsi(L, "nups", ar.nups);
-    settabsi(L, "nparams", ar.nparams);
-    settabsb(L, "isvararg", ar.isvararg);
-  }
-  if (strchr(options, 'n')) {
-    if(ar.name2.empty()) {
-      settabss(L, "name", NULL);
-    }
-    else {
-      settabss(L, "name", ar.name2.c_str());
-    }
-
-    settabss(L, "namewhat", ar.namewhat2.c_str());
-  }
-  if (strchr(options, 't'))
-    settabsb(L, "istailcall", ar.istailcall);
   if (strchr(options, 'L'))
     treatstackoption(L, L1, "activelines");
   if (strchr(options, 'f'))
     treatstackoption(L, L1, "func");
+
   return 1;  /* return table */
 }
 

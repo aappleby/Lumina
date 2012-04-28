@@ -7,7 +7,7 @@
 LuaProto::LuaProto() : LuaObject(LUA_TPROTO) {
   cache = NULL;
   numparams = 0;
-  is_vararg = 0;
+  is_vararg = false;
   maxstacksize = 0;
   linedefined = 0;
   lastlinedefined = 0;

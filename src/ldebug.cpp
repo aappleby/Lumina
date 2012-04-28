@@ -228,7 +228,7 @@ static int auxgetinfo (LuaThread *L, const char *what, LuaDebug *ar,
       case 'u': {
         ar->nups = (f == NULL) ? 0 : f->nupvalues;
         if (f == NULL || f->isC) {
-          ar->isvararg = 1;
+          ar->isvararg = true;
           ar->nparams = 0;
         }
         else {
@@ -238,7 +238,7 @@ static int auxgetinfo (LuaThread *L, const char *what, LuaDebug *ar,
         break;
       }
       case 't': {
-        ar->istailcall = (ci) ? ci->callstatus & CIST_TAIL : 0;
+        ar->istailcall = (ci) ? (ci->callstatus & CIST_TAIL ? true : false) : false;
         break;
       }
       case 'n': {

@@ -374,8 +374,8 @@ public:
   int lastlinedefined;	/* (S) */
   int nups;	/* (u) number of upvalues */
   int nparams;/* (u) number of parameters */
-  int isvararg;        /* (u) */
-  int istailcall;	/* (t) */
+  bool isvararg;        /* (u) */
+  bool istailcall;	/* (t) */
   
   //char short_src[LUA_IDSIZE]; /* (S) */
   std::string short_src2;

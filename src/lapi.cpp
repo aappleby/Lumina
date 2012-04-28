@@ -838,18 +838,14 @@ int lua_setmetatable (LuaThread *L, int objindex) {
 
 void lua_setuservalue (LuaThread *L, int idx) {
   THREAD_CHECK(L);
-  StkId o;
   L->stack_.checkArgs(1);
-  o = index2addr_checked(L, idx);
-  api_check(o->isBlob(), "userdata expected");
-  if (L->stack_.top_[-1].isNil())
-    o->getBlob()->env_ = NULL;
-  else {
-    api_check(L->stack_.top_[-1].isTable(), "table expected");
-    o->getBlob()->env_ = L->stack_.top_[-1].getTable();
-    luaC_barrier(o->getObject(), L->stack_.top_[-1]);
-  }
+
+  LuaValue blob = L->stack_.at(idx);
+  LuaValue env = L->stack_.at(-1);
   L->stack_.pop();
+
+  blob.getBlob()->env_ = env.isNil() ? NULL : env.getTable();
+  luaC_barrier(blob.getBlob(), env);
 }
 
 
