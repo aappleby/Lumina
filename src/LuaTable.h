@@ -32,6 +32,10 @@ public:
   // This creates dependencies, but it's used everywhere.
   LuaValue get(const char* key);
   void     set(const char* key, LuaValue val);
+
+  // Reverse lookup, O(N).
+  LuaValue findKey(LuaValue val);
+  LuaValue findKeyString(LuaValue val);
   
   // This is used in a few places
   int resize(int arrayssize, int hashsize);

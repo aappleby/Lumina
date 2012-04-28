@@ -288,6 +288,30 @@ void LuaTable::set(const char* keystring, LuaValue val) {
 
 //-----------------------------------------------------------------------------
 
+LuaValue LuaTable::findKey( LuaValue val ) {
+  for(int i = 0; i < (int)array_.size(); i++) {
+    // C index -> Lua index
+    if(array_[i] == val) return LuaValue(i+1);
+  }
+
+  for(int i = 0; i < (int)hash_.size(); i++) {
+    if(hash_[i].i_val == val) return hash_[i].i_key;
+  }
+
+  return LuaValue::None();
+}
+
+LuaValue LuaTable::findKeyString( LuaValue val ) {
+  for(int i = 0; i < (int)hash_.size(); i++) {
+    if(!hash_[i].i_key.isString()) continue;
+    if(hash_[i].i_val == val) return hash_[i].i_key;
+  }
+
+  return LuaValue::None();
+}
+
+//-----------------------------------------------------------------------------
+
 void countKey( LuaValue key, int* logtable ) {
   if(key.isInteger()) {
     int k = key.getInteger();

@@ -159,8 +159,11 @@ static int db_getinfo (LuaThread *L) {
     THREAD_CHANGE(L1);
     result = lua_getinfo(L1, options, &ar);
   }
-  if (!result)
+  
+  if (!result) {
     return luaL_argerror(L, arg+2, "invalid option");
+  }
+
   lua_createtable(L, 0, 2);
   if (strchr(options, 'S')) {
     settabss(L, "source", ar.source);

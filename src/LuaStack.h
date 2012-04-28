@@ -43,6 +43,8 @@ public:
   void   pop(int count);
   void   remove(int index);
 
+  void insert(int idx);
+
   void checkArgs(int count);
 
   //----------

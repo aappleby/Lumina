@@ -287,7 +287,6 @@ void LuaStack::pop(int count) {
 
 /*
 void LuaStack::insert(int idx) {
-  THREAD_CHECK(L);
   StkId p;
   StkId q;
   p = index2addr_checked(L, idx);

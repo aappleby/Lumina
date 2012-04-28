@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <string>
 
 /* This file uses only the official API of Lua.
 ** Any function declared here could be written as an application function.
@@ -46,49 +47,48 @@ const char* luaL_typename(LuaThread* L, int index) {
 #define LEVELS1	12	/* size of the first part of the stack */
 #define LEVELS2	10	/* size of the second part of the stack */
 
+void findfield2(LuaThread* L, LuaTable* table1, LuaValue goal, int depth, std::string& result) {
 
+  LuaValue key = table1->findKeyString(goal);
 
-/*
-** search for 'objidx' in table at index -1.
-** return 1 + string at top if find a good name.
-*/
-static int findfield (LuaThread *L, int objidx, int level) {
-  THREAD_CHECK(L);
-  if (level == 0 || !lua_istable(L, -1))
-    return 0;  /* not found */
-  L->stack_.push(LuaValue::Nil());  /* start 'next' loop */
-  while (lua_next(L, -2)) {  /* for each pair in table */
-    if (lua_type(L, -2) == LUA_TSTRING) {  /* ignore non-string keys */
-      if (lua_rawequal(L, objidx, -1)) {  /* found object? */
-        L->stack_.pop();  /* remove value (but keep name) */
-        return 1;
-      }
-      else if (findfield(L, objidx, level - 1)) {  /* try recursively */
-        L->stack_.remove(-2);  /* remove table (but keep name) */
-        lua_pushliteral(L, ".");
-        lua_insert(L, -2);  /* place '.' between the two names */
-        lua_concat(L, 3);
-        return 1;
-      }
-    }
-    L->stack_.pop();  /* remove value */
+  if(!key.isNone()) {
+    result = key.getString()->c_str();
+    return;
   }
-  return 0;  /* not found */
+
+  if(depth == 0) return;
+
+  int size1 = table1->getTableIndexSize();
+  
+  for(int i = 0; i < size1; i++) {
+    LuaValue key1, val1;
+    table1->tableIndexToKeyVal(i, key1, val1);
+    if(!key1.isString()) continue;
+    if(!val1.isTable()) continue;
+
+    findfield2(L, val1.getTable(), goal, depth-1, result);
+
+    if(result.size()) {
+      std::string prefix = key1.getString()->c_str();
+      result = prefix + "." + result;
+      return;
+    }
+  }
 }
 
-
-static int pushglobalfuncname (LuaThread *L, LuaDebug *ar) {
+int pushglobalfuncname (LuaThread *L, LuaDebug *ar) {
   THREAD_CHECK(L);
-  int top = L->stack_.getTopIndex();
-  lua_getinfo(L, "f", ar);  /* push function */
-  lua_pushglobaltable(L);
-  if (findfield(L, top + 1, 2)) {
-    lua_copy(L, -1, top + 1);  /* move name to proper place */
-    L->stack_.pop(2);  /* remove pushed values */
+
+  LuaValue f = *ar->i_ci->getFunc();
+  std::string result;
+  findfield2(L, L->l_G->getGlobals(), f, 1, result);
+
+  if(result.size()) {
+    LuaString* s = L->l_G->strings_->Create(result.c_str());
+    L->stack_.push( LuaValue(s) );
     return 1;
   }
   else {
-    L->stack_.setTopIndex(top);  /* remove function and global table */
     return 0;
   }
 }
@@ -201,8 +201,9 @@ int luaL_argerror (LuaThread *L, int narg, const char *extramsg) {
     if (narg == 0)  /* error is in the self argument itself? */
       return luaL_error(L, "calling " LUA_QS " on bad self", ar.name);
   }
-  if (ar.name == NULL)
+  if (ar.name == NULL) {
     ar.name = (pushglobalfuncname(L, &ar)) ? lua_tostring(L, -1) : "?";
+  }
   return luaL_error(L, "bad argument #%d to " LUA_QS " (%s)",
                         narg, ar.name, extramsg);
 }
