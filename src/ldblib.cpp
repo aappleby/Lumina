@@ -164,16 +164,26 @@ static int db_getinfo (LuaThread *L) {
     return luaL_argerror(L, arg+2, "invalid option");
   }
 
-  lua_createtable(L, 0, 2);
+  LuaTable* t = new LuaTable(0, 2);
+  L->stack_.push(LuaValue(t));
+
   if (strchr(options, 'S')) {
+    /*
     settabss(L, "source", ar.source2.c_str());
     settabss(L, "short_src", ar.short_src2.c_str());
     settabsi(L, "linedefined", ar.linedefined);
     settabsi(L, "lastlinedefined", ar.lastlinedefined);
     settabss(L, "what", ar.what2.c_str());
+    */
+    t->set("source", ar.source2.c_str());
+    t->set("short_src", ar.short_src2.c_str());
+    t->set("linedefined", LuaValue(ar.linedefined) );
+    t->set("lastlinedefined", LuaValue(ar.lastlinedefined) );
+    t->set("what", ar.what2.c_str());
   }
-  if (strchr(options, 'l'))
+  if (strchr(options, 'l')) {
     settabsi(L, "currentline", ar.currentline);
+  }
   if (strchr(options, 'u')) {
     settabsi(L, "nups", ar.nups);
     settabsi(L, "nparams", ar.nparams);

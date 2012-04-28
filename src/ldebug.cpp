@@ -320,25 +320,6 @@ int lua_getinfo (LuaThread *L, const char *what, LuaDebug *ar) {
 /*
 ** find a "name" for the RK value 'c'
 */
-static void kname (LuaProto *p, int pc, int c, const char **name) {
-  if (ISK(c)) {  /* is 'c' a constant? */
-    LuaValue *kvalue = &p->constants[INDEXK(c)];
-    if (kvalue->isString()) {  /* literal constant? */
-      *name = kvalue->getString()->c_str();  /* it is its own name */
-      return;
-    }
-    /* else no reasonable name found */
-  }
-  else {  /* 'c' is a register */
-    const char *what = getobjname(p, pc, c, name); /* search for 'c' */
-    if (what && *what == 'c') {  /* found a constant name? */
-      return;  /* 'name' already filled */
-    }
-    /* else no reasonable name found */
-  }
-  *name = "?";  /* no reasonable name found */
-}
-
 void kname2 (LuaProto *p, int pc, int c, std::string& name) {
   if (ISK(c)) {  /* is 'c' a constant? */
     LuaValue *kvalue = &p->constants[INDEXK(c)];
@@ -406,59 +387,6 @@ static int findsetreg (LuaProto *p, int lastpc, int reg) {
   return setreg;
 }
 
-
-const char *getobjname (LuaProto *p, int lastpc, int reg, const char **name) {
-  int pc;
-  *name = p->getLocalName(reg + 1, lastpc);
-  if (*name)  /* is a local? */
-    return "local";
-  /* else try symbolic execution */
-  pc = findsetreg(p, lastpc, reg);
-  if (pc != -1) {  /* could find instruction? */
-    Instruction i = p->code[pc];
-    OpCode op = GET_OPCODE(i);
-    switch (op) {
-      case OP_MOVE: {
-        int b = GETARG_B(i);  /* move from 'b' to 'a' */
-        if (b < GETARG_A(i))
-          return getobjname(p, pc, b, name);  /* get name for 'b' */
-        break;
-      }
-      case OP_GETTABUP:
-      case OP_GETTABLE: {
-        int k = GETARG_C(i);  /* key index */
-        int t = GETARG_B(i);  /* table index */
-        const char *vn = (op == OP_GETTABLE)  /* name of indexed variable */
-                         ? p->getLocalName(t + 1, pc)
-                         : p->getUpvalName(t);
-        kname(p, pc, k, name);
-        return (vn && strcmp(vn, LUA_ENV) == 0) ? "global" : "field";
-      }
-      case OP_GETUPVAL: {
-        *name = p->getUpvalName(GETARG_B(i));
-        return "upvalue";
-      }
-      case OP_LOADK:
-      case OP_LOADKX: {
-        int b = (op == OP_LOADK) ? GETARG_Bx(i)
-                                 : GETARG_Ax(p->code[pc + 1]);
-        if (p->constants[b].isString()) {
-          *name = p->constants[b].getString()->c_str();
-          return "constant";
-        }
-        break;
-      }
-      case OP_SELF: {
-        int k = GETARG_C(i);  /* key index */
-        kname(p, pc, k, name);
-        return "method";
-      }
-      default: break;  /* go through to return NULL */
-    }
-  }
-  return NULL;  /* could not find reasonable name */
-}
-
 const char *getobjname2 (LuaProto *p, int lastpc, int reg, std::string& name) {
   int pc;
   const char* name2 = p->getLocalName(reg + 1, lastpc);
@@ -519,46 +447,6 @@ const char *getobjname2 (LuaProto *p, int lastpc, int reg, std::string& name) {
   return NULL;  /* could not find reasonable name */
 }
 
-
-const char *getfuncname (LuaThread *L, LuaStackFrame *ci, const char **name) {
-  THREAD_CHECK(L);
-  TMS tm;
-  LuaProto *p = ci->getFunc()->getLClosure()->proto_;  /* calling function */
-  int pc = currentpc(ci);  /* calling instruction index */
-  Instruction i = p->code[pc];  /* calling instruction */
-  switch (GET_OPCODE(i)) {
-    case OP_CALL:
-    case OP_TAILCALL:  /* get function name */
-      return getobjname(p, pc, GETARG_A(i), name);
-    case OP_TFORCALL: {  /* for iterator */
-      *name = "for iterator";
-       return "for iterator";
-    }
-    /* all other instructions can call only through metamethods */
-    case OP_SELF:
-    case OP_GETTABUP:
-    case OP_GETTABLE: tm = TM_INDEX; break;
-    case OP_SETTABUP:
-    case OP_SETTABLE: tm = TM_NEWINDEX; break;
-    case OP_EQ: tm = TM_EQ; break;
-    case OP_ADD: tm = TM_ADD; break;
-    case OP_SUB: tm = TM_SUB; break;
-    case OP_MUL: tm = TM_MUL; break;
-    case OP_DIV: tm = TM_DIV; break;
-    case OP_MOD: tm = TM_MOD; break;
-    case OP_POW: tm = TM_POW; break;
-    case OP_UNM: tm = TM_UNM; break;
-    case OP_LEN: tm = TM_LEN; break;
-    case OP_LT: tm = TM_LT; break;
-    case OP_LE: tm = TM_LE; break;
-    case OP_CONCAT: tm = TM_CONCAT; break;
-    default:
-      return NULL;  /* else no useful name can be found */
-  }
-  *name = G(L)->tagmethod_names_[tm]->c_str();
-  return "metamethod";
-}
-
 const char* getfuncname2 (LuaThread *L, LuaStackFrame *ci, std::string& name) {
   THREAD_CHECK(L);
   TMS tm;
@@ -615,12 +503,12 @@ static int isinstack (LuaStackFrame *ci, const LuaValue *o) {
 }
 
 
-static const char *getupvalname (LuaStackFrame *ci, const LuaValue *o, const char **name) {
+static const char *getupvalname (LuaStackFrame *ci, const LuaValue *o, std::string& name) {
   LuaClosure *c = ci->getFunc()->getLClosure();
   int i;
   for (i = 0; i < c->nupvalues; i++) {
     if (c->ppupvals_[i]->v == o) {
-      *name = c->proto_->getUpvalName(i);
+      name = c->proto_->getUpvalName(i);
       return "upvalue";
     }
   }
@@ -631,19 +519,19 @@ static const char *getupvalname (LuaStackFrame *ci, const LuaValue *o, const cha
 l_noret luaG_typeerror (const LuaValue *o, const char *op) {
   LuaThread*L = thread_L;
   LuaStackFrame *ci = L->stack_.callinfo_;
-  const char *name = NULL;
+  std::string name;
   const char *t = objtypename(o);
   const char *kind = NULL;
   if (ci->isLua()) {
-    kind = getupvalname(ci, o, &name);  /* check whether 'o' is an upvalue */
+    kind = getupvalname(ci, o, name);  /* check whether 'o' is an upvalue */
     if (!kind && isinstack(ci, o)) {
       /* no? try a register */
-      kind = getobjname(ci->getFunc()->getLClosure()->proto_, currentpc(ci), cast_int(o - ci->getBase()), &name);
+      kind = getobjname2(ci->getFunc()->getLClosure()->proto_, currentpc(ci), cast_int(o - ci->getBase()), name);
     }
   }
   if (kind)
     luaG_runerror("attempt to %s %s " LUA_QS " (a %s value)",
-                op, kind, name, t);
+                op, kind, name.c_str(), t);
   else
     luaG_runerror("attempt to %s a %s value", op, t);
 }

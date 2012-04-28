@@ -492,6 +492,7 @@ static int pmain (LuaThread *L) {
 
 
 int main (int argc, char **argv) {
+
   {
     LuaThread *L = luaL_newstate();  /* create state */
     lua_close(L);
