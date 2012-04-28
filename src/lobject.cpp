@@ -248,17 +248,6 @@ const char *luaO_pushfstring (LuaThread *L, const char *fmt, ...) {
   return msg;
 }
 
-
-/* number of chars of a literal string without the ending \0 */
-#define LL(x)	(sizeof(x)/sizeof(char) - 1)
-
-#define RETS	"..."
-#define PRE	"[string \""
-#define POS	"\"]"
-
-#define addstr(a,b,l)	( memcpy(a,b,(l) * sizeof(char)), a += (l) )
-
-
 std::string luaO_chunkid2 (const char *source) {
   int len = strlen(source);
   int bufflen = LUA_IDSIZE - 1;
@@ -282,26 +271,19 @@ std::string luaO_chunkid2 (const char *source) {
     }
   }
 
-  bufflen -= LL(PRE RETS POS);
+  bufflen -= strlen("[string \"...\"]");
 
   const char *nl = strchr(source, '\n');
   if(nl) len = nl - source;
   std::string line(source,len);
 
-  if(nl) {
+  if((nl == NULL) && (line.size() <= (size_t)bufflen)) {
+    return "[string \"" + line + "\"]";
+  }
+  else {
     if(line.size() > (size_t)bufflen) line.resize(bufflen);
     return "[string \"" + line + "...\"]";
   }
-  else {
-    if(line.size() > (size_t)bufflen) {
-      line.resize(bufflen);
-      return "[string \"" + line + "...\"]";
-    }
-    else {
-      return "[string \"" + line + "\"]";
-    }
-  }
-
 }
 
 void luaO_chunkid (char *out2, const char *source2, size_t bufflen2) {

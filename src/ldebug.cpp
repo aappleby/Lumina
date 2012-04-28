@@ -600,17 +600,18 @@ l_noret luaG_runerror (const char* fmt, ...) {
   LuaStackFrame *ci = L->stack_.callinfo_;
 
   if (ci->isLua()) {  /* is Lua code? */
-    char buff[LUA_IDSIZE];  /* add file:line information */
     int line = currentline(ci);
     LuaString *src = ci->getFunc()->getLClosure()->proto_->source;
-    if (src)
-      luaO_chunkid(buff, src->c_str(), LUA_IDSIZE);
-    else {  /* no source available; use "?" instead */
-      buff[0] = '?'; buff[1] = '\0';
+    if (src) {
+      std::string buff = luaO_chunkid2(src->c_str());
+      _snprintf(buffer2, 256, "%s:%d: %s", buff.c_str(), line, buffer1);
+      luaG_errormsg2(buffer2);
     }
-
-    _snprintf(buffer2, 256, "%s:%d: %s", buff, line, buffer1);
-    luaG_errormsg2(buffer2);
+    else {
+      // no source available; use "?" instead
+      _snprintf(buffer2, 256, "?:%d: %s", line, buffer1);
+      luaG_errormsg2(buffer2);
+    }
   }
   else {
     luaG_errormsg2(buffer1);
