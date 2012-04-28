@@ -360,7 +360,9 @@ public:
   //const char *namewhat;	/* (n) 'global', 'local', 'field', 'method' */
   std::string namewhat2;
 
-  const char *what;	/* (S) 'Lua', 'C', 'main', 'tail' */
+  //const char *what;	/* (S) 'Lua', 'C', 'main', 'tail' */
+  std::string what2;
+
   const char *source;	/* (S) */
   
   int currentline;	/* (l) */

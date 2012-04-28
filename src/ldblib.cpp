@@ -170,7 +170,7 @@ static int db_getinfo (LuaThread *L) {
     settabss(L, "short_src", ar.short_src2.c_str());
     settabsi(L, "linedefined", ar.linedefined);
     settabsi(L, "lastlinedefined", ar.lastlinedefined);
-    settabss(L, "what", ar.what);
+    settabss(L, "what", ar.what2.c_str());
   }
   if (strchr(options, 'l'))
     settabsi(L, "currentline", ar.currentline);

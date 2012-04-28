@@ -177,14 +177,14 @@ static void funcinfo (LuaDebug *ar, LuaClosure *cl) {
     ar->source = "=[C]";
     ar->linedefined = -1;
     ar->lastlinedefined = -1;
-    ar->what = "C";
+    ar->what2 = "C";
   }
   else {
     LuaProto *p = cl->proto_;
     ar->source = p->source ? p->source->c_str() : "=?";
     ar->linedefined = p->linedefined;
     ar->lastlinedefined = p->lastlinedefined;
-    ar->what = (ar->linedefined == 0) ? "main" : "Lua";
+    ar->what2 = (ar->linedefined == 0) ? "main" : "Lua";
   }
   ar->short_src2 = luaO_chunkid2(ar->source);
 }

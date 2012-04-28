@@ -101,11 +101,11 @@ static void pushfuncname (LuaThread *L, LuaDebug *ar) {
     /* is there a name? */
     lua_pushfstring(L, "function " LUA_QS, ar->name2.c_str());
   }
-  else if (*ar->what == 'm') {
+  else if (ar->what2 == "main") {
     /* main? */
     lua_pushfstring(L, "main chunk");
   }
-  else if (*ar->what == 'C') {
+  else if (ar->what2 == "C") {
     if (pushglobalfuncname(L, ar)) {
       lua_pushfstring(L, "function " LUA_QS, lua_tostring(L, -1));
       L->stack_.remove(-2);  /* remove name */
