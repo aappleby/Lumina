@@ -250,10 +250,8 @@ static bool sweepListNormal (LuaObject *& head, LuaObject*& p1, LuaObject**&, si
     }
     else {
       if (curr->isThread()) {
-        /* sweep thread's upvalues */
         sweepthread(dynamic_cast<LuaThread*>(curr));
       }
-      /* update marks */
       curr->makeLive();
       p1 = curr;
     }
@@ -280,32 +278,27 @@ void sweepListNormal2 (LuaList::iterator& it, size_t count) {
   }
 }
 
-static bool sweepListGenerational (LuaObject*& head, LuaObject *& p1, LuaObject**& p2, size_t count) {
-
+static bool sweepListGenerational (LuaObject*& head, LuaObject *& p1, LuaObject**&, size_t count) {
   while (1) {
-    if(*p2 == NULL) return true;
+    if(head == NULL) return true;
+    if(p1 && (p1->next_ == NULL)) return true;
     if(count-- <= 0) return false;
-    assert((p1 == NULL) || (&p1->next_ == p2));
-    LuaObject *curr = *p2;
-    if (curr->isDead()) {  /* is 'curr' dead? */
-      *p2 = curr->next_;  /* remove 'curr' from list */
-      RemoveObjectFromList(curr, head);
 
+    LuaObject *curr = p1 ? p1->next_ : head;
+    if (curr->isDead()) {
+      if(p1) p1->next_ = curr->next_;
+      RemoveObjectFromList(curr, head);
       delete curr;
     }
     else {
       if (curr->isThread()) {
-        sweepthread(dynamic_cast<LuaThread*>(curr));  /* sweep thread's upvalues */
+        sweepthread(dynamic_cast<LuaThread*>(curr));
       }
       if (curr->isOld()) {
-        static LuaObject *nullp = NULL;
-        p2 = &nullp;  /* stop sweeping this list */
         return true;
       }
-      /* update marks */
       curr->setOld();
       p1 = curr;
-      p2 = &curr->next_;  /* go to next element */
     }
   }
 }
