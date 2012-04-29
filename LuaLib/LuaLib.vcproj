@@ -485,6 +485,26 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\lzio.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lzio.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\MurmurHash3.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\MurmurHash3.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="_New"
+			>
+			<File
 				RelativePath="..\src\LuaBase.cpp"
 				>
 			</File>
@@ -632,26 +652,6 @@
 				RelativePath="..\src\LuaVector.h"
 				>
 			</File>
-			<File
-				RelativePath="..\src\lzio.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\lzio.h"
-				>
-			</File>
-			<File
-				RelativePath="..\src\MurmurHash3.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\MurmurHash3.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="_New"
-			>
 		</Filter>
 		<File
 			RelativePath="..\src\lua.h"

@@ -36,6 +36,8 @@ public:
   {
   }
 
+  void VisitString   (LuaString* s);
+
   void MarkValue     (LuaValue v);
   void MarkObject    (LuaObject* o);
 

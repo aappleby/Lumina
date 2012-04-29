@@ -511,6 +511,18 @@ void luaC_freeallobjects () {
   thread_G->strings_->Clear();
 }
 
+void traverseAllObjects() {
+  //LuaVM* g = thread_G;
+  
+  // strings
+
+  // allgc
+
+  // finobj
+
+  // mainthread
+}
+
 // We have marked our root objects and incrementally propagated those marks
 // out through all objects in the universe.
 

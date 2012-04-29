@@ -2,6 +2,7 @@
 
 #include "LuaGlobals.h"
 #include "LuaObject.h" // for LuaGCVisitor
+#include "LuaString.h"
 #include "LuaValue.h"
 
 void LuaCollector::ClearGraylists() {
@@ -58,6 +59,12 @@ void LuaCollector::ConvergeEphemerons() {
       }
     }
   } while (changed);
+}
+
+//------------------------------------------------------------------------------
+
+void LuaGCVisitor::VisitString(LuaString* s) {
+  s->setColor(LuaObject::GRAY);
 }
 
 //------------------------------------------------------------------------------

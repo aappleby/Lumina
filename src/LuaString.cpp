@@ -41,8 +41,8 @@ LuaString::~LuaString() {
 
 //-----------------------------------------------------------------------------
 
-void LuaString::VisitGC(LuaGCVisitor&) {
-  setColor(GRAY);
+void LuaString::VisitGC(LuaGCVisitor& v) {
+  v.VisitString(this);
 }
 
 int LuaString::PropagateGC(LuaGCVisitor&) {
