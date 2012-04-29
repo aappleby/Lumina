@@ -237,6 +237,12 @@ static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
     LuaObject *curr = *p;
     if (curr->isDead()) {  /* is 'curr' dead? */
       *p = curr->next_;  /* remove 'curr' from list */
+
+      if(curr->prev_) curr->prev_->next_ = curr->next_;
+      if(curr->next_) curr->next_->prev_ = curr->prev_;
+      curr->prev_ = NULL;
+      curr->next_ = NULL;
+
       delete curr;
     }
     else {
@@ -277,6 +283,12 @@ static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
     LuaObject *curr = *p;
     if (curr->isDead()) {  /* is 'curr' dead? */
       *p = curr->next_;  /* remove 'curr' from list */
+
+      if(curr->prev_) curr->prev_->next_ = curr->next_;
+      if(curr->next_) curr->next_->prev_ = curr->prev_;
+      curr->prev_ = NULL;
+      curr->next_ = NULL;
+
       delete curr;
     }
     else {
@@ -337,9 +349,13 @@ void sweeplist (LuaList::iterator& it, size_t count) {
 
 void deletelist (LuaObject*& head) {
   while (head != NULL) {
-    LuaObject *curr = head;
-    head = curr->next_;
-    delete curr;
+    LuaObject *dead = head;
+    head = dead->next_;
+    if(head) head->prev_ = NULL;
+
+    dead->prev_ = NULL;
+    dead->next_ = NULL;
+    delete dead;
   }
 }
 
@@ -486,6 +502,10 @@ void RemoveObjectFromList(LuaObject* o, LuaObject** list) {
   LuaObject **p = list;
   for (; *p != o; p = &(*p)->next_);
   *p = o->next_;
+
+  if(o->prev_) o->prev_->next_ = o->next_;
+  if(o->next_) o->next_->prev_ = o->prev_;
+  o->prev_ = NULL;
   o->next_ = NULL;
 }
 

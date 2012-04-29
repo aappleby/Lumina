@@ -9,6 +9,9 @@ public:
   virtual ~LuaObject();
 
   void linkGC(LuaObject** gcHead);
+
+  void linkGC(LuaObject*& gcHead);
+
   void linkGC(LuaList& gclist);
 
   void sanityCheck();

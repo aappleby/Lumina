@@ -126,8 +126,8 @@ LuaString* LuaStringTable::Create(const char *str, int len) {
   
   LuaString* new_string = new LuaString(hash, str, len);
 
-  LuaString** list = &hash_[hash & (hash_.size() - 1)];
-  new_string->linkGC((LuaObject**)list);
+  LuaObject*& list = (LuaObject*&)hash_[hash & (hash_.size() - 1)];
+  new_string->linkGC(list);
   nuse_++;
   return new_string;
 }
@@ -144,6 +144,9 @@ bool LuaStringTable::Sweep(bool generational) {
     LuaObject* s = *cursor;
     if (s->isDead()) {
       *cursor = (LuaString*)s->next_;
+
+      s->prev_ = NULL;
+      s->next_ = NULL;
       delete s;
       nuse_--;
     }
@@ -184,6 +187,11 @@ void LuaStringTable::Clear() {
     while(hash_[i]) {
       LuaObject* dead = hash_[i];
       hash_[i] = (LuaString*)hash_[i]->next_;
+      if(hash_[i]) hash_[i]->prev_ = NULL;
+
+      dead->prev_ = NULL;
+      dead->next_ = NULL;
+
       delete dead;
     }
   }

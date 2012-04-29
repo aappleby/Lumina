@@ -32,6 +32,9 @@ LuaObject::LuaObject(LuaType type) {
 }
 
 LuaObject::~LuaObject() {
+  assert(next_ == NULL);
+  assert(prev_ == NULL);
+
   if(thread_G) thread_G->instanceCounts[type_]--;
 }
 
@@ -41,8 +44,18 @@ void LuaObject::linkGC(LuaObject** gcHead) {
 
   if(gcHead) {
     next_ = *gcHead;
+    if(next_) next_->prev_ = this;
     *gcHead = this;
   }
+}
+
+void LuaObject::linkGC(LuaObject*& gcHead) {
+  assert(prev_ == NULL);
+  assert(next_ == NULL);
+
+  next_ = gcHead;
+  if(next_) next_->prev_ = this;
+  gcHead = this;
 }
 
 void LuaObject::linkGC(LuaList& gclist) {

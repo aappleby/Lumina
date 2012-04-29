@@ -386,6 +386,10 @@ LuaUpvalue* LuaStack::createUpvalFor(StkId level) {
     p->clearOld();  /* may create a newer upval after this one */
     pp = &(p->next_);
   }
+  if(*pp) {
+    int b = 0;
+    b++;
+  }
   /* not found: create a new one */
   LuaUpvalue *uv = new LuaUpvalue();
   uv->linkGC(pp);
@@ -409,7 +413,9 @@ void LuaStack::closeUpvals(StkId level) {
     if(uv->v < level) break;
 
     assert(!uv->isBlack() && uv->v != &uv->value);
+
     open_upvals_ = uv->next_;  /* remove from `open' list */
+    if(uv->next_) uv->next_->prev_ = NULL;
     uv->next_ = NULL;
 
     if (uv->isDead())
