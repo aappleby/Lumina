@@ -86,10 +86,20 @@ public:
 
   //----------
 
+  LuaObject* getNextGray() const { return next_gray_; }
+  void setNextGray(LuaObject* o) { next_gray_ = o; }
+
+  LuaObject* getNext() const { return next_; }
+  void setNext(LuaObject* o) { next_ = o; }
+
+  //----------
+
   LuaObject *next_;
-  LuaObject *next_gray_;
 
 private:
+
+  LuaObject *next_gray_;
+
   LuaType type_;
   uint8_t flags_;
   Color color_;

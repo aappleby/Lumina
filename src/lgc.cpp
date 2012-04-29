@@ -191,18 +191,6 @@ void getTableMode(LuaTable* t, bool& outWeakKey, bool& outWeakVal) {
   }
 }
 
-// Propagate marks through all objects on this graylist, removing them
-// from the list as we go.
-void PropagateGC_Graylist(LuaObject*& head, LuaGCVisitor& visitor) {
-  while(head) {
-    LuaObject *o = head;
-    head = o->next_gray_;
-    o->next_gray_ = NULL;
-    assert(o->isGray());
-    o->PropagateGC(visitor);
-  }
-}
-
 /*
 ** {======================================================
 ** Sweep Functions

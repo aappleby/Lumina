@@ -244,7 +244,7 @@ void CheckGraylistCB(LuaObject* o) {
   assert(o->isGray());
   assert(!o->isTestGray());
   o->setTestGray();
-  o = o->next_gray_;
+  o = o->getNextGray();
 }
 
 static void markTestGrays (LuaVM *g) {

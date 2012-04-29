@@ -144,14 +144,14 @@ public:
   }
 
   void Push(LuaObject* o) {
-    assert(o->next_gray_ == NULL);
+    assert(o->getNextGray() == NULL);
     o->setColor(LuaObject::GRAY);
 
     if(head_ == NULL) {
       head_ = o;
       tail_ = o;
     } else {
-      o->next_gray_ = head_;
+      o->setNextGray(head_);
       head_ = o;
     }
   }
@@ -169,8 +169,8 @@ public:
     }
 
     LuaObject* o = head_;
-    head_ = o->next_gray_;
-    o->next_gray_ = NULL;
+    head_ = o->getNextGray();
+    o->setNextGray(NULL);
     return o;
   }
 
@@ -192,7 +192,7 @@ public:
   typedef void (*traverseCB)(LuaObject* o);
 
   void Traverse(traverseCB c) {
-    for(LuaObject* o = head_; o; o = o->next_gray_) {
+    for(LuaObject* o = head_; o; o = o->getNextGray()) {
       c(o);
     }
   }
