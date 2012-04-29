@@ -102,6 +102,10 @@ public:
 
   class iterator {
   public:
+    iterator()
+      : list_(NULL), object_(NULL) {
+    }
+
     iterator(LuaList* list)
       : list_(list), object_(list->getHead()) {
     }

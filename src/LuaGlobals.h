@@ -91,6 +91,8 @@ public:
   LuaObject *allgc;  /* list of all collectable objects */
   LuaObject **sweepgc;  /* current position of sweep */
 
+  LuaList::iterator sweepgc2;
+
   LuaObject *finobj;  /* list of collectable objects with finalizers */
   LuaList tobefnz;  /* list of userdata to be GC */
 

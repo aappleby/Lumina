@@ -251,6 +251,26 @@ static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
   return p;
 }
 
+void sweepListNormal2 (LuaList::iterator& it, size_t count) {
+  for(; it && count; --count) {
+    if (it->isDead()) {  /* is 'curr' dead? */
+      LuaObject* dead = it;
+      it.pop();
+      delete dead;
+    }
+    else {
+      if (it->isThread()) {
+        /* sweep thread's upvalues */
+        LuaObject* o = it;
+        sweepthread(dynamic_cast<LuaThread*>(o));
+      }
+      /* update marks */
+      it->makeLive();
+      ++it;
+    }
+  }
+}
+
 static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
   while (*p != NULL && count-- > 0) {
     LuaObject *curr = *p;
@@ -275,6 +295,28 @@ static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
   return p;
 }
 
+void sweepListGenerational2 (LuaList::iterator& it, size_t count) {
+  for(; it && count; --count) {
+    if (it->isDead()) {  /* is 'curr' dead? */
+      LuaObject* dead = it;
+      it.pop();
+      delete dead;
+    }
+    else {
+      if (it->isThread()) {
+        LuaObject* o = it;
+        sweepthread(dynamic_cast<LuaThread*>(o));  /* sweep thread's upvalues */
+      }
+      if (it->isOld()) {
+        break;
+      }
+      /* update marks */
+      it->setOld();
+      ++it;
+    }
+  }
+}
+
 static LuaObject** sweeplist (LuaObject **p, size_t count) {
   if(isgenerational(thread_G)) {
     return sweepListGenerational(p,count);
@@ -283,11 +325,26 @@ static LuaObject** sweeplist (LuaObject **p, size_t count) {
   }
 }
 
+void sweeplist (LuaList::iterator& it, size_t count) {
+  if(isgenerational(thread_G)) {
+    return sweepListGenerational2(it, count);
+  } else {
+    return sweepListNormal2(it, count);
+  }
+}
+
 void deletelist (LuaObject*& head) {
   while (head != NULL) {
     LuaObject *curr = head;
     head = curr->next_;
     delete curr;
+  }
+}
+
+void deletelist (LuaList& list) {
+  while(!list.isEmpty()) {
+    LuaObject* o = list.Pop();
+    delete o;
   }
 }
 
@@ -399,6 +456,23 @@ void separatetobefnz (int all) {
       g->tobefnz.PushTail(curr);
     }
   }
+  /*
+  for(LuaList::iterator it = g->finobj.begin(); it;) {
+    assert(!it->isFinalized());
+    assert(it->isSeparated());
+
+    // not being collected? don't bother with it
+    if (!(all || it->isWhite())) {
+      ++it;
+      continue;
+    }
+
+    // won't be finalized again
+    it->setFinalized();
+    g->tobefnz.PushTail(it);
+    it.pop();
+  }
+  */
 }
 
 // Removing a node in the middle of a singly-linked list requires
@@ -427,8 +501,10 @@ void luaC_checkfinalizer (LuaObject *o, LuaTable *mt) {
 
   // Remove the object from the global GC list and add it to the 'finobj' list.
   RemoveObjectFromList(o, &g->allgc);
+  
   o->next_ = g->finobj;
   g->finobj = o;
+  //g->finobj.Push(o);
 
   // Mark it as separated, and clear old (MOVE OLD rule).
   o->setSeparated();
@@ -486,6 +562,7 @@ static void callallpendingfinalizers (int propagateerrors) {
 void luaC_freeallobjects () {
   // separate all objects with finalizers
   separatetobefnz(1);
+  //assert(thread_G->finobj.isEmpty());
   assert(thread_G->finobj == NULL);
 
   // finalize everything
@@ -626,7 +703,7 @@ static ptrdiff_t singlestep () {
         return GCSWEEPMAX*GCSWEEPCOST;
       }
       else {
-        g->sweepgc = &g->allgc;  /* go to next phase */
+        g->sweepgc = &g->allgc;
         g->gcstate = GCSsweep;
         return GCSWEEPCOST;
       }
