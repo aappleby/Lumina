@@ -310,6 +310,9 @@ int lua_checkmemory (LuaThread *L) {
     assert(!it->isWhite());
     assert(!it->isDead() && it->isSeparated());
     assert(it->isUserdata() || it->isTable());
+
+    if(it->getNext()) assert(it->getNext()->getPrev() == it);
+    if(it->getPrev()) assert(it->getPrev()->getNext() == it);
   }
   /* check 'uvhead' list */
   for (uv = g->uvhead.unext; uv != &g->uvhead; uv = uv->unext) {

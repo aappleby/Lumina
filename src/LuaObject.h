@@ -89,8 +89,11 @@ public:
   LuaObject* getNextGray() const { return next_gray_; }
   void setNextGray(LuaObject* o) { next_gray_ = o; }
 
+  LuaObject* getPrev() const { return prev_; }
   LuaObject* getNext() const { return next_; }
+  void setPrev(LuaObject* o) { prev_ = o; }
   void setNext(LuaObject* o) { next_ = o; }
+
 
   //----------
 

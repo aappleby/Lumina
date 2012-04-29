@@ -380,20 +380,20 @@ void separatetobefnz (int all) {
   LuaObject **p = &g->finobj;
   LuaObject *curr;
 
-  /* traverse all finalizable objects */
+  // traverse all finalizable objects
   while ((curr = *p) != NULL) {  
     assert(!curr->isFinalized());
     assert(curr->isSeparated());
     
     if (!(all || curr->isWhite())) {
-      /* not being collected? */
-      /* don't bother with it */
+      // not being collected?
+      // don't bother with it
       p = &curr->next_;
     }
     else {
-      /* won't be finalized again */
+      // won't be finalized again
       curr->setFinalized();
-      *p = curr->next_;  /* remove 'curr' from 'finobj' list */
+      *p = curr->next_;  // remove 'curr' from 'finobj' list
       curr->next_ = NULL;
 
       g->tobefnz.PushTail(curr);

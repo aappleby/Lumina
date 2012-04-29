@@ -18,7 +18,11 @@ public:
     assert(isEmpty());
   }
 
+  LuaObject* getHead() { return head_; }
+  LuaObject* getTail() { return tail_; }
+
   void Push(LuaObject* o) {
+    assert(o->getPrev() == NULL);
     assert(o->getNext() == NULL);
 
     if(head_ == NULL) {
@@ -26,6 +30,7 @@ public:
       tail_ = o;
     } else {
       o->setNext(head_);
+      head_->setPrev(o);
       head_ = o;
     }
   }
@@ -60,6 +65,16 @@ public:
     return o;
   }
 
+  void Detach(LuaObject* o) {
+    if(o == NULL) return;
+
+    if(head_ == o) head_ = o->getNext();
+    if(tail_ == o) tail_ = o->getPrev();
+
+    if(o->getPrev()) o->getPrev()->setNext(o->getNext());
+    if(o->getNext()) o->getNext()->setPrev(o->getPrev());
+  }
+
   void Swap(LuaList& l) {
     LuaObject* temp_head = head_;
     LuaObject* temp_tail = tail_;
@@ -87,7 +102,8 @@ public:
 
   class iterator {
   public:
-    iterator(LuaObject* o) : object_(o) {
+    iterator(LuaList* list)
+      : list_(list), object_(list->getHead()) {
     }
 
     LuaObject* operator -> () {
@@ -107,12 +123,24 @@ public:
       return object_;
     }
 
+    // Removes the object at the iterator from the list and moves to the next
+    // item in the list.
+    LuaObject* pop() {
+      if(object_ == NULL) return NULL;
+
+      LuaObject* old = object_;
+      object_ = object_->getNext();
+      list_->Detach(old);
+      return old;
+    }
+
   protected:
+    LuaList* list_;
     LuaObject* object_;
   };
 
   iterator begin() {
-    return iterator(head_);
+    return iterator(this);
   }
 
 protected:
