@@ -649,6 +649,10 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="_New"
+			>
+		</Filter>
 		<File
 			RelativePath="..\src\lua.h"
 			>

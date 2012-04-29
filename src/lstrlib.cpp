@@ -62,6 +62,7 @@ static int str_sub (LuaThread *L) {
   size_t end = posrelat(luaL_optinteger(L, 3, -1), l);
   if (start < 1) start = 1;
   if (end > l) end = l;
+
   if (start <= end) {
     lua_pushlstring(L, s + start - 1, end - start + 1);
   }
@@ -559,6 +560,7 @@ static int str_find_aux (LuaThread *L, int find) {
   size_t ls, lp;
   const char *s = luaL_checklstring(L, 1, &ls);
   const char *p = luaL_checklstring(L, 2, &lp);
+
   size_t init = posrelat(luaL_optinteger(L, 3, 1), ls);
   if (init < 1) init = 1;
   else if (init > ls + 1) {  /* start after string's end? */
@@ -656,8 +658,10 @@ static int gmatch (LuaThread *L) {
 }
 
 
-static void add_s (MatchState *ms, luaL_Buffer *b, const char *s,
-                                                   const char *e) {
+static void add_s (MatchState *ms,
+                   luaL_Buffer *b,
+                   const char *s,
+                   const char *e) {
   size_t l, i;
   const char *news = lua_tolstring(ms->L, 3, &l);
   for (i = 0; i < l; i++) {
@@ -682,9 +686,13 @@ static void add_s (MatchState *ms, luaL_Buffer *b, const char *s,
 }
 
 
-static void add_value (MatchState *ms, luaL_Buffer *b, const char *s,
-                                       const char *e, LuaValue v) {
+static void add_value (MatchState *ms,
+                       luaL_Buffer *b,
+                       const char *s,
+                       const char *e,
+                       LuaValue v) {
   LuaThread *L = ms->L;
+
   if(v.isFunction()) {
     int n;
     L->stack_.copy(3);
@@ -697,12 +705,15 @@ static void add_value (MatchState *ms, luaL_Buffer *b, const char *s,
     add_s(ms, b, s, e);
     return;
   }
+
   if (!lua_toboolean(L, -1)) {  /* nil or false? */
     L->stack_.pop();
     lua_pushlstring(L, s, e - s);  /* keep original text */
   }
-  else if (!lua_isStringable(L, -1))
+  else if (!lua_isStringable(L, -1)) {
     luaL_error(L, "invalid replacement value (a %s)", luaL_typename(L, -1));
+  }
+
   luaL_addvalue(b);  /* add result to accumulator */
 }
 

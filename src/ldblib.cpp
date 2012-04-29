@@ -316,20 +316,23 @@ static int db_upvaluejoin (LuaThread *L) {
 }
 
 
-#define gethooktable(L)	luaL_getregistrytable(L, HOOKKEY);
-
-
 static void hookf (LuaThread *L, LuaDebug *ar) {
   THREAD_CHECK(L);
   static const char *const hooknames[] =
     {"call", "return", "line", "count", "tail call"};
-  gethooktable(L);
+  
+  luaL_getregistrytable(L, HOOKKEY);
+  
   lua_rawgetp(L, -1, L);
+
   if (lua_isfunction(L, -1)) {
     lua_pushstring(L, hooknames[(int)ar->event]);
-    if (ar->currentline >= 0)
+    if (ar->currentline >= 0) {
       lua_pushinteger(L, ar->currentline);
-    else L->stack_.push(LuaValue::Nil());
+    }
+    else {
+      L->stack_.push(LuaValue::Nil());
+    }
     assert(lua_getinfo(L, "lS", ar));
     lua_call(L, 2, 0);
   }
@@ -371,7 +374,9 @@ static int db_sethook (LuaThread *L) {
     count = luaL_optint(L, arg+3, 0);
     func = hookf; mask = makemask(smask, count);
   }
-  gethooktable(L);
+  
+  luaL_getregistrytable(L, HOOKKEY);
+  
   L->stack_.copy(arg+1);
   lua_rawsetp(L, -2, L1);  /* set new hook */
   L->stack_.pop();  /* remove hook table */
@@ -400,7 +405,8 @@ static int db_gethook (LuaThread *L) {
     lua_pushliteral(L, "external hook");
   }
   else {
-    gethooktable(L);
+    luaL_getregistrytable(L, HOOKKEY);
+
     lua_rawgetp(L, -1, L1);   /* get hook */
     L->stack_.remove(-2);  /* remove hook table */
   }
