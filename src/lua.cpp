@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <conio.h>
+#include <algorithm>
 #include <string>
 
 #include "LuaGlobals.h"

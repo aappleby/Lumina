@@ -180,8 +180,9 @@ static void setprogdir (LuaThread *L) {
   char *lb;
   DWORD nsize = sizeof(buff)/sizeof(char);
   DWORD n = GetModuleFileNameA(NULL, buff, nsize);
-  if (n == 0 || n == nsize || (lb = strrchr(buff, '\\')) == NULL)
+  if (n == 0 || n == nsize || (lb = strrchr(buff, '\\')) == NULL) {
     luaL_error(L, "unable to get ModuleFileName");
+  }
   else {
     *lb = '\0';
     luaL_gsub(L, lua_tostring(L, -1), LUA_EXEC_DIR, buff);
@@ -598,6 +599,27 @@ static int noenv (LuaThread *L) {
   return b;
 }
 
+/*
+static void setpath2 (const char *fieldname, const char *envname1, const char *envname2, const char *def) {
+  THREAD_CHECK(L);
+  const char *path = getenv(envname1);
+  if (path == NULL)  // no environment variable?
+    path = getenv(envname2);  // try alternative name
+  if (path == NULL || noenv(L)) {
+    // no environment variable?
+    lua_pushstring(L, def);  // use default
+  }
+  else {
+    // replace ";;" by ";AUXMARK;" and then AUXMARK by default path
+    path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP, LUA_PATH_SEP AUXMARK LUA_PATH_SEP);
+    luaL_gsub(L, path, AUXMARK, def);
+    L->stack_.remove(-2);
+  }
+  setprogdir(L);
+  lua_setfield(L, -2, fieldname);
+}
+*/
+
 
 static void setpath (LuaThread *L, const char *fieldname, const char *envname1,
                                    const char *envname2, const char *def) {
@@ -650,7 +672,7 @@ int luaopen_package (LuaThread *L) {
   search->set( 4, new LuaClosure(searcher_Croot,package) );
 
   /* put it in field 'searchers' */
-  package->set("searchers", LuaValue(search) );
+  package->set("searchers", search);
 
   /* set field 'path' */
   setpath(L, "path", LUA_PATHVERSION, LUA_PATH, LUA_PATH_DEFAULT);
@@ -658,8 +680,7 @@ int luaopen_package (LuaThread *L) {
   setpath(L, "cpath", LUA_CPATHVERSION, LUA_CPATH, LUA_CPATH_DEFAULT);
 
   /* store config information */
-  lua_pushliteral(L, LUA_DIRSEP "\n" LUA_PATH_SEP "\n" LUA_PATH_MARK "\n"
-                     LUA_EXEC_DIR "\n" LUA_IGMARK "\n");
+  lua_pushliteral(L, LUA_DIRSEP "\n" LUA_PATH_SEP "\n" LUA_PATH_MARK "\n" LUA_EXEC_DIR "\n" LUA_IGMARK "\n");
   lua_setfield(L, -2, "config");
   /* set field `loaded' */
 

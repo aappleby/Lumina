@@ -939,21 +939,48 @@ void luaL_requiref (LuaThread *L, const char *modname,
   }
 }
 
+std::string replace_all (const char* source,
+                         const char* pattern,
+                         const char* replace) {
+  std::string result;
+  size_t len = strlen(pattern);
+
+  const char* match = strstr(source, pattern);
+  while(match) {
+    result += std::string(source, match - source);
+    result += replace;
+    source = match + len;
+    match = strstr(source, pattern);
+  }
+  
+  result += source;
+
+  return result;
+}
+
 
 const char *luaL_gsub (LuaThread *L, const char *s, const char *p, const char *r) {
   THREAD_CHECK(L);
+  /*
   const char *wild;
   size_t l = strlen(p);
   luaL_Buffer b;
   luaL_buffinit(L, &b);
   while ((wild = strstr(s, p)) != NULL) {
-    luaL_addlstring(&b, s, wild - s);  /* push prefix */
-    luaL_addstring(&b, r);  /* push replacement in place of pattern */
-    s = wild + l;  /* continue after `p' */
+    luaL_addlstring(&b, s, wild - s);  // push prefix
+    luaL_addstring(&b, r);  // push replacement in place of pattern
+    s = wild + l;  // continue after `p'
   }
-  luaL_addstring(&b, s);  /* push last suffix */
+  luaL_addstring(&b, s);  // push last suffix
   luaL_pushresult(&b);
   return lua_tostring(L, -1);
+  */
+
+  std::string result = replace_all(s, p, r);
+
+  LuaString* s2 = L->l_G->strings_->Create(result.c_str());
+  L->stack_.push(s2);
+  return s2->c_str();
 }
 
 
