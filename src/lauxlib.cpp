@@ -210,7 +210,7 @@ int luaL_argerror (LuaThread *L, int narg, const char *extramsg) {
 }
 
 
-static int typeerror (LuaThread *L, int narg, const char* type1) {
+int typeerror (LuaThread *L, int narg, const char* type1) {
   THREAD_CHECK(L);
   const char* type2 = luaL_typename(L, narg);
   const char *msg = lua_pushfstring(L, "%s expected, got %s", type1, type2);
