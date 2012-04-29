@@ -67,6 +67,9 @@ public:
   virtual ~LuaFile() {
   }
 
+  FILE* getHandle() {
+  }
+
   FILE *f;  /* stream (NULL for incompletely created streams) */
   LuaCallback closef;  /* to close stream (NULL for closed streams) */
   FileCloser closef2;
@@ -355,6 +358,7 @@ static int io_lines (LuaThread *L) {
   THREAD_CHECK(L);
   int toclose;
   if (lua_isnone(L, 1)) L->stack_.push(LuaValue::Nil());  /* at least one argument */
+
   if (lua_isnil(L, 1)) {  /* no file name? */
     lua_getregistryfield(L, IO_INPUT);  /* get default input */
     lua_replace(L, 1);  /* put it at index 1 */
