@@ -50,6 +50,10 @@
 ** after that initial structure).
 */
 
+class LuaFile;
+
+typedef void (*FileCloser)(LuaFile*);
+
 class LuaFile : public LuaBlob
 {
 public:
@@ -69,6 +73,7 @@ public:
 
   FILE *f;  /* stream (NULL for incompletely created streams) */
   LuaCallback closef;  /* to close stream (NULL for closed streams) */
+  FileCloser closef2;
 };
 
 #define LUA_FILEHANDLE          "FILE*"
@@ -178,8 +183,11 @@ static int io_close (LuaThread *L) {
 static int f_gc (LuaThread *L) {
   THREAD_CHECK(L);
   LuaFile* p2 = getFile(L,1);
-  if (!isclosed(p2) && p2->f != NULL)
-    aux_close(L);  /* ignore closed and incompletely open files */
+  if (!isclosed(p2) && p2->f != NULL) {
+    FileCloser cf = p2->closef2;
+    p2->closef2 = NULL;  /* mark stream as closed */
+    (*cf)(p2);  /* close it */
+  }
   return 0;
 }
 
@@ -191,15 +199,31 @@ static int io_fclose (LuaThread *L) {
   THREAD_CHECK(L);
   LuaFile* p2 = getFile(L,1);
   int res = fclose(p2->f);
-  return luaL_fileresult(L, (res == 0), NULL);
+  //return luaL_fileresult(L, (res == 0), NULL);
+
+  int en = errno;  /* calls to Lua API may change this value */
+  if (res == 0) {
+    lua_pushboolean(L, 1);
+    return 1;
+  }
+  else {
+    L->stack_.push(LuaValue::Nil());
+    lua_pushfstring(L, "%s", strerror(en));
+    lua_pushinteger(L, en);
+    return 3;
+  }
 }
 
+static void io_fclose2(LuaFile* f) {
+  fclose(f->f);
+}
 
 static LuaFile* newfile (LuaThread *L) {
   THREAD_CHECK(L);
   LuaFile* p2 = newprefile(L);
   p2->f = NULL;
   p2->closef = &io_fclose;
+  p2->closef2 = &io_fclose2;
   return p2;
 }
 
@@ -240,6 +264,10 @@ static int io_pclose (LuaThread *L) {
   return luaL_execresult(L, lua_pclose(L, p2->f));
 }
 
+static void io_pclose2(LuaFile* f) {
+  _pclose(f->f);
+}
+
 
 static int io_popen (LuaThread *L) {
   THREAD_CHECK(L);
@@ -248,6 +276,7 @@ static int io_popen (LuaThread *L) {
   LuaFile* p2 = newprefile(L);
   p2->f = lua_popen(L, filename, mode);
   p2->closef = &io_pclose;
+  p2->closef2 = &io_pclose2;
   return (p2->f == NULL) ? luaL_fileresult(L, 0, filename) : 1;
 }
 
@@ -654,6 +683,9 @@ static int io_noclose (LuaThread *L) {
   return 2;
 }
 
+static void io_noclose2(LuaFile*) {
+}
+
 
 static void createstdfile (LuaThread *L, FILE *f, const char *k,
                            const char *fname) {
@@ -661,6 +693,7 @@ static void createstdfile (LuaThread *L, FILE *f, const char *k,
   LuaFile* p2 = newprefile(L);
   p2->f = f;
   p2->closef = &io_noclose;
+  p2->closef2 = &io_noclose2;
   if (k != NULL) {
     L->stack_.copy(-1);
     lua_setregistryfield(L, k);  /* add file to registry */
