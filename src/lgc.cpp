@@ -199,7 +199,7 @@ void getTableMode(LuaTable* t, bool& outWeakKey, bool& outWeakVal) {
 */
 
 
-static bool sweeplist (LuaObject*& head, LuaObject*& p1, LuaObject**& p2, size_t count);
+static bool sweeplist (LuaObject*& head, LuaObject*& cursor, size_t count);
 static void sweeplist (LuaList::iterator& it, size_t count);
 
 
@@ -211,8 +211,7 @@ static void sweeplist (LuaList::iterator& it, size_t count);
 static void sweepthread (LuaThread *L1) {
   if (L1->stack_.empty()) return;  /* stack not completely built yet */
   LuaObject* p1 = NULL;
-  LuaObject** p2 = &L1->stack_.open_upvals_;
-  sweeplist(L1->stack_.open_upvals_, p1, p2, MAX_LUMEM);  /* sweep open upvalues */
+  sweeplist(L1->stack_.open_upvals_, p1, MAX_LUMEM);  /* sweep open upvalues */
   L1->stack_.sweepCallinfo();
   /* should not change the stack during an emergency gc cycle */
   if (thread_G->gckind != KGC_EMERGENCY) {
@@ -235,7 +234,7 @@ static void sweepthread (LuaThread *L1) {
 */
 
 
-static bool sweepListNormal (LuaObject *& head, LuaObject*& p1, LuaObject**&, size_t count) {
+static bool sweepListNormal (LuaObject *& head, LuaObject*& p1, size_t count) {
 
   while(1) {
     if(head == NULL) return true;
@@ -278,7 +277,7 @@ void sweepListNormal2 (LuaList::iterator& it, size_t count) {
   }
 }
 
-static bool sweepListGenerational (LuaObject*& head, LuaObject *& p1, LuaObject**&, size_t count) {
+static bool sweepListGenerational (LuaObject*& head, LuaObject *& p1, size_t count) {
   while (1) {
     if(head == NULL) return true;
     if(p1 && (p1->next_ == NULL)) return true;
@@ -326,11 +325,11 @@ void sweepListGenerational2 (LuaList::iterator& it, size_t count) {
   }
 }
 
-static bool sweeplist (LuaObject*& head, LuaObject*& p1, LuaObject**& p2, size_t count) {
+static bool sweeplist (LuaObject*& head, LuaObject*& cursor, size_t count) {
   if(isgenerational(thread_G)) {
-    return sweepListGenerational(head,p1,p2,count);
+    return sweepListGenerational(head,cursor,count);
   } else {
-    return sweepListNormal(head,p1,p2,count);
+    return sweepListNormal(head,cursor,count);
   }
 }
 
@@ -711,13 +710,12 @@ static ptrdiff_t singlestep () {
       }
       else {
         g->sweepcursor = NULL;
-        g->sweepgc = &g->allgc;
         g->gcstate = GCSsweep;
         return GCSWEEPCOST;
       }
     }
     case GCSsweep: {
-      bool done = sweeplist(g->allgc, g->sweepcursor, g->sweepgc, GCSWEEPMAX);
+      bool done = sweeplist(g->allgc, g->sweepcursor, GCSWEEPMAX);
 
       if (!done) {
         return GCSWEEPMAX*GCSWEEPCOST;
@@ -727,9 +725,8 @@ static ptrdiff_t singlestep () {
         // TODO(aappleby): What? Why is it sweeping a list of one object
         // that should never be dead?
         LuaObject* head = g->mainthread;
-        LuaObject* p1 = NULL;
-        LuaObject** p2 = &head;
-        sweeplist(head, p1, p2, 1);
+        LuaObject* cursor = NULL;
+        sweeplist(head, cursor, 1);
         
         // We have swept everything. If this is not an emergency, try and
         // save some RAM by reducing the size of our internal buffers.

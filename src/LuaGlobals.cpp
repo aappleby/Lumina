@@ -74,8 +74,6 @@ LuaVM::LuaVM()
 
   allgc = NULL;
   sweepcursor = NULL;
-  sweepgc = NULL;
-  //finobj = NULL;
 
   panic = NULL;
   version = lua_version(NULL);
