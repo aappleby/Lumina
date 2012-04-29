@@ -17,5 +17,9 @@ public:
   LuaTable* env_;
   uint8_t* buf_;
   size_t len_;  /* number of bytes */
+
+  // patched in temporarily while we move file IO to a subclass
+  FILE *f;  /* stream (NULL for incompletely created streams) */
+  LuaCallback closef;  /* to close stream (NULL for closed streams) */
 };
 

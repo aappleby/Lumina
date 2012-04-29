@@ -1178,7 +1178,7 @@ void *lua_newuserdata (LuaThread *L, size_t size) {
   }
 
   LuaBlob* u = new LuaBlob(size);
-  L->stack_.push(LuaValue(u));
+  L->stack_.push(u);
 
   return u->buf_;
 }

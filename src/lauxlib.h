@@ -178,26 +178,6 @@ char *(luaL_buffinitsize) (LuaThread *L, luaL_Buffer *B, size_t sz);
 
 
 
-/*
-** {======================================================
-** File handles for IO library
-** =======================================================
-*/
-
-/*
-** A file handle is a userdata with metatable 'LUA_FILEHANDLE' and
-** initial structure 'luaL_Stream' (it may contain other fields
-** after that initial structure).
-*/
-
-#define LUA_FILEHANDLE          "FILE*"
-
-
-typedef struct luaL_Stream {
-  FILE *f;  /* stream (NULL for incompletely created streams) */
-  LuaCallback closef;  /* to close stream (NULL for closed streams) */
-} luaL_Stream;
-
 /* }====================================================== */
 
 
