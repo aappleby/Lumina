@@ -646,7 +646,7 @@ void lua_createtable (LuaThread *L, int narray, int nrec) {
   THREAD_CHECK(L);
 
   LuaTable* t = new LuaTable(narray, nrec);
-  L->stack_.push(LuaValue(t));
+  L->stack_.push(t);
 }
 
 LuaTable* lua_getmetatable(LuaValue v) {

@@ -245,13 +245,15 @@ static const luaL_Reg mathlib[] = {
 int luaopen_math (LuaThread *L) {
   THREAD_CHECK(L);
 
-  lua_createtable(L, 0, sizeof(mathlib)/sizeof((mathlib)[0]) - 1);
-  luaL_setfuncs(L,mathlib,0);
+  LuaTable* lib = new LuaTable();
+  for(const luaL_Reg* cursor = mathlib; cursor->name; cursor++) {
+    lib->set( cursor->name, LuaValue(cursor->func) );
+  }
 
-  lua_pushnumber(L, PI);
-  lua_setfield(L, -2, "pi");
-  lua_pushnumber(L, HUGE_VAL);
-  lua_setfield(L, -2, "huge");
+  lib->set("pi", LuaValue(PI) );
+  lib->set("huge", LuaValue(HUGE_VAL) );
+
+  L->stack_.push(lib);
   return 1;
 }
 

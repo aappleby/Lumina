@@ -988,21 +988,21 @@ int luaopen_string (LuaThread *L) {
 
   // Add all the library functions to it
   for(const luaL_Reg* cursor = strlib; cursor->name; cursor++) {
-    lib->set( cursor->name, LuaValue(cursor->func) );
+    lib->set( cursor->name, cursor->func );
   }
 
   // Create an empty metatable,
   LuaTable* meta = new LuaTable();
 
   // set the string library as the '__index' metamethod.
-  meta->set( "__index", LuaValue(lib) );
+  meta->set( "__index", lib );
 
   // and set it as the base string metatable.
   vm->base_metatables_[LUA_TSTRING] = meta;
 
   // The caller expects the library to get pushed onto the stack, so do that
   // too.
-  L->stack_.push(LuaValue(lib));
+  L->stack_.push(lib);
 
   return 1;
 }

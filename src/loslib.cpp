@@ -339,8 +339,11 @@ static const luaL_Reg syslib[] = {
 int luaopen_os (LuaThread *L) {
   THREAD_CHECK(L);
 
-  lua_createtable(L, 0, sizeof(syslib)/sizeof((syslib)[0]) - 1);
-  luaL_setfuncs(L,syslib,0);
+  LuaTable* lib = new LuaTable();
+  for(const luaL_Reg* cursor = syslib; cursor->name; cursor++) {
+    lib->set( cursor->name, LuaValue(cursor->func) );
+  }
+  L->stack_.push(lib);
 
   return 1;
 }

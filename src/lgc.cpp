@@ -336,7 +336,7 @@ static LuaObject *udata2finalize (LuaVM *g) {
 static void GCTM (int propagateerrors) {
 
   // Pop object with finalizer off the 'finobj' list
-  LuaValue v = LuaValue(udata2finalize(thread_G));
+  LuaValue v = udata2finalize(thread_G);
 
   // Get the finalizer from it.
   LuaValue tm = luaT_gettmbyobj2(v, TM_GC);
@@ -353,16 +353,15 @@ static void GCTM (int propagateerrors) {
   // Save the parts of the execution state that will get modified by the call
   LuaExecutionState s = L->saveState(L->stack_.top_);
 
-  L->stack_.top_[0] = tm;  // push finalizer...
-  L->stack_.top_[1] = v; // ... and its argument
-  L->stack_.top_ += 2;  // and (next line) call the finalizer
-
   L->allowhook = 0;  // stop debug hooks during GC metamethod
-
   L->errfunc = 0;
 
   LuaResult status = LUA_OK;
   try {
+    L->stack_.top_[0] = tm;  // push finalizer...
+    L->stack_.top_[1] = v; // ... and its argument
+    L->stack_.top_ += 2;  // and (next line) call the finalizer
+
     luaD_call(L, L->stack_.top_ - 2, 0, 0);
   }
   catch(LuaResult error) {

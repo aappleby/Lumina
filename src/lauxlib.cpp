@@ -857,27 +857,6 @@ const char *luaL_tolstring (LuaThread *L, int idx, size_t *len) {
 /* }====================================================== */
 
 /*
-** set functions from list 'l' into table at top - 'nup'; each
-** function gets the 'nup' elements at the top as upvalues.
-** Returns with only the table at the stack.
-*/
-void luaL_setfuncs (LuaThread *L, const luaL_Reg *l, int nup) {
-  THREAD_CHECK(L);
-  luaL_checkstack(L, nup, "too many upvalues");
-  for (; l->name != NULL; l++) {  /* fill the table with given functions */
-    int i;
-    for (i = 0; i < nup; i++) {
-      /* copy upvalues to the top */
-      L->stack_.copy(-nup);
-    }
-    lua_pushcclosure(L, l->func, nup);  /* closure with those upvalues */
-    lua_setfield(L, -(nup + 2), l->name);
-  }
-  L->stack_.pop(nup);  /* remove upvalues */
-}
-
-
-/*
 ** ensure that stack[idx][fname] has a table and push that table
 ** into the stack
 */
