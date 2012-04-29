@@ -30,26 +30,48 @@
 #define l_tg(x)		(x)
 #endif
 
-template<double (*F)(double)>
-int UnaryOperation(LuaThread* L) {
-  THREAD_CHECK(L);
-  double x = luaL_checknumber(L, 1);
-  double result = F(x);
+template<typename T>
+T checkarg(LuaThread* L, int idx);
+
+template<>
+double checkarg<double>(LuaThread* L, int idx) {
+  return luaL_checknumber(L, idx);
+}
+
+template<>
+int checkarg<int>(LuaThread* L, int idx) {
+  return luaL_checkint(L, idx);
+}
+
+template<typename T>
+void pushresult(LuaThread* L, T result);
+
+template<>
+void pushresult(LuaThread* L, double result) {
   lua_pushnumber(L, result);
+}
+
+template<>
+void pushresult(LuaThread* L, int result) {
+  lua_pushinteger(L, result);
+}
+
+template<typename Param1, typename Result1, Result1 (*F)(Param1)>
+int Bind_1_1(LuaThread* L) {
+  THREAD_CHECK(L);
+  Param1 x = checkarg<Param1>(L, 1);
+  Result1 result = F(x);
+  pushresult<Result1>(L, result);
   return 1;
 }
 
-static int math_atan2 (LuaThread *L) {
+template<typename Param1, typename Param2, typename Result1, Result1 (*F)(Param1, Param2)>
+int Bind_2_1(LuaThread* L) {
   THREAD_CHECK(L);
-  lua_pushnumber(L, l_tg(atan2)(luaL_checknumber(L, 1),
-                                luaL_checknumber(L, 2)));
-  return 1;
-}
-
-static int math_fmod (LuaThread *L) {
-  THREAD_CHECK(L);
-  lua_pushnumber(L, l_tg(fmod)(luaL_checknumber(L, 1),
-                               luaL_checknumber(L, 2)));
+  Param1 x = checkarg<Param1>(L, 1);
+  Param2 y = checkarg<Param2>(L, 2);
+  Result1 result = F(x, y);
+  pushresult<Result1>(L, result);
   return 1;
 }
 
@@ -62,11 +84,25 @@ static int math_modf (LuaThread *L) {
   return 2;
 }
 
-static int math_pow (LuaThread *L) {
+template<typename Param1, typename Result1, typename Result2, Result1 (*F)(Param1, Result2*) >
+int Bind_1_2b(LuaThread* L) {
   THREAD_CHECK(L);
-  lua_pushnumber(L, l_tg(pow)(luaL_checknumber(L, 1),
-                              luaL_checknumber(L, 2)));
+  Param1 x = checkarg<Param1>(L, 1);
+  Result2 result2;
+  Result1 result1 = F(x, &result2);
+  pushresult<Result2>(L, result2);
+  pushresult<Result1>(L, result1);
   return 1;
+}
+
+template<double (*F)(double)>
+int Math_1(LuaThread* L) {
+  return Bind_1_1<double, double, F>(L);
+}
+
+template<double (*F)(double, double)>
+int Math_2(LuaThread* L) {
+  return Bind_2_1<double, double, double, F>(L);
 }
 
 static int math_log (LuaThread *L) {
@@ -101,13 +137,8 @@ static int math_frexp (LuaThread *L) {
 }
 
 static int math_ldexp (LuaThread *L) {
-  THREAD_CHECK(L);
-  lua_pushnumber(L, l_tg(ldexp)(luaL_checknumber(L, 1),
-                                luaL_checkint(L, 2)));
-  return 1;
+  return Bind_2_1<double, int, double, ldexp>(L);
 }
-
-
 
 static int math_min (LuaThread *L) {
   THREAD_CHECK(L);
@@ -177,33 +208,33 @@ static int math_randomseed (LuaThread *L) {
 
 
 static const luaL_Reg mathlib[] = {
-  {"abs",   UnaryOperation<fabs> },
-  {"acos",  UnaryOperation<acos> },
-  {"asin",  UnaryOperation<asin> },
-  {"atan2", math_atan2},
-  {"atan",  UnaryOperation<atan> },
-  {"ceil",  UnaryOperation<ceil> },
-  {"cosh",  UnaryOperation<cosh> },
-  {"cos",   UnaryOperation<cos> },
-  {"deg",   UnaryOperation<deg> },
-  {"exp",   UnaryOperation<exp> },
-  {"floor", UnaryOperation<floor> },
-  {"fmod",   math_fmod},
+  {"abs",   Math_1<fabs> },
+  {"acos",  Math_1<acos> },
+  {"asin",  Math_1<asin> },
+  {"atan2", Math_2<atan2> },
+  {"atan",  Math_1<atan> },
+  {"ceil",  Math_1<ceil> },
+  {"cosh",  Math_1<cosh> },
+  {"cos",   Math_1<cos> },
+  {"deg",   Math_1<deg> },
+  {"exp",   Math_1<exp> },
+  {"floor", Math_1<floor> },
+  {"fmod",  Math_2<fmod> },
   {"frexp", math_frexp},
   {"ldexp", math_ldexp},
   {"log",   math_log},
   {"max",   math_max},
   {"min",   math_min},
-  {"modf",   math_modf},
-  {"pow",   math_pow},
-  {"rad",   UnaryOperation<rad> },
+  {"modf",  math_modf},
+  {"pow",   Math_2<pow>},
+  {"rad",   Math_1<rad> },
+  {"sinh",  Math_1<sinh> },
+  {"sin",   Math_1<sin> },
+  {"sqrt",  Math_1<sqrt> },
+  {"tanh",  Math_1<tanh> },
+  {"tan",   Math_1<tan> },
   {"random",     math_random},
   {"randomseed", math_randomseed},
-  {"sinh",   UnaryOperation<sinh> },
-  {"sin",   UnaryOperation<sin> },
-  {"sqrt",  UnaryOperation<sqrt> },
-  {"tanh",   UnaryOperation<tanh> },
-  {"tan",   UnaryOperation<tan> },
   {NULL, NULL}
 };
 
