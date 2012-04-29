@@ -198,7 +198,7 @@ void getTableMode(LuaTable* t, bool& outWeakKey, bool& outWeakVal) {
 */
 
 
-static LuaObject **sweeplist (LuaObject*& head, LuaObject*& p1, LuaObject **p2, size_t count);
+static void sweeplist (LuaObject*& head, LuaObject*& p1, LuaObject**& p2, size_t count);
 static void sweeplist (LuaList::iterator& it, size_t count);
 
 
@@ -234,7 +234,8 @@ static void sweepthread (LuaThread *L1) {
 */
 
 
-static LuaObject** sweepListNormal (LuaObject *& head, LuaObject*& p1, LuaObject** p2, size_t count) {
+static void sweepListNormal (LuaObject *& head, LuaObject*& p1, LuaObject**& p2, size_t count) {
+
   while (*p2 != NULL && count-- > 0) {
     assert((p1 == NULL) || (&p1->next_ == p2));
     LuaObject *curr = *p2;
@@ -255,7 +256,6 @@ static LuaObject** sweepListNormal (LuaObject *& head, LuaObject*& p1, LuaObject
       p2 = &curr->next_;  /* go to next element */
     }
   }
-  return p2;
 }
 
 void sweepListNormal2 (LuaList::iterator& it, size_t count) {
@@ -278,7 +278,7 @@ void sweepListNormal2 (LuaList::iterator& it, size_t count) {
   }
 }
 
-static LuaObject** sweepListGenerational (LuaObject*& head, LuaObject *& p1, LuaObject **p2, size_t count) {
+static void sweepListGenerational (LuaObject*& head, LuaObject *& p1, LuaObject**& p2, size_t count) {
   while (*p2 != NULL && count-- > 0) {
     assert((p1 == NULL) || (&p1->next_ == p2));
     LuaObject *curr = *p2;
@@ -303,7 +303,6 @@ static LuaObject** sweepListGenerational (LuaObject*& head, LuaObject *& p1, Lua
       p2 = &curr->next_;  /* go to next element */
     }
   }
-  return p2;
 }
 
 void sweepListGenerational2 (LuaList::iterator& it, size_t count) {
@@ -329,11 +328,11 @@ void sweepListGenerational2 (LuaList::iterator& it, size_t count) {
   }
 }
 
-static LuaObject** sweeplist (LuaObject*& head, LuaObject*& p1, LuaObject **p2, size_t count) {
+static void sweeplist (LuaObject*& head, LuaObject*& p1, LuaObject**& p2, size_t count) {
   if(isgenerational(thread_G)) {
-    return sweepListGenerational(head,p1,p2,count);
+    sweepListGenerational(head,p1,p2,count);
   } else {
-    return sweepListNormal(head,p1,p2,count);
+    sweepListNormal(head,p1,p2,count);
   }
 }
 
@@ -721,7 +720,7 @@ static ptrdiff_t singlestep () {
     }
     case GCSsweep: {
       if (*g->sweepgc) {
-        g->sweepgc = sweeplist(g->allgc, g->sweepcursor, g->sweepgc, GCSWEEPMAX);
+        sweeplist(g->allgc, g->sweepcursor, g->sweepgc, GCSWEEPMAX);
         return GCSWEEPMAX*GCSWEEPCOST;
       }
       else {
