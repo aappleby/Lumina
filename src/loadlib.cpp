@@ -627,36 +627,27 @@ static const luaL_Reg ll_funcs[] = {
 };
 
 
-static const LuaCallback searchers[] =
-  {searcher_preload, searcher_Lua, searcher_C, searcher_Croot, NULL};
-
-
 int luaopen_package (LuaThread *L) {
   THREAD_CHECK(L);
-  int i;
   /* create new type _LOADLIB */
   LuaTable* meta = new LuaTable();
-  meta->set("__gc", LuaValue::Callback(gctm) );
-
-  L->l_G->getRegistry()->set("_LOADLIB", LuaValue(meta) );
-  //L->stack_.push( LuaValue(meta) );
+  meta->set("__gc", gctm);
+  L->l_G->getRegistry()->set("_LOADLIB", meta);
 
 
   /* create `package' table */
   LuaTable* package = new LuaTable(0, 2);
-  package->set("loadlib", LuaValue(ll_loadlib) );
-  package->set("searchpath", LuaValue(ll_searchpath) );
+  package->set("loadlib", ll_loadlib);
+  package->set("searchpath", ll_searchpath);
 
   L->stack_.push( LuaValue(package) );
 
   /* create 'searchers' table */
-  LuaTable* search = new LuaTable(sizeof(searchers)/sizeof(searchers[0]) - 1, 0);
-  /* fill it with pre-defined searchers */
-
-  for (i=0; searchers[i] != NULL; i++) {
-    LuaClosure* cl = new LuaClosure(searchers[i], LuaValue(package) );
-    search->set( LuaValue(i+1), LuaValue(cl) );
-  }
+  LuaTable* search = new LuaTable(4, 0);
+  search->set( 1, new LuaClosure(searcher_preload,package) );
+  search->set( 2, new LuaClosure(searcher_Lua,package) );
+  search->set( 3, new LuaClosure(searcher_C,package) );
+  search->set( 4, new LuaClosure(searcher_Croot,package) );
 
   /* put it in field 'searchers' */
   package->set("searchers", LuaValue(search) );

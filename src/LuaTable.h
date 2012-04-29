@@ -29,6 +29,8 @@ public:
   LuaValue get(LuaValue key) const;
   void     set(LuaValue key, LuaValue val);
 
+  void set(int key, LuaValue val) { set( LuaValue(key), val); }
+
   // This creates dependencies, but it's used everywhere.
   LuaValue get(const char* key);
   void     set(const char* key, LuaValue val);
