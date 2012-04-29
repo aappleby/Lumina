@@ -906,12 +906,13 @@ void luaL_getregistrytable (LuaThread *L, const char *fname) {
 ** is true, also registers the result in the global table.
 ** Leaves resulting module on the top.
 */
-void luaL_requiref (LuaThread *L, const char *modname,
-                               LuaCallback openf, int glb) {
+void luaL_requiref (LuaThread *L, const char *modname, LuaCallback openf, int glb) {
   THREAD_CHECK(L);
-  lua_pushcclosure(L, openf, 0);
   lua_pushstring(L, modname);  /* argument to open function */
-  lua_call(L, 1, 1);  /* open module */
+  
+  openf(L);
+  //lua_call(L, 1, 1);  /* open module */
+
   luaL_getregistrytable(L, "_LOADED");
   L->stack_.copy(-2);  /* make copy of module (call result) */
   lua_setfield(L, -2, modname);  /* _LOADED[modname] = module */

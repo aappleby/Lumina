@@ -635,12 +635,6 @@ static void setpath (LuaThread *L, const char *fieldname, const char *envname1, 
 }
 
 
-static const luaL_Reg ll_funcs[] = {
-  {"require", ll_require},
-  {NULL, NULL}
-};
-
-
 int luaopen_package (LuaThread *L) {
   THREAD_CHECK(L);
   /* create new type _LOADLIB */
@@ -676,17 +670,13 @@ int luaopen_package (LuaThread *L) {
   lua_setfield(L, -2, "config");
   /* set field `loaded' */
 
-  luaL_getregistrytable(L, "_LOADED");
-  lua_setfield(L, -2, "loaded");
+  package->set("loaded", L->l_G->getRegistryTable("_LOADED") );
+  package->set("preload", L->l_G->getRegistryTable("_PRELOAD") );
 
-  /* set field `preload' */
-  luaL_getregistrytable(L, "_PRELOAD");
-  lua_setfield(L, -2, "preload");
+  // put 'require' in the globals table
+  LuaTable* globals = L->l_G->getGlobals();
+  globals->set("require", new LuaClosure(ll_require,package));
 
-  lua_pushglobaltable(L);
-  L->stack_.copy(-2);  /* set 'package' as upvalue for next lib */
-  luaL_setfuncs(L, ll_funcs, 1);  /* open lib into global table */
-  L->stack_.pop();  /* pop global table */
   return 1;  /* return 'package' table */
 }
 
