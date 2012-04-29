@@ -235,16 +235,36 @@ static void sweepthread (LuaThread *L1) {
 */
 
 
-static bool sweepListNormal (LuaObject *& head, LuaObject*& p1, LuaObject**& p2, size_t count) {
+static bool sweepListNormal (LuaObject *& head, LuaObject*& p1, LuaObject**&, size_t count) {
 
-  while(1) {
-    if(*p2 == NULL) return true;
+  while(p1 == NULL) {
+    if(head == NULL) return true;
     if(count-- <= 0) return false;
 
-    assert((p1 == NULL) || (&p1->next_ == p2));
-    LuaObject *curr = *p2;
+    LuaObject* curr = head;
     if (curr->isDead()) {  /* is 'curr' dead? */
-      *p2 = curr->next_;  /* remove 'curr' from list */
+      RemoveObjectFromList(curr, head);
+      delete curr;
+    }
+    else {
+      if (curr->isThread()) {
+        /* sweep thread's upvalues */
+        sweepthread(dynamic_cast<LuaThread*>(curr));
+      }
+      /* update marks */
+      curr->makeLive();
+      p1 = curr;
+      break;
+    }
+  }
+
+  while(1) {
+    if(p1->next_ == NULL) return true;
+    if(count-- <= 0) return false;
+
+    LuaObject *curr = p1->next_;
+    if (curr->isDead()) {  /* is 'curr' dead? */
+      p1->next_ = curr->next_;  /* remove 'curr' from list */
       RemoveObjectFromList(curr, head);
 
       delete curr;
@@ -257,7 +277,6 @@ static bool sweepListNormal (LuaObject *& head, LuaObject*& p1, LuaObject**& p2,
       /* update marks */
       curr->makeLive();
       p1 = curr;
-      p2 = &curr->next_;  /* go to next element */
     }
   }
 }
