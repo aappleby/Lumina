@@ -94,11 +94,13 @@ public:
 
   //----------
 
-  LuaObject *next_;
+  LuaObject* prev_;
+  LuaObject* next_;
 
 private:
 
-  LuaObject *next_gray_;
+  LuaObject* prev_gray_;
+  LuaObject* next_gray_;
 
   LuaType type_;
   uint8_t flags_;

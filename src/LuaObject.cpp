@@ -18,9 +18,12 @@ const LuaObject::Color LuaObject::colorB = WHITE1;
 void *luaM_alloc_ (size_t size, int type, int pool);
 
 LuaObject::LuaObject(LuaType type) {
-
+  prev_ = NULL;
   next_ = NULL;
+
+  prev_gray_ = NULL;
   next_gray_ = NULL;
+
   flags_ = 0;
   color_ = thread_G ? thread_G->livecolor : GRAY;
   type_ = type;

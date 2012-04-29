@@ -19,25 +19,25 @@ public:
   }
 
   void Push(LuaObject* o) {
-    assert(o->next_ == NULL);
+    assert(o->getNext() == NULL);
 
     if(head_ == NULL) {
       head_ = o;
       tail_ = o;
     } else {
-      o->next_ = head_;
+      o->setNext(head_);
       head_ = o;
     }
   }
 
   void PushTail(LuaObject* o) {
-    assert(o->next_ == NULL);
+    assert(o->getNext() == NULL);
 
     if(tail_ == NULL) {
       head_ = o;
       tail_ = o;
     } else {
-      tail_->next_ = o;
+      tail_->setNext(o);
       tail_ = o;
     }
   }
@@ -55,8 +55,8 @@ public:
     }
 
     LuaObject* o = head_;
-    head_ = o->next_;
-    o->next_ = NULL;
+    head_ = o->getNext();
+    o->setNext(NULL);
     return o;
   }
 
@@ -80,7 +80,7 @@ public:
   typedef void (*traverseCB)(LuaObject* o);
 
   void Traverse(traverseCB c) {
-    for(LuaObject* o = head_; o; o = o->next_) {
+    for(LuaObject* o = head_; o; o = o->getNext()) {
       c(o);
     }
   }
@@ -99,7 +99,7 @@ public:
     }
 
     iterator& operator ++() {
-      object_ = object_->next_;
+      object_ = object_->getNext();
       return *this;
     }
 
