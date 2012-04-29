@@ -269,9 +269,12 @@ static const luaL_Reg tab_funcs[] = {
 int luaopen_table (LuaThread *L) {
   THREAD_CHECK(L);
 
-  lua_createtable(L, 0, sizeof(tab_funcs)/sizeof((tab_funcs)[0]) - 1);
-  luaL_setfuncs(L,tab_funcs,0);
+  LuaTable* lib = new LuaTable();
+  for(const luaL_Reg* cursor = tab_funcs; cursor->name; cursor++) {
+    lib->set( cursor->name, cursor->func );
+  }
 
+  L->stack_.push(lib);
   return 1;
 }
 

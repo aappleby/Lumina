@@ -191,8 +191,13 @@ static const luaL_Reg co_funcs[] = {
 
 int luaopen_coroutine (LuaThread *L) {
   THREAD_CHECK(L);
-  lua_createtable(L, 0, sizeof(co_funcs)/sizeof((co_funcs)[0]) - 1);
-  luaL_setfuncs(L,co_funcs,0);
+
+  LuaTable* lib = new LuaTable();
+  for(const luaL_Reg* cursor = co_funcs; cursor->name; cursor++) {
+    lib->set( cursor->name, cursor->func );
+  }
+
+  L->stack_.push(lib);
   return 1;
 }
 

@@ -620,18 +620,6 @@ int luaopen_package (LuaThread *L) {
 
   loadedModules->set("package", package);
   globals->set("package", package);
-  /*
-  luaL_getregistrytable(L, "_LOADED");
-  L->stack_.copy(-2);  // make copy of module (call result)
-  lua_setfield(L, -2, modname);  // _LOADED[modname] = module
-  L->stack_.pop();  // remove _LOADED table
-  if (glb) {
-    lua_pushglobaltable(L);
-    L->stack_.copy(-2);  // copy of 'mod'
-    lua_setfield(L, -2, modname);  // _G[modname] = module
-    L->stack_.pop();  // remove _G table
-  }
-  */
 
   return 1;  /* return 'package' table */
 }

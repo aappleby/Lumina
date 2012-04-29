@@ -589,16 +589,6 @@ static const luaL_Reg flib[] = {
 };
 
 
-static void createmeta (LuaThread *L) {
-  THREAD_CHECK(L);
-  luaL_newmetatable(L, LUA_FILEHANDLE);  /* create metatable for file handles */
-  L->stack_.copy(-1);  /* push metatable */
-  lua_setfield(L, -2, "__index");  /* metatable.__index = metatable */
-  luaL_setfuncs(L, flib, 0);  /* add file methods to new metatable */
-  L->stack_.pop();  /* pop new metatable */
-}
-
-
 /*
 ** function to (not) close the standard files stdin, stdout, and stderr
 */
@@ -629,10 +619,19 @@ static void createstdfile (LuaThread *L, FILE *f, const char *k,
 int luaopen_io (LuaThread *L) {
   THREAD_CHECK(L);
 
-  lua_createtable(L, 0, sizeof(iolib)/sizeof((iolib)[0]) - 1);
-  luaL_setfuncs(L,iolib,0);
+  LuaTable* lib = new LuaTable();
+  for(const luaL_Reg* cursor = iolib; cursor->name; cursor++) {
+    lib->set( cursor->name, cursor->func );
+  }
 
-  createmeta(L);
+  L->stack_.push(lib);
+
+  luaL_newmetatable(L, LUA_FILEHANDLE);  /* create metatable for file handles */
+  L->stack_.copy(-1);  /* push metatable */
+  lua_setfield(L, -2, "__index");  /* metatable.__index = metatable */
+  luaL_setfuncs(L, flib, 0);  /* add file methods to new metatable */
+  L->stack_.pop();  /* pop new metatable */
+
   /* create (and set) default files */
   createstdfile(L, stdin, IO_INPUT, "stdin");
   createstdfile(L, stdout, IO_OUTPUT, "stdout");

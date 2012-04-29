@@ -484,10 +484,10 @@ int luaopen_base (LuaThread *L) {
 
   LuaTable* globals = L->l_G->getGlobals();
   for(const luaL_Reg* cursor = base_funcs; cursor->name; cursor++) {
-    globals->set( cursor->name, LuaValue(cursor->func) );
+    globals->set( cursor->name, cursor->func );
   }
 
-  L->stack_.push( LuaValue(globals) );
+  L->stack_.push(globals);
   return 1;
 }
 

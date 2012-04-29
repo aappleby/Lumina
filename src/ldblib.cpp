@@ -470,9 +470,12 @@ static const luaL_Reg dblib[] = {
 int luaopen_debug (LuaThread *L) {
   THREAD_CHECK(L);
 
-  lua_createtable(L, 0, sizeof(dblib)/sizeof((dblib)[0]) - 1);
-  luaL_setfuncs(L,dblib,0);
+  LuaTable* lib = new LuaTable();
+  for(const luaL_Reg* cursor = dblib; cursor->name; cursor++) {
+    lib->set( cursor->name, cursor->func );
+  }
 
+  L->stack_.push(lib);
   return 1;
 }
 
