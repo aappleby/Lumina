@@ -1485,8 +1485,12 @@ int luaopen_test (LuaThread *L) {
   lua_atpanic(L, &tpanic);
   atexit(checkfinalmem);
 
-  lua_createtable(L, 0, sizeof(tests_funcs)/sizeof((tests_funcs)[0]) - 1);
-  luaL_setfuncs(L,tests_funcs,0);
+  LuaTable* lib = new LuaTable();
+  for(const luaL_Reg* cursor = tests_funcs; cursor->name; cursor++) {
+    lib->set( cursor->name, LuaValue(cursor->func) );
+  }
+
+  L->stack_.push(lib);
 
   return 1;
 }

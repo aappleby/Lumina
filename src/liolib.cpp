@@ -19,7 +19,7 @@
 #include "lualib.h"
 #include "lstate.h" // for THREAD_CHECK
 
-
+void RemoveObjectFromList(LuaObject* o, LuaObject** list);
 
 /*
 ** {======================================================
@@ -59,16 +59,12 @@ class LuaFile : public LuaBlob
 public:
 
   LuaFile() : LuaBlob(0) {
+    f = NULL;
+    closef = NULL;
+    closef2 = NULL;
   }
 
   virtual ~LuaFile() {
-    /*
-    THREAD_CHECK(L);
-    if ((closef != NULL) && (f != NULL)) {
-      aux_close(L);
-    }
-    return 0;
-    */
   }
 
   FILE *f;  /* stream (NULL for incompletely created streams) */
@@ -146,16 +142,17 @@ static LuaFile* newprefile (LuaThread *L) {
   LuaFile* u = new LuaFile();
   L->stack_.push(u);
 
-  u->closef = NULL;  /* mark file handle as 'closed' */
-  
-  LuaTable* meta = L->l_G->getRegistryTable(LUA_FILEHANDLE);
-  L->stack_.push(meta);
-
   // TODO(aappleby): Files are closed in the finalizer, and just setting
-  // the metatable_ field doesn't put the file on the finalization list.
-  // Now that we have virtual destructors we don't need additional finalizers,
-  // so eventually this call can go away...
-  lua_setmetatable(L, -2);
+  // the metatable_ field doesn't put the file on the finalization list -
+  // we have to make sure they're on the 'finobj' list and marked as
+  // separated.
+  LuaTable* meta = L->l_G->getRegistryTable(LUA_FILEHANDLE);
+  u->metatable_ = meta;
+
+  RemoveObjectFromList(u, &L->l_G->allgc);
+  u->next_ = L->l_G->finobj;
+  L->l_G->finobj = u;
+  u->setSeparated();
   
   return u;
 }
