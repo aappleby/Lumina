@@ -89,6 +89,7 @@ public:
   int gcrunning;  /* true if GC is running */
 
   LuaObject *allgc;  /* list of all collectable objects */
+  LuaObject* sweepcursor;
   LuaObject **sweepgc;  /* current position of sweep */
 
   LuaList::iterator sweepgc2;

@@ -73,6 +73,7 @@ LuaVM::LuaVM()
   lastmajormem = 0;
 
   allgc = NULL;
+  sweepcursor = NULL;
   sweepgc = NULL;
   //finobj = NULL;
 
