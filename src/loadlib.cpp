@@ -621,20 +621,7 @@ static void setpath (LuaThread *L, const char *fieldname, const char *envname1,
 }
 
 
-static const luaL_Reg pk_funcs[] = {
-  {"loadlib", ll_loadlib},
-  {"searchpath", ll_searchpath},
-#if defined(LUA_COMPAT_MODULE)
-  {"seeall", ll_seeall},
-#endif
-  {NULL, NULL}
-};
-
-
 static const luaL_Reg ll_funcs[] = {
-#if defined(LUA_COMPAT_MODULE)
-  {"module", ll_module},
-#endif
   {"require", ll_require},
   {NULL, NULL}
 };
@@ -649,17 +636,18 @@ int luaopen_package (LuaThread *L) {
   int i;
   /* create new type _LOADLIB */
   LuaTable* meta = new LuaTable();
-  L->l_G->getRegistry()->set("_LOADLIB", LuaValue(meta) );
-  L->stack_.push( LuaValue(meta) );
-
   meta->set("__gc", LuaValue::Callback(gctm) );
 
+  L->l_G->getRegistry()->set("_LOADLIB", LuaValue(meta) );
+  //L->stack_.push( LuaValue(meta) );
+
+
   /* create `package' table */
-  LuaTable* package = new LuaTable(0, sizeof(pk_funcs)/sizeof((pk_funcs)[0]) - 1);
+  LuaTable* package = new LuaTable(0, 2);
+  package->set("loadlib", LuaValue(ll_loadlib) );
+  package->set("searchpath", LuaValue(ll_searchpath) );
+
   L->stack_.push( LuaValue(package) );
-  for(const luaL_Reg* cursor = pk_funcs; cursor->name; cursor++) {
-    package->set( cursor->name, LuaValue(cursor->func) );
-  }
 
   /* create 'searchers' table */
   LuaTable* search = new LuaTable(sizeof(searchers)/sizeof(searchers[0]) - 1, 0);
@@ -677,16 +665,20 @@ int luaopen_package (LuaThread *L) {
   setpath(L, "path", LUA_PATHVERSION, LUA_PATH, LUA_PATH_DEFAULT);
   /* set field 'cpath' */
   setpath(L, "cpath", LUA_CPATHVERSION, LUA_CPATH, LUA_CPATH_DEFAULT);
+
   /* store config information */
   lua_pushliteral(L, LUA_DIRSEP "\n" LUA_PATH_SEP "\n" LUA_PATH_MARK "\n"
                      LUA_EXEC_DIR "\n" LUA_IGMARK "\n");
   lua_setfield(L, -2, "config");
   /* set field `loaded' */
+
   luaL_getregistrytable(L, "_LOADED");
   lua_setfield(L, -2, "loaded");
+
   /* set field `preload' */
   luaL_getregistrytable(L, "_PRELOAD");
   lua_setfield(L, -2, "preload");
+
   lua_pushglobaltable(L);
   L->stack_.copy(-2);  /* set 'package' as upvalue for next lib */
   luaL_setfuncs(L, ll_funcs, 1);  /* open lib into global table */
