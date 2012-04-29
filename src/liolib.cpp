@@ -4,6 +4,7 @@
 ** See Copyright Notice in lua.h
 */
 
+#include "LuaGlobals.h"
 #include "LuaState.h"
 
 #include <errno.h>
@@ -626,11 +627,15 @@ int luaopen_io (LuaThread *L) {
 
   L->stack_.push(lib);
 
-  luaL_newmetatable(L, LUA_FILEHANDLE);  /* create metatable for file handles */
-  L->stack_.copy(-1);  /* push metatable */
-  lua_setfield(L, -2, "__index");  /* metatable.__index = metatable */
-  luaL_setfuncs(L, flib, 0);  /* add file methods to new metatable */
-  L->stack_.pop();  /* pop new metatable */
+  /* create metatable for file handles */
+  THREAD_CHECK(L);
+
+  LuaTable* meta = L->l_G->getRegistryTable(LUA_FILEHANDLE);
+  meta->set("__index", meta);
+
+  for(const luaL_Reg* cursor = flib; cursor->name; cursor++) {
+    meta->set( cursor->name, cursor->func );
+  }
 
   /* create (and set) default files */
   createstdfile(L, stdin, IO_INPUT, "stdin");
