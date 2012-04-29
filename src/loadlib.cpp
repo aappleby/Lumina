@@ -34,6 +34,9 @@
 #include "lualib.h"
 #include "lstate.h" // for THREAD_CHECK
 
+std::string replace_all (const char* source,
+                         const char* pattern,
+                         const char* replace);
 
 /*
 ** LUA_PATH and LUA_CPATH are the names of the environment
@@ -633,10 +636,13 @@ static void setpath (LuaThread *L, const char *fieldname, const char *envname1,
   }
   else {
     /* replace ";;" by ";AUXMARK;" and then AUXMARK by default path */
-    path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP,
-                              LUA_PATH_SEP AUXMARK LUA_PATH_SEP);
-    luaL_gsub(L, path, AUXMARK, def);
-    L->stack_.remove(-2);
+    //path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP, LUA_PATH_SEP AUXMARK LUA_PATH_SEP);
+    //luaL_gsub(L, path, AUXMARK, def);
+    //L->stack_.remove(-2);
+    std::string path1 = replace_all(path, LUA_PATH_SEP LUA_PATH_SEP, LUA_PATH_SEP AUXMARK LUA_PATH_SEP);
+    std::string path2 = replace_all(path1.c_str(), AUXMARK, def);
+    LuaString* s = L->l_G->strings_->Create(path2.c_str());
+    L->stack_.push(s);
   }
   setprogdir(L);
   lua_setfield(L, -2, fieldname);
