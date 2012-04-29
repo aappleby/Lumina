@@ -2,6 +2,8 @@
 #include "LuaBase.h"
 #include "LuaTypes.h"
 
+void RemoveObjectFromList(LuaObject* o, LuaObject*& head);
+
 class LuaObject : public LuaBase {
 public:
 

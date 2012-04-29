@@ -14,8 +14,23 @@
 const LuaObject::Color LuaObject::colorA = WHITE0;
 const LuaObject::Color LuaObject::colorB = WHITE1;
 
-
 void *luaM_alloc_ (size_t size, int type, int pool);
+
+
+// Removing a node in the middle of a singly-linked list requires
+// a scan of the list, lol.
+
+void RemoveObjectFromList(LuaObject* o, LuaObject*& head) {
+  if(o == NULL) return;
+
+  if(head == o) head = o->next_;
+
+  if(o->prev_) o->prev_->next_ = o->next_;
+  if(o->next_) o->next_->prev_ = o->prev_;
+  o->prev_ = NULL;
+  o->next_ = NULL;
+}
+
 
 LuaObject::LuaObject(LuaType type) {
   prev_ = NULL;

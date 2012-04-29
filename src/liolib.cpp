@@ -19,8 +19,6 @@
 #include "lualib.h"
 #include "lstate.h" // for THREAD_CHECK
 
-void RemoveObjectFromList(LuaObject* o, LuaObject** list);
-
 /*
 ** {======================================================
 ** lua_popen spawns a new process connected to the current
@@ -152,7 +150,7 @@ static LuaFile* newprefile (LuaThread *L) {
   LuaTable* meta = L->l_G->getRegistryTable(LUA_FILEHANDLE);
   u->metatable_ = meta;
 
-  RemoveObjectFromList(u, &L->l_G->allgc);
+  RemoveObjectFromList(u, L->l_G->allgc);
   //u->next_ = L->l_G->finobj;
   //L->l_G->finobj = u;
   L->l_G->finobj.Push(u);

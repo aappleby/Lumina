@@ -198,7 +198,7 @@ void getTableMode(LuaTable* t, bool& outWeakKey, bool& outWeakVal) {
 */
 
 
-static LuaObject **sweeplist (LuaObject **p, size_t count);
+static LuaObject **sweeplist (LuaObject*& head, LuaObject **p, size_t count);
 static void sweeplist (LuaList::iterator& it, size_t count);
 
 
@@ -209,7 +209,7 @@ static void sweeplist (LuaList::iterator& it, size_t count);
 
 static void sweepthread (LuaThread *L1) {
   if (L1->stack_.empty()) return;  /* stack not completely built yet */
-  sweeplist(&L1->stack_.open_upvals_, MAX_LUMEM);  /* sweep open upvalues */
+  sweeplist(L1->stack_.open_upvals_, &L1->stack_.open_upvals_, MAX_LUMEM);  /* sweep open upvalues */
   L1->stack_.sweepCallinfo();
   /* should not change the stack during an emergency gc cycle */
   if (thread_G->gckind != KGC_EMERGENCY) {
@@ -232,16 +232,19 @@ static void sweepthread (LuaThread *L1) {
 */
 
 
-static LuaObject** sweepListNormal (LuaObject** p, size_t count) {
+static LuaObject** sweepListNormal (LuaObject *& head, LuaObject** p, size_t count) {
   while (*p != NULL && count-- > 0) {
     LuaObject *curr = *p;
     if (curr->isDead()) {  /* is 'curr' dead? */
       *p = curr->next_;  /* remove 'curr' from list */
 
+      /*
       if(curr->prev_) curr->prev_->next_ = curr->next_;
       if(curr->next_) curr->next_->prev_ = curr->prev_;
       curr->prev_ = NULL;
       curr->next_ = NULL;
+      */
+      RemoveObjectFromList(curr, head);
 
       delete curr;
     }
@@ -278,16 +281,19 @@ void sweepListNormal2 (LuaList::iterator& it, size_t count) {
   }
 }
 
-static LuaObject** sweepListGenerational (LuaObject **p, size_t count) {
+static LuaObject** sweepListGenerational (LuaObject*& head, LuaObject **p, size_t count) {
   while (*p != NULL && count-- > 0) {
     LuaObject *curr = *p;
     if (curr->isDead()) {  /* is 'curr' dead? */
       *p = curr->next_;  /* remove 'curr' from list */
 
+      /*
       if(curr->prev_) curr->prev_->next_ = curr->next_;
       if(curr->next_) curr->next_->prev_ = curr->prev_;
       curr->prev_ = NULL;
       curr->next_ = NULL;
+      */
+      RemoveObjectFromList(curr, head);
 
       delete curr;
     }
@@ -331,11 +337,11 @@ void sweepListGenerational2 (LuaList::iterator& it, size_t count) {
   }
 }
 
-static LuaObject** sweeplist (LuaObject **p, size_t count) {
+static LuaObject** sweeplist (LuaObject*& head, LuaObject **p, size_t count) {
   if(isgenerational(thread_G)) {
-    return sweepListGenerational(p,count);
+    return sweepListGenerational(head,p,count);
   } else {
-    return sweepListNormal(p,count);
+    return sweepListNormal(head,p,count);
   }
 }
 
@@ -495,20 +501,6 @@ void separatetobefnz (int all) {
   }
 }
 
-// Removing a node in the middle of a singly-linked list requires
-// a scan of the list, lol.
-
-void RemoveObjectFromList(LuaObject* o, LuaObject** list) {
-  LuaObject **p = list;
-  for (; *p != o; p = &(*p)->next_);
-  *p = o->next_;
-
-  if(o->prev_) o->prev_->next_ = o->next_;
-  if(o->next_) o->next_->prev_ = o->prev_;
-  o->prev_ = NULL;
-  o->next_ = NULL;
-}
-
 /*
 ** if object 'o' has a finalizer, remove it from 'allgc' list (must
 ** search the list to find it) and link it in 'finobj' list.
@@ -525,7 +517,7 @@ void luaC_checkfinalizer (LuaObject *o, LuaTable *mt) {
   if(tm.isNone() || tm.isNil()) return;
 
   // Remove the object from the global GC list and add it to the 'finobj' list.
-  RemoveObjectFromList(o, &g->allgc);
+  RemoveObjectFromList(o, g->allgc);
   
   //o->next_ = g->finobj;
   //g->finobj = o;
@@ -736,7 +728,7 @@ static ptrdiff_t singlestep () {
     }
     case GCSsweep: {
       if (*g->sweepgc) {
-        g->sweepgc = sweeplist(g->sweepgc, GCSWEEPMAX);
+        g->sweepgc = sweeplist(g->allgc, g->sweepgc, GCSWEEPMAX);
         return GCSWEEPMAX*GCSWEEPCOST;
       }
       else {
@@ -744,7 +736,7 @@ static ptrdiff_t singlestep () {
         // TODO(aappleby): What? Why is it sweeping a list of one object
         // that should never be dead?
         LuaObject *mt = g->mainthread;
-        sweeplist(&mt, 1);
+        sweeplist(mt, &mt, 1);
         
         // We have swept everything. If this is not an emergency, try and
         // save some RAM by reducing the size of our internal buffers.
