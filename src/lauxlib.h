@@ -93,7 +93,7 @@ const char *(luaL_gsub) (LuaThread *L, const char *s, const char *p,
 void (luaL_setfuncs) (LuaThread *L, const luaL_Reg *l, int nup);
 
 int (luaL_getsubtable) (LuaThread *L, int idx, const char *fname);
-int luaL_getregistrytable (LuaThread *L, const char *fname);
+void luaL_getregistrytable (LuaThread *L, const char *fname);
 
 void (luaL_traceback) (LuaThread *L, LuaThread *L1,
                                   const char *msg, int level);

@@ -143,6 +143,8 @@ LuaVM::LuaVM()
   thread_G = oldVM;
 }
 
+//------------------------------------------------------------------------------
+
 LuaVM::~LuaVM() {
   LuaVM* oldVM = thread_G;
   LuaThread* oldThread = thread_L;
@@ -172,6 +174,8 @@ LuaVM::~LuaVM() {
   thread_G = oldVM;
 }
 
+//------------------------------------------------------------------------------
+
 void LuaVM::setGCDebt(size_t debt) {
   GCdebt_ = debt;
 }
@@ -183,3 +187,20 @@ void LuaVM::incTotalBytes(int bytes) {
 void LuaVM::incGCDebt(int debt) { 
   GCdebt_ += debt;
 }
+
+//------------------------------------------------------------------------------
+
+LuaTable* LuaVM::getRegistryTable(const char* name) {
+  LuaTable* registry = getRegistry();
+
+  LuaValue val = registry->get(name);
+
+  if(val.isTable()) return val.getTable();
+
+  LuaTable* newTable = new LuaTable();
+  registry->set(name, newTable);
+  return newTable;
+}
+
+//------------------------------------------------------------------------------
+

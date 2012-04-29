@@ -75,6 +75,7 @@ public:
 
   LuaValue l_registry;
   LuaTable* getRegistry() { return l_registry.getTable(); }
+  LuaTable* getRegistryTable(const char* name);
 
   LuaValue l_globals;
   LuaTable* getGlobals() { return l_globals.getTable(); }

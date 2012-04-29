@@ -176,14 +176,24 @@ static LuaCallback ll_sym (LuaThread *L, void *lib, const char *sym) {
 #define LUA_LLE_FLAGS	0
 #endif
 
+std::string GetModuleDirectory() {
+  char buff[256];
+  buff[0] = 0;
+  GetModuleFileNameA(NULL, buff, 256);
+
+  char* lb = strrchr(buff, '\\');
+
+  if(lb == NULL) return "";
+  *lb = 0;
+  return std::string(buff);
+}
 
 static void setprogdir (LuaThread *L) {
   THREAD_CHECK(L);
-  char buff[MAX_PATH + 1];
+  char buff[256];
   char *lb;
-  DWORD nsize = sizeof(buff)/sizeof(char);
-  DWORD n = GetModuleFileNameA(NULL, buff, nsize);
-  if (n == 0 || n == nsize || (lb = strrchr(buff, '\\')) == NULL) {
+  DWORD n = GetModuleFileNameA(NULL, buff, 256);
+  if (n == 0 || n == 256 || (lb = strrchr(buff, '\\')) == NULL) {
     luaL_error(L, "unable to get ModuleFileName");
   }
   else {
@@ -602,43 +612,19 @@ static int noenv (LuaThread *L) {
   return b;
 }
 
-/*
-static void setpath2 (const char *fieldname, const char *envname1, const char *envname2, const char *def) {
+static void setpath (LuaThread *L, const char *fieldname, const char *envname1, const char *envname2, const char *def) {
   THREAD_CHECK(L);
   const char *path = getenv(envname1);
-  if (path == NULL)  // no environment variable?
-    path = getenv(envname2);  // try alternative name
-  if (path == NULL || noenv(L)) {
-    // no environment variable?
-    lua_pushstring(L, def);  // use default
+  if (path == NULL) {
+    path = getenv(envname2);
   }
-  else {
-    // replace ";;" by ";AUXMARK;" and then AUXMARK by default path
-    path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP, LUA_PATH_SEP AUXMARK LUA_PATH_SEP);
-    luaL_gsub(L, path, AUXMARK, def);
-    L->stack_.remove(-2);
-  }
-  setprogdir(L);
-  lua_setfield(L, -2, fieldname);
-}
-*/
 
-
-static void setpath (LuaThread *L, const char *fieldname, const char *envname1,
-                                   const char *envname2, const char *def) {
-  THREAD_CHECK(L);
-  const char *path = getenv(envname1);
-  if (path == NULL)  /* no environment variable? */
-    path = getenv(envname2);  /* try alternative name */
   if (path == NULL || noenv(L)) {
     /* no environment variable? */
     lua_pushstring(L, def);  /* use default */
   }
   else {
     /* replace ";;" by ";AUXMARK;" and then AUXMARK by default path */
-    //path = luaL_gsub(L, path, LUA_PATH_SEP LUA_PATH_SEP, LUA_PATH_SEP AUXMARK LUA_PATH_SEP);
-    //luaL_gsub(L, path, AUXMARK, def);
-    //L->stack_.remove(-2);
     std::string path1 = replace_all(path, LUA_PATH_SEP LUA_PATH_SEP, LUA_PATH_SEP AUXMARK LUA_PATH_SEP);
     std::string path2 = replace_all(path1.c_str(), AUXMARK, def);
     LuaString* s = L->l_G->strings_->Create(path2.c_str());

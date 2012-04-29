@@ -895,23 +895,8 @@ int luaL_getsubtable (LuaThread *L, int idx, const char *fname) {
   }
 }
 
-int luaL_getregistrytable (LuaThread *L, const char *fname) {
-  THREAD_CHECK(L);
-
-  LuaTable* registry = L->l_G->getRegistry();
-
-  LuaValue val = registry->get(fname);
-
-  if(val.isTable()) {
-    L->stack_.push(val);
-    return 1;
-  }
-
-  val = LuaValue( new LuaTable() );
-  registry->set(fname, val);
-  L->stack_.push(val);
-
-  return 0;
+void luaL_getregistrytable (LuaThread *L, const char *fname) {
+  L->stack_.push( L->l_G->getRegistryTable(fname) );
 }
 
 
