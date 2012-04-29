@@ -50,50 +50,51 @@
 ** after that initial structure).
 */
 
+class LuaFile : public LuaBlob
+{
+public:
+
+  LuaFile() : LuaBlob(0) {
+  }
+
+  virtual ~LuaFile() {
+    /*
+    THREAD_CHECK(L);
+    if ((closef != NULL) && (f != NULL)) {
+      aux_close(L);
+    }
+    return 0;
+    */
+  }
+
+  FILE *f;  /* stream (NULL for incompletely created streams) */
+  LuaCallback closef;  /* to close stream (NULL for closed streams) */
+};
+
 #define LUA_FILEHANDLE          "FILE*"
 
 int typeerror (LuaThread *L, int narg, const char* type1);
 
-struct luaL_Stream {
-  //FILE *f;  // stream (NULL for incompletely created streams)
-  //LuaCallback closef;  // to close stream (NULL for closed streams)
-};
-
-
-typedef luaL_Stream LStream;
-
-
-//#define tolstream(L)	((LStream *)luaL_checkudata(L, 1, LUA_FILEHANDLE))
-
-LStream* tolstream(LuaThread* L) {
-  THREAD_CHECK(L);
-  void *p = luaL_testudata(L, 1, LUA_FILEHANDLE);
-  if (p == NULL) typeerror(L, 1, LUA_FILEHANDLE);
-  LStream* s = (LStream*)p;
-  return s;
-}
-
-LuaBlob* getFile(LuaThread* L, int index) {
+LuaFile* getFile(LuaThread* L, int index) {
   THREAD_CHECK(L);
   void *p = luaL_testudata(L, index, LUA_FILEHANDLE);
   if (p == NULL) typeerror(L, index, LUA_FILEHANDLE);
-  return L->stack_.at(index).getBlob();
+  return dynamic_cast<LuaFile*>(L->stack_.at(index).getBlob());
 }
 
 #define isclosed(p)	((p)->closef == NULL)
 
 static int io_type (LuaThread *L) {
   THREAD_CHECK(L);
-  LStream *p;
   luaL_checkany(L, 1);
-  p = (LStream *)luaL_testudata(L, 1, LUA_FILEHANDLE);
+  void* p = luaL_testudata(L, 1, LUA_FILEHANDLE);
 
   if (p == NULL) {
     L->stack_.push(LuaValue::Nil());  /* not a file */
     return 1;
   }
 
-  LuaBlob* p2 = getFile(L,1);
+  LuaFile* p2 = getFile(L,1);
 
   if (isclosed(p2)) {
     lua_pushliteral(L, "closed file");
@@ -108,7 +109,7 @@ static int io_type (LuaThread *L) {
 
 static int f_tostring (LuaThread *L) {
   THREAD_CHECK(L);
-  LuaBlob* p2 = getFile(L,1);
+  LuaFile* p2 = getFile(L,1);
   if (isclosed(p2)) {
     lua_pushliteral(L, "file (closed)");
   }
@@ -121,7 +122,7 @@ static int f_tostring (LuaThread *L) {
 
 static FILE *tofile (LuaThread *L) {
   THREAD_CHECK(L);
-  LuaBlob* p2 = getFile(L,1);
+  LuaFile* p2 = getFile(L,1);
   if (isclosed(p2))
     luaL_error(L, "attempt to use a closed file");
   assert(p2->f);
@@ -134,18 +135,14 @@ static FILE *tofile (LuaThread *L) {
 ** before opening the actual file; so, if there is a memory error, the
 ** file is not left opened.
 */
-static LStream *newprefile (LuaThread *L) {
+static LuaFile* newprefile (LuaThread *L) {
   THREAD_CHECK(L);
 
-  LuaBlob* u = new LuaBlob(0);
+  LuaFile* u = new LuaFile();
   L->stack_.push(u);
-
-  LStream* p = (LStream*)u->buf_;
 
   u->closef = NULL;  /* mark file handle as 'closed' */
   
-  //luaL_getmetatable(L, LUA_FILEHANDLE);
-
   LuaTable* meta = L->l_G->getRegistryTable(LUA_FILEHANDLE);
   L->stack_.push(meta);
 
@@ -155,18 +152,17 @@ static LStream *newprefile (LuaThread *L) {
   // so eventually this call can go away...
   lua_setmetatable(L, -2);
   
-  return p;
+  return u;
 }
 
 
 static int aux_close (LuaThread *L) {
   THREAD_CHECK(L);
-  LStream *p = tolstream(L);
-  (void)p;
-  LuaBlob* p2 = L->stack_.at(1).getBlob();
+  LuaFile* p2 = getFile(L,1);
   LuaCallback cf = p2->closef;
   p2->closef = NULL;  /* mark stream as closed */
-  return (*cf)(L);  /* close it */
+  int result = (*cf)(L);  /* close it */
+  return result;
 }
 
 
@@ -181,9 +177,7 @@ static int io_close (LuaThread *L) {
 
 static int f_gc (LuaThread *L) {
   THREAD_CHECK(L);
-  LStream *p = tolstream(L);
-  (void)p;
-  LuaBlob* p2 = L->stack_.at(1).getBlob();
+  LuaFile* p2 = getFile(L,1);
   if (!isclosed(p2) && p2->f != NULL)
     aux_close(L);  /* ignore closed and incompletely open files */
   return 0;
@@ -195,30 +189,24 @@ static int f_gc (LuaThread *L) {
 */
 static int io_fclose (LuaThread *L) {
   THREAD_CHECK(L);
-  LStream *p = tolstream(L);
-  (void)p;
-  LuaBlob* p2 = L->stack_.at(1).getBlob();
+  LuaFile* p2 = getFile(L,1);
   int res = fclose(p2->f);
   return luaL_fileresult(L, (res == 0), NULL);
 }
 
 
-static LStream *newfile (LuaThread *L) {
+static LuaFile* newfile (LuaThread *L) {
   THREAD_CHECK(L);
-  LStream *p = newprefile(L);
-  (void)p;
-  LuaBlob* p2 = L->stack_.at(-1).getBlob();
+  LuaFile* p2 = newprefile(L);
   p2->f = NULL;
   p2->closef = &io_fclose;
-  return p;
+  return p2;
 }
 
 
 static void opencheck (LuaThread *L, const char *fname, const char *mode) {
   THREAD_CHECK(L);
-  LStream *p = newfile(L);
-  (void)p;
-  LuaBlob* p2 = L->stack_.at(-1).getBlob();
+  LuaFile* p2 = newfile(L);
   p2->f = fopen(fname, mode);
   if (p2->f == NULL)
     luaL_error(L, "cannot open file " LUA_QS " (%s)", fname, strerror(errno));
@@ -229,9 +217,7 @@ static int io_open (LuaThread *L) {
   THREAD_CHECK(L);
   const char *filename = luaL_checkstring(L, 1);
   const char *mode = luaL_optstring(L, 2, "r");
-  LStream *p = newfile(L);
-  (void)p;
-  LuaBlob* p2 = L->stack_.at(-1).getBlob();
+  LuaFile* p2 = newfile(L);
   int i = 0;
   /* check whether 'mode' matches '[rwa]%+?b?' */
   if (!(mode[i] != '\0' && strchr("rwa", mode[i++]) != NULL &&
@@ -250,9 +236,7 @@ static int io_open (LuaThread *L) {
 */
 static int io_pclose (LuaThread *L) {
   THREAD_CHECK(L);
-  LStream *p = tolstream(L);
-  (void)p;
-  LuaBlob* p2 = L->stack_.at(1).getBlob();
+  LuaFile* p2 = getFile(L,1);
   return luaL_execresult(L, lua_pclose(L, p2->f));
 }
 
@@ -261,9 +245,7 @@ static int io_popen (LuaThread *L) {
   THREAD_CHECK(L);
   const char *filename = luaL_checkstring(L, 1);
   const char *mode = luaL_optstring(L, 2, "r");
-  LStream *p = newprefile(L);
-  (void)p;
-  LuaBlob* p2 = L->stack_.at(-1).getBlob();
+  LuaFile* p2 = newprefile(L);
   p2->f = lua_popen(L, filename, mode);
   p2->closef = &io_pclose;
   return (p2->f == NULL) ? luaL_fileresult(L, 0, filename) : 1;
@@ -272,9 +254,7 @@ static int io_popen (LuaThread *L) {
 
 static int io_tmpfile (LuaThread *L) {
   THREAD_CHECK(L);
-  LStream *p = newfile(L);
-  (void)p;
-  LuaBlob* p2 = L->stack_.at(-1).getBlob();
+  LuaFile* p2 = newfile(L);
   p2->f = tmpfile();
   return (p2->f == NULL) ? luaL_fileresult(L, 0, NULL) : 1;
 }
@@ -282,11 +262,8 @@ static int io_tmpfile (LuaThread *L) {
 
 static FILE *getiofile (LuaThread *L, const char *findex) {
   THREAD_CHECK(L);
-  LStream *p;
   lua_getregistryfield(L, findex);
-  p = (LStream *)lua_touserdata(L, -1);
-  (void)p;
-  LuaBlob* p2 = L->stack_.at(-1).getBlob();
+  LuaFile* p2 = getFile(L,-1);
   if (isclosed(p2))
     luaL_error(L, "standard %s file is closed", findex + strlen(IO_PREFIX));
   return p2->f;
@@ -520,9 +497,7 @@ static int f_read (LuaThread *L) {
 
 static int io_readline (LuaThread *L) {
   THREAD_CHECK(L);
-  LStream *p = (LStream *)lua_touserdata(L, lua_upvalueindex(1));
-  (void)p;
-  LuaBlob* p2 = L->stack_.at(lua_upvalueindex(1)).getBlob();
+  LuaFile* p2 = getFile(L,lua_upvalueindex(1));
   int i;
   int n = (int)lua_tointeger(L, lua_upvalueindex(2));
   if (isclosed(p2))  /* file is already closed? */
@@ -672,9 +647,7 @@ static const luaL_Reg flib[] = {
 */
 static int io_noclose (LuaThread *L) {
   THREAD_CHECK(L);
-  LStream *p = tolstream(L);
-  (void)p;
-  LuaBlob* p2 = L->stack_.at(1).getBlob();
+  LuaFile* p2 = getFile(L,1);
   p2->closef = &io_noclose;  /* keep file opened */
   L->stack_.push(LuaValue::Nil());
   lua_pushliteral(L, "cannot close standard file");
@@ -685,9 +658,7 @@ static int io_noclose (LuaThread *L) {
 static void createstdfile (LuaThread *L, FILE *f, const char *k,
                            const char *fname) {
   THREAD_CHECK(L);
-  LStream *p = newprefile(L);
-  (void)p;
-  LuaBlob* p2 = L->stack_.at(-1).getBlob();
+  LuaFile* p2 = newprefile(L);
   p2->f = f;
   p2->closef = &io_noclose;
   if (k != NULL) {

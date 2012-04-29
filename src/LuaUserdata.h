@@ -19,9 +19,5 @@ public:
   size_t len_;  /* number of bytes */
 
   std::string usertype_;
-
-  // patched in temporarily while we move file IO to a subclass
-  FILE *f;  /* stream (NULL for incompletely created streams) */
-  LuaCallback closef;  /* to close stream (NULL for closed streams) */
 };
 
