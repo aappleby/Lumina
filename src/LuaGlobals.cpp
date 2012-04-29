@@ -46,7 +46,7 @@ LuaObject** getGlobalGCHead() {
 }
 
 LuaVM::LuaVM()
-: uvhead(NULL)
+: uvhead()
 {
   LuaVM* oldVM = thread_G;
   LuaThread* oldThread = thread_L;

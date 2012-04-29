@@ -36,11 +36,20 @@ LuaObject::~LuaObject() {
 }
 
 void LuaObject::linkGC(LuaObject** gcHead) {
+  assert(prev_ == NULL);
   assert(next_ == NULL);
+
   if(gcHead) {
     next_ = *gcHead;
     *gcHead = this;
   }
+}
+
+void LuaObject::linkGC(LuaList& gclist) {
+  assert(prev_ == NULL);
+  assert(next_ == NULL);
+
+  gclist.Push(this);
 }
 
 // Sanity check object state

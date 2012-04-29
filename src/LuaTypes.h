@@ -16,6 +16,8 @@ class LuaTable;
 class LuaProto;
 class LuaBlob;
 class LuaGCVisitor;
+class LuaList;
+class LuaGraylist;
 
 typedef LuaValue* StkId;  /* index to stack elements */
 

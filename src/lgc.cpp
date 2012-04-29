@@ -199,6 +199,7 @@ void getTableMode(LuaTable* t, bool& outWeakKey, bool& outWeakVal) {
 
 
 static LuaObject **sweeplist (LuaObject **p, size_t count);
+static void sweeplist (LuaList::iterator& it, size_t count);
 
 
 /*

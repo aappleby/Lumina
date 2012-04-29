@@ -372,7 +372,6 @@ void LuaStack::sweepCallinfo() {
 LuaUpvalue* LuaStack::createUpvalFor(StkId level) {
   LuaObject **pp = &open_upvals_;
   LuaUpvalue *p;
-  LuaUpvalue *uv;
   while (*pp != NULL && (p = dynamic_cast<LuaUpvalue*>(*pp))->v >= level) {
     assert(p->v != &p->value);
     if (p->v == level) {
@@ -388,7 +387,8 @@ LuaUpvalue* LuaStack::createUpvalFor(StkId level) {
     pp = &(p->next_);
   }
   /* not found: create a new one */
-  uv = new LuaUpvalue(pp);
+  LuaUpvalue *uv = new LuaUpvalue();
+  uv->linkGC(pp);
   uv->v = level;  /* current value lives in the stack */
 
   // TODO(aappleby): Is there any way to break this dependency on the global state?  
@@ -410,6 +410,7 @@ void LuaStack::closeUpvals(StkId level) {
 
     assert(!uv->isBlack() && uv->v != &uv->value);
     open_upvals_ = uv->next_;  /* remove from `open' list */
+    uv->next_ = NULL;
 
     if (uv->isDead())
       delete uv;
@@ -419,8 +420,8 @@ void LuaStack::closeUpvals(StkId level) {
       uv->value = *uv->v;  /* move value to upvalue slot */
       uv->v = &uv->value;  /* now current value lives here */
       
-      uv->next_ = thread_G->allgc;  /* link upvalue into 'allgc' list */
-      thread_G->allgc = uv;
+      /* link upvalue into 'allgc' list */
+      uv->linkGC(&thread_G->allgc);
 
       // check color (and invariants) for an upvalue that was closed,
       // i.e., moved into the 'allgc' list
@@ -479,7 +480,7 @@ void LuaStack::sanityCheck() {
   for (LuaObject* uvo = open_upvals_; uvo != NULL; uvo = uvo->next_) {
     LuaUpvalue *uv = dynamic_cast<LuaUpvalue*>(uvo);
     assert(uv->v != &uv->value);
-    assert(!uvo->isBlack());
+    assert(!uv->isBlack());
   }
 
   for (LuaStackFrame* ci = callinfo_; ci != NULL; ci = ci->previous) {

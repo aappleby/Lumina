@@ -105,6 +105,8 @@ public:
       : list_(list), object_(list->getHead()) {
     }
 
+    LuaObject* get() { return object_; }
+
     LuaObject* operator -> () {
       return object_;
     }

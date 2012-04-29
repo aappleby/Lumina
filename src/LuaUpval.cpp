@@ -2,8 +2,7 @@
 
 #include "LuaCollector.h"
 
-LuaUpvalue::LuaUpvalue(LuaObject** gchead) : LuaObject(LUA_TUPVALUE) {
-  linkGC(gchead);
+LuaUpvalue::LuaUpvalue() : LuaObject(LUA_TUPVALUE) {
   v = &value;
   uprev = NULL;
   unext = NULL;
