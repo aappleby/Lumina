@@ -308,6 +308,7 @@ void sweepListGenerational2 (LuaList::iterator& it, size_t count) {
         sweepthread(dynamic_cast<LuaThread*>(o));  /* sweep thread's upvalues */
       }
       if (it->isOld()) {
+        it.abort();
         break;
       }
       /* update marks */
@@ -434,6 +435,7 @@ static void GCTM (int propagateerrors) {
 */
 void separatetobefnz (int all) {
   LuaVM *g = thread_G;
+  /*
   LuaObject **p = &g->finobj;
   LuaObject *curr;
 
@@ -456,7 +458,8 @@ void separatetobefnz (int all) {
       g->tobefnz.PushTail(curr);
     }
   }
-  /*
+  */
+
   for(LuaList::iterator it = g->finobj.begin(); it;) {
     assert(!it->isFinalized());
     assert(it->isSeparated());
@@ -468,11 +471,11 @@ void separatetobefnz (int all) {
     }
 
     // won't be finalized again
-    it->setFinalized();
-    g->tobefnz.PushTail(it);
+    LuaObject* o = it;
     it.pop();
+    o->setFinalized();
+    g->tobefnz.PushTail(o);
   }
-  */
 }
 
 // Removing a node in the middle of a singly-linked list requires
@@ -482,6 +485,7 @@ void RemoveObjectFromList(LuaObject* o, LuaObject** list) {
   LuaObject **p = list;
   for (; *p != o; p = &(*p)->next_);
   *p = o->next_;
+  o->next_ = NULL;
 }
 
 /*
@@ -502,9 +506,9 @@ void luaC_checkfinalizer (LuaObject *o, LuaTable *mt) {
   // Remove the object from the global GC list and add it to the 'finobj' list.
   RemoveObjectFromList(o, &g->allgc);
   
-  o->next_ = g->finobj;
-  g->finobj = o;
-  //g->finobj.Push(o);
+  //o->next_ = g->finobj;
+  //g->finobj = o;
+  g->finobj.Push(o);
 
   // Mark it as separated, and clear old (MOVE OLD rule).
   o->setSeparated();
@@ -562,8 +566,8 @@ static void callallpendingfinalizers (int propagateerrors) {
 void luaC_freeallobjects () {
   // separate all objects with finalizers
   separatetobefnz(1);
-  //assert(thread_G->finobj.isEmpty());
-  assert(thread_G->finobj == NULL);
+  assert(thread_G->finobj.isEmpty());
+  //assert(thread_G->finobj == NULL);
 
   // finalize everything
   callallpendingfinalizers(0);
@@ -692,14 +696,15 @@ static ptrdiff_t singlestep () {
         return GCSWEEPCOST;
       }
       else {
-        g->sweepgc = &g->finobj;  /* prepare to sweep finalizable objects */
+        //g->sweepgc = &g->finobj;  /* prepare to sweep finalizable objects */
+        g->sweepgc2 = g->finobj.begin();
         g->gcstate = GCSsweepudata;
         return 0;
       }
     }
     case GCSsweepudata: {
-      if (*g->sweepgc) {
-        g->sweepgc = sweeplist(g->sweepgc, GCSWEEPMAX);
+      if (g->sweepgc2) {
+        sweeplist(g->sweepgc2, GCSWEEPMAX);
         return GCSWEEPMAX*GCSWEEPCOST;
       }
       else {

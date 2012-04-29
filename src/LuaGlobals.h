@@ -93,7 +93,7 @@ public:
 
   LuaList::iterator sweepgc2;
 
-  LuaObject *finobj;  /* list of collectable objects with finalizers */
+  LuaList finobj;   // list of collectable objects with finalizers
   LuaList tobefnz;  /* list of userdata to be GC */
 
   // The global garbage collector.

@@ -52,16 +52,8 @@ public:
       return NULL;
     }
 
-    if(head_ == tail_) {
-      LuaObject* o = head_;
-      head_ = NULL;
-      tail_ = NULL;
-      return o;
-    }
-
     LuaObject* o = head_;
-    head_ = o->getNext();
-    o->setNext(NULL);
+    Detach(o);
     return o;
   }
 
@@ -73,6 +65,9 @@ public:
 
     if(o->getPrev()) o->getPrev()->setNext(o->getNext());
     if(o->getNext()) o->getNext()->setPrev(o->getPrev());
+
+    o->setPrev(NULL);
+    o->setNext(NULL);
   }
 
   void Swap(LuaList& l) {
@@ -125,6 +120,10 @@ public:
 
     operator LuaObject* () {
       return object_;
+    }
+
+    void abort() {
+      object_ = NULL;
     }
 
     // Removes the object at the iterator from the list and moves to the next

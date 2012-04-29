@@ -74,7 +74,7 @@ LuaVM::LuaVM()
 
   allgc = NULL;
   sweepgc = NULL;
-  finobj = NULL;
+  //finobj = NULL;
 
   panic = NULL;
   version = lua_version(NULL);

@@ -153,8 +153,9 @@ static LuaFile* newprefile (LuaThread *L) {
   u->metatable_ = meta;
 
   RemoveObjectFromList(u, &L->l_G->allgc);
-  u->next_ = L->l_G->finobj;
-  L->l_G->finobj = u;
+  //u->next_ = L->l_G->finobj;
+  //L->l_G->finobj = u;
+  L->l_G->finobj.Push(u);
   u->setSeparated();
   
   return u;

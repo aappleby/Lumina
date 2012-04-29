@@ -273,6 +273,23 @@ static void checkold (LuaVM *g, LuaObject *o) {
   }
 }
 
+static void checkold (LuaVM *g, LuaList& list) {
+  int isold = 0;
+  for(LuaList::iterator it = list.begin(); it; ++it) {
+    if (it->isOld()) {  /* old generation? */
+      assert(isgenerational(g));
+      if (!issweepphase(g))
+        isold = 1;
+    }
+    else assert(!isold);  /* non-old object cannot be after an old one */
+    if (it->isGray()) {
+      assert(!keepinvariant(g) || it->isTestGray());
+      it->clearTestGray();
+    }
+    assert(!it->isTestGray());
+  }
+}
+
 
 int lua_checkmemory (LuaThread *L) {
   THREAD_CHECK(L);
@@ -299,11 +316,13 @@ int lua_checkmemory (LuaThread *L) {
   }
   /* check 'finobj' list */
   checkold(g, g->finobj);
-  for (o = g->finobj; o != NULL; o = o->next_) {
-    assert(!o->isDead() && o->isSeparated());
-    assert(o->isUserdata() || o->isTable());
-    checkobject(g, o);
+
+  for(LuaList::iterator it = g->finobj.begin(); it; ++it) {
+    assert(!it->isDead() && it->isSeparated());
+    assert(it->isUserdata() || it->isTable());
+    checkobject(g, it);
   }
+
   /* check 'tobefnz' list */
   checkold(g, g->tobefnz.begin());
   for (LuaList::iterator it = g->tobefnz.begin(); it; ++it) {
