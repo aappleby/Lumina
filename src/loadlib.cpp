@@ -8,6 +8,7 @@
 ** systems.
 */
 
+#include "LuaClosure.h"
 #include "LuaGlobals.h"
 #include "LuaState.h"
 #include "LuaUserdata.h"
@@ -661,18 +662,17 @@ int luaopen_package (LuaThread *L) {
   }
 
   /* create 'searchers' table */
-  lua_createtable(L, sizeof(searchers)/sizeof(searchers[0]) - 1, 0);
+  LuaTable* search = new LuaTable(sizeof(searchers)/sizeof(searchers[0]) - 1, 0);
   /* fill it with pre-defined searchers */
+
   for (i=0; searchers[i] != NULL; i++) {
-    L->stack_.copy(-2);  /* set 'package' as upvalue for all searchers */
-    lua_pushcclosure(L, searchers[i], 1);
-    lua_rawseti(L, -2, i+1);
+    LuaClosure* cl = new LuaClosure(searchers[i], LuaValue(package) );
+    search->set( LuaValue(i+1), LuaValue(cl) );
   }
-#if defined(LUA_COMPAT_LOADERS)
-  L->stack_.copy(-1);  /* make a copy of 'searchers' table */
-  lua_setfield(L, -3, "loaders");  /* put it in field `loaders' */
-#endif
-  lua_setfield(L, -2, "searchers");  /* put it in field 'searchers' */
+
+  /* put it in field 'searchers' */
+  package->set("searchers", LuaValue(search) );
+
   /* set field 'path' */
   setpath(L, "path", LUA_PATHVERSION, LUA_PATH, LUA_PATH_DEFAULT);
   /* set field 'cpath' */
