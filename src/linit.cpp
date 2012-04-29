@@ -12,6 +12,7 @@
 ** it to suit your needs.
 */
 
+#include "LuaGlobals.h"
 #include "LuaState.h"
 
 #define LUA_LIB
@@ -43,28 +44,20 @@ static const luaL_Reg loadedlibs[] = {
 };
 
 
-/*
-** these libs are preloaded and must be required before used
-*/
-static const luaL_Reg preloadedlibs[] = {
-  {NULL, NULL}
-};
-
-
 void luaL_openlibs (LuaThread *L) {
   THREAD_CHECK(L);
-  const luaL_Reg *lib;
+
+  LuaTable* loadedModules = L->l_G->getRegistryTable("_LOADED");
+  LuaTable* globals = L->l_G->getGlobals();
+
   /* call open functions from 'loadedlibs' and set results to global table */
-  for (lib = loadedlibs; lib->func; lib++) {
-    luaL_requiref(L, lib->name, lib->func);
+  for (const luaL_Reg* lib = loadedlibs; lib->func; lib++) {
+      
+    lib->func(L);
+    loadedModules->set(lib->name, L->stack_.at(-1) );
+    globals->set(lib->name, L->stack_.at(-1) );
+
     L->stack_.pop();  /* remove lib */
   }
-  /* add open functions from 'preloadedlibs' into 'package.preload' table */
-  luaL_getregistrytable(L, "_PRELOAD");
-  for (lib = preloadedlibs; lib->func; lib++) {
-    lua_pushcclosure(L, lib->func, 0);
-    lua_setfield(L, -2, lib->name);
-  }
-  L->stack_.pop();  /* remove _PRELOAD table */
 }
 

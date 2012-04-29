@@ -899,26 +899,6 @@ void luaL_getregistrytable (LuaThread *L, const char *fname) {
   L->stack_.push( L->l_G->getRegistryTable(fname) );
 }
 
-
-/*
-** stripped-down 'require'. Calls 'openf' to open a module,
-** registers the result in 'package.loaded' table and, if 'glb'
-** is true, also registers the result in the global table.
-** Leaves resulting module on the top.
-*/
-void luaL_requiref (LuaThread *L, const char *modname, LuaCallback openf) {
-  THREAD_CHECK(L);
-  lua_pushstring(L, modname);  /* argument to open function */
-  
-  openf(L);
-
-  LuaTable* loadedModules = L->l_G->getRegistryTable("_LOADED");
-  loadedModules->set(modname, L->stack_.at(-1) );
-
-  LuaTable* globals = L->l_G->getGlobals();
-  globals->set(modname, L->stack_.at(-1) );
-}
-
 std::string replace_all (const char* source,
                          const char* pattern,
                          const char* replace) {
