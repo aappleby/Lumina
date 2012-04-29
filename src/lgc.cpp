@@ -22,6 +22,7 @@
 #include "lstate.h"
 #include "ltm.h"
 
+#pragma warning(disable:4127)
 
 #define bitmask(b)		(1<<(b))
 
@@ -198,7 +199,7 @@ void getTableMode(LuaTable* t, bool& outWeakKey, bool& outWeakVal) {
 */
 
 
-static void sweeplist (LuaObject*& head, LuaObject*& p1, LuaObject**& p2, size_t count);
+static bool sweeplist (LuaObject*& head, LuaObject*& p1, LuaObject**& p2, size_t count);
 static void sweeplist (LuaList::iterator& it, size_t count);
 
 
@@ -234,9 +235,12 @@ static void sweepthread (LuaThread *L1) {
 */
 
 
-static void sweepListNormal (LuaObject *& head, LuaObject*& p1, LuaObject**& p2, size_t count) {
+static bool sweepListNormal (LuaObject *& head, LuaObject*& p1, LuaObject**& p2, size_t count) {
 
-  while (*p2 != NULL && count-- > 0) {
+  while(1) {
+    if(*p2 == NULL) return true;
+    if(count-- <= 0) return false;
+
     assert((p1 == NULL) || (&p1->next_ == p2));
     LuaObject *curr = *p2;
     if (curr->isDead()) {  /* is 'curr' dead? */
@@ -278,8 +282,11 @@ void sweepListNormal2 (LuaList::iterator& it, size_t count) {
   }
 }
 
-static void sweepListGenerational (LuaObject*& head, LuaObject *& p1, LuaObject**& p2, size_t count) {
-  while (*p2 != NULL && count-- > 0) {
+static bool sweepListGenerational (LuaObject*& head, LuaObject *& p1, LuaObject**& p2, size_t count) {
+
+  while (1) {
+    if(*p2 == NULL) return true;
+    if(count-- <= 0) return false;
     assert((p1 == NULL) || (&p1->next_ == p2));
     LuaObject *curr = *p2;
     if (curr->isDead()) {  /* is 'curr' dead? */
@@ -295,7 +302,7 @@ static void sweepListGenerational (LuaObject*& head, LuaObject *& p1, LuaObject*
       if (curr->isOld()) {
         static LuaObject *nullp = NULL;
         p2 = &nullp;  /* stop sweeping this list */
-        break;
+        return true;
       }
       /* update marks */
       curr->setOld();
@@ -328,11 +335,11 @@ void sweepListGenerational2 (LuaList::iterator& it, size_t count) {
   }
 }
 
-static void sweeplist (LuaObject*& head, LuaObject*& p1, LuaObject**& p2, size_t count) {
+static bool sweeplist (LuaObject*& head, LuaObject*& p1, LuaObject**& p2, size_t count) {
   if(isgenerational(thread_G)) {
-    sweepListGenerational(head,p1,p2,count);
+    return sweepListGenerational(head,p1,p2,count);
   } else {
-    sweepListNormal(head,p1,p2,count);
+    return sweepListNormal(head,p1,p2,count);
   }
 }
 
@@ -719,8 +726,9 @@ static ptrdiff_t singlestep () {
       }
     }
     case GCSsweep: {
-      if (*g->sweepgc) {
-        sweeplist(g->allgc, g->sweepcursor, g->sweepgc, GCSWEEPMAX);
+      bool done = sweeplist(g->allgc, g->sweepcursor, g->sweepgc, GCSWEEPMAX);
+
+      if (!done) {
         return GCSWEEPMAX*GCSWEEPCOST;
       }
       else {
