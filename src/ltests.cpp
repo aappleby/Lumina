@@ -732,7 +732,7 @@ static int loadlib (LuaThread *L) {
   int i;
   {
     GLOBAL_CHANGE(L1);
-    luaL_requiref(L1, "package", luaopen_package, 1);
+    luaopen_package(L1);
     luaL_getregistrytable(L1, "_PRELOAD");
     for (i = 0; libs[i].name; i++) {
       lua_pushcclosure(L1, libs[i].func, 0);

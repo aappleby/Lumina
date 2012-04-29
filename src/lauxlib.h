@@ -98,8 +98,7 @@ void luaL_getregistrytable (LuaThread *L, const char *fname);
 void (luaL_traceback) (LuaThread *L, LuaThread *L1,
                                   const char *msg, int level);
 
-void (luaL_requiref) (LuaThread *L, const char *modname,
-                                 LuaCallback openf, int glb);
+void (luaL_requiref) (LuaThread *L, const char *modname, LuaCallback openf);
 
 /*
 ** ===============================================================

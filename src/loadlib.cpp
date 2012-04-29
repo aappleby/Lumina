@@ -38,22 +38,6 @@ std::string replace_all (const char* source,
                          const char* pattern,
                          const char* replace);
 
-/*
-** LUA_PATH and LUA_CPATH are the names of the environment
-** variables that Lua check to set its paths.
-*/
-#if !defined(LUA_PATH)
-#define LUA_PATH	"LUA_PATH"
-#endif
-
-#if !defined(LUA_CPATH)
-#define LUA_CPATH	"LUA_CPATH"
-#endif
-
-#define LUA_PATHSUFFIX		"_" LUA_VERSION_MAJOR "_" LUA_VERSION_MINOR
-
-#define LUA_PATHVERSION		LUA_PATH LUA_PATHSUFFIX
-#define LUA_CPATHVERSION	LUA_CPATH LUA_PATHSUFFIX
 
 /*
 ** LUA_PATH_SEP is the character that separates templates in a path.
@@ -167,8 +151,6 @@ static LuaCallback ll_sym (LuaThread *L, void *lib, const char *sym) {
 ** =======================================================================
 */
 
-#undef setprogdir
-
 /*
 ** optional flags for LoadLibraryEx
 */
@@ -187,22 +169,6 @@ std::string GetModuleDirectory() {
   *lb = 0;
   return std::string(buff);
 }
-
-static void setprogdir (LuaThread *L) {
-  THREAD_CHECK(L);
-  char buff[256];
-  char *lb;
-  DWORD n = GetModuleFileNameA(NULL, buff, 256);
-  if (n == 0 || n == 256 || (lb = strrchr(buff, '\\')) == NULL) {
-    luaL_error(L, "unable to get ModuleFileName");
-  }
-  else {
-    *lb = '\0';
-    luaL_gsub(L, lua_tostring(L, -1), LUA_EXEC_DIR, buff);
-    L->stack_.remove(-2);  /* remove original string */
-  }
-}
-
 
 static void pusherror (LuaThread *L) {
   THREAD_CHECK(L);
@@ -600,43 +566,9 @@ static int ll_require (LuaThread *L) {
 #define AUXMARK		"\1"
 
 
-/*
-** return registry.LUA_NOENV as a boolean
-*/
-static int noenv (LuaThread *L) {
-  THREAD_CHECK(L);
-  int b;
-  lua_getregistryfield(L, "LUA_NOENV");
-  b = lua_toboolean(L, -1);
-  L->stack_.pop();  /* remove value */
-  return b;
-}
-
-static void setpath (LuaThread *L, const char *fieldname, const char *envname1, const char *envname2, const char *def) {
-  THREAD_CHECK(L);
-  const char *path = getenv(envname1);
-  if (path == NULL) {
-    path = getenv(envname2);
-  }
-
-  if (path == NULL || noenv(L)) {
-    /* no environment variable? */
-    lua_pushstring(L, def);  /* use default */
-  }
-  else {
-    /* replace ";;" by ";AUXMARK;" and then AUXMARK by default path */
-    std::string path1 = replace_all(path, LUA_PATH_SEP LUA_PATH_SEP, LUA_PATH_SEP AUXMARK LUA_PATH_SEP);
-    std::string path2 = replace_all(path1.c_str(), AUXMARK, def);
-    LuaString* s = L->l_G->strings_->Create(path2.c_str());
-    L->stack_.push(s);
-  }
-  setprogdir(L);
-  lua_setfield(L, -2, fieldname);
-}
-
-
 int luaopen_package (LuaThread *L) {
   THREAD_CHECK(L);
+
   /* create new type _LOADLIB */
   LuaTable* meta = new LuaTable();
   meta->set("__gc", gctm);
@@ -661,21 +593,45 @@ int luaopen_package (LuaThread *L) {
   package->set("searchers", search);
 
   /* set field 'path' */
-  setpath(L, "path", LUA_PATHVERSION, LUA_PATH, LUA_PATH_DEFAULT);
-  /* set field 'cpath' */
-  setpath(L, "cpath", LUA_CPATHVERSION, LUA_CPATH, LUA_CPATH_DEFAULT);
 
-  /* store config information */
-  lua_pushliteral(L, LUA_DIRSEP "\n" LUA_PATH_SEP "\n" LUA_PATH_MARK "\n" LUA_EXEC_DIR "\n" LUA_IGMARK "\n");
-  lua_setfield(L, -2, "config");
-  /* set field `loaded' */
+  std::string dir = GetModuleDirectory();
 
-  package->set("loaded", L->l_G->getRegistryTable("_LOADED") );
-  package->set("preload", L->l_G->getRegistryTable("_PRELOAD") );
+  std::string path = replace_all(LUA_PATH_DEFAULT, LUA_EXEC_DIR, dir.c_str());
+  std::string cpath = replace_all(LUA_CPATH_DEFAULT, LUA_EXEC_DIR, dir.c_str());
+
+  LuaString* path2 = L->l_G->strings_->Create(path.c_str());
+  LuaString* cpath2 = L->l_G->strings_->Create(cpath.c_str());
+
+  package->set("path", path2);
+  package->set("cpath", cpath2);
+
+  LuaString* config = L->l_G->strings_->Create(LUA_DIRSEP "\n" LUA_PATH_SEP "\n" LUA_PATH_MARK "\n" LUA_EXEC_DIR "\n" LUA_IGMARK "\n");
+  package->set("config", config);
+
+  LuaTable* loadedModules = L->l_G->getRegistryTable("_LOADED");
+  LuaTable* preloadedModules = L->l_G->getRegistryTable("_PRELOAD");
+
+  package->set("loaded", loadedModules );
+  package->set("preload", preloadedModules );
 
   // put 'require' in the globals table
   LuaTable* globals = L->l_G->getGlobals();
   globals->set("require", new LuaClosure(ll_require,package));
+
+  loadedModules->set("package", package);
+  globals->set("package", package);
+  /*
+  luaL_getregistrytable(L, "_LOADED");
+  L->stack_.copy(-2);  // make copy of module (call result)
+  lua_setfield(L, -2, modname);  // _LOADED[modname] = module
+  L->stack_.pop();  // remove _LOADED table
+  if (glb) {
+    lua_pushglobaltable(L);
+    L->stack_.copy(-2);  // copy of 'mod'
+    lua_setfield(L, -2, modname);  // _G[modname] = module
+    L->stack_.pop();  // remove _G table
+  }
+  */
 
   return 1;  /* return 'package' table */
 }

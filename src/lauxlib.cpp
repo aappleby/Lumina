@@ -906,23 +906,17 @@ void luaL_getregistrytable (LuaThread *L, const char *fname) {
 ** is true, also registers the result in the global table.
 ** Leaves resulting module on the top.
 */
-void luaL_requiref (LuaThread *L, const char *modname, LuaCallback openf, int glb) {
+void luaL_requiref (LuaThread *L, const char *modname, LuaCallback openf) {
   THREAD_CHECK(L);
   lua_pushstring(L, modname);  /* argument to open function */
   
   openf(L);
-  //lua_call(L, 1, 1);  /* open module */
 
-  luaL_getregistrytable(L, "_LOADED");
-  L->stack_.copy(-2);  /* make copy of module (call result) */
-  lua_setfield(L, -2, modname);  /* _LOADED[modname] = module */
-  L->stack_.pop();  /* remove _LOADED table */
-  if (glb) {
-    lua_pushglobaltable(L);
-    L->stack_.copy(-2);  /* copy of 'mod' */
-    lua_setfield(L, -2, modname);  /* _G[modname] = module */
-    L->stack_.pop();  /* remove _G table */
-  }
+  LuaTable* loadedModules = L->l_G->getRegistryTable("_LOADED");
+  loadedModules->set(modname, L->stack_.at(-1) );
+
+  LuaTable* globals = L->l_G->getGlobals();
+  globals->set(modname, L->stack_.at(-1) );
 }
 
 std::string replace_all (const char* source,

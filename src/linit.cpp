@@ -56,7 +56,7 @@ void luaL_openlibs (LuaThread *L) {
   const luaL_Reg *lib;
   /* call open functions from 'loadedlibs' and set results to global table */
   for (lib = loadedlibs; lib->func; lib++) {
-    luaL_requiref(L, lib->name, lib->func, 1);
+    luaL_requiref(L, lib->name, lib->func);
     L->stack_.pop();  /* remove lib */
   }
   /* add open functions from 'preloadedlibs' into 'package.preload' table */
@@ -66,7 +66,5 @@ void luaL_openlibs (LuaThread *L) {
     lua_setfield(L, -2, lib->name);
   }
   L->stack_.pop();  /* remove _PRELOAD table */
-
-  //luaL_requiref(L, "T", luaB_opentests, 1);
 }
 
