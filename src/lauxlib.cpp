@@ -837,24 +837,6 @@ const char *luaL_tolstring (LuaThread *L, int idx, size_t *len) {
 
 /* }====================================================== */
 
-/*
-** ensure that stack[idx][fname] has a table and push that table
-** into the stack
-*/
-int luaL_getsubtable (LuaThread *L, int idx, const char *fname) {
-  THREAD_CHECK(L);
-  lua_getfield(L, idx, fname);
-  if (lua_istable(L, -1)) return 1;  // table already there
-  else {
-    idx = lua_absindex(L, idx);
-    L->stack_.pop();  // remove previous result
-    lua_createtable(L, 0, 0);
-    L->stack_.copy(-1);  // copy to be left at top
-    lua_setfield(L, idx, fname);  // assign new table to field
-    return 0;  // false, because did not find table there
-  }
-}
-
 void luaL_getregistrytable (LuaThread *L, const char *fname) {
   L->stack_.push( L->l_G->getRegistryTable(fname) );
 }

@@ -672,8 +672,17 @@ static int pushuserdata (LuaThread *L) {
 
 static int udataval (LuaThread *L) {
   THREAD_CHECK(L);
-  lua_pushinteger(L, cast(long, lua_touserdata(L, 1)));
-  return 1;
+  LuaValue v = L->stack_.at(1);
+
+  if(v.isBlob()) {
+    L->stack_.push( (int)v.getBlob()->buf_ );
+    return 1;
+  }
+  if(v.isPointer()) {
+    L->stack_.push( (int)v.getPointer() );
+    return 1;
+  }
+  return 0;
 }
 
 

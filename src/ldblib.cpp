@@ -322,11 +322,11 @@ static void hookf (LuaThread *L, LuaDebug *ar) {
   static const char *const hooknames[] =
     {"call", "return", "line", "count", "tail call"};
   
-  luaL_getregistrytable(L, HOOKKEY);
-  
-  lua_rawgetp(L, -1, L);
+  LuaTable* t = L->l_G->getRegistryTable(HOOKKEY);
+  LuaValue f = t->get( LuaValue::Pointer(L) );
 
-  if (lua_isfunction(L, -1)) {
+  if (f.isFunction()) {
+    L->stack_.push(f);
     lua_pushstring(L, hooknames[(int)ar->event]);
     if (ar->currentline >= 0) {
       lua_pushinteger(L, ar->currentline);

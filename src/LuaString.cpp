@@ -10,8 +10,7 @@ uint32_t hashString(const char* str, size_t len) {
   uint32_t hash = (uint32_t)len;
 
   size_t step = (len>>5)+1;  // if string is too long, don't hash all its chars
-  size_t l1;
-  for (l1 = len; l1 >= step; l1 -= step) {
+  for (size_t l1 = len; l1 >= step; l1 -= step) {
     hash = hash ^ ((hash<<5)+(hash>>2) + (unsigned char)str[l1-1]);
   }
 
@@ -75,6 +74,8 @@ LuaString* LuaStringTable::find(uint32_t hash, const char *str, size_t len) {
   }
   return NULL;
 }
+
+//-----------------------------------------------------------------------------
 
 void LuaStringTable::Resize(int newsize) {
   int oldsize = (int)hash_.size();

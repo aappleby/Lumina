@@ -15,6 +15,8 @@
 
 #include "LuaGlobals.h"
 #include "LuaState.h"
+#include "LuaString.h"
+#include "LuaTable.h"
 
 #include "lua.h"
 
@@ -246,11 +248,9 @@ static int dolibrary (LuaThread *L, const char *name) {
 
 
 static const char *get_prompt (LuaThread *L, int firstline) {
-  const char *p;
-  lua_getglobal(L, firstline ? "_PROMPT" : "_PROMPT2");
-  p = lua_tostring(L, -1);
+  const char* prompt = firstline ? "_PROMPT" : "_PROMPT2";
+  const char* p = L->l_G->getGlobals()->get(prompt).getString()->c_str();
   if (p == NULL) p = (firstline ? LUA_PROMPT : LUA_PROMPT2);
-  L->stack_.pop();  /* remove global */
   return p;
 }
 
@@ -453,8 +453,8 @@ static int handle_luainit (LuaThread *L) {
 
 
 static int pmain (LuaThread *L) {
-  int argc = (int)lua_tointeger(L, 1);
-  char **argv = (char **)lua_touserdata(L, 2);
+  int argc = L->stack_.at(1).getInteger();
+  char **argv = (char **)L->stack_.at(2).getPointer();
   int script;
   int args[num_has];
   args[has_i] = args[has_v] = args[has_e] = args[has_E] = 0;
@@ -466,8 +466,8 @@ static int pmain (LuaThread *L) {
   }
   if (args[has_v]) print_version();
   if (args[has_E]) {  /* option '-E'? */
-    lua_pushboolean(L, 1);  /* signal for libraries to ignore env. vars. */
-    lua_setregistryfield(L, "LUA_NOENV");
+    /* signal for libraries to ignore env. vars. */
+    L->l_G->getRegistry()->set("LUA_NOENV", true);
   }
   /* open standard libraries */
   luaL_checkversion(L);
@@ -476,10 +476,13 @@ static int pmain (LuaThread *L) {
   lua_gc(L, LUA_GCRESTART, 0);
   if (!args[has_E] && handle_luainit(L) != LUA_OK)
     return 0;  /* error running LUA_INIT */
+
   /* execute arguments -e and -l */
   if (!runargs(L, argv, (script > 0) ? script : argc)) return 0;
+
   /* execute main script (if there is one) */
   if (script && handle_script(L, argv, script) != LUA_OK) return 0;
+
   if (args[has_i])  /* -i option? */
     dotty(L);
   else if (script == 0 && !args[has_e] && !args[has_v]) {  /* no arguments? */
@@ -489,7 +492,7 @@ static int pmain (LuaThread *L) {
     }
     else dofile(L, NULL);  /* executes stdin as a file */
   }
-  lua_pushboolean(L, 1);  /* signal no errors */
+  L->stack_.push(true);
   return 1;
 }
 
@@ -511,13 +514,11 @@ int main (int argc, char **argv) {
     }
     /* call 'pmain' in protected mode */
     L->stack_.push(pmain);
-
-    lua_pushinteger(L, argc);  /* 1st argument */
-    
+    L->stack_.push(argc);
     L->stack_.push( LuaValue::Pointer(argv) );
 
     status = lua_pcall(L, 2, 1, 0);
-    result = lua_toboolean(L, -1);  /* get result */
+    result = L->stack_.at(-1).getBool();  /* get result */
     finalreport(L, status);
   }
   lua_close(L);
