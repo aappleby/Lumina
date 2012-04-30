@@ -22,8 +22,6 @@
 #include "lstate.h"
 #include "ltm.h"
 
-#pragma warning(disable:4127)
-
 #define bitmask(b)		(1<<(b))
 
 /* how much to allocate before next GC step */
@@ -173,25 +171,6 @@ static void markroot (LuaVM *g) {
   }
 }
 
-/* }====================================================== */
-
-
-/*
-** {======================================================
-** Traverse functions
-** =======================================================
-*/
-
-void getTableMode(LuaTable* t, bool& outWeakKey, bool& outWeakVal) {
-  LuaValue mode = fasttm2(t->metatable, TM_MODE);
-
-  if(mode.isString()) {
-    outWeakKey = (strchr(mode.getString()->c_str(), 'k') != NULL);
-    outWeakVal = (strchr(mode.getString()->c_str(), 'v') != NULL);
-    assert(outWeakKey || outWeakVal);
-  }
-}
-
 /*
 ** {======================================================
 ** Sweep Functions
@@ -208,10 +187,11 @@ static bool sweeplist (LuaList::iterator& it, size_t count);
 */
 
 static void sweepthread (LuaThread *L1) {
-  if (L1->stack_.empty()) return;  /* stack not completely built yet */
   LuaList::iterator it = L1->stack_.open_upvals_.begin();
   sweeplist(it, MAX_LUMEM);  /* sweep open upvalues */
+
   L1->stack_.sweepCallinfo();
+
   /* should not change the stack during an emergency gc cycle */
   if (thread_G->gckind != KGC_EMERGENCY) {
     THREAD_CHANGE(L1);
@@ -305,15 +285,14 @@ void deletelist (LuaList& list) {
 ** =======================================================
 */
 
-// Move the first item in the objects-with-finalizers list back to the global
-// GC list.
+static void runOneFinalizer (int propagateerrors) {
+  LuaThread* L = thread_L;
+  LuaVM *g = thread_G;
 
-static LuaObject *udata2finalize (LuaVM *g) {
   LuaObject* o = g->tobefnz.Pop();  /* get first element */
   assert(o->isFinalized());
 
-  //o->next_ = g->allgc;  /* return it to 'allgc' list */
-  //g->allgc = o;
+  /* return it to 'allgc' list */
   o->linkGC(g->allgc);
 
   /* mark that it is not in 'tobefnz' */
@@ -323,24 +302,12 @@ static LuaObject *udata2finalize (LuaVM *g) {
   if (!keepinvariant(g)) {  /* not keeping invariant? */
     o->makeLive();  /* "sweep" object */
   }
-  return o;
-}
-
-
-static void GCTM (int propagateerrors) {
-
-  // Pop object with finalizer off the 'finobj' list
-  LuaValue v = udata2finalize(thread_G);
 
   // Get the finalizer from it.
-  LuaValue tm = luaT_gettmbyobj2(v, TM_GC);
+  LuaValue tm = luaT_gettmbyobj2(o, TM_GC);
   if(!tm.isFunction()) return;
 
-  LuaThread* L = thread_L;
-  LuaVM *g = thread_G;
-
   // Call the finalizer (with a bit of difficulty)
-
   int gcrunning  = g->gcrunning;
   g->gcrunning = 0;  // avoid GC steps
 
@@ -353,7 +320,7 @@ static void GCTM (int propagateerrors) {
   LuaResult status = LUA_OK;
   try {
     L->stack_.top_[0] = tm;  // push finalizer...
-    L->stack_.top_[1] = v; // ... and its argument
+    L->stack_.top_[1] = o; // ... and its argument
     L->stack_.top_ += 2;  // and (next line) call the finalizer
 
     luaD_call(L, L->stack_.top_ - 2, 0, 0);
@@ -472,7 +439,7 @@ static void callallpendingfinalizers (int propagateerrors) {
   LuaVM *g = thread_G;
   while (!g->tobefnz.isEmpty()) {
     g->tobefnz.begin()->clearOld();
-    GCTM(propagateerrors);
+    runOneFinalizer(propagateerrors);
   }
 }
 
@@ -560,7 +527,7 @@ static void atomic () {
 
   /* at this point, all resurrected objects are marked. */
   /* remove dead objects from weak tables */
-  //clearkeys(g->ephemeron_);  /* clear keys from all ephemeron tables */
+  /* clear keys from all ephemeron tables */
   g->gc_.ephemeron_.SweepKeys();
 
   // clear keys from all allweak tables
@@ -610,7 +577,7 @@ static ptrdiff_t singlestep () {
         return GCSWEEPCOST;
       }
       else {
-        //g->sweepgc = &g->finobj;  /* prepare to sweep finalizable objects */
+        // prepare to sweep finalizable objects
         g->sweepgc2 = g->finobj.begin();
         g->gcstate = GCSsweepudata;
         return 0;
@@ -634,16 +601,7 @@ static ptrdiff_t singlestep () {
         return GCSWEEPMAX*GCSWEEPCOST;
       }
       else {
-        /* sweep main thread */
-        // TODO(aappleby): What? Why is it sweeping a list of one object
-        // that should never be dead?
-        /*
-        LuaList l;
-        l.Push(g->mainthread);
-        LuaList::iterator it = l.begin();
-        sweeplist(it, 1);
-        l.Clear();
-        */
+        // Last but not least, sweep the main thread
         sweepthread(g->mainthread);
         
         // We have swept everything. If this is not an emergency, try and
@@ -714,8 +672,10 @@ void luaC_forcestep () {
   else {
     step();
   }
+
+  // Call a few pending finalizers
   for (i = 0; i < GCFINALIZENUM && (!g->tobefnz.isEmpty()); i++) {
-    GCTM(1);  /* Call a few pending finalizers */
+    runOneFinalizer(1);
   }
 }
 

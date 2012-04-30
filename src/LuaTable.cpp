@@ -4,7 +4,6 @@
 #include "LuaGlobals.h"
 #include "LuaString.h"
 
-void getTableMode(LuaTable* t, bool& outWeakKey, bool& outWeakVal);
 int luaO_ceillog2 (unsigned int x);
 
 /*
@@ -452,7 +451,15 @@ int LuaTable::PropagateGC(LuaGCVisitor& visitor) {
   bool weakkey = false;
   bool weakval = false;
 
-  getTableMode(this, weakkey, weakval);
+  if(metatable) {
+    LuaValue mode = metatable->get("__mode");
+
+    if(mode.isString()) {
+      weakkey = (strchr(mode.getString()->c_str(), 'k') != NULL);
+      weakval = (strchr(mode.getString()->c_str(), 'v') != NULL);
+      assert(weakkey || weakval);
+    }
+  }
 
   if(!weakkey) {
     if(!weakval) {
