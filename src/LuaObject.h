@@ -2,8 +2,6 @@
 #include "LuaBase.h"
 #include "LuaTypes.h"
 
-void RemoveObjectFromList(LuaObject* o, LuaObject*& head);
-
 class LuaObject : public LuaBase {
 public:
 
@@ -11,10 +9,12 @@ public:
   virtual ~LuaObject();
 
   void linkGC(LuaObject** gcHead);
-
   void linkGC(LuaObject*& gcHead);
-
   void linkGC(LuaList& gclist);
+  
+  void unlinkGC(LuaObject** gcHead);
+  void unlinkGC(LuaObject*& gcHead);
+  void unlinkGC(LuaList& gclist);
 
   void sanityCheck();
 
@@ -97,9 +97,6 @@ public:
 
   LuaObject* getPrev() const { return prev_; }
   LuaObject* getNext() const { return next_; }
-  void setPrev(LuaObject* o) { prev_ = o; }
-  void setNext(LuaObject* o) { next_ = o; }
-
 
   //----------
 
@@ -107,6 +104,11 @@ public:
   LuaObject* next_;
 
 private:
+
+  friend class LuaList;
+
+  void setPrev(LuaObject* o) { prev_ = o; }
+  void setNext(LuaObject* o) { next_ = o; }
 
   LuaObject* prev_gray_;
   LuaObject* next_gray_;

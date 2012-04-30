@@ -63,7 +63,7 @@ LuaStringTable::~LuaStringTable() {
 LuaString* LuaStringTable::find(uint32_t hash, const char *str, size_t len) {
   LuaObject* o = hash_[hash & (hash_.size()-1)];
 
-  for (; o != NULL; o = o->next_) {
+  for (; o != NULL; o = o->getNext()) {
     LuaString *ts = dynamic_cast<LuaString*>(o);
     if(ts->getHash() != hash) continue;
     if(ts->getLen() != len) continue;
@@ -87,7 +87,7 @@ void LuaStringTable::Resize(int newsize) {
     LuaString *p = hash_[i];
     hash_[i] = NULL;
     while (p) {  /* for each node in the list */
-      LuaString *next = (LuaString*)p->next_;  /* save next */
+      LuaString *next = (LuaString*)p->getNext();  /* save next */
       unsigned int hash = dynamic_cast<LuaString*>(p)->getHash();
       p->next_ = hash_[hash & (newsize-1)];  /* chain it */
       hash_[hash & (newsize-1)] = p;
@@ -143,7 +143,7 @@ bool LuaStringTable::Sweep(bool generational) {
   while(*cursor) {
     LuaObject* s = *cursor;
     if (s->isDead()) {
-      *cursor = (LuaString*)s->next_;
+      *cursor = (LuaString*)s->getNext();
 
       s->prev_ = NULL;
       s->next_ = NULL;

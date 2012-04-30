@@ -238,13 +238,13 @@ static bool sweepListNormal (LuaObject *& head, LuaObject*& p1, size_t count) {
 
   while(1) {
     if(head == NULL) return true;
-    if(p1 && (p1->next_ == NULL)) return true;
+    if(p1 && (p1->getNext() == NULL)) return true;
     if(count-- <= 0) return false;
 
-    LuaObject* curr = p1 ? p1->next_ : head;
+    LuaObject* curr = p1 ? p1->getNext() : head;
     if (curr->isDead()) {
-      if(p1) p1->next_ = curr->next_;
-      RemoveObjectFromList(curr, head);
+      //if(p1) p1->next_ = curr->next_;
+      curr->unlinkGC(head);
       delete curr;
     }
     else {
@@ -280,13 +280,13 @@ void sweepListNormal2 (LuaList::iterator& it, size_t count) {
 static bool sweepListGenerational (LuaObject*& head, LuaObject *& p1, size_t count) {
   while (1) {
     if(head == NULL) return true;
-    if(p1 && (p1->next_ == NULL)) return true;
+    if(p1 && (p1->getNext() == NULL)) return true;
     if(count-- <= 0) return false;
 
-    LuaObject *curr = p1 ? p1->next_ : head;
+    LuaObject *curr = p1 ? p1->getNext() : head;
     if (curr->isDead()) {
-      if(p1) p1->next_ = curr->next_;
-      RemoveObjectFromList(curr, head);
+      //if(p1) p1->next_ = curr->next_;
+      curr->unlinkGC(head);
       delete curr;
     }
     else {
@@ -344,11 +344,7 @@ void sweeplist (LuaList::iterator& it, size_t count) {
 void deletelist (LuaObject*& head) {
   while (head != NULL) {
     LuaObject *dead = head;
-    head = dead->next_;
-    if(head) head->prev_ = NULL;
-
-    dead->prev_ = NULL;
-    dead->next_ = NULL;
+    dead->unlinkGC(head);
     delete dead;
   }
 }
@@ -376,8 +372,9 @@ static LuaObject *udata2finalize (LuaVM *g) {
   LuaObject* o = g->tobefnz.Pop();  /* get first element */
   assert(o->isFinalized());
 
-  o->next_ = g->allgc;  /* return it to 'allgc' list */
-  g->allgc = o;
+  //o->next_ = g->allgc;  /* return it to 'allgc' list */
+  //g->allgc = o;
+  o->linkGC(g->allgc);
 
   /* mark that it is not in 'tobefnz' */
   o->clearSeparated();
@@ -505,7 +502,7 @@ void luaC_checkfinalizer (LuaObject *o, LuaTable *mt) {
   if(tm.isNone() || tm.isNil()) return;
 
   // Remove the object from the global GC list and add it to the 'finobj' list.
-  RemoveObjectFromList(o, g->allgc);
+  o->unlinkGC(g->allgc);
   
   //o->next_ = g->finobj;
   //g->finobj = o;

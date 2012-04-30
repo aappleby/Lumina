@@ -150,7 +150,7 @@ static LuaFile* newprefile (LuaThread *L) {
   LuaTable* meta = L->l_G->getRegistryTable(LUA_FILEHANDLE);
   u->metatable_ = meta;
 
-  RemoveObjectFromList(u, L->l_G->allgc);
+  u->unlinkGC(L->l_G->allgc);
   //u->next_ = L->l_G->finobj;
   //L->l_G->finobj = u;
   L->l_G->finobj.Push(u);

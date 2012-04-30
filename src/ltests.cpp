@@ -79,7 +79,7 @@ static int testobjref1 (LuaVM *g, LuaObject *f, LuaObject *t) {
 static void printobj (LuaVM *g, LuaObject *o) {
   int i = 0;
   LuaObject *p;
-  for (p = g->allgc; p != o && p != NULL; p = p->next_) i++;
+  for (p = g->allgc; p != o && p != NULL; p = p->getNext()) i++;
   if (p == NULL) i = -1;
 
   char c = 'g';
@@ -258,7 +258,7 @@ static void markTestGrays (LuaVM *g) {
 
 static void checkold (LuaVM *g, LuaObject *o) {
   int isold = 0;
-  for (; o != NULL; o = o->next_) {
+  for (; o != NULL; o = o->getNext()) {
     if (o->isOld()) {  /* old generation? */
       assert(isgenerational(g));
       if (!issweepphase(g))
@@ -310,7 +310,7 @@ int lua_checkmemory (LuaThread *L) {
   }
 
   checkold(g, g->allgc);
-  for (o = g->allgc; o != NULL; o = o->next_) {
+  for (o = g->allgc; o != NULL; o = o->getNext()) {
     checkobject(g, o);
     assert(!o->isSeparated());
   }
@@ -587,7 +587,7 @@ static int string_query (LuaThread *L) {
   else if (s < tb->getHashSize()) {
     LuaObject *ts;
     int n = 0;
-    for (ts = tb->getStringAt(s); ts; ts = ts->next_) {
+    for (ts = tb->getStringAt(s); ts; ts = ts->getNext()) {
       LuaResult result = L->stack_.push_reserve2(LuaValue(ts));
       handleResult(result);
       n++;

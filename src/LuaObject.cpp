@@ -17,21 +17,6 @@ const LuaObject::Color LuaObject::colorB = WHITE1;
 void *luaM_alloc_ (size_t size, int type, int pool);
 
 
-// Removing a node in the middle of a singly-linked list requires
-// a scan of the list, lol.
-
-void RemoveObjectFromList(LuaObject* o, LuaObject*& head) {
-  if(o == NULL) return;
-
-  if(head == o) head = o->next_;
-
-  if(o->prev_) o->prev_->next_ = o->next_;
-  if(o->next_) o->next_->prev_ = o->prev_;
-  o->prev_ = NULL;
-  o->next_ = NULL;
-}
-
-
 LuaObject::LuaObject(LuaType type) {
   prev_ = NULL;
   next_ = NULL;
@@ -79,6 +64,22 @@ void LuaObject::linkGC(LuaList& gclist) {
 
   gclist.Push(this);
 }
+
+void LuaObject::unlinkGC(LuaObject*& head) {
+  if(head == this) head = next_;
+
+  if(prev_) prev_->next_ = next_;
+  if(next_) next_->prev_ = prev_;
+  prev_ = NULL;
+  next_ = NULL;
+}
+
+void LuaObject::unlinkGC(LuaList& list) {
+  list.Detach(this);
+}
+
+
+
 
 // Sanity check object state
 void LuaObject::sanityCheck() {

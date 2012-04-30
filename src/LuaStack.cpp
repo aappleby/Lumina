@@ -61,7 +61,7 @@ void LuaStack::realloc (int newsize) {
   top_ = begin() + (top_ - oldstack);
   
   // Correct all stack references in open upvalues.
-  for (LuaObject* up = open_upvals_; up != NULL; up = up->next_) {
+  for (LuaObject* up = open_upvals_; up != NULL; up = up->getNext()) {
     LuaUpvalue* uv = static_cast<LuaUpvalue*>(up);
     uv->v = (uv->v - oldstack) + begin();
   }
@@ -386,10 +386,6 @@ LuaUpvalue* LuaStack::createUpvalFor(StkId level) {
     p->clearOld();  /* may create a newer upval after this one */
     pp = &(p->next_);
   }
-  if(*pp) {
-    int b = 0;
-    b++;
-  }
   /* not found: create a new one */
   LuaUpvalue *uv = new LuaUpvalue();
   uv->linkGC(pp);
@@ -414,9 +410,10 @@ void LuaStack::closeUpvals(StkId level) {
 
     assert(!uv->isBlack() && uv->v != &uv->value);
 
-    open_upvals_ = uv->next_;  /* remove from `open' list */
-    if(uv->next_) uv->next_->prev_ = NULL;
-    uv->next_ = NULL;
+    //open_upvals_ = uv->next_;  /* remove from `open' list */
+    //if(uv->next_) uv->next_->prev_ = NULL;
+    //uv->next_ = NULL;
+    uv->unlinkGC(open_upvals_);
 
     if (uv->isDead())
       delete uv;
@@ -483,7 +480,7 @@ LuaResult LuaStack::createCCall2(StkId func, int nresults, int nstack) {
 void LuaStack::sanityCheck() {
 
   // All open upvals must be open and must be non-black.
-  for (LuaObject* uvo = open_upvals_; uvo != NULL; uvo = uvo->next_) {
+  for (LuaObject* uvo = open_upvals_; uvo != NULL; uvo = uvo->getNext()) {
     LuaUpvalue *uv = dynamic_cast<LuaUpvalue*>(uvo);
     assert(uv->v != &uv->value);
     assert(!uv->isBlack());
