@@ -77,7 +77,7 @@ void findfield2(LuaThread* L, LuaTable* table1, LuaValue goal, int depth, std::s
   }
 }
 
-int pushglobalfuncname (LuaThread *L, LuaDebug *ar) {
+LuaString* getglobalfuncname (LuaThread *L, LuaDebug *ar) {
   THREAD_CHECK(L);
 
   LuaValue f = *ar->i_ci->getFunc();
@@ -86,11 +86,10 @@ int pushglobalfuncname (LuaThread *L, LuaDebug *ar) {
 
   if(result.size()) {
     LuaString* s = L->l_G->strings_->Create(result.c_str());
-    L->stack_.push( LuaValue(s) );
-    return 1;
+    return s;
   }
   else {
-    return 0;
+    return NULL;
   }
 }
 
@@ -107,9 +106,9 @@ static void pushfuncname (LuaThread *L, LuaDebug *ar) {
     lua_pushfstring(L, "main chunk");
   }
   else if (ar->what2 == "C") {
-    if (pushglobalfuncname(L, ar)) {
-      lua_pushfstring(L, "function " LUA_QS, lua_tostring(L, -1));
-      L->stack_.remove(-2);  /* remove name */
+    LuaString* name = getglobalfuncname(L,ar);
+    if (name) {
+      lua_pushfstring(L, "function " LUA_QS, name->c_str());
     }
     else {
       lua_pushliteral(L, "?");
@@ -204,7 +203,8 @@ int luaL_argerror (LuaThread *L, int narg, const char *extramsg) {
       return luaL_error(L, "calling " LUA_QS " on bad self", ar.name2.c_str());
   }
   if (ar.name2.empty()) {
-    ar.name2 = (pushglobalfuncname(L, &ar)) ? lua_tostring(L, -1) : "?";
+    LuaString* name = getglobalfuncname(L, &ar);
+    ar.name2 = name ? name->c_str() : "?";
   }
   return luaL_error(L, "bad argument #%d to " LUA_QS " (%s)",
                         narg, ar.name2.c_str(), extramsg);
