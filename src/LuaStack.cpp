@@ -369,11 +369,17 @@ void LuaStack::sweepCallinfo() {
 
 //------------------------------------------------------------------------------
 
+void check(LuaUpvalue* cursor) {
+  LuaValue* v = (LuaValue*)0x7FFFFFFF;
+  for(;cursor; cursor = (LuaUpvalue*)cursor->next_) {
+    assert(cursor->v < v);
+    v = cursor->v;
+  }
+}
+
 LuaUpvalue* LuaStack::createUpvalFor(StkId level) {
-  LuaObject **pp = &open_upvals_;
-  LuaUpvalue *p;
-  while (*pp != NULL) {
-    p = dynamic_cast<LuaUpvalue*>(*pp);
+  LuaUpvalue* p = (LuaUpvalue*)open_upvals_;
+  for(;p; p = (LuaUpvalue*)p->next_) {
     if(p->v < level) break;
     assert(p->v != &p->value);
     if (p->v == level) {
@@ -386,12 +392,25 @@ LuaUpvalue* LuaStack::createUpvalFor(StkId level) {
       return p;
     }
     p->clearOld();  /* may create a newer upval after this one */
-    pp = &(p->next_);
   }
   /* not found: create a new one */
   LuaUpvalue *uv = new LuaUpvalue();
-  uv->linkGC(pp);
+  if(p) {
+    uv->linkGCBefore(open_upvals_, p);
+  }
+  else {
+    if(open_upvals_) {
+      LuaObject* cursor = open_upvals_;
+      while(cursor->next_) cursor = cursor->next_;
+      uv->linkGCAfter(open_upvals_, cursor);
+    }
+    else {
+      uv->linkGC(open_upvals_);
+    }
+  }
   uv->v = level;  /* current value lives in the stack */
+
+  check((LuaUpvalue*)open_upvals_);
 
   // TODO(aappleby): Is there any way to break this dependency on the global state?  
   uv->uprev = &thread_G->uvhead;  /* double link it in `uvhead' list */

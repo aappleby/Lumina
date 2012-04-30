@@ -81,6 +81,18 @@ void LuaObject::linkGCBefore(LuaObject*& head, LuaObject* point) {
   }
 }
 
+void LuaObject::linkGCAfter(LuaObject*&, LuaObject* point) {
+  assert(prev_ == NULL);
+  assert(next_ == NULL);
+  assert(point);
+
+  next_ = point->next_;
+  prev_ = point;
+  
+  if(next_) next_->prev_ = this;
+  if(prev_) prev_->next_ = this;
+}
+
 void LuaObject::unlinkGC(LuaObject*& head) {
   if(head == this) head = next_;
 
