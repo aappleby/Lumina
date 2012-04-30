@@ -106,6 +106,15 @@ void LuaObject::linkGC(LuaObject*& head, LuaObject* prev, LuaObject* next) {
   if(next == head) head = this;
 }
 
+void LuaObject::unlinkGC(LuaObject** head) {
+  if(*head == this) *head = next_;
+
+  if(prev_) prev_->next_ = next_;
+  if(next_) next_->prev_ = prev_;
+  prev_ = NULL;
+  next_ = NULL;
+}
+
 void LuaObject::unlinkGC(LuaObject*& head) {
   if(head == this) head = next_;
 

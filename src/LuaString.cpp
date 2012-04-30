@@ -86,11 +86,14 @@ void LuaStringTable::Resize(int newsize) {
   for (int i=0; i < oldsize; i++) {
     LuaString *p = hash_[i];
     hash_[i] = NULL;
+
     while (p) {  /* for each node in the list */
       LuaString *next = (LuaString*)p->getNext();  /* save next */
       unsigned int hash = dynamic_cast<LuaString*>(p)->getHash();
-      p->next_ = hash_[hash & (newsize-1)];  /* chain it */
-      hash_[hash & (newsize-1)] = p;
+
+      p->unlinkGC((LuaObject**)&hash_[i]);
+      p->linkGC((LuaObject**)&hash_[hash & (newsize-1)]);
+
       p->clearOld();  /* see MOVE OLD rule */
       p = next;
     }
@@ -138,27 +141,25 @@ bool LuaStringTable::Sweep(bool generational) {
 
   if(sweepCursor_ >= (int)hash_.size()) sweepCursor_ = 0;
 
-  LuaString** cursor = &hash_[sweepCursor_];
+  LuaObject* cursor = hash_[sweepCursor_];
 
-  while(*cursor) {
-    LuaObject* s = *cursor;
-    if (s->isDead()) {
-      *cursor = (LuaString*)s->getNext();
-
-      s->prev_ = NULL;
-      s->next_ = NULL;
-      delete s;
+  while(cursor) {
+    if (cursor->isDead()) {
+      LuaObject* dead = cursor;
+      cursor = cursor->getNext();
+      dead->unlinkGC((LuaObject**)&hash_[sweepCursor_]);
+      delete dead;
       nuse_--;
     }
     else {
       if(generational) {
-        if (s->isOld()) break;
-        s->setOld();
+        if (cursor->isOld()) break;
+        cursor->setOld();
       }
       else {
-        s->makeLive();
+        cursor->makeLive();
       }
-      cursor = (LuaString**)&s->next_;
+      cursor = cursor->getNext();
     }
   }
 
@@ -186,12 +187,7 @@ void LuaStringTable::Clear() {
   for(int i = 0; i < (int)hash_.size(); i++) {
     while(hash_[i]) {
       LuaObject* dead = hash_[i];
-      hash_[i] = (LuaString*)hash_[i]->next_;
-      if(hash_[i]) hash_[i]->prev_ = NULL;
-
-      dead->prev_ = NULL;
-      dead->next_ = NULL;
-
+      dead->unlinkGC((LuaObject**)&hash_[i]);
       delete dead;
     }
   }

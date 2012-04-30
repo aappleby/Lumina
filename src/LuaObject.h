@@ -103,10 +103,10 @@ public:
 
   //----------
 
+private:
+
   LuaObject* prev_;
   LuaObject* next_;
-
-private:
 
   friend class LuaList;
 
