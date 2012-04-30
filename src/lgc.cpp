@@ -243,7 +243,6 @@ static bool sweepListNormal (LuaObject *& head, LuaObject*& p1, size_t count) {
 
     LuaObject* curr = p1 ? p1->getNext() : head;
     if (curr->isDead()) {
-      //if(p1) p1->next_ = curr->next_;
       curr->unlinkGC(head);
       delete curr;
     }
@@ -285,7 +284,6 @@ static bool sweepListGenerational (LuaObject*& head, LuaObject *& p1, size_t cou
 
     LuaObject *curr = p1 ? p1->getNext() : head;
     if (curr->isDead()) {
-      //if(p1) p1->next_ = curr->next_;
       curr->unlinkGC(head);
       delete curr;
     }
@@ -443,30 +441,6 @@ static void GCTM (int propagateerrors) {
 */
 void separatetobefnz (int all) {
   LuaVM *g = thread_G;
-  /*
-  LuaObject **p = &g->finobj;
-  LuaObject *curr;
-
-  // traverse all finalizable objects
-  while ((curr = *p) != NULL) {  
-    assert(!curr->isFinalized());
-    assert(curr->isSeparated());
-    
-    if (!(all || curr->isWhite())) {
-      // not being collected?
-      // don't bother with it
-      p = &curr->next_;
-    }
-    else {
-      // won't be finalized again
-      curr->setFinalized();
-      *p = curr->next_;  // remove 'curr' from 'finobj' list
-      curr->next_ = NULL;
-
-      g->tobefnz.PushTail(curr);
-    }
-  }
-  */
 
   for(LuaList::iterator it = g->finobj.begin(); it;) {
     assert(!it->isFinalized());
