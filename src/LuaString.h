@@ -22,11 +22,12 @@ public:
   virtual void VisitGC(LuaGCVisitor& visitor);
   virtual int PropagateGC(LuaGCVisitor& visitor);
 
+  uint32_t getHash() const { return hash_; }
+
 protected:
 
   LuaString(uint32_t hash, const char* str, int len);
-  uint32_t getHash() const { return hash_; }
-
+  
   friend class LuaStringTable;
 
   char* buf_;

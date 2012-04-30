@@ -27,7 +27,7 @@ LuaTable::LuaTable(int arrayLength, int hashLength)
 
 //-----------------------------------------------------------------------------
 
-int LuaTable::getLength() const {
+int LuaTable::getLength() {
   int start = 30;
   int cursor = 0;
   
@@ -139,7 +139,7 @@ bool LuaTable::tableIndexToKeyVal(int index, LuaValue& outKey, LuaValue& outVal)
 
 //-----------------------------------------------------------------------------
 
-LuaValue LuaTable::get(LuaValue key) const {
+LuaValue LuaTable::get(LuaValue key) {
   if(key.isNil()) return LuaValue::None();
 
   if(key.isInteger()) {
@@ -159,10 +159,7 @@ LuaValue LuaTable::get(LuaValue key) const {
 
   if(hash_.empty()) return LuaValue::None();
 
-  uint32_t hash = key.hashValue();
-  uint32_t mask = (uint32_t)hash_.size() - 1;
-
-  const Node* node = &hash_[hash & mask];
+  Node* node = findBin(key);
 
   for(; node; node = node->next) {
     if(node->i_key == key) {

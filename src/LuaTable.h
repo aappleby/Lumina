@@ -10,7 +10,7 @@ public:
 
   LuaTable(int arrayLength = 0, int hashLength = 0);
 
-  int getLength() const;
+  int getLength();
 
   bool hasArray() { return !array_.empty(); }
   bool hasHash()  { return !hash_.empty(); }
@@ -26,7 +26,7 @@ public:
   int getHashSize() const { return (int)hash_.size(); }
 
   // Main get/set methods, which we'll gradually be transitioning to.
-  LuaValue get(LuaValue key) const;
+  LuaValue get(LuaValue key);
   void     set(LuaValue key, LuaValue val);
 
   void set(int key, LuaValue val) { set( LuaValue(key), val); }
