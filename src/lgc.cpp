@@ -236,6 +236,29 @@ static void sweepthread (LuaThread *L1) {
 
 static bool sweepListNormal (LuaObject *& head, LuaObject*& p1, size_t count) {
 
+  if(p1 == NULL) p1 = head;
+
+  while(1) {
+    if(p1 == NULL) return true;
+    if(count-- <= 0) return false;
+
+    if (p1->isDead()) {
+      LuaObject* dead = p1;
+      p1 = p1->getNext();
+      dead->unlinkGC(head);
+      delete dead;
+    }
+    else {
+      if (p1->isThread()) {
+        sweepthread(dynamic_cast<LuaThread*>(p1));
+      }
+      p1->makeLive();
+      p1 = p1->getNext();
+    }
+  }
+
+
+  /*
   while(1) {
     if(head == NULL) return true;
     if(p1 && (p1->getNext() == NULL)) return true;
@@ -254,6 +277,7 @@ static bool sweepListNormal (LuaObject *& head, LuaObject*& p1, size_t count) {
       p1 = curr;
     }
   }
+  */
 }
 
 void sweepListNormal2 (LuaList::iterator& it, size_t count) {
