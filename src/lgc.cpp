@@ -234,50 +234,28 @@ static void sweepthread (LuaThread *L1) {
 */
 
 
-static bool sweepListNormal (LuaObject *& head, LuaObject*& p1, size_t count) {
+static bool sweepListNormal (LuaObject *& head, LuaObject*& cursor, size_t count) {
 
-  if(p1 == NULL) p1 = head;
+  if(cursor == NULL) cursor = head;
 
   while(1) {
-    if(p1 == NULL) return true;
+    if(cursor == NULL) return true;
     if(count-- <= 0) return false;
 
-    if (p1->isDead()) {
-      LuaObject* dead = p1;
-      p1 = p1->getNext();
+    if (cursor->isDead()) {
+      LuaObject* dead = cursor;
+      cursor = cursor->getNext();
       dead->unlinkGC(head);
       delete dead;
     }
     else {
-      if (p1->isThread()) {
-        sweepthread(dynamic_cast<LuaThread*>(p1));
+      if (cursor->isThread()) {
+        sweepthread(dynamic_cast<LuaThread*>(cursor));
       }
-      p1->makeLive();
-      p1 = p1->getNext();
+      cursor->makeLive();
+      cursor = cursor->getNext();
     }
   }
-
-
-  /*
-  while(1) {
-    if(head == NULL) return true;
-    if(p1 && (p1->getNext() == NULL)) return true;
-    if(count-- <= 0) return false;
-
-    LuaObject* curr = p1 ? p1->getNext() : head;
-    if (curr->isDead()) {
-      curr->unlinkGC(head);
-      delete curr;
-    }
-    else {
-      if (curr->isThread()) {
-        sweepthread(dynamic_cast<LuaThread*>(curr));
-      }
-      curr->makeLive();
-      p1 = curr;
-    }
-  }
-  */
 }
 
 void sweepListNormal2 (LuaList::iterator& it, size_t count) {
@@ -300,26 +278,28 @@ void sweepListNormal2 (LuaList::iterator& it, size_t count) {
   }
 }
 
-static bool sweepListGenerational (LuaObject*& head, LuaObject *& p1, size_t count) {
+static bool sweepListGenerational (LuaObject*& head, LuaObject *& cursor, size_t count) {
+  if(cursor == NULL) cursor = head;
+
   while (1) {
-    if(head == NULL) return true;
-    if(p1 && (p1->getNext() == NULL)) return true;
+    if(cursor == NULL) return true;
     if(count-- <= 0) return false;
 
-    LuaObject *curr = p1 ? p1->getNext() : head;
-    if (curr->isDead()) {
-      curr->unlinkGC(head);
-      delete curr;
+    if (cursor->isDead()) {
+      LuaObject* dead = cursor;
+      cursor = cursor->getNext();
+      dead->unlinkGC(head);
+      delete dead;
     }
     else {
-      if (curr->isThread()) {
-        sweepthread(dynamic_cast<LuaThread*>(curr));
+      if (cursor->isThread()) {
+        sweepthread(dynamic_cast<LuaThread*>(cursor));
       }
-      if (curr->isOld()) {
+      if (cursor->isOld()) {
         return true;
       }
-      curr->setOld();
-      p1 = curr;
+      cursor->setOld();
+      cursor = cursor->getNext();
     }
   }
 }
