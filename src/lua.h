@@ -133,7 +133,6 @@ const char *(lua_pushvfstring) (LuaThread *L, const char *fmt,
 const char *(lua_pushfstring) (LuaThread *L, const char *fmt, ...);
 void  (lua_pushcclosure) (LuaThread *L, LuaCallback fn, int n);
 void  (lua_pushboolean) (LuaThread *L, int b);
-void  (lua_pushlightuserdata) (LuaThread *L, void *p);
 int   (lua_pushthread) (LuaThread *L);
 
 

@@ -8,19 +8,11 @@
 uint32_t hash64 (uint32_t a, uint32_t b);
 int luaO_str2d (const char *s, size_t len, double *result);
 
-LuaValue LuaValue::LightUserdata(const void * p) {
+LuaValue LuaValue::Pointer(const void * p) {
   LuaValue v;
   v.type_ = LUA_TPOINTER;
   v.bytes_ = 0;
   v.pointer_ = (void*)p;
-  return v;
-}
-
-LuaValue LuaValue::Callback(LuaCallback f) {
-  LuaValue v;
-  v.type_ = LUA_TCALLBACK;
-  v.bytes_ = 0;
-  v.callback_ = f;
   return v;
 }
 

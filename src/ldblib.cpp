@@ -300,7 +300,8 @@ static int checkupval (LuaThread *L, int argf, int argnup) {
 static int db_upvalueid (LuaThread *L) {
   THREAD_CHECK(L);
   int n = checkupval(L, 1, 2);
-  lua_pushlightuserdata(L, lua_upvalueid(L, 1, n));
+  void* p = lua_upvalueid(L, 1, n);
+  L->stack_.push( LuaValue::Pointer(p) );
   return 1;
 }
 

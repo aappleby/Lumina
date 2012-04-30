@@ -665,7 +665,8 @@ static int newuserdata (LuaThread *L) {
 
 static int pushuserdata (LuaThread *L) {
   THREAD_CHECK(L);
-  lua_pushlightuserdata(L, cast(void *, luaL_checkinteger(L, 1)));
+  void* p = (void*)luaL_checkinteger(L, 1);
+  L->stack_.push( LuaValue::Pointer(p) );
   return 1;
 }
 
@@ -724,20 +725,13 @@ static int newstate (LuaThread *L) {
     lua_atpanic(L1, tpanic);
     {
       GLOBAL_CHANGE(L);
-      lua_pushlightuserdata(L, L1);
+      L->stack_.push( LuaValue::Pointer(L1) );
     }
   }
-  else
+  else {
     L->stack_.push(LuaValue::Nil());
+  }
   return 1;
-}
-
-
-static LuaThread *getstate (LuaThread *L) {
-  THREAD_CHECK(L);
-  LuaThread *L1 = cast(LuaThread *, lua_touserdata(L, 1));
-  luaL_argcheck(L, L1 != NULL, 1, "state expected");
-  return L1;
 }
 
 
@@ -753,7 +747,7 @@ static int loadlib (LuaThread *L) {
     {"table", luaopen_table},
     {NULL, NULL}
   };
-  LuaThread *L1 = getstate(L);
+  LuaThread *L1 = (LuaThread *)L->stack_.at(1).getPointer();
   int i;
   {
     GLOBAL_CHANGE(L1);
@@ -769,7 +763,7 @@ static int loadlib (LuaThread *L) {
 
 static int closestate (LuaThread *L) {
   THREAD_CHECK(L);
-  LuaThread *L1 = getstate(L);
+  LuaThread *L1 = (LuaThread *)L->stack_.at(1).getPointer();
   {
     GLOBAL_CHANGE(L1);
     lua_close(L1);
@@ -779,7 +773,7 @@ static int closestate (LuaThread *L) {
 
 static int doremote (LuaThread *L) {
   THREAD_CHECK(L);
-  LuaThread *L1 = getstate(L);
+  LuaThread *L1 = (LuaThread *)L->stack_.at(1).getPointer();
   size_t lcode;
   const char *code = luaL_checklstring(L, 2, &lcode);
   int status;
@@ -967,7 +961,9 @@ static int runC (LuaThread *L, LuaThread *L1, const char *pc) {
     }
     else if EQ("isuserdata") {
       { GLOBAL_CHANGE(L); tempindex = getindex; }
-      lua_pushboolean(L1, lua_isuserdata(L1, tempindex));
+      LuaValue v = L1->stack_.at(tempindex);
+      bool result = v.isBlob() || v.isPointer();
+      lua_pushboolean(L1, result);
     }
     else if EQ("isudataval") {
       { GLOBAL_CHANGE(L); tempindex = getindex; }
@@ -1349,7 +1345,7 @@ static int testC (LuaThread *L) {
   LuaThread *L1;
   const char *pc;
   if (lua_isuserdata(L, 1)) {
-    L1 = getstate(L);
+    L1 = (LuaThread *)L->stack_.at(1).getPointer();
     pc = luaL_checkstring(L, 2);
   }
   else if (lua_isthread(L, 1)) {
@@ -1403,7 +1399,9 @@ static void Chook (LuaThread *L, LuaDebug *ar) {
   const char *scpt;
   const char *const events [] = {"call", "ret", "line", "count", "tailcall"};
   lua_getregistryfield(L, "C_HOOK");
-  lua_pushlightuserdata(L, L);
+
+  L->stack_.push( LuaValue::Pointer(L) );
+
   lua_gettable(L, -2);  /* get C_HOOK[L] (script saved by sethookaux) */
   scpt = lua_tostring(L, -1);  /* not very religious (string will be popped) */
   L->stack_.pop(2);  /* remove C_HOOK and script */
@@ -1429,7 +1427,9 @@ static void sethookaux (LuaThread *L, int mask, int count, const char *scpt) {
     L->stack_.copy(-1);
     lua_setregistryfield(L, "C_HOOK");  /* register it */
   }
-  lua_pushlightuserdata(L, L);
+
+  L->stack_.push( LuaValue::Pointer(L) );
+
   lua_pushstring(L, scpt);
   lua_settable(L, -3);  /* C_HOOK[L] = script */
   lua_sethook(L, Chook, mask, count);

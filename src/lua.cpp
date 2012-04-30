@@ -513,7 +513,9 @@ int main (int argc, char **argv) {
     L->stack_.push(pmain);
 
     lua_pushinteger(L, argc);  /* 1st argument */
-    lua_pushlightuserdata(L, argv); /* 2nd argument */
+    
+    L->stack_.push( LuaValue::Pointer(argv) );
+
     status = lua_pcall(L, 2, 1, 0);
     result = lua_toboolean(L, -1);  /* get result */
     finalreport(L, status);

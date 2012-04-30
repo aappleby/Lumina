@@ -21,8 +21,7 @@ public:
   static LuaValue Nil()   { return LuaValue(LUA_TNIL, 0); }
   static LuaValue None()  { return LuaValue(LUA_TNONE, 0); }
 
-  static LuaValue LightUserdata(const void* p);
-  static LuaValue Callback(LuaCallback f);
+  static LuaValue Pointer(const void* p);
 
   LuaValue(LuaObject* o)  { type_ = o->type(); bytes_ = 0; object_ = o; }
 

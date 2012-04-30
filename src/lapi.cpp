@@ -491,7 +491,7 @@ const char *lua_pushfstring (LuaThread *L, const char *fmt, ...) {
 void lua_pushcclosure (LuaThread *L, LuaCallback fn, int n) {
   THREAD_CHECK(L);
   if (n == 0) {
-    L->stack_.push(LuaValue::Callback(fn));
+    L->stack_.push(fn);
     return;
   }
 
@@ -517,12 +517,6 @@ void lua_pushcclosure (LuaThread *L, LuaCallback fn, int n) {
 void lua_pushboolean (LuaThread *L, int b) {
   THREAD_CHECK(L);
   L->stack_.push(LuaValue(b ? true : false));
-}
-
-
-void lua_pushlightuserdata (LuaThread *L, void *p) {
-  THREAD_CHECK(L);
-  L->stack_.push(LuaValue::LightUserdata((void*)p));
 }
 
 
@@ -636,7 +630,7 @@ void lua_rawgetp (LuaThread *L, int idx, const void *p) {
   assert(t);
   api_check(t->isTable(), "table expected");
   
-  LuaValue result = t->getTable()->get( LuaValue::LightUserdata(p) );
+  LuaValue result = t->getTable()->get( LuaValue::Pointer(p) );
   if(result.isNone()) result = LuaValue::Nil();
   L->stack_.push(result);
 }
@@ -771,7 +765,7 @@ void lua_rawsetp (LuaThread *L, int idx, const void *p) {
   t = index2addr(L, idx);
   assert(t);
   api_check(t->isTable(), "table expected");
-  k = LuaValue::LightUserdata((void*)p);
+  k = LuaValue::Pointer((void*)p);
 
   t->getTable()->set(k, L->stack_.top_[-1]);
 
