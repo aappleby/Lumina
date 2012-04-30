@@ -38,44 +38,11 @@ LuaObject::~LuaObject() {
   if(thread_G) thread_G->instanceCounts[type_]--;
 }
 
-void LuaObject::linkGC(LuaObject** gcHead) {
-  assert(prev_ == NULL);
-  assert(next_ == NULL);
-
-  if(gcHead) {
-    next_ = *gcHead;
-    if(next_) next_->prev_ = this;
-    *gcHead = this;
-  }
-}
-
-void LuaObject::linkGC(LuaObject*& gcHead) {
-  assert(prev_ == NULL);
-  assert(next_ == NULL);
-
-  next_ = gcHead;
-  if(next_) next_->prev_ = this;
-  gcHead = this;
-}
-
 void LuaObject::linkGC(LuaList& gclist) {
   assert(prev_ == NULL);
   assert(next_ == NULL);
 
   gclist.Push(this);
-}
-
-void LuaObject::linkGC(LuaObject*& head, LuaObject* prev, LuaObject* next) {
-  assert(prev_ == NULL);
-  assert(next_ == NULL);
-
-  prev_ = prev;
-  next_ = next;
-
-  if(prev_) prev_->next_ = this;
-  if(next_) next_->prev_ = this;
-
-  if(next == head) head = this;
 }
 
 void LuaObject::linkGC(LuaList& list, LuaObject* prev, LuaObject* next) {
@@ -97,24 +64,6 @@ void LuaObject::linkGC(LuaList& list, LuaObject* prev, LuaObject* next) {
 
   if(prev_) prev_->next_ = this;
   if(next_) next_->prev_ = this;
-}
-
-void LuaObject::unlinkGC(LuaObject** head) {
-  if(*head == this) *head = next_;
-
-  if(prev_) prev_->next_ = next_;
-  if(next_) next_->prev_ = prev_;
-  prev_ = NULL;
-  next_ = NULL;
-}
-
-void LuaObject::unlinkGC(LuaObject*& head) {
-  if(head == this) head = next_;
-
-  if(prev_) prev_->next_ = next_;
-  if(next_) next_->prev_ = prev_;
-  prev_ = NULL;
-  next_ = NULL;
 }
 
 void LuaObject::unlinkGC(LuaList& list) {

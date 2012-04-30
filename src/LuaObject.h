@@ -8,15 +8,8 @@ public:
   LuaObject(LuaType type);
   virtual ~LuaObject();
 
-  void linkGC(LuaObject** gcHead);
-  void linkGC(LuaObject*& gcHead);
   void linkGC(LuaList& gclist);
-  void linkGC(LuaObject*& head, LuaObject* prev, LuaObject* next);
-
   void linkGC(LuaList& list, LuaObject* prev, LuaObject* next);
-
-  void unlinkGC(LuaObject** gcHead);
-  void unlinkGC(LuaObject*& gcHead);
   void unlinkGC(LuaList& gclist);
 
   void sanityCheck();

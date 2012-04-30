@@ -61,10 +61,10 @@ LuaStringTable::~LuaStringTable() {
 }
 
 LuaString* LuaStringTable::find(uint32_t hash, const char *str, size_t len) {
-  LuaObject* o = hash_[hash & (hash_.size()-1)];
+  LuaList& l = hash_[hash & (hash_.size()-1)];
 
-  for (; o != NULL; o = o->getNext()) {
-    LuaString *ts = dynamic_cast<LuaString*>(o);
+  for(LuaList::iterator it = l.begin(); it; ++it) {
+    LuaString *ts = dynamic_cast<LuaString*>(it.get());
     if(ts->getHash() != hash) continue;
     if(ts->getLen() != len) continue;
 
@@ -79,30 +79,25 @@ LuaString* LuaStringTable::find(uint32_t hash, const char *str, size_t len) {
 void LuaStringTable::Resize(int newsize) {
   int oldsize = (int)hash_.size();
 
-  if (newsize > oldsize) {
-    hash_.resize_nocheck(newsize);
-  }
+  LuaVector<LuaList> newhash;
+  newhash.resize_nocheck(newsize);
+
   /* rehash */
   for (int i=0; i < oldsize; i++) {
-    LuaString *p = hash_[i];
-    hash_[i] = NULL;
+    LuaList& oldlist = hash_[i];
 
-    while (p) {  /* for each node in the list */
-      LuaString *next = (LuaString*)p->getNext();  /* save next */
-      unsigned int hash = dynamic_cast<LuaString*>(p)->getHash();
+    while (!oldlist.isEmpty()) {
+      LuaString* s = (LuaString*)oldlist.Pop();
+      unsigned int hash = s->getHash();
 
-      p->unlinkGC((LuaObject**)&hash_[i]);
-      p->linkGC((LuaObject**)&hash_[hash & (newsize-1)]);
+      LuaList& newlist = newhash[hash & (newsize-1)];
+      newlist.Push(s);
 
-      p->clearOld();  /* see MOVE OLD rule */
-      p = next;
+      s->clearOld();  /* see MOVE OLD rule */
     }
   }
-  if (newsize < oldsize) {
-    /* shrinking slice must be empty */
-    assert(hash_[newsize] == NULL && hash_[oldsize - 1] == NULL);
-    hash_.resize_nocheck(newsize);
-  }
+
+  hash_.swap(newhash);
 
   sweepCursor_ = 0;
 }
@@ -129,7 +124,7 @@ LuaString* LuaStringTable::Create(const char *str, int len) {
   
   LuaString* new_string = new LuaString(hash, str, len);
 
-  LuaObject*& list = (LuaObject*&)hash_[hash & (hash_.size() - 1)];
+  LuaList& list = hash_[hash & (hash_.size() - 1)];
   new_string->linkGC(list);
   nuse_++;
   return new_string;
@@ -141,25 +136,24 @@ bool LuaStringTable::Sweep(bool generational) {
 
   if(sweepCursor_ >= (int)hash_.size()) sweepCursor_ = 0;
 
-  LuaObject* cursor = hash_[sweepCursor_];
+  LuaList::iterator it = hash_[sweepCursor_].begin();
 
-  while(cursor) {
-    if (cursor->isDead()) {
-      LuaObject* dead = cursor;
-      cursor = cursor->getNext();
-      dead->unlinkGC((LuaObject**)&hash_[sweepCursor_]);
+  while(it) {
+    if (it->isDead()) {
+      LuaObject* dead = it;
+      it.pop();
       delete dead;
       nuse_--;
     }
     else {
       if(generational) {
-        if (cursor->isOld()) break;
-        cursor->setOld();
+        if (it->isOld()) break;
+        it->setOld();
       }
       else {
-        cursor->makeLive();
+        it->makeLive();
       }
-      cursor = cursor->getNext();
+      ++it;
     }
   }
 
@@ -185,9 +179,10 @@ void LuaStringTable::RestartSweep() {
 void LuaStringTable::Clear() {
 
   for(int i = 0; i < (int)hash_.size(); i++) {
-    while(hash_[i]) {
-      LuaObject* dead = hash_[i];
-      dead->unlinkGC((LuaObject**)&hash_[i]);
+    LuaList& l = hash_[i];
+
+    while(!l.isEmpty()) {
+      LuaObject* dead = l.Pop();
       delete dead;
     }
   }

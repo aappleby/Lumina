@@ -1,4 +1,5 @@
 #pragma once
+#include "LuaList.h"
 #include "LuaObject.h"
 #include "LuaVector.h"
 
@@ -54,11 +55,11 @@ public:
   // These are used only by ltests.cpp
   int getStringCount() const { return nuse_; }
   int getHashSize() const { return (int)hash_.size(); }
-  LuaString* getStringAt(int index) const { return (LuaString*)hash_[index]; }
+  LuaString* getStringAt(int index) { return (LuaString*)hash_[index].begin().get(); }
 
 protected:
 
-  LuaVector<LuaString*> hash_;
+  LuaVector<LuaList> hash_;
   uint32_t nuse_;
   int sweepCursor_;
 
