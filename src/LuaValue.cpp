@@ -62,7 +62,6 @@ LuaValue LuaValue::convertToString() const {
 
 void LuaValue::sanityCheck() const {
   if(isCollectable()) {
-    object_->sanityCheck();
     assert(type_ == object_->type());
     assert(!object_->isDead());
   }

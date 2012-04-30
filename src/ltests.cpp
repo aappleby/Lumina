@@ -91,7 +91,7 @@ static void printobj (LuaVM *g, LuaObject *o) {
   if(o->isBlack()) c = 'b';
   if(o->isWhite()) c = 'w';
 
-  printf("%d:%s(%p)-%c(%02X)", i, o->typeName(), (void *)o, c, o->getFlags());
+  printf("%d:%s(%p)-%c", i, o->typeName(), (void *)o, c);
 }
 
 
@@ -212,7 +212,7 @@ static void checkobject (LuaVM *g, LuaObject *o) {
 
   if(o->isThread()) {
     LuaThread* l = dynamic_cast<LuaThread*>(o);
-    l->sanityCheck();
+    assert(l);
     return;
   }
 
@@ -304,7 +304,6 @@ int lua_checkmemory (LuaThread *L) {
     assert(!g->l_registry.getObject()->isWhite());
   }
   assert(!g->l_registry.getObject()->isDead());
-  g->mainthread->sanityCheck();
   g->mainthread->clearTestGray();
   
   /* check 'allgc' list */

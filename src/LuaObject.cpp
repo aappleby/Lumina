@@ -16,6 +16,7 @@ const LuaObject::Color LuaObject::colorB = WHITE1;
 
 void *luaM_alloc_ (size_t size, int type, int pool);
 
+//------------------------------------------------------------------------------
 
 LuaObject::LuaObject(LuaType type) {
   prev_ = NULL;
@@ -37,6 +38,8 @@ LuaObject::~LuaObject() {
 
   if(thread_G) thread_G->instanceCounts[type_]--;
 }
+
+//------------------------------------------------------------------------------
 
 void LuaObject::linkGC(LuaList& gclist) {
   assert(prev_ == NULL);
@@ -70,34 +73,10 @@ void LuaObject::unlinkGC(LuaList& list) {
   list.Detach(this);
 }
 
+//------------------------------------------------------------------------------
 
-
-
-// Sanity check object state
-void LuaObject::sanityCheck() {
-  bool colorOK = false;
-  if(color_ == WHITE0) colorOK = true;
-  if(color_ == WHITE1) colorOK = true;
-  if(color_ == GRAY) colorOK = true;
-  if(color_ == BLACK) colorOK = true;
-  assert(colorOK);
-}
-
-uint8_t LuaObject::getFlags() {
-  return flags_;
-}
-
-bool LuaObject::isDead() {  
-  if(isFixed()) return false;
-  return color_ == thread_G->deadcolor;
-}
-
-bool LuaObject::isLiveColor() {
-  return color_ == thread_G->livecolor; 
-}
-
-bool LuaObject::isDeadColor() {
-  return color_ == thread_G->deadcolor;
+bool LuaObject::isBlack() {
+  return color_ == BLACK; 
 }
 
 bool LuaObject::isWhite() {
@@ -117,31 +96,28 @@ bool LuaObject::isGray() {
   return color_ == GRAY;
 }
 
+bool LuaObject::isLiveColor() {
+  return color_ == thread_G->livecolor; 
+}
+
+bool LuaObject::isDeadColor() {
+  return color_ == thread_G->deadcolor;
+}
+
+bool LuaObject::isDead() {  
+  if(isFixed()) return false;
+  return color_ == thread_G->deadcolor;
+}
+
+//------------------------------------------------------------------------------
 // Clear existing color + old bits, set color to current white.
+
 void LuaObject::makeLive() {
   clearOld();
   color_ = thread_G->livecolor;
 }
 
-void LuaObject::whiteToGray() {
-  color_ = GRAY;
-}
-
-void LuaObject::blackToGray() {
-  color_ = GRAY;
-}
-
-void LuaObject::stringmark() {
-  color_ = GRAY;
-}
-
-void LuaObject::grayToBlack() {
-  color_ = BLACK;
-}
-
-bool LuaObject::isBlack() {
-  return color_ == BLACK; 
-}
+//------------------------------------------------------------------------------
 
 void LuaObject::VisitGC(LuaGCVisitor&) {
   // Should never be visiting the base class
@@ -153,6 +129,8 @@ int LuaObject::PropagateGC(LuaGCVisitor&) {
   assert(false);
   return 0;
 }
+
+//------------------------------------------------------------------------------
 
 bool LuaObject::isFinalized()    { return flags_ & (1 << FINALIZEDBIT) ? true : false; }
 void LuaObject::setFinalized()   { flags_ |= (1 << FINALIZEDBIT); }
@@ -177,7 +155,11 @@ bool LuaObject::isTestGray()     { return flags_ & (1 << TESTGRAYBIT) ? true : f
 void LuaObject::setTestGray()    { flags_ |= (1 << TESTGRAYBIT); }
 void LuaObject::clearTestGray()  { flags_ &= ~(1 << TESTGRAYBIT); }
 
+//------------------------------------------------------------------------------
+
 extern char** luaT_typenames;
 const char * LuaObject::typeName() const {
   return luaT_typenames[type_+1];
 }
+
+//------------------------------------------------------------------------------

@@ -439,7 +439,7 @@ void LuaStack::closeUpvals(StkId level) {
       if (uv->isGray()) {
         if (thread_G->keepInvariant()) {
           uv->clearOld();  /* see MOVE OLD rule */
-          uv->grayToBlack();  /* it is being visited now */
+          uv->setColor(LuaObject::BLACK);  /* it is being visited now */
 
           LuaGCVisitor visitor(&thread_G->gc_);
           visitor.MarkValue(*uv->v);

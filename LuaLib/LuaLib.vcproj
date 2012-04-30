@@ -641,17 +641,21 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\LuaValue.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\LuaValue.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\LuaVector.h"
 				>
 			</File>
+			<Filter
+				Name="_Done"
+				>
+				<File
+					RelativePath="..\src\LuaValue.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\src\LuaValue.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath="..\src\lua.h"

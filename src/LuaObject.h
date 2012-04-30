@@ -12,15 +12,6 @@ public:
   void linkGC(LuaList& list, LuaObject* prev, LuaObject* next);
   void unlinkGC(LuaList& gclist);
 
-  void sanityCheck();
-
-  uint8_t getFlags();
-
-  bool isDead();
-
-  bool isLiveColor();
-  bool isDeadColor();
-
   enum Color {
     WHITE0 = 1,
     WHITE1 = 2,
@@ -28,24 +19,23 @@ public:
     BLACK = 4,
   };
 
+  static const Color colorA;
+  static const Color colorB;
+
   Color getColor() const { return color_; }
   void setColor(Color c) { color_  = c; }
 
+  bool isBlack();
   bool isWhite();
   bool isGray();
+  bool isLiveColor();
+  bool isDeadColor();
+  bool isDead();
 
   void makeLive();
 
-  void whiteToGray();
-  void blackToGray();
-  void grayToBlack();
-  void stringmark();
-
   virtual void VisitGC(LuaGCVisitor& visitor) = 0;
   virtual int PropagateGC(LuaGCVisitor& visitor) = 0;
-
-  static const Color colorA;
-  static const Color colorB;
 
   //----------
 
@@ -63,8 +53,6 @@ public:
 
   //----------
   // Flag read/write
-
-  bool isBlack();
 
   bool isFinalized();
   void setFinalized();
@@ -88,25 +76,25 @@ public:
 
   //----------
 
-  LuaObject* getNextGray() const { return next_gray_; }
-
   LuaObject* getPrev() const { return prev_; }
   LuaObject* getNext() const { return next_; }
+
+  LuaObject* getNextGray() const { return next_gray_; }
 
   //----------
 
 private:
-
-  void setNextGray(LuaObject* o) { next_gray_ = o; }
-
-  LuaObject* prev_;
-  LuaObject* next_;
 
   friend class LuaList;
   friend class LuaGraylist;
 
   void setPrev(LuaObject* o) { prev_ = o; }
   void setNext(LuaObject* o) { next_ = o; }
+
+  void setNextGray(LuaObject* o) { next_gray_ = o; }
+
+  LuaObject* prev_;
+  LuaObject* next_;
 
   LuaObject* prev_gray_;
   LuaObject* next_gray_;
