@@ -101,9 +101,11 @@ static int db_setuservalue (LuaThread *L) {
 
 static LuaThread *getthread (LuaThread *L, int *arg) {
   THREAD_CHECK(L);
-  if (lua_isthread(L, 1)) {
+  LuaValue v = L->stack_.at(1);
+
+  if (v.isThread()) {
     *arg = 1;
-    return lua_tothread(L, 1);
+    return v.getThread();
   }
   else {
     *arg = 0;
@@ -321,20 +323,22 @@ static void hookf (LuaThread *L, LuaDebug *ar) {
   THREAD_CHECK(L);
   static const char *const hooknames[] =
     {"call", "return", "line", "count", "tail call"};
+  const char* hookname = hooknames[(int)ar->event];
   
   LuaTable* t = L->l_G->getRegistryTable(HOOKKEY);
   LuaValue f = t->get( LuaValue::Pointer(L) );
 
   if (f.isFunction()) {
+
     L->stack_.push(f);
-    lua_pushstring(L, hooknames[(int)ar->event]);
+    L->stack_.push( L->l_G->strings_->Create(hookname) );
     if (ar->currentline >= 0) {
-      lua_pushinteger(L, ar->currentline);
+      L->stack_.push(ar->currentline);
     }
     else {
       L->stack_.push(LuaValue::Nil());
     }
-    assert(lua_getinfo(L, "lS", ar));
+
     lua_call(L, 2, 0);
   }
 }
@@ -365,6 +369,7 @@ static int db_sethook (LuaThread *L) {
   int arg, mask, count;
   LuaHook func;
   LuaThread *L1 = getthread(L, &arg);
+
   if (lua_isnoneornil(L, arg+1)) {
     L->stack_.setTopIndex(arg+1);
     func = NULL; mask = 0; count = 0;  /* turn off hooks */
@@ -373,7 +378,8 @@ static int db_sethook (LuaThread *L) {
     const char *smask = luaL_checkstring(L, arg+2);
     luaL_checkIsFunction(L, arg+1);
     count = luaL_optint(L, arg+3, 0);
-    func = hookf; mask = makemask(smask, count);
+    func = hookf;
+    mask = makemask(smask, count);
   }
   
   luaL_getregistrytable(L, HOOKKEY);
