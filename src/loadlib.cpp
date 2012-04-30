@@ -310,7 +310,7 @@ static int ll_loadfunc (LuaThread *L, const char *path, const char *sym) {
     LuaCallback f = ll_sym(L, *reg, sym);
     if (f == NULL)
       return ERRFUNC;  /* unable to find function */
-    lua_pushcclosure(L, f, 0);  /* else create new function */
+    L->stack_.push(f);
     return 0;  /* no errors */
   }
 }

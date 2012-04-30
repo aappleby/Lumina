@@ -150,6 +150,8 @@ void  (lua_createtable) (LuaThread *L, int narr, int nrec);
 void *(lua_newuserdata) (LuaThread *L, size_t sz);
 int   (lua_getmetatable) (LuaThread *L, int objindex);
 
+LuaTable* lua_getmetatable(LuaValue v);
+
 void lua_getregistryfield(LuaThread* L, const char* field);
 void lua_getglobalfield(LuaThread* L, const char* field);
 
@@ -249,8 +251,6 @@ void  (lua_len)    (LuaThread *L, int idx);
 */
 
 #define lua_register(L,n,f) (lua_pushcfunction(L, (f)), lua_setglobal(L, (n)))
-
-//#define lua_pushcfunction(L,f)	lua_pushcclosure(L, (f), 0)
 
 inline bool lua_isfunction(LuaThread* L, int n) {
   LuaValue* v = index2addr2(L,n);

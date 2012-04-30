@@ -178,7 +178,9 @@ static int traceback (LuaThread *L) {
 static int docall (LuaThread *L, int narg, int nres) {
   int status;
   int base = L->stack_.getTopIndex() - narg;  /* function index */
-  lua_pushcclosure(L, traceback, 0);  /* push traceback function */
+  
+  L->stack_.push(traceback);
+
   lua_insert(L, base);  /* put it under chunk and args */
   globalL = L;  /* to be available to 'laction' */
   signal(SIGINT, laction);
@@ -508,7 +510,8 @@ int main (int argc, char **argv) {
       return EXIT_FAILURE;
     }
     /* call 'pmain' in protected mode */
-    lua_pushcclosure(L, &pmain, 0);
+    L->stack_.push(pmain);
+
     lua_pushinteger(L, argc);  /* 1st argument */
     lua_pushlightuserdata(L, argv); /* 2nd argument */
     status = lua_pcall(L, 2, 1, 0);

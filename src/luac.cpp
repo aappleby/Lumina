@@ -193,7 +193,9 @@ int main(int argc, char* argv[])
   if (argc<=0) usage("no input files given");
   L=luaL_newstate();
   if (L==NULL) fatal("cannot create state: not enough memory");
-  lua_pushcclosure(L, &pmain, 0);
+
+  L->stack_.push(pmain);
+
   lua_pushinteger(L,argc);
   lua_pushlightuserdata(L,argv);
   if (lua_pcall(L,2,0,0)!=LUA_OK) fatal(lua_tostring(L,-1));

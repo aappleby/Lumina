@@ -760,7 +760,7 @@ static int loadlib (LuaThread *L) {
     luaopen_package(L1);
     luaL_getregistrytable(L1, "_PRELOAD");
     for (i = 0; libs[i].name; i++) {
-      lua_pushcclosure(L1, libs[i].func, 0);
+      L1->stack_.push( libs[i].func );
       lua_setfield(L1, -2, libs[i].name);
     }
   }
@@ -1011,7 +1011,8 @@ static int runC (LuaThread *L, LuaThread *L1, const char *pc) {
     }
     else if EQ("tocfunction") {
       { GLOBAL_CHANGE(L); tempindex = getindex; }
-      lua_pushcclosure(L1, lua_tocfunction(L1, tempindex), 0);
+      LuaCallback c = lua_tocfunction(L1, tempindex);
+      L1->stack_.push(c);
     }
     else if EQ("func2num") {
       { GLOBAL_CHANGE(L); tempindex = getindex; }
@@ -1297,7 +1298,22 @@ static int runC (LuaThread *L, LuaThread *L1, const char *pc) {
     }
     else if EQ("newmetatable") {
       { GLOBAL_CHANGE(L); tempstring = getstring; }
-      lua_pushboolean(L1, luaL_newmetatable(L1, tempstring));
+      LuaTable* registry = L1->l_G->getRegistry();
+      LuaValue oldTable = registry->get(tempstring);
+
+      int result = 0;
+      if(oldTable.isTable()) {
+        L1->stack_.push(oldTable);
+        result = 0;
+      }
+      else {
+        LuaTable* newTable = new LuaTable();
+        registry->set(tempstring, newTable);
+        L1->stack_.push(newTable);
+        result = 1;
+      }
+
+      lua_pushboolean(L1, result);
     }
     else if EQ("testudata") {
       int i;

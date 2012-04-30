@@ -53,6 +53,8 @@ LuaClosure::~LuaClosure() {
   ppupvals_ = NULL;
 }
 
+//------------------------------------------------------------------------------
+
 void LuaClosure::VisitGC(LuaGCVisitor& visitor) {
   setColor(GRAY);
   visitor.PushGray(this);
@@ -75,3 +77,5 @@ int LuaClosure::PropagateGC(LuaGCVisitor& visitor) {
 
   return 5 + nupvalues;
 }
+
+//------------------------------------------------------------------------------

@@ -6,6 +6,7 @@
 
 #include "LuaGlobals.h"
 #include "LuaState.h"
+#include "LuaUserdata.h"
 
 #include <errno.h>
 #include <stdarg.h>
@@ -312,38 +313,18 @@ void luaL_getmetatable(LuaThread* L, const char* tname) {
   L->stack_.push( luaL_getmetatable2(L, tname) );
 }
 
-int luaL_newmetatable (LuaThread *L, const char *tname) {
-  THREAD_CHECK(L);
-
-  LuaTable* registry = L->l_G->getRegistry();
-  LuaValue oldTable = registry->get(tname);
-
-  if(oldTable.isTable()) {
-    L->stack_.push(oldTable);
-    return 0;
-  }
-
-  LuaTable* newTable = new LuaTable();
-  registry->set( tname, LuaValue(newTable) );
-
-  L->stack_.push( LuaValue(newTable) );
-  return 1;
-}
-
-
 void *luaL_testudata (LuaThread *L, int ud, const char *tname) {
   THREAD_CHECK(L);
-  void *p = lua_touserdata(L, ud);
-  if (p != NULL) {  /* value is a userdata? */
-    if (lua_getmetatable(L, ud)) {  /* does it have a metatable? */
-      luaL_getmetatable(L, tname);  /* get correct metatable */
-      if (!lua_rawequal(L, -1, -2))  /* not the same? */
-        p = NULL;  /* value is a userdata with wrong metatable */
-      L->stack_.pop(2);  /* remove both metatables */
-      return p;
-    }
-  }
-  return NULL;  /* value is not a userdata with a metatable */
+  LuaValue ud2 = L->stack_.at(ud);
+  if(!ud2.isBlob()) return NULL;
+
+  LuaTable* meta1 = ud2.getBlob()->metatable_;
+  if(meta1 == NULL) return NULL;
+
+  LuaTable* meta2 = L->l_G->getRegistryTable(tname);
+  if (meta1 != meta2) return NULL;
+
+  return ud2.getBlob()->buf_;
 }
 
 
@@ -797,7 +778,7 @@ int luaL_getmetafield (LuaThread *L, int obj, const char *event) {
   }
   lua_pushstring(L, event);
   lua_rawget(L, -2);
-  if (lua_isnil(L, -1)) {
+  if (L->stack_.at(-1).isNil()) {
     L->stack_.pop(2);  /* remove metatable and metafield */
     return 0;
   }
