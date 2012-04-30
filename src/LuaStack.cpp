@@ -378,36 +378,30 @@ void check(LuaUpvalue* cursor) {
 }
 
 LuaUpvalue* LuaStack::createUpvalFor(StkId level) {
-  LuaUpvalue* p = (LuaUpvalue*)open_upvals_;
-  for(;p; p = (LuaUpvalue*)p->next_) {
-    if(p->v < level) break;
-    assert(p->v != &p->value);
-    if (p->v == level) {
+  LuaUpvalue* prev = NULL;
+  LuaUpvalue* next = (LuaUpvalue*)open_upvals_;
+
+  while(next) {
+    if(next->v < level) break;
+    assert(next->v != &next->value);
+    if (next->v == level) {
       // Resurrect the upvalue if necessary.
       // TODO(aappleby): The upval is supposedly on the stack, how in the heck
       // could it be dead?
-      if (p->isDead()) {
-        p->makeLive();
+      if (next->isDead()) {
+        next->makeLive();
       }
-      return p;
+      return next;
     }
-    p->clearOld();  /* may create a newer upval after this one */
+    next->clearOld();  /* may create a newer upval after this one */
+
+    prev = next;
+    next = (LuaUpvalue*)next->getNext();
   }
+
   /* not found: create a new one */
   LuaUpvalue *uv = new LuaUpvalue();
-  if(p) {
-    uv->linkGCBefore(open_upvals_, p);
-  }
-  else {
-    if(open_upvals_) {
-      LuaObject* cursor = open_upvals_;
-      while(cursor->next_) cursor = cursor->next_;
-      uv->linkGCAfter(open_upvals_, cursor);
-    }
-    else {
-      uv->linkGC(open_upvals_);
-    }
-  }
+  uv->linkGC(open_upvals_, prev, next);
   uv->v = level;  /* current value lives in the stack */
 
   check((LuaUpvalue*)open_upvals_);
