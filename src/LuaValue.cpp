@@ -8,14 +8,6 @@
 uint32_t hash64 (uint32_t a, uint32_t b);
 int luaO_str2d (const char *s, size_t len, double *result);
 
-LuaValue LuaValue::Pointer(const void * p) {
-  LuaValue v;
-  v.type_ = LUA_TPOINTER;
-  v.bytes_ = 0;
-  v.pointer_ = (void*)p;
-  return v;
-}
-
 LuaValue LuaValue::convertToNumber() const {
   if(isNumber()) return *this;
 
@@ -70,7 +62,7 @@ bool LuaValue::isLiveColor() const {
 }
 
 uint32_t LuaValue::hashValue() const {
-  return hash64(twobytes.lowbytes_, twobytes.highbytes_);
+  return hash64(halves_.lowbytes_, halves_.highbytes_);
 }
 
 extern char** luaT_typenames;

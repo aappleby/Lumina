@@ -18,26 +18,34 @@ public:
     bytes_ = data;
   }
 
+  LuaValue(const LuaValue& v) {
+    type_ = v.type_;
+    bytes_ = v.bytes_;
+  }
+
   static LuaValue Nil()   { return LuaValue(LUA_TNIL, 0); }
   static LuaValue None()  { return LuaValue(LUA_TNONE, 0); }
-
-  static LuaValue Pointer(const void* p);
+  static LuaValue Pointer(const void* p) { return LuaValue(LUA_TPOINTER, (uint64_t)p); }
 
   LuaValue(LuaObject* o)  { type_ = o->type(); bytes_ = 0; object_ = o; }
-
-  explicit LuaValue(bool v)        { type_ = LUA_TBOOLEAN; bytes_ = v ? 1 : 0; }
-  explicit LuaValue(int32_t v)     { type_ = LUA_TNUMBER; number_ = v; }
-  explicit LuaValue(int64_t v)     { type_ = LUA_TNUMBER; number_ = (double)v; }
-  explicit LuaValue(uint32_t v)    { type_ = LUA_TNUMBER; number_ = v; }
-  explicit LuaValue(uint64_t v)    { type_ = LUA_TNUMBER; number_ = (double)v; }
-  explicit LuaValue(double v)      { type_ = LUA_TNUMBER; number_ = v; }
-
+  LuaValue(bool v)        { type_ = LUA_TBOOLEAN; bytes_ = v ? 1 : 0; }
   LuaValue(LuaCallback f) { type_ = LUA_TCALLBACK; bytes_ = 0; callback_ = f; }
+
+  LuaValue(float v)       { type_ = LUA_TNUMBER; number_ = v; }
+  LuaValue(double v)      { type_ = LUA_TNUMBER; number_ = v; }
+  LuaValue(int8_t v)      { type_ = LUA_TNUMBER; number_ = v; }
+  LuaValue(uint8_t v)     { type_ = LUA_TNUMBER; number_ = v; }
+  LuaValue(int16_t v)     { type_ = LUA_TNUMBER; number_ = v; }
+  LuaValue(uint16_t v)    { type_ = LUA_TNUMBER; number_ = v; }
+  LuaValue(int32_t v)     { type_ = LUA_TNUMBER; number_ = v; }
+  LuaValue(uint32_t v)    { type_ = LUA_TNUMBER; number_ = v; }
+  LuaValue(int64_t v)     { type_ = LUA_TNUMBER; number_ = (double)v; }
+  LuaValue(uint64_t v)    { type_ = LUA_TNUMBER; number_ = (double)v; }
 
   // Assignment operators
 
   void operator = (LuaObject* o) { type_ = o->type(); bytes_ = 0; object_ = o; }
-  void operator = (LuaValue v)     { type_ = v.type_; bytes_ = v.bytes_; }
+  void operator = (LuaValue v)   { type_ = v.type_; bytes_ = v.bytes_; }
   void operator = (double v)     { type_ = LUA_TNUMBER; number_ = v; }
   void operator = (int v)        { type_ = LUA_TNUMBER; number_ = (double)v; }
   void operator = (size_t v)     { type_ = LUA_TNUMBER; number_ = (double)v; }
@@ -53,11 +61,6 @@ public:
 
   bool operator != (LuaValue const& v) const {
     return !(*this == v);
-  }
-
-  bool operator == (int v) const {
-    if(!isNumber()) return false;
-    return number_ == v;
   }
 
   // stuff
@@ -113,7 +116,6 @@ public:
   //----------
 
   bool isWhite() const;
-
   bool isLiveColor() const;
 
   //----------
@@ -130,18 +132,12 @@ public:
   void*        getPointer() const   { assert(isPointer()); return pointer_; }
   LuaThread*   getThread() const    { assert(isThread()); return reinterpret_cast<LuaThread*>(object_); }
   LuaCallback  getCallback() const  { assert(isCallback()); return callback_; }
-
-  uint64_t   getRawBytes() const { return bytes_; }
+  uint64_t     getRawBytes() const  { return bytes_; }
 
   //----------
 
   LuaType type() const  { return type_; }
   const char* typeName() const;
-
-  void clear() { bytes_ = 0; type_ = LUA_TNIL; }
-
-  void setBool  (int x)     { bytes_ = x ? 1 : 0; type_ = LUA_TBOOLEAN; }
-  void setValue (LuaValue* x) { bytes_ = x->bytes_; type_ = x->type_; }
 
   void sanityCheck() const;
   void typeCheck() const;
@@ -159,7 +155,7 @@ private:
     struct {
       uint32_t lowbytes_;
       uint32_t highbytes_;
-    } twobytes;
+    } halves_;
   };
 
   LuaType type_;

@@ -194,7 +194,7 @@ void luaD_precallLua(LuaThread* L, StkId func, int nresults) {
 
     for (int i=0; i < p->numparams; i++) {
       L->stack_.top_[i] = L->stack_.top_[i - nargs];
-      L->stack_.top_[i - nargs].clear();
+      L->stack_.top_[i - nargs] = LuaValue::Nil();
     }
 
     base = L->stack_.top_;
