@@ -372,7 +372,9 @@ void LuaStack::sweepCallinfo() {
 LuaUpvalue* LuaStack::createUpvalFor(StkId level) {
   LuaObject **pp = &open_upvals_;
   LuaUpvalue *p;
-  while (*pp != NULL && (p = dynamic_cast<LuaUpvalue*>(*pp))->v >= level) {
+  while (*pp != NULL) {
+    p = dynamic_cast<LuaUpvalue*>(*pp);
+    if(p->v < level) break;
     assert(p->v != &p->value);
     if (p->v == level) {
       // Resurrect the upvalue if necessary.
