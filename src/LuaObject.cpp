@@ -65,6 +65,22 @@ void LuaObject::linkGC(LuaList& gclist) {
   gclist.Push(this);
 }
 
+void LuaObject::linkGCBefore(LuaObject*& head, LuaObject* point) {
+  assert(prev_ == NULL);
+  assert(next_ == NULL);
+  assert(point);
+
+  next_ = point;
+  prev_ = point->prev_;
+  
+  if(next_) next_->prev_ = this;
+  if(prev_) prev_->next_ = this;
+
+  if(point == head) {
+    head = this;
+  }
+}
+
 void LuaObject::unlinkGC(LuaObject*& head) {
   if(head == this) head = next_;
 

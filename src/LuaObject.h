@@ -11,6 +11,7 @@ public:
   void linkGC(LuaObject** gcHead);
   void linkGC(LuaObject*& gcHead);
   void linkGC(LuaList& gclist);
+  void linkGCBefore(LuaObject*& head, LuaObject* point);
   
   void unlinkGC(LuaObject** gcHead);
   void unlinkGC(LuaObject*& gcHead);
