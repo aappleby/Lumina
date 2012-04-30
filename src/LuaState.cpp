@@ -70,7 +70,7 @@ LuaThread::LuaThread(LuaThread* parent_thread) : LuaObject(LUA_TTHREAD) {
 LuaThread::~LuaThread() {
 
   stack_.closeUpvals(stack_.begin());
-  assert(stack_.open_upvals_ == NULL);
+  assert(stack_.open_upvals_.isEmpty());
 
   if(l_G) {
     if(this == l_G->mainthread) {

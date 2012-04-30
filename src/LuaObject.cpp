@@ -78,6 +78,27 @@ void LuaObject::linkGC(LuaObject*& head, LuaObject* prev, LuaObject* next) {
   if(next == head) head = this;
 }
 
+void LuaObject::linkGC(LuaList& list, LuaObject* prev, LuaObject* next) {
+  assert(prev_ == NULL);
+  assert(next_ == NULL);
+
+  if(prev == NULL) {
+    list.Push(this);
+    return;
+  }
+
+  if(next == NULL) {
+    list.PushTail(this);
+    return;
+  }
+
+  prev_ = prev;
+  next_ = next;
+
+  if(prev_) prev_->next_ = this;
+  if(next_) next_->prev_ = this;
+}
+
 void LuaObject::unlinkGC(LuaObject** head) {
   if(*head == this) *head = next_;
 

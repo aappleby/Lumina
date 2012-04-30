@@ -82,7 +82,7 @@ public:
 
   LuaStackFrame* callinfo_;  /* call info for current function */
 
-  LuaObject *open_upvals_;  /* list of open upvalues in this stack */
+  LuaList open_upvals_;  /* list of open upvalues in this stack */
 
   LuaStackFrame* callinfo_head_;  /* LuaStackFrame for first level (C calling Lua) */
 

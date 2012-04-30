@@ -14,11 +14,10 @@ LuaStack::LuaStack() {
   callinfo_head_ = new LuaStackFrame();
   callinfo_head_->stack_ = this;
   callinfo_ = callinfo_head_;
-  open_upvals_ = NULL;
 }
 
 LuaStack::~LuaStack() {
-  assert(open_upvals_ == NULL);
+  assert(open_upvals_.isEmpty());
   delete callinfo_head_;
   callinfo_head_ = NULL;
 }
@@ -61,8 +60,9 @@ void LuaStack::realloc (int newsize) {
   top_ = begin() + (top_ - oldstack);
   
   // Correct all stack references in open upvalues.
-  for (LuaObject* up = open_upvals_; up != NULL; up = up->getNext()) {
-    LuaUpvalue* uv = static_cast<LuaUpvalue*>(up);
+  //for (LuaObject* up = open_upvals_; up != NULL; up = up->getNext()) {
+  for(LuaList::iterator it = open_upvals_.begin(); it; ++it) {
+    LuaUpvalue* uv = static_cast<LuaUpvalue*>(it.get());
     uv->v = (uv->v - oldstack) + begin();
   }
   
@@ -371,7 +371,7 @@ void LuaStack::sweepCallinfo() {
 
 LuaUpvalue* LuaStack::createUpvalFor(StkId level) {
   LuaUpvalue* prev = NULL;
-  LuaUpvalue* next = (LuaUpvalue*)open_upvals_;
+  LuaUpvalue* next = (LuaUpvalue*)open_upvals_.begin().get();
 
   while(next) {
     if(next->v < level) break;
@@ -409,8 +409,8 @@ LuaUpvalue* LuaStack::createUpvalFor(StkId level) {
 void LuaStack::closeUpvals(StkId level) {
   LuaUpvalue *uv;
 
-  while (open_upvals_ != NULL) {
-    uv = dynamic_cast<LuaUpvalue*>(open_upvals_);
+  while (!open_upvals_.isEmpty()) {
+    uv = dynamic_cast<LuaUpvalue*>(open_upvals_.getHead());
     if(uv->v < level) break;
 
     assert(!uv->isBlack() && uv->v != &uv->value);
@@ -485,8 +485,9 @@ LuaResult LuaStack::createCCall2(StkId func, int nresults, int nstack) {
 void LuaStack::sanityCheck() {
 
   // All open upvals must be open and must be non-black.
-  for (LuaObject* uvo = open_upvals_; uvo != NULL; uvo = uvo->getNext()) {
-    LuaUpvalue *uv = dynamic_cast<LuaUpvalue*>(uvo);
+  //for (LuaObject* uvo = open_upvals_; uvo != NULL; uvo = uvo->getNext()) {
+  for(LuaList::iterator it = open_upvals_.begin(); it; ++it) {
+    LuaUpvalue *uv = dynamic_cast<LuaUpvalue*>(it.get());
     assert(uv->v != &uv->value);
     assert(!uv->isBlack());
   }

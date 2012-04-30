@@ -210,8 +210,8 @@ static bool sweeplist (LuaList::iterator& it, size_t count);
 
 static void sweepthread (LuaThread *L1) {
   if (L1->stack_.empty()) return;  /* stack not completely built yet */
-  LuaObject* p1 = NULL;
-  sweeplist(L1->stack_.open_upvals_, p1, MAX_LUMEM);  /* sweep open upvalues */
+  LuaList::iterator it = L1->stack_.open_upvals_.begin();
+  sweeplist(it, MAX_LUMEM);  /* sweep open upvalues */
   L1->stack_.sweepCallinfo();
   /* should not change the stack during an emergency gc cycle */
   if (thread_G->gckind != KGC_EMERGENCY) {
