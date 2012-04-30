@@ -26,7 +26,7 @@ ScopedCallDepth::~ScopedCallDepth() {
 
 LuaThread::LuaThread(LuaVM* g) : LuaObject(LUA_TTHREAD) {
   l_G = g;
-  linkGC(&l_G->allgc);
+  linkGC(l_G->allgc);
 
   oldpc = NULL;
   hookmask = 0;
@@ -45,7 +45,7 @@ LuaThread::LuaThread(LuaVM* g) : LuaObject(LUA_TTHREAD) {
 
 LuaThread::LuaThread(LuaThread* parent_thread) : LuaObject(LUA_TTHREAD) {
   l_G = parent_thread->l_G;
-  linkGC(&l_G->allgc);
+  linkGC(l_G->allgc);
 
   oldpc = NULL;
   hookmask = 0;

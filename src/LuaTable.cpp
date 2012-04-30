@@ -39,7 +39,7 @@ LuaTable::LuaTable(int arrayLength, int hashLength)
 : LuaObject(LUA_TTABLE),
   lastfree(-1) {
   metatable = NULL;
-  linkGC(getGlobalGCHead());
+  linkGC(getGlobalGCList());
 
   if(arrayLength || hashLength) {
     resize(arrayLength, hashLength);

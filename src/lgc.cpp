@@ -200,7 +200,7 @@ void getTableMode(LuaTable* t, bool& outWeakKey, bool& outWeakVal) {
 
 
 static bool sweeplist (LuaObject*& head, LuaObject*& cursor, size_t count);
-static void sweeplist (LuaList::iterator& it, size_t count);
+static bool sweeplist (LuaList::iterator& it, size_t count);
 
 
 /*
@@ -258,8 +258,10 @@ static bool sweepListNormal (LuaObject *& head, LuaObject*& cursor, size_t count
   }
 }
 
-void sweepListNormal2 (LuaList::iterator& it, size_t count) {
-  for(; it && count; --count) {
+bool sweepListNormal2 (LuaList::iterator& it, size_t count) {
+  while(it) {
+    if(count-- <= 0) return false;
+
     if (it->isDead()) {  /* is 'curr' dead? */
       LuaObject* dead = it;
       it.pop();
@@ -276,6 +278,7 @@ void sweepListNormal2 (LuaList::iterator& it, size_t count) {
       ++it;
     }
   }
+  return true;
 }
 
 static bool sweepListGenerational (LuaObject*& head, LuaObject *& cursor, size_t count) {
@@ -304,8 +307,10 @@ static bool sweepListGenerational (LuaObject*& head, LuaObject *& cursor, size_t
   }
 }
 
-void sweepListGenerational2 (LuaList::iterator& it, size_t count) {
-  for(; it && count; --count) {
+bool sweepListGenerational2 (LuaList::iterator& it, size_t count) {
+  while(it) {
+    if(count-- <= 0) return false;
+
     if (it->isDead()) {  /* is 'curr' dead? */
       LuaObject* dead = it;
       it.pop();
@@ -313,18 +318,18 @@ void sweepListGenerational2 (LuaList::iterator& it, size_t count) {
     }
     else {
       if (it->isThread()) {
-        LuaObject* o = it;
-        sweepthread(dynamic_cast<LuaThread*>(o));  /* sweep thread's upvalues */
+        sweepthread(dynamic_cast<LuaThread*>(it.get()));  /* sweep thread's upvalues */
       }
       if (it->isOld()) {
-        it.abort();
-        break;
+        return true;
       }
       /* update marks */
       it->setOld();
       ++it;
     }
   }
+
+  return true;
 }
 
 static bool sweeplist (LuaObject*& head, LuaObject*& cursor, size_t count) {
@@ -335,7 +340,7 @@ static bool sweeplist (LuaObject*& head, LuaObject*& cursor, size_t count) {
   }
 }
 
-void sweeplist (LuaList::iterator& it, size_t count) {
+bool sweeplist (LuaList::iterator& it, size_t count) {
   if(isgenerational(thread_G)) {
     return sweepListGenerational2(it, count);
   } else {
@@ -679,18 +684,18 @@ static ptrdiff_t singlestep () {
       }
     }
     case GCSsweepudata: {
-      if (g->sweepgc2) {
-        sweeplist(g->sweepgc2, GCSWEEPMAX);
+      bool done = sweeplist(g->sweepgc2, GCSWEEPMAX);
+      if (!done) {
         return GCSWEEPMAX*GCSWEEPCOST;
       }
       else {
-        g->sweepcursor = NULL;
+        g->sweepgc2 = g->allgc.begin();
         g->gcstate = GCSsweep;
         return GCSWEEPCOST;
       }
     }
     case GCSsweep: {
-      bool done = sweeplist(g->allgc, g->sweepcursor, GCSWEEPMAX);
+      bool done = sweeplist(g->sweepgc2, GCSWEEPMAX);
 
       if (!done) {
         return GCSWEEPMAX*GCSWEEPCOST;

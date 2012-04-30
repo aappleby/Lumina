@@ -30,7 +30,7 @@ typedef uint32_t Instruction;
 
 void  luaM_free(void * blob);
 
-LuaObject** getGlobalGCHead();
+LuaList& getGlobalGCList();
 
 //-----------------------------------------------------------------------------
 

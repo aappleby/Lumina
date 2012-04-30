@@ -576,7 +576,7 @@ int luaD_protectedparser (LuaThread *L, ZIO *z, const char *name, const char *mo
     // initialize upvalues
     for (int i = 0; i < (int)new_proto->upvalues.size(); i++) {
       cl->ppupvals_[i] = new LuaUpvalue();
-      cl->ppupvals_[i]->linkGC(getGlobalGCHead());
+      cl->ppupvals_[i]->linkGC(getGlobalGCList());
     }
   }
   catch(LuaResult error) {

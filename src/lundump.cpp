@@ -174,7 +174,7 @@ static void LoadDebug(LoadState* S, LuaProto* f)
 static LuaProto* LoadFunction(LoadState* S)
 {
   LuaProto* f = new LuaProto();
-  f->linkGC(getGlobalGCHead());
+  f->linkGC(getGlobalGCList());
   LuaResult result = S->L->stack_.push_reserve2(LuaValue(f));
   handleResult(result);
 

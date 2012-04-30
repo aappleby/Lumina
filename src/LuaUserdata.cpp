@@ -6,7 +6,7 @@
 #include "lmem.h"
 
 LuaBlob::LuaBlob(size_t len) : LuaObject(LUA_TBLOB) {
-  linkGC(getGlobalGCHead());
+  linkGC(getGlobalGCList());
   buf_ = (uint8_t*)luaM_alloc_nocheck(len);
   len_ = len;
   metatable_ = NULL;

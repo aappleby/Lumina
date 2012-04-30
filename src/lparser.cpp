@@ -529,7 +529,7 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   fs->bl = NULL;
 
   LuaProto* f = new LuaProto();
-  f->linkGC(getGlobalGCHead());
+  f->linkGC(getGlobalGCList());
 
   /* anchor prototype (to avoid being collected) */
   LuaResult result = L->stack_.push_reserve2(LuaValue(f));

@@ -41,8 +41,8 @@ const char *const gk_tagmethod_names[] = {
 
 //------------------------------------------------------------------------------
 
-LuaObject** getGlobalGCHead() {
-  return &thread_G->allgc;
+LuaList& getGlobalGCList() {
+  return thread_G->allgc;
 }
 
 LuaVM::LuaVM()
@@ -71,9 +71,6 @@ LuaVM::LuaVM()
   gcmajorinc = LUAI_GCMAJOR;
   gcstepmul = LUAI_GCMUL;
   lastmajormem = 0;
-
-  allgc = NULL;
-  sweepcursor = NULL;
 
   panic = NULL;
   version = lua_version(NULL);

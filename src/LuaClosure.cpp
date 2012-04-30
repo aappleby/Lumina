@@ -7,7 +7,7 @@
 // Lua closure
 LuaClosure::LuaClosure(LuaProto* proto, int n) 
 : LuaObject(LUA_TLCL) {
-  linkGC(getGlobalGCHead());
+  linkGC(getGlobalGCList());
 
   isC = 0;
   nupvalues = n;
@@ -22,7 +22,7 @@ LuaClosure::LuaClosure(LuaProto* proto, int n)
 // C closure
 LuaClosure::LuaClosure(LuaCallback func, int n) 
 : LuaObject(LUA_TCCL) {
-  linkGC(getGlobalGCHead());
+  linkGC(getGlobalGCList());
 
   isC = 1;
   nupvalues = n;
@@ -34,7 +34,7 @@ LuaClosure::LuaClosure(LuaCallback func, int n)
 
 LuaClosure::LuaClosure(LuaCallback func, LuaValue upval1)
 : LuaObject(LUA_TCCL) {
-  linkGC(getGlobalGCHead());
+  linkGC(getGlobalGCList());
 
   isC = 1;
   nupvalues = 1;

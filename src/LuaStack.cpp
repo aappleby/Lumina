@@ -429,7 +429,7 @@ void LuaStack::closeUpvals(StkId level) {
       uv->v = &uv->value;  /* now current value lives here */
       
       /* link upvalue into 'allgc' list */
-      uv->linkGC(&thread_G->allgc);
+      uv->linkGC(thread_G->allgc);
 
       // check color (and invariants) for an upvalue that was closed,
       // i.e., moved into the 'allgc' list

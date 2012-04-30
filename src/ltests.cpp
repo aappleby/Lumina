@@ -77,10 +77,14 @@ static int testobjref1 (LuaVM *g, LuaObject *f, LuaObject *t) {
 
 
 static void printobj (LuaVM *g, LuaObject *o) {
-  int i = 0;
-  LuaObject *p;
-  for (p = g->allgc; p != o && p != NULL; p = p->getNext()) i++;
-  if (p == NULL) i = -1;
+  int i = -1;
+  int index = 0;
+  for(LuaList::iterator it = g->allgc.begin(); it; ++it, ++index) {
+    if(it == o) {
+      i = index;
+      break;
+    }
+  }
 
   char c = 'g';
   if(o->isDead()) c = 'd';
@@ -294,7 +298,6 @@ static void checkold (LuaVM *g, LuaList& list) {
 int lua_checkmemory (LuaThread *L) {
   THREAD_CHECK(L);
   LuaVM *g = G(L);
-  LuaObject *o;
   LuaUpvalue *uv;
   if (keepinvariant(g)) {
     assert(!g->mainthread->isWhite());
@@ -310,9 +313,9 @@ int lua_checkmemory (LuaThread *L) {
   }
 
   checkold(g, g->allgc);
-  for (o = g->allgc; o != NULL; o = o->getNext()) {
-    checkobject(g, o);
-    assert(!o->isSeparated());
+  for(LuaList::iterator it = g->allgc.begin(); it; ++it) {
+    checkobject(g, it);
+    assert(!it->isSeparated());
   }
   /* check 'finobj' list */
   checkold(g, g->finobj);

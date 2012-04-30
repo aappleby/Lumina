@@ -88,8 +88,9 @@ public:
   int gckind;  /* kind of GC running */
   int gcrunning;  /* true if GC is running */
 
-  LuaObject *allgc;  /* list of all collectable objects */
-  LuaObject* sweepcursor;
+  //LuaObject *allgc;  /* list of all collectable objects */
+  //LuaObject* sweepcursor;
+  LuaList allgc;
 
   LuaList::iterator sweepgc2;
 
