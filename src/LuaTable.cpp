@@ -15,26 +15,6 @@ int luaO_ceillog2 (unsigned int x);
 
 //-----------------------------------------------------------------------------
 
-uint32_t hash64 (uint32_t a, uint32_t b) {
-  a ^= a >> 16;
-  a *= 0x85ebca6b;
-  a ^= a >> 13;
-  a *= 0xc2b2ae35;
-  a ^= a >> 16;
-
-  a ^= b;
-
-  a ^= a >> 16;
-  a *= 0x85ebca6b;
-  a ^= a >> 13;
-  a *= 0xc2b2ae35;
-  a ^= a >> 16;
-
-  return a;
-}
-
-//-----------------------------------------------------------------------------
-
 LuaTable::LuaTable(int arrayLength, int hashLength) 
 : LuaObject(LUA_TTABLE),
   lastfree(-1) {
