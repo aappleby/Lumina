@@ -32,6 +32,7 @@
 #include "lzio.h"
 
 void adjustresults(LuaThread* L, int nres);
+void checkresults(LuaThread* L, int nargs, int nresults);
 
 /*
 ** {======================================================
@@ -288,14 +289,66 @@ int luaD_postcall (LuaThread *L, StkId firstResult) {
 */
 void luaD_call (LuaThread *L, StkId func, int nResults, int allowyield) {
   THREAD_CHECK(L);
+  api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
+
+  //L->stack_.checkArgs(nargs+1);
+  //checkresults(L, nargs, nresults);
 
   if (!allowyield) L->nonyieldable_count_++;
   if (!luaD_precall(L, func, nResults)) {
-    /* is a Lua function? */
-    luaV_execute(L);  /* call it */
+    luaV_execute(L);
   }
   if (!allowyield) L->nonyieldable_count_--;
+
+  adjustresults(L, nResults);
 }
+
+void lua_call (LuaThread *L, int nargs, int nresults) {
+  THREAD_CHECK(L);
+  api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
+
+  L->stack_.checkArgs(nargs+1);
+  checkresults(L, nargs, nresults);
+
+  StkId func = L->stack_.top_ - (nargs+1);
+  
+  L->nonyieldable_count_++;
+  if (!luaD_precall(L, func, nresults)) {
+    luaV_execute(L);
+  }
+  L->nonyieldable_count_--;
+
+
+  adjustresults(L, nresults);
+}
+
+
+
+void lua_callk (LuaThread *L, int nargs, int nresults, int ctx, LuaCallback k) {
+  THREAD_CHECK(L);
+  api_check(k == NULL || !L->stack_.callinfo_->isLua(), "cannot use continuations inside hooks");
+  api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
+
+  L->stack_.checkArgs(nargs+1);
+  checkresults(L, nargs, nresults);
+
+  if (k != NULL && L->nonyieldable_count_ == 0) {  /* need to prepare continuation? */
+    L->stack_.callinfo_->continuation_ = k;  /* save continuation */
+    L->stack_.callinfo_->continuation_context_ = ctx;  /* save context */
+    StkId func = L->stack_.top_ - (nargs+1);
+    luaD_call(L, func, nresults, 1);  /* do the call */
+  }
+  else {
+    /* no continuation or no yieldable */
+    StkId func = L->stack_.top_ - (nargs+1);
+    luaD_call(L, func, nresults, 0);  /* just do the call */
+  }
+  adjustresults(L, nresults);
+}
+
+
+
+
 
 
 static void finishCcall (LuaThread *L) {

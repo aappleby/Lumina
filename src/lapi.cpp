@@ -818,9 +818,15 @@ int lua_setmetatable (LuaThread *L, int objindex) {
 */
 
 
+/*
 #define checkresults(L,na,nr) \
      api_check((nr) == LUA_MULTRET || (L->stack_.callinfo_->getTop() - L->stack_.top_ >= (nr) - (na)), \
 	"results from function overflow current stack size")
+*/
+
+void checkresults(LuaThread* L, int nargs, int nresults) {
+  api_check((nresults) == LUA_MULTRET || (L->stack_.callinfo_->getTop() - L->stack_.top_ >= (nresults) - (nargs)), "results from function overflow current stack size");
+}
 
 
 int lua_getctx (LuaThread *L, int *ctx) {
@@ -844,48 +850,6 @@ void adjustresults(LuaThread* L, int nres) {
     }
   }
 }
-
-void lua_callk (LuaThread *L, int nargs, int nresults, int ctx, LuaCallback k) {
-  THREAD_CHECK(L);
-  api_check(k == NULL || !L->stack_.callinfo_->isLua(), "cannot use continuations inside hooks");
-  api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
-
-  L->stack_.checkArgs(nargs+1);
-  checkresults(L, nargs, nresults);
-
-  if (k != NULL && L->nonyieldable_count_ == 0) {  /* need to prepare continuation? */
-    L->stack_.callinfo_->continuation_ = k;  /* save continuation */
-    L->stack_.callinfo_->continuation_context_ = ctx;  /* save context */
-    StkId func = L->stack_.top_ - (nargs+1);
-    luaD_call(L, func, nresults, 1);  /* do the call */
-  }
-  else {
-    /* no continuation or no yieldable */
-    StkId func = L->stack_.top_ - (nargs+1);
-    luaD_call(L, func, nresults, 0);  /* just do the call */
-  }
-  adjustresults(L, nresults);
-}
-
-void lua_call (LuaThread *L, int nargs, int nresults) {
-  THREAD_CHECK(L);
-  api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
-
-  L->stack_.checkArgs(nargs+1);
-  checkresults(L, nargs, nresults);
-
-  StkId func = L->stack_.top_ - (nargs+1);
-  
-  L->nonyieldable_count_++;
-  if (!luaD_precall(L, func, nresults)) {
-    luaV_execute(L);
-  }
-  L->nonyieldable_count_--;
-
-
-  adjustresults(L, nresults);
-}
-
 
 /*
 ** Execute a protected call.

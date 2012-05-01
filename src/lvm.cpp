@@ -396,18 +396,20 @@ int luaV_equalobj_ (LuaThread *L, const LuaValue *t1, const LuaValue *t2) {
 
   if(t1->isBlob()) {
     LuaValue tm = get_equalTM(L, t1->getBlob()->metatable_, t2->getBlob()->metatable_, TM_EQ);
-    if (tm.isNone() || tm.isNil()) return 0;  /* no TM? */
 
-    callTM(L, &tm, t1, t2, L->stack_.top_, 1);  /* call TM */
-    return L->stack_.top_->isTrue();
+    if(tm.isFunction()) {
+      callTM(L, &tm, t1, t2, L->stack_.top_, 1);  /* call TM */
+      return L->stack_.top_->isTrue();
+    }
   }
 
   if(t1->isTable()) {
     LuaValue tm = get_equalTM(L, t1->getTable()->metatable, t2->getTable()->metatable, TM_EQ);
-    if (tm.isNone() || tm.isNil()) return 0;  /* no TM? */
 
-    callTM(L, &tm, t1, t2, L->stack_.top_, 1);  /* call TM */
-    return L->stack_.top_->isTrue();
+    if(tm.isFunction()) {
+      callTM(L, &tm, t1, t2, L->stack_.top_, 1);  /* call TM */
+      return L->stack_.top_->isTrue();
+    }
   }
 
   return 0;
