@@ -115,7 +115,7 @@ static StkId tryfuncTM (LuaThread *L, StkId func) {
   return func;
 }
 
-void luaD_precallC(LuaThread* L, StkId func, int nresults) {
+void luaD_precallC(LuaThread* L, StkId func, int /*nargs*/, int nresults) {
   LuaCallback f = func->isCallback() ? func->getCallback() : func->getCClosure()->cfunction_;
 
   LuaResult result = L->stack_.createCCall2(func, nresults, LUA_MINSTACK);
@@ -141,7 +141,7 @@ void luaD_precallC(LuaThread* L, StkId func, int nresults) {
   luaD_postcall(L, L->stack_.top_ - n);
 }
 
-void luaD_precallLua(LuaThread* L, StkId func, int nresults) {
+void luaD_precallLua(LuaThread* L, StkId func, int /*nargs2*/, int nresults) {
   LuaProto *p = func->getLClosure()->proto_;
 
   ptrdiff_t funcr = L->stack_.indexOf(func);
@@ -183,8 +183,7 @@ void luaD_precallLua(LuaThread* L, StkId func, int nresults) {
   if (L->hookmask & LUA_MASKCALL) {
     THREAD_CHECK(L);
     int hook = LUA_HOOKCALL;
-    if (ci->previous->isLua() &&
-        GET_OPCODE(*(ci->previous->savedpc - 1)) == OP_TAILCALL) {
+    if (ci->previous->isLua() && GET_OPCODE(*(ci->previous->savedpc - 1)) == OP_TAILCALL) {
       ci->callstatus |= CIST_TAIL;
       hook = LUA_HOOKTAILCALL;
     }
@@ -195,32 +194,21 @@ void luaD_precallLua(LuaThread* L, StkId func, int nresults) {
 /*
 ** returns true if function has been executed (C function)
 */
-int luaD_precall (LuaThread *L, StkId func, int nresults) {
+int luaD_precall (LuaThread *L, StkId func, int nargs, int nresults) {
   THREAD_CHECK(L);
-  switch (func->type()) {
-    case LUA_TCALLBACK:
-      {
-        luaD_precallC(L,func,nresults);
-        return 1;
-      }
-    case LUA_TCCL:
-      {
-        luaD_precallC(L,func,nresults);
-        return 1;
-      }
-    case LUA_TLCL:
-      {
-        luaD_precallLua(L,func,nresults);
-        return 0;
-      }
-    
-    // Not a function.
-    default:
-      {
-        func = tryfuncTM(L, func);  /* retry with 'function' tag method */
-        return luaD_precall(L, func, nresults);  /* now it must be a function */
-      }
+
+  if(!func->isFunction()) {
+    func = tryfuncTM(L, func);  /* retry with 'function' tag method */
+    return luaD_precall(L, func, nargs, nresults);  /* now it must be a function */
   }
+
+  if(func->isCallback() || func->isCClosure()) {
+    luaD_precallC(L, func, nargs, nresults);
+    return 1;
+  }
+
+  luaD_precallLua(L, func, nargs, nresults);
+  return 0;
 }
 
 
@@ -265,7 +253,7 @@ int luaD_postcall (LuaThread *L, StkId firstResult) {
 ** When returns, all the results are on the stack, starting at the original
 ** function position.
 */
-void luaD_call (LuaThread *L, StkId func, int /*nargs*/, int nResults, int allowyield) {
+void luaD_call (LuaThread *L, StkId func, int nargs, int nResults, int allowyield) {
   THREAD_CHECK(L);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
 
@@ -273,7 +261,7 @@ void luaD_call (LuaThread *L, StkId func, int /*nargs*/, int nResults, int allow
   //checkresults(L, nargs, nResults);
 
   if (!allowyield) L->nonyieldable_count_++;
-  if (!luaD_precall(L, func, nResults)) {
+  if (!luaD_precall(L, func, nargs, nResults)) {
     luaV_execute(L);
   }
   if (!allowyield) L->nonyieldable_count_--;
@@ -410,9 +398,8 @@ static l_noret resume_error (LuaThread *L, const char *msg, StkId firstArg) {
 /*
 ** do the work for 'lua_resume' in protected mode
 */
-static void resume (LuaThread *L, void *ud) {
+static void resume_coroutine (LuaThread *L, StkId firstArg, int nargs) {
   THREAD_CHECK(L);
-  StkId firstArg = cast(StkId, ud);
 
   if (L->status == LUA_OK) {  /* may be starting a coroutine */
     if (L->stack_.callinfo_ != L->stack_.callinfo_head_) {
@@ -422,7 +409,7 @@ static void resume (LuaThread *L, void *ud) {
 
     /* coroutine is in base level; start running it */
     // Lua function? call it.
-    if (!luaD_precall(L, firstArg - 1, LUA_MULTRET)) {
+    if (!luaD_precall(L, firstArg - 1, nargs, LUA_MULTRET)) {
       luaV_execute(L);
     }
     return;
@@ -467,7 +454,7 @@ int lua_resume (LuaThread *L, LuaThread * /*from*/, int nargs) {
 
   int status = LUA_OK;
   try {
-    resume(L, L->stack_.top_ - nargs);
+    resume_coroutine(L, L->stack_.top_ - nargs, nargs);
   }
   catch (LuaResult error) {
     status = error;

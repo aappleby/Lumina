@@ -1028,15 +1028,15 @@ void luaV_execute (LuaThread *L) {
 
       case OP_CALL:
         {
-          int b = GETARG_B(i);
+          int nargs = GETARG_B(i) - 1;
           int nresults = GETARG_C(i) - 1;
 
-          if (b != 0) {
+          if (nargs >= 0) {
             /* else previous instruction set top */
-            L->stack_.top_ = ra+b;
+            L->stack_.top_ = ra + nargs + 1;
           }
 
-          if (luaD_precall(L, ra, nresults)) {  /* C function? */
+          if (luaD_precall(L, ra, nargs, nresults)) {  /* C function? */
             if (nresults >= 0) {
               L->stack_.top_ = ci->getTop();  /* adjust results */
             }
@@ -1052,11 +1052,14 @@ void luaV_execute (LuaThread *L) {
 
       case OP_TAILCALL:
         {
-          int b = GETARG_B(i);
-          if (b != 0) L->stack_.top_ = ra+b;  /* else previous instruction set top */
+          //int b = GETARG_B(i);
+          int nargs = GETARG_B(i) - 1;
+          if (nargs >= 0) {
+            L->stack_.top_ = ra + nargs + 1;  /* else previous instruction set top */
+          }
           assert(GETARG_C(i) - 1 == LUA_MULTRET);
 
-          if (!luaD_precall(L, ra, LUA_MULTRET)) {
+          if (!luaD_precall(L, ra, nargs, LUA_MULTRET)) {
             /* tail call: put called frame (n) in place of caller one (o) */
             LuaStackFrame *nci = L->stack_.callinfo_;  /* called frame */
             LuaStackFrame *oci = nci->previous;  /* caller frame */

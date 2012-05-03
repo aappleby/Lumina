@@ -472,13 +472,35 @@ LuaResult LuaStack::createCCall2(StkId func, int nresults, int nstack) {
   func = begin() + func_index;
 
   LuaStackFrame* ci = nextCallinfo();  /* now 'enter' new function */
+  
   ci->nresults = nresults;
+  
   ci->setFunc(func);
+  ci->setBase(func + 1);
   ci->setTop(top_ + nstack);
-  assert(ci->getTop() <= last());
   ci->callstatus = 0;
+
+  assert(ci->getTop() <= last());
   return LUA_OK;
 }
+
+/*
+LuaResult LuaStack::createLuaCall() {
+  LuaStackFrame* ci = nextCallinfo();
+  ci->nresults = nresults;
+  
+  ci->setFunc(func);
+  ci->setBase(base);
+  ci->setTop(base + p->maxstacksize);
+
+  assert(ci->getTop() <= last());
+
+  ci->savedpc = func->getLClosure()->proto_->code.begin();
+  ci->callstatus = CIST_LUA;
+
+  L->stack_.top_ = ci->getTop();
+}
+*/
 
 //------------------------------------------------------------------------------
 
