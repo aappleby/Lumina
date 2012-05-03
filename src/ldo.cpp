@@ -92,21 +92,6 @@ void luaD_hook (LuaThread *L, int event, int line) {
 }
 
 
-static void callhook (LuaThread *L, LuaStackFrame *ci) {
-  THREAD_CHECK(L);
-  int hook = LUA_HOOKCALL;
-  ci->savedpc++;  /* hooks assume 'pc' is already incremented */
-  if (ci->previous->isLua() &&
-      GET_OPCODE(*(ci->previous->savedpc - 1)) == OP_TAILCALL) {
-    ci->callstatus |= CIST_TAIL;
-    hook = LUA_HOOKTAILCALL;
-  }
-  luaD_hook(L, hook, -1);
-  ci->savedpc--;  /* correct 'pc' */
-}
-
-
-
 static StkId tryfuncTM (LuaThread *L, StkId func) {
   THREAD_CHECK(L);
   LuaValue tm = luaT_gettmbyobj2(*func, TM_CALL);
@@ -130,36 +115,17 @@ static StkId tryfuncTM (LuaThread *L, StkId func) {
   return func;
 }
 
-
-void luaD_precallLightC(LuaThread* L, StkId func, int nresults) {
-  LuaCallback f = func->getCallback();
+void luaD_precallC(LuaThread* L, StkId func, int nresults) {
+  LuaCallback f = func->isCallback() ? func->getCallback() : func->getCClosure()->cfunction_;
 
   LuaResult result = L->stack_.createCCall2(func, nresults, LUA_MINSTACK);
-  handleResult(result);
-
-  if (L->hookmask & LUA_MASKCALL) luaD_hook(L, LUA_HOOKCALL, -1);
-
-  ScopedCallDepth d(L);
-  if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
-    luaG_runerror("C stack overflow");
-  } else if (L->l_G->call_depth_ >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3))) {
-    throwError(LUA_ERRERR);
+  if(result != LUA_OK) {
+    handleResult(result);
   }
 
-  int n = (*f)(L);  /* do the actual call */
-
-  L->stack_.checkArgs(n);
-
-  luaD_postcall(L, L->stack_.top_ - n);
-}
-
-void luaD_precallC(LuaThread* L, StkId func, int nresults) {
-  LuaCallback f = func->getCClosure()->cfunction_;
-
-  LuaResult result = L->stack_.createCCall2(func, nresults, LUA_MINSTACK);
-  handleResult(result);
-
-  if (L->hookmask & LUA_MASKCALL) luaD_hook(L, LUA_HOOKCALL, -1);
+  if (L->hookmask & LUA_MASKCALL) {
+    luaD_hook(L, LUA_HOOKCALL, -1);
+  }
 
   ScopedCallDepth d(L);
   if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
@@ -214,7 +180,16 @@ void luaD_precallLua(LuaThread* L, StkId func, int nresults) {
   ci->callstatus = CIST_LUA;
   L->stack_.top_ = ci->getTop();
 
-  if (L->hookmask & LUA_MASKCALL) callhook(L, ci);
+  if (L->hookmask & LUA_MASKCALL) {
+    THREAD_CHECK(L);
+    int hook = LUA_HOOKCALL;
+    if (ci->previous->isLua() &&
+        GET_OPCODE(*(ci->previous->savedpc - 1)) == OP_TAILCALL) {
+      ci->callstatus |= CIST_TAIL;
+      hook = LUA_HOOKTAILCALL;
+    }
+    luaD_hook(L, hook, -1);
+  }
 }
 
 /*
@@ -225,7 +200,7 @@ int luaD_precall (LuaThread *L, StkId func, int nresults) {
   switch (func->type()) {
     case LUA_TCALLBACK:
       {
-        luaD_precallLightC(L,func,nresults);
+        luaD_precallC(L,func,nresults);
         return 1;
       }
     case LUA_TCCL:
@@ -253,7 +228,9 @@ int luaD_postcall (LuaThread *L, StkId firstResult) {
   THREAD_CHECK(L);
   StkId res;
   int wanted, i;
+
   LuaStackFrame *ci = L->stack_.callinfo_;
+
   if (L->hookmask & (LUA_MASKRET | LUA_MASKLINE)) {
     if (L->hookmask & LUA_MASKRET) {
       ptrdiff_t fr = L->stack_.indexOf(firstResult);  /* hook may change stack */
@@ -262,6 +239,7 @@ int luaD_postcall (LuaThread *L, StkId firstResult) {
     }
     L->oldpc = ci->previous->savedpc;  /* 'oldpc' for caller function */
   }
+
   res = ci->getFunc();  /* res == final position of 1st result */
   wanted = ci->nresults;
   L->stack_.callinfo_ = ci = ci->previous;  /* back to caller */
@@ -287,12 +265,12 @@ int luaD_postcall (LuaThread *L, StkId firstResult) {
 ** When returns, all the results are on the stack, starting at the original
 ** function position.
 */
-void luaD_call (LuaThread *L, StkId func, int nResults, int allowyield) {
+void luaD_call (LuaThread *L, StkId func, int /*nargs*/, int nResults, int allowyield) {
   THREAD_CHECK(L);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
 
   //L->stack_.checkArgs(nargs+1);
-  //checkresults(L, nargs, nresults);
+  //checkresults(L, nargs, nResults);
 
   if (!allowyield) L->nonyieldable_count_++;
   if (!luaD_precall(L, func, nResults)) {
@@ -309,17 +287,9 @@ void lua_call (LuaThread *L, int nargs, int nresults) {
 
   L->stack_.checkArgs(nargs+1);
   checkresults(L, nargs, nresults);
-
   StkId func = L->stack_.top_ - (nargs+1);
-  
-  L->nonyieldable_count_++;
-  if (!luaD_precall(L, func, nresults)) {
-    luaV_execute(L);
-  }
-  L->nonyieldable_count_--;
 
-
-  adjustresults(L, nresults);
+  luaD_call(L, func, nargs, nresults, 0);
 }
 
 
@@ -336,12 +306,12 @@ void lua_callk (LuaThread *L, int nargs, int nresults, int ctx, LuaCallback k) {
     L->stack_.callinfo_->continuation_ = k;  /* save continuation */
     L->stack_.callinfo_->continuation_context_ = ctx;  /* save context */
     StkId func = L->stack_.top_ - (nargs+1);
-    luaD_call(L, func, nresults, 1);  /* do the call */
+    luaD_call(L, func, nargs, nresults, 1);  /* do the call */
   }
   else {
     /* no continuation or no yieldable */
     StkId func = L->stack_.top_ - (nargs+1);
-    luaD_call(L, func, nresults, 0);  /* just do the call */
+    luaD_call(L, func, nargs, nresults, 0);  /* just do the call */
   }
   adjustresults(L, nresults);
 }

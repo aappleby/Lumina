@@ -568,7 +568,7 @@ l_noret luaG_errormsg () {
 
     LuaResult result = L->stack_.reserve2(0);
     handleResult(result);
-    luaD_call(L, L->stack_.top_ - 2, 1, 0);  /* call it */
+    luaD_call(L, L->stack_.top_ - 2, 1, 1, 0);  /* call it */
     throwError(LUA_ERRRUN);
   }
   else {
@@ -592,7 +592,7 @@ l_noret luaG_errormsg2 ( const char* message ) {
 
     LuaResult result = L->stack_.reserve2(0);
     handleResult(result);
-    luaD_call(L, L->stack_.top_ - 2, 1, 0);  /* call it */
+    luaD_call(L, L->stack_.top_ - 2, 1, 1, 0);  /* call it */
     throwError(LUA_ERRRUN);
   }
   else {

@@ -818,14 +818,11 @@ int lua_setmetatable (LuaThread *L, int objindex) {
 */
 
 
-/*
-#define checkresults(L,na,nr) \
-     api_check((nr) == LUA_MULTRET || (L->stack_.callinfo_->getTop() - L->stack_.top_ >= (nr) - (na)), \
-	"results from function overflow current stack size")
-*/
-
 void checkresults(LuaThread* L, int nargs, int nresults) {
-  api_check((nresults) == LUA_MULTRET || (L->stack_.callinfo_->getTop() - L->stack_.top_ >= (nresults) - (nargs)), "results from function overflow current stack size");
+  int frameleft = L->stack_.callinfo_->getTop() - L->stack_.top_;
+  int frameneeded = (nresults) - (nargs);
+
+  api_check((nresults) == LUA_MULTRET || (frameleft >= frameneeded), "results from function overflow current stack size");
 }
 
 
@@ -844,7 +841,8 @@ void adjustresults(LuaThread* L, int nres) {
       L->stack_.callinfo_->setTop(L->stack_.top_);
     }
     else {
-      // This case never happens
+      // This case never happens... actually, now that i'm doing the check in luaD_call, it
+      // does happen because tag methods and finalizers are "out of frame" calls.
       int b = 0;
       b++;
     }
@@ -936,7 +934,7 @@ int lua_pcallk (LuaThread *L, int nargs, int nresults, int errfunc,
   L->errfunc = errfunc_index;
 
   ci->callstatus |= CIST_YPCALL;
-  luaD_call(L, func, nresults, 1);  /* do the call */
+  luaD_call(L, func, nargs, nresults, 1);  /* do the call */
   ci->callstatus &= ~CIST_YPCALL;
 
   L->errfunc = ci->old_errfunc;

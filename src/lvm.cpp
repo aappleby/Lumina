@@ -88,7 +88,7 @@ static void callTM (LuaThread *L, const LuaValue *f, const LuaValue *p1,
   handleResult(result2);
 
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->stack_.top_ - (4 - hasres), hasres, L->stack_.callinfo_->isLua());
+  luaD_call(L, L->stack_.top_ - (4 - hasres), hasres ? 2 : 3, hasres, L->stack_.callinfo_->isLua());
   if (hasres) {  /* if has result, move it to its place */
     p3 = L->stack_.atIndex(result);
     *p3 = L->stack_.pop();
@@ -109,7 +109,7 @@ static void callTM3 (LuaThread *L,
   handleResult(result2);
 
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->stack_.top_ - 3, 1, L->stack_.callinfo_->isLua());
+  luaD_call(L, L->stack_.top_ - 3, 2, 1, L->stack_.callinfo_->isLua());
   result = L->stack_.pop();
 }
 
@@ -128,7 +128,7 @@ static void callTM1 (LuaThread *L,
   handleResult(result);
 
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->stack_.top_ - 4, 0, L->stack_.callinfo_->isLua());
+  luaD_call(L, L->stack_.top_ - 4, 3, 0, L->stack_.callinfo_->isLua());
 }
 
 LuaResult luaV_gettable2 (LuaThread *L, LuaValue source, LuaValue key, LuaValue& outResult) {
@@ -1147,7 +1147,7 @@ void luaV_execute (LuaThread *L) {
           cb[0] = ra[0];
 
           L->stack_.top_ = cb + 3;  /* func. + 2 args (state and index) */
-          luaD_call(L, cb, C, 1);
+          luaD_call(L, cb, 2, C, 1);
           L->stack_.top_ = ci->getTop();
           
           break;
