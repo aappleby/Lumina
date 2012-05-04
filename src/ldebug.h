@@ -9,9 +9,17 @@
 
 
 #include "lstate.h"
+#include "LuaProto.h"
 
 
-#define pcRel(pc, p)	(cast(int, (pc) - &(p)->code[0]) - 1)
+//#define pcRel(pc, p)	(cast(int, (pc) - &(p)->code[0]) - 1)
+
+inline int pcRel(const Instruction* pc, LuaProto* p) {
+  int offset = (int)((pc-1) - p->code.begin());
+  return offset;
+}
+
+
 
 #define getfuncline(f,pc)	(((f)->lineinfo.size()) ? (f)->lineinfo[pc] : 0)
 
