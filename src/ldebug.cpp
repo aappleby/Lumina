@@ -45,7 +45,7 @@ static int currentpc (LuaStackFrame *ci) {
 
 
 static int currentline (LuaStackFrame *ci) {
-  return getfuncline(ci->getFunc()->getLClosure()->proto_, currentpc(ci));
+  return ci->getFunc()->getLClosure()->proto_->getLine(currentpc(ci));
 }
 
 

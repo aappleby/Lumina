@@ -37,6 +37,11 @@ public:
   const char* getLocalName(int local_number, int pc) const;
   const char* getUpvalName(int upval_number) const;
 
+  inline int getLine(int pc) const {
+    if(lineinfo.empty()) return 0;
+    return lineinfo[pc];
+  }
+
   LuaVector<LuaValue> constants;
   LuaVector<Instruction> code;
   LuaVector<int> lineinfo;

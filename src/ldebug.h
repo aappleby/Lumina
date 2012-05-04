@@ -21,9 +21,6 @@ inline int pcRel(const Instruction* pc, LuaProto* p) {
 
 
 
-#define getfuncline(f,pc)	(((f)->lineinfo.size()) ? (f)->lineinfo[pc] : 0)
-
-
 l_noret luaG_typeerror (const LuaValue *o, const char *opname);
 l_noret luaG_concaterror (StkId p1, StkId p2);
 l_noret luaG_ordererror (const LuaValue *p1, const LuaValue *p2);

@@ -635,6 +635,13 @@ void luaV_finishOp (LuaThread *L) {
   }
 }
 
+inline void skipNextInstruction(LuaStackFrame* frame) {
+  frame->savedpc++;
+}
+
+inline void doJump(LuaStackFrame* frame, int offset) {
+  frame->savedpc += offset;
+}
 
 
 /*
@@ -698,10 +705,10 @@ void luaV_execute (LuaThread *L) {
       if (mask & LUA_MASKLINE) {
         LuaProto *p = ci->getFunc()->getLClosure()->proto_;
         int npc = pcRel(ci->savedpc, p);
-        int newline = getfuncline(p, npc);
+        int newline = p->getLine(npc);
         if (npc == 0 ||  /* call linehook when enter a new function, */
             ci->savedpc <= L->oldpc ||  /* when jump back (loop), or when */
-            newline != getfuncline(p, pcRel(L->oldpc, p)))  /* enter a new line */
+            newline != p->getLine(pcRel(L->oldpc, p)))  /* enter a new line */
           luaD_hook(L, LUA_HOOKLINE, newline);
       }
 
@@ -966,7 +973,7 @@ void luaV_execute (LuaThread *L) {
           if (A > 0) {
             L->stack_.closeUpvals(&base[A-1]);
           }
-          ci->savedpc += GETARG_sBx(i);
+          doJump(ci, GETARG_sBx(i));
           break;
         }
 

@@ -12,3 +12,17 @@ void LuaStackFrame::sanityCheck() {
     assert(savedpc <= p->code.end());
   }
 }
+
+int LuaStackFrame::getPC() {
+  if(!isLua()) return 0;
+
+  LuaProto* p = getFunc()->getLClosure()->proto_;
+  return int((savedpc - 1) - p->code.begin());
+}
+
+int LuaStackFrame::getLine() {
+  if(!isLua()) return 0;
+
+  LuaProto* p = getFunc()->getLClosure()->proto_;
+  return p->getLine( getPC() );
+}
