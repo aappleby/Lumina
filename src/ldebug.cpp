@@ -58,8 +58,9 @@ int lua_sethook (LuaThread *L, LuaHook func, int mask, int count) {
     mask = 0;
     func = NULL;
   }
-  if (L->stack_.callinfo_->isLua())
+  if (L->stack_.callinfo_->isLua()) {
     L->oldpc = L->stack_.callinfo_->savedpc;
+  }
   L->hook = func;
   L->basehookcount = count;
   L->hookcount = L->basehookcount;

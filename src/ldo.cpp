@@ -141,7 +141,7 @@ void luaD_precallC(LuaThread* L, StkId func, int /*nargs*/, int nresults) {
   luaD_postcall(L, L->stack_.top_ - n);
 }
 
-void luaD_precallLua(LuaThread* L, StkId func, int /*nargs2*/, int nresults) {
+void luaD_precallLua(LuaThread* L, StkId func, int nargs2, int nresults) {
   LuaProto *p = func->getLClosure()->proto_;
 
   ptrdiff_t funcr = L->stack_.indexOf(func);
@@ -151,6 +151,12 @@ void luaD_precallLua(LuaThread* L, StkId func, int /*nargs2*/, int nresults) {
   func = L->stack_.atIndex(funcr);
 
   int nargs = cast_int(L->stack_.top_ - func) - 1;  /* number of real arguments */
+
+  if(nargs != nargs2) {
+    int b = 0;
+    b++;
+  }
+
   for (; nargs < p->numparams; nargs++) {
     L->stack_.push_nocheck(LuaValue::Nil());  /* complete missing arguments */
   }
@@ -199,7 +205,7 @@ int luaD_precall (LuaThread *L, StkId func, int nargs, int nresults) {
 
   if(!func->isFunction()) {
     func = tryfuncTM(L, func);  /* retry with 'function' tag method */
-    return luaD_precall(L, func, nargs, nresults);  /* now it must be a function */
+    return luaD_precall(L, func, nargs + 1, nresults);  /* now it must be a function */
   }
 
   if(func->isCallback() || func->isCClosure()) {

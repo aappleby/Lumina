@@ -27,7 +27,7 @@
 #include "ltm.h"
 #include "lvm.h"
 
-
+#pragma warning(disable:4189)
 
 /* limit for table tag-method chains (to avoid loops) */
 #define MAXTAGLOOP	100
@@ -45,31 +45,6 @@ int luaV_tostring (LuaValue* v) {
   }
 
   return 0;
-}
-
-
-static void traceexec (LuaThread *L) {
-  THREAD_CHECK(L);
-  LuaStackFrame *ci = L->stack_.callinfo_;
-  int mask = L->hookmask;
-  if ((mask & LUA_MASKCOUNT) && L->hookcount == 0) {
-    L->hookcount = L->basehookcount;
-    luaD_hook(L, LUA_HOOKCOUNT, -1);
-  }
-  if (mask & LUA_MASKLINE) {
-    LuaProto *p = ci->getFunc()->getLClosure()->proto_;
-    int npc = pcRel(ci->savedpc, p);
-    int newline = getfuncline(p, npc);
-    if (npc == 0 ||  /* call linehook when enter a new function, */
-        ci->savedpc <= L->oldpc ||  /* when jump back (loop), or when */
-        newline != getfuncline(p, pcRel(L->oldpc, p)))  /* enter a new line */
-      luaD_hook(L, LUA_HOOKLINE, newline);
-  }
-  L->oldpc = ci->savedpc;
-  if (L->status == LUA_YIELD) {  /* did hook yield? */
-    ci->savedpc--;  /* undo increment (resume will increment it again) */
-    throwError(LUA_YIELD);
-  }
 }
 
 
@@ -696,7 +671,7 @@ void luaV_execute (LuaThread *L) {
 
     l_memcontrol.checkLimit();
 
-    Instruction i = *(ci->savedpc++);
+    Instruction i = *ci->savedpc;
     OpCode opcode = (OpCode)(i & 0x0000003F);
 
     uint32_t A  = (i >>  6) & 0x000000FF;
@@ -709,15 +684,36 @@ void luaV_execute (LuaThread *L) {
     //int32_t Bs = (int32_t)Bx - 0x1FFFF;
 
     /* WARNING: several calls may realloc the stack and invalidate `ra' */
-    base = ci->getBase();
 
-    if ((L->hookmask & (LUA_MASKLINE | LUA_MASKCOUNT)) &&
-        (--L->hookcount == 0 || L->hookmask & LUA_MASKLINE)) {
-      traceexec(L);
-      base = ci->getBase();
+    ci->savedpc++;
+
+    int mask = L->hookmask;
+    if ((mask & (LUA_MASKLINE | LUA_MASKCOUNT)) && (--L->hookcount == 0 || mask & LUA_MASKLINE)) {
+
+      if ((mask & LUA_MASKCOUNT) && L->hookcount == 0) {
+        L->hookcount = L->basehookcount;
+        luaD_hook(L, LUA_HOOKCOUNT, -1);
+      }
+
+      if (mask & LUA_MASKLINE) {
+        LuaProto *p = ci->getFunc()->getLClosure()->proto_;
+        int npc = pcRel(ci->savedpc, p);
+        int newline = getfuncline(p, npc);
+        if (npc == 0 ||  /* call linehook when enter a new function, */
+            ci->savedpc <= L->oldpc ||  /* when jump back (loop), or when */
+            newline != getfuncline(p, pcRel(L->oldpc, p)))  /* enter a new line */
+          luaD_hook(L, LUA_HOOKLINE, newline);
+      }
+
+      L->oldpc = ci->savedpc;
+      if (L->status == LUA_YIELD) {  /* did hook yield? */
+        ci->savedpc--;  /* undo increment (resume will increment it again) */
+        throwError(LUA_YIELD);
+      }
     }
 
     //assert(base <= L->stack_.top_ && L->stack_.top_ < L->stack_.end());
+    base = ci->getBase();
     StkId ra = &base[A];
 
     switch(opcode) {
@@ -1028,17 +1024,40 @@ void luaV_execute (LuaThread *L) {
 
       case OP_CALL:
         {
-          int nargs = GETARG_B(i) - 1;
+          int top1 = L->stack_.top_ - L->stack_.buf_;
+
+          int b = GETARG_B(i);
+          int nargs = b - 1;
           int nresults = GETARG_C(i) - 1;
 
           if (nargs >= 0) {
             /* else previous instruction set top */
             L->stack_.top_ = ra + nargs + 1;
           }
+          else {
+            nargs = (L->stack_.top_ - ra) - 1;
+          }
+
+          int top2 = L->stack_.top_ - L->stack_.buf_;
 
           if (luaD_precall(L, ra, nargs, nresults)) {  /* C function? */
+
+            int top3 = L->stack_.top_ - L->stack_.buf_;
+
             if (nresults >= 0) {
-              L->stack_.top_ = ci->getTop();  /* adjust results */
+              LuaValue* newtop = ci->getTop();
+              L->stack_.top_ = newtop;  /* adjust results */
+
+              int top4 = L->stack_.top_ - L->stack_.buf_;
+
+              if((b > 0) && (top4 != top1)) {
+                int q = 0;
+                q++;
+              }
+            }
+            else {
+              int q = 0;
+              q++;
             }
             base = ci->getBase();
           }
@@ -1056,6 +1075,9 @@ void luaV_execute (LuaThread *L) {
           int nargs = GETARG_B(i) - 1;
           if (nargs >= 0) {
             L->stack_.top_ = ra + nargs + 1;  /* else previous instruction set top */
+          }
+          else {
+            nargs = (L->stack_.top_ - ra) - 1;
           }
           assert(GETARG_C(i) - 1 == LUA_MULTRET);
 
@@ -1097,7 +1119,9 @@ void luaV_execute (LuaThread *L) {
           }
           else {  /* invocation via reentry: continue execution */
             ci = L->stack_.callinfo_;
-            if (b) L->stack_.top_ = ci->getTop();
+            if (b) {
+              L->stack_.top_ = ci->getTop();
+            }
             assert(ci->isLua());
             assert(GET_OPCODE(*((ci)->savedpc - 1)) == OP_CALL);
             goto newframe;  /* restart luaV_execute over new Lua function */
