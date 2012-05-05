@@ -40,6 +40,10 @@ int LuaStackFrame::getCurrentOp() {
   return (i & 0x0000003F);
 }
 
+int LuaStackFrame::getNextInstruction() {
+  return savedpc[0];
+}
+
 int LuaStackFrame::getNextOp() {
   if(!isLua()) return -1;
 

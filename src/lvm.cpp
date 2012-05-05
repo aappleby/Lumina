@@ -600,7 +600,7 @@ void luaV_finishOp (LuaThread *L) {
       assert(ci->getNextOp() == OP_JMP);
       if (res != GETARG_A(inst)) {
         /* condition failed? */
-        ci->savedpc++;  /* skip jump instruction */
+        ci->Jump(1);  /* skip jump instruction */
       }
       break;
     }
@@ -726,8 +726,8 @@ void luaV_execute (LuaThread *L) {
 
       case OP_LOADKX:
         {
-          assert(GET_OPCODE(*ci->savedpc) == OP_EXTRAARG);
-          base[A] = k[GETARG_Ax(*ci->savedpc)];
+          assert(ci->getNextOp() == OP_EXTRAARG);
+          base[A] = k[GETARG_Ax(ci->getNextInstruction())];
           ci->Jump(1);
           break;
         }
@@ -1095,8 +1095,7 @@ void luaV_execute (LuaThread *L) {
             if (b) {
               L->stack_.top_ = ci->getTop();
             }
-            assert(ci->isLua());
-            assert(GET_OPCODE(*((ci)->savedpc - 1)) == OP_CALL);
+            assert(ci->getCurrentOp() == OP_CALL);
           }
           break;
         }
@@ -1170,8 +1169,9 @@ void luaV_execute (LuaThread *L) {
           LuaTable *h;
           if (n == 0) n = cast_int(L->stack_.top_ - ra) - 1;
           if (c == 0) {
-            assert(GET_OPCODE(*ci->savedpc) == OP_EXTRAARG);
-            c = GETARG_Ax(*ci->savedpc++);
+            assert(ci->getNextOp() == OP_EXTRAARG);
+            c = GETARG_Ax(ci->getNextInstruction());
+            ci->Jump(1);
           }
           h = ra->getTable();
           last = ((c-1)*LFIELDS_PER_FLUSH) + n;

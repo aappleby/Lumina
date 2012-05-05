@@ -28,6 +28,7 @@ public:
   int getCurrentInstruction();
   int getCurrentOp();
   int getNextOp();
+  int getNextInstruction();
 
   const StkId getFunc() const { return stack_->begin() + func_index_; }
   const StkId getTop() const  { return stack_->begin() + top_index_; }
