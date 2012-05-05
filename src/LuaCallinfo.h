@@ -20,7 +20,8 @@ public:
   }
 
   void Jump ( int offset ) {
-    savedpc += offset;
+    savedpc1 += offset;
+    savedpc2 += offset;
   }
 
   int beginInstruction();
@@ -62,7 +63,8 @@ public:
 protected:
 
   // only for Lua functions
-  const Instruction *savedpc;
+  const Instruction* savedpc1;
+  const Instruction* savedpc2;
 
   LuaStackFrame() {
     stack_ = NULL;
@@ -73,7 +75,8 @@ protected:
     nresults = 0;
     callstatus = 0;
     base_index_ = 0;
-    savedpc = NULL;
+    savedpc1 = NULL;
+    savedpc2 = NULL;
 
     continuation_ = NULL;
     continuation_context_ = 0;
