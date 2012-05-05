@@ -156,17 +156,6 @@ int luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
   return isC;
 }
 
-int luaD_precall (LuaThread *L, int funcindex, int nresults) {
-
-  int isC = luaD_precall2(L, funcindex, nresults);
-  if(isC) {
-    luaV_execute(L, funcindex, nresults);
-  }
-
-  return isC;
-}
-
-
 int luaD_postcall (LuaThread *L, StkId firstResult) {
   THREAD_CHECK(L);
   StkId res;
@@ -219,9 +208,9 @@ void luaD_call (LuaThread *L, int nargs, int nResults, int allowyield) {
 
   int funcindex = L->stack_.topsize() - nargs - 1;
 
-  if (!luaD_precall(L, funcindex, nResults)) {
-    luaV_execute(L, funcindex, nResults);
-  }
+  luaD_precall2(L, funcindex, nResults);
+  luaV_execute(L, funcindex, nResults);
+
   if (!allowyield) L->nonyieldable_count_--;
 
   adjustresults(L, nResults);
@@ -366,9 +355,9 @@ static void resume_coroutine (LuaThread *L, StkId firstArg, int nargs) {
     // Lua function? call it.
     int funcindex = L->stack_.topsize() - nargs - 1;
 
-    if (!luaD_precall(L, funcindex, LUA_MULTRET)) {
-      luaV_execute(L, funcindex, LUA_MULTRET);
-    }
+    luaD_precall2(L, funcindex, LUA_MULTRET);
+    luaV_execute(L, funcindex, LUA_MULTRET);
+
     return;
   }
 

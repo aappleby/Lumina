@@ -884,9 +884,8 @@ int lua_pcall (LuaThread *L, int nargs, int nresults, int errfunc) {
 
     int funcIndex = L->stack_.topsize() - nargs - 1;
 
-    if (!luaD_precall(L, funcIndex, nresults)) {
-      luaV_execute(L, funcIndex, nresults);
-    }
+    luaD_precall2(L, funcIndex, nresults);
+    luaV_execute(L, funcIndex, nresults);
 
     // IMPORTANT - If we ran out of memory during this pcall, make sure the error
     // is thrown before we leave this try() block - otherwise the exception will get

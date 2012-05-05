@@ -1031,7 +1031,8 @@ void luaV_run (LuaThread *L) {
           }
 
           int funcindex = L->stack_.topsize() - nargs - 1;
-          if (luaD_precall(L, funcindex, nresults)) {  /* C function? */
+          if (luaD_precall2(L, funcindex, nresults)) {  /* C function? */
+            luaV_execute(L, funcindex, nresults);
             if (nresults >= 0) {
               L->stack_.top_ = ci->getTop();  /* adjust results */
             }
@@ -1058,7 +1059,7 @@ void luaV_run (LuaThread *L) {
 
           int funcindex = L->stack_.topsize() - nargs - 1;
 
-          if (!luaD_precall(L, funcindex, LUA_MULTRET)) {
+          if (!luaD_precall2(L, funcindex, LUA_MULTRET)) {
             /* tail call: put called frame (n) in place of caller one (o) */
             LuaStackFrame *nci = L->stack_.callinfo_;  /* called frame */
             LuaStackFrame *oci = nci->previous;  /* caller frame */
@@ -1079,6 +1080,9 @@ void luaV_run (LuaThread *L) {
             oci->callstatus |= CIST_TAIL;  /* function was tail called */
             ci = L->stack_.callinfo_ = oci;  /* remove new frame */
             assert(L->stack_.top_ == oci->getBase() + ofunc->getLClosure()->proto_->maxstacksize);
+          }
+          else {
+            luaV_execute(L, funcindex, LUA_MULTRET);
           }
           break;
         }
