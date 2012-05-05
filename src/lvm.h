@@ -28,7 +28,10 @@ LuaResult luaV_gettable2 (LuaThread *L, LuaValue table, LuaValue key, LuaValue& 
 
 void luaV_settable (LuaThread *L, const LuaValue *t, LuaValue *key, StkId val);
 void luaV_finishOp (LuaThread *L);
+
 void luaV_execute (LuaThread *L);
+void luaV_executeC (LuaThread* L, int nargs, int nresults);
+
 void luaV_concat (LuaThread *L, int total);
 void luaV_arith (LuaThread *L, StkId ra, const LuaValue *rb,
                            const LuaValue *rc, TMS op);
