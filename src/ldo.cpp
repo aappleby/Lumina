@@ -132,7 +132,8 @@ int luaD_precall (LuaThread *L, int funcindex, int nresults) {
 
   if(!func.isFunction()) {
     tryfuncTM(L, funcindex);  /* retry with 'function' tag method */
-    return luaD_precall(L, funcindex, nresults);  /* now it must be a function */
+    func = L->stack_[funcindex];
+    assert(func.isFunction());
   }
 
   int isC = (func.isCallback() || func.isCClosure()) ? 1 : 0;
