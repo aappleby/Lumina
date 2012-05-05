@@ -661,7 +661,8 @@ void luaV_run (LuaThread *L) {
 
     l_memcontrol.checkLimit();
 
-    Instruction i = *ci->savedpc;
+    ci->savedpc++;
+    Instruction i = ci->getCurrentInstruction();
     OpCode opcode = (OpCode)(i & 0x0000003F);
 
     uint32_t A  = (i >>  6) & 0x000000FF;
@@ -675,7 +676,6 @@ void luaV_run (LuaThread *L) {
 
     // Various hook and debug calls expect that the program counter is incremented _before_
     // the instruction is executed. This is annoying.
-    ci->savedpc++;
 
     int mask = L->hookmask;
     if (mask & (LUA_MASKLINE | LUA_MASKCOUNT)) {
@@ -687,8 +687,8 @@ void luaV_run (LuaThread *L) {
       }
 
       LuaProto *p = ci->getFunc()->getLClosure()->proto_;
-      int npc = pcRel(ci->savedpc, p);
-      int newline = p->getLine(npc);
+      int npc = ci->getCurrentPC();
+      int newline = ci->getCurrentLine();
 
       if (mask & LUA_MASKLINE) {
         if (npc == 0 ||  /* call linehook when enter a new function, */
