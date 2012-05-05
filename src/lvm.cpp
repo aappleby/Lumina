@@ -1243,8 +1243,8 @@ void luaV_execute (LuaThread *L) {
   }
 }
 
-void luaV_executeC(LuaThread* L, int nargs, int /*nresults*/) {
-  LuaValue f1 = L->stack_.top_[-nargs-1];
+void luaV_executeC(LuaThread* L, int funcindex, int /*nresults*/) {
+  LuaValue f1 = L->stack_[funcindex];
   LuaCallback f = f1.isCallback() ? f1.getCallback() : f1.getCClosure()->cfunction_;
   int n = (*f)(L);  /* do the actual call */
 

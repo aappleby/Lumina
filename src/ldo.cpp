@@ -160,7 +160,7 @@ int luaD_precall (LuaThread *L, int funcindex, int nresults) {
   }
 
   if(isC) {
-    luaV_executeC(L, nargs, nresults);
+    luaV_executeC(L, funcindex, nresults);
   }
 
   return isC;
