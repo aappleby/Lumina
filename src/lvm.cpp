@@ -1244,8 +1244,6 @@ void luaV_run (LuaThread *L) {
           break;
         }
     }
-
-    ci->endInstruction();
   }
 }
 
