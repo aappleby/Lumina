@@ -50,3 +50,9 @@ int LuaStackFrame::getNextOp() {
   Instruction i = savedpc[0];
   return (i & 0x0000003F);
 }
+
+void LuaStackFrame::resetPC() {
+  if(!isLua()) return;
+
+  savedpc = getFunc()->getLClosure()->proto_->code.begin();
+}

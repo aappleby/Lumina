@@ -517,8 +517,8 @@ LuaResult LuaStack::createLuaCall(int nargs, int nresults) {
 
   assert(ci->getTop() <= last());
 
-  ci->savedpc = func->getLClosure()->proto_->code.begin();
   ci->callstatus = CIST_LUA;
+  ci->resetPC();
 
   top_ = ci->getTop();
   return LUA_OK;

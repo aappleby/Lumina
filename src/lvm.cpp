@@ -1076,7 +1076,7 @@ void luaV_run (LuaThread *L) {
             oci->setBase( ofunc + (nci->getBase() - nfunc) );  /* correct base */
             L->stack_.top_ = ofunc + (L->stack_.top_ - nfunc);  /* correct top */
             oci->setTop( L->stack_.top_ );
-            oci->savedpc = nci->savedpc;
+            oci->resetPC();
             oci->callstatus |= CIST_TAIL;  /* function was tail called */
             ci = L->stack_.callinfo_ = oci;  /* remove new frame */
             assert(L->stack_.top_ == oci->getBase() + ofunc->getLClosure()->proto_->maxstacksize);

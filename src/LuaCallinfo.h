@@ -30,6 +30,8 @@ public:
   int getNextOp();
   int getNextInstruction();
 
+  void resetPC();
+
   const StkId getFunc() const { return stack_->begin() + func_index_; }
   const StkId getTop() const  { return stack_->begin() + top_index_; }
   const StkId getBase() const { return stack_->begin() + base_index_; }
