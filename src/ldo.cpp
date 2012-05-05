@@ -122,13 +122,6 @@ void luaD_precallC(LuaThread* L, int nargs, int nresults) {
     luaD_hook(L, LUA_HOOKCALL, -1);
   }
 
-  ScopedCallDepth d(L);
-  if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
-    luaG_runerror("C stack overflow");
-  } else if (L->l_G->call_depth_ >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3))) {
-    throwError(LUA_ERRERR);
-  }
-
   LuaValue f1 = L->stack_.top_[-nargs-1];
   LuaCallback f = f1.isCallback() ? f1.getCallback() : f1.getCClosure()->cfunction_;
   int n = (*f)(L);  /* do the actual call */
@@ -160,6 +153,13 @@ void luaD_precallLua(LuaThread* L, int nargs, int nresults) {
 */
 int luaD_precall (LuaThread *L, int nargs, int nresults) {
   THREAD_CHECK(L);
+
+  ScopedCallDepth d(L);
+  if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
+    luaG_runerror("C stack overflow");
+  } else if (L->l_G->call_depth_ >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3))) {
+    throwError(LUA_ERRERR);
+  }
 
   LuaValue func = L->stack_.top_[-nargs-1];
 

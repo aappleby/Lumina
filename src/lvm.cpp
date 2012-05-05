@@ -27,8 +27,6 @@
 #include "ltm.h"
 #include "lvm.h"
 
-#pragma warning(disable:4189)
-
 /* limit for table tag-method chains (to avoid loops) */
 #define MAXTAGLOOP	100
 
@@ -659,19 +657,12 @@ inline void doJump(LuaStackFrame* frame, int offset) {
 
 void luaV_execute (LuaThread *L) {
   THREAD_CHECK(L);
-  LuaStackFrame *ci = L->stack_.callinfo_;
-  LuaClosure *cl;
-  LuaValue *k;
-  StkId base;
-
- newframe:  /* reentry point when frame changes (call/return) */
-  assert(ci == L->stack_.callinfo_);
-  cl = ci->getFunc()->getLClosure();
-  k = cl->proto_->constants.begin();
-  base = ci->getBase();
-
+  
   /* main loop of interpreter */
   for (int cycle = 0;; cycle++) {
+    
+    LuaStackFrame *ci = L->stack_.callinfo_;
+
     if(thread_G->getGCDebt() > 0) {
       luaC_step();
     }
@@ -690,8 +681,8 @@ void luaV_execute (LuaThread *L) {
     uint32_t Bx = (i >> 14) & 0x0003FFFF;
     //int32_t Bs = (int32_t)Bx - 0x1FFFF;
 
-    /* WARNING: several calls may realloc the stack and invalidate `ra' */
-
+    // Various hook and debug calls expect that the program counter is incremented _before_
+    // the instruction is executed. This is annoying.
     ci->savedpc++;
 
     int mask = L->hookmask;
@@ -721,8 +712,10 @@ void luaV_execute (LuaThread *L) {
     }
 
     //assert(base <= L->stack_.top_ && L->stack_.top_ < L->stack_.end());
-    base = ci->getBase();
+    LuaValue* base = ci->getBase();
     StkId ra = &base[A];
+    LuaClosure* cl = ci->getFunc()->getLClosure();
+    LuaValue* k = cl->proto_->constants.begin(); 
 
     switch(opcode) {
       case OP_MOVE:
@@ -1032,57 +1025,36 @@ void luaV_execute (LuaThread *L) {
 
       case OP_CALL:
         {
-          int top1 = L->stack_.top_ - L->stack_.buf_;
-
-          int b = GETARG_B(i);
-          int nargs = b - 1;
+          int nargs = GETARG_B(i) - 1;
           int nresults = GETARG_C(i) - 1;
 
+          // If nargs == -1, top is already set, so compute nargs from ra
           if (nargs >= 0) {
-            /* else previous instruction set top */
             L->stack_.top_ = ra + nargs + 1;
           }
           else {
             nargs = (L->stack_.top_ - ra) - 1;
           }
 
-          int top2 = L->stack_.top_ - L->stack_.buf_;
-
           if (luaD_precall(L, nargs, nresults)) {  /* C function? */
-
-            int top3 = L->stack_.top_ - L->stack_.buf_;
-
             if (nresults >= 0) {
-              LuaValue* newtop = ci->getTop();
-              L->stack_.top_ = newtop;  /* adjust results */
-
-              int top4 = L->stack_.top_ - L->stack_.buf_;
-
-              if((b > 0) && (top4 != top1)) {
-                int q = 0;
-                q++;
-              }
+              L->stack_.top_ = ci->getTop();  /* adjust results */
             }
-            else {
-              int q = 0;
-              q++;
-            }
-            base = ci->getBase();
           }
           else {  /* Lua function */
             ci = L->stack_.callinfo_;
             ci->callstatus |= CIST_REENTRY;
-            goto newframe;  /* restart luaV_execute over new Lua function */
           }
           break;
         }
 
       case OP_TAILCALL:
         {
-          //int b = GETARG_B(i);
           int nargs = GETARG_B(i) - 1;
+
+          // If nargs == -1, top is already set, so compute nargs from ra
           if (nargs >= 0) {
-            L->stack_.top_ = ra + nargs + 1;  /* else previous instruction set top */
+            L->stack_.top_ = ra + nargs + 1;
           }
           else {
             nargs = (L->stack_.top_ - ra) - 1;
@@ -1110,7 +1082,6 @@ void luaV_execute (LuaThread *L) {
             oci->callstatus |= CIST_TAIL;  /* function was tail called */
             ci = L->stack_.callinfo_ = oci;  /* remove new frame */
             assert(L->stack_.top_ == oci->getBase() + ofunc->getLClosure()->proto_->maxstacksize);
-            goto newframe;  /* restart luaV_execute over new Lua function */
           }
           break;
         }
@@ -1132,8 +1103,8 @@ void luaV_execute (LuaThread *L) {
             }
             assert(ci->isLua());
             assert(GET_OPCODE(*((ci)->savedpc - 1)) == OP_CALL);
-            goto newframe;  /* restart luaV_execute over new Lua function */
           }
+          break;
         }
 
         // TODO(aappleby): What's the 'external index'?
