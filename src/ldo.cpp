@@ -112,41 +112,6 @@ static void tryfuncTM (LuaThread *L, int nargs, int /*nresults*/) {
   handleResult(result);
 }
 
-void luaD_precallC(LuaThread* L, int nargs, int nresults) {
-  LuaResult result = L->stack_.createCCall2(nargs, nresults);
-  if(result != LUA_OK) {
-    handleResult(result);
-  }
-
-  if (L->hookmask & LUA_MASKCALL) {
-    luaD_hook(L, LUA_HOOKCALL, -1);
-  }
-
-  LuaValue f1 = L->stack_.top_[-nargs-1];
-  LuaCallback f = f1.isCallback() ? f1.getCallback() : f1.getCClosure()->cfunction_;
-  int n = (*f)(L);  /* do the actual call */
-
-  L->stack_.checkArgs(n);
-
-  luaD_postcall(L, L->stack_.top_ - n);
-}
-
-void luaD_precallLua(LuaThread* L, int nargs, int nresults) {
-  L->stack_.createLuaCall(nargs, nresults);
-
-  if (L->hookmask & LUA_MASKCALL) {
-    THREAD_CHECK(L);
-    int hook = LUA_HOOKCALL;
-
-    LuaStackFrame* ci = L->stack_.callinfo_;
-
-    if (ci->previous->getCurrentOp() == OP_TAILCALL) {
-      ci->callstatus |= CIST_TAIL;
-      hook = LUA_HOOKTAILCALL;
-    }
-    luaD_hook(L, hook, -1);
-  }
-}
 
 /*
 ** returns true if function has been executed (C function)
@@ -168,13 +133,39 @@ int luaD_precall (LuaThread *L, int nargs, int nresults) {
     return luaD_precall(L, nargs + 1, nresults);  /* now it must be a function */
   }
 
-  if(func.isCallback() || func.isCClosure()) {
-    luaD_precallC(L, nargs, nresults);
-    return 1;
+  int isC = (func.isCallback() || func.isCClosure()) ? 1 : 0;
+
+  if(isC) {
+    L->stack_.createCCall2(nargs, nresults);
+  }
+  else {
+    L->stack_.createLuaCall(nargs, nresults);
   }
 
-  luaD_precallLua(L, nargs, nresults);
-  return 0;
+
+  if (L->hookmask & LUA_MASKCALL) {
+    LuaStackFrame* ci = L->stack_.callinfo_;
+
+    if (ci->previous->getCurrentOp() == OP_TAILCALL) {
+      ci->callstatus |= CIST_TAIL;
+      luaD_hook(L, LUA_HOOKTAILCALL, -1);
+    }
+    else {
+      luaD_hook(L, LUA_HOOKCALL, -1);
+    }
+  }
+
+  if(isC) {
+    LuaValue f1 = L->stack_.top_[-nargs-1];
+    LuaCallback f = f1.isCallback() ? f1.getCallback() : f1.getCClosure()->cfunction_;
+    int n = (*f)(L);  /* do the actual call */
+
+    L->stack_.checkArgs(n);
+
+    luaD_postcall(L, L->stack_.top_ - n);
+  }
+
+  return isC;
 }
 
 
