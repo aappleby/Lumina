@@ -13,16 +13,16 @@ void LuaStackFrame::sanityCheck() {
   }
 }
 
-int LuaStackFrame::getPC() {
-  if(!isLua()) return 0;
+int LuaStackFrame::getCurrentPC() {
+  if(!isLua()) return -1;
 
   LuaProto* p = getFunc()->getLClosure()->proto_;
-  return int((savedpc - 1) - p->code.begin());
+  return int((savedpc-1) - p->code.begin());
 }
 
-int LuaStackFrame::getLine() {
-  if(!isLua()) return 0;
+int LuaStackFrame::getCurrentLine() {
+  if(!isLua()) return -1;
 
   LuaProto* p = getFunc()->getLClosure()->proto_;
-  return p->getLine( getPC() );
+  return p->getLine( getCurrentPC() );
 }

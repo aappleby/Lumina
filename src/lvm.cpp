@@ -702,10 +702,11 @@ void luaV_execute (LuaThread *L) {
         luaD_hook(L, LUA_HOOKCOUNT, -1);
       }
 
+      LuaProto *p = ci->getFunc()->getLClosure()->proto_;
+      int npc = pcRel(ci->savedpc, p);
+      int newline = p->getLine(npc);
+
       if (mask & LUA_MASKLINE) {
-        LuaProto *p = ci->getFunc()->getLClosure()->proto_;
-        int npc = pcRel(ci->savedpc, p);
-        int newline = p->getLine(npc);
         if (npc == 0 ||  /* call linehook when enter a new function, */
             ci->savedpc <= L->oldpc ||  /* when jump back (loop), or when */
             newline != p->getLine(pcRel(L->oldpc, p)))  /* enter a new line */

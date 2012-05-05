@@ -19,8 +19,8 @@ public:
     return callstatus & CIST_LUA ? true : false;
   }
 
-  int getPC();
-  int getLine();
+  int getCurrentPC();
+  int getCurrentLine();
 
   const StkId getFunc() const { return stack_->begin() + func_index_; }
   const StkId getTop() const  { return stack_->begin() + top_index_; }

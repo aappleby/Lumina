@@ -38,16 +38,6 @@ const char *getobjname2 (LuaProto *p, int lastpc, int reg, std::string& name);
 
 
 
-static int currentpc (LuaStackFrame *ci) {
-  assert(ci->isLua());
-  return pcRel(ci->savedpc, ci->getFunc()->getLClosure()->proto_);
-}
-
-
-static int currentline (LuaStackFrame *ci) {
-  return ci->getFunc()->getLClosure()->proto_->getLine(currentpc(ci));
-}
-
 
 /*
 ** this function can be called asynchronous (e.g. during a signal)
@@ -124,7 +114,7 @@ static const char *findlocal (LuaThread *L, LuaStackFrame *ci, int n,
       return findvararg(ci, -n, pos);
     else {
       base = ci->getBase();
-      name = ci->getFunc()->getLClosure()->proto_->getLocalName(n, currentpc(ci));
+      name = ci->getFunc()->getLClosure()->proto_->getLocalName(n, ci->getCurrentPC() );
     }
   }
   else
@@ -223,7 +213,8 @@ static int auxgetinfo (LuaThread *L, const char *what, LuaDebug *ar,
         break;
       }
       case 'l': {
-        ar->currentline = (ci && ci->isLua()) ? currentline(ci) : -1;
+        //ar->currentline = (ci && ci->isLua()) ? currentline(ci) : -1;
+        ar->currentline = ci ? ci->getCurrentLine() : -1;
         break;
       }
       case 'u': {
@@ -452,7 +443,7 @@ const char* getfuncname2 (LuaThread *L, LuaStackFrame *ci, std::string& name) {
   THREAD_CHECK(L);
   TMS tm;
   LuaProto *p = ci->getFunc()->getLClosure()->proto_;  /* calling function */
-  int pc = currentpc(ci);  /* calling instruction index */
+  int pc = ci->getCurrentPC();  /* calling instruction index */
   Instruction i = p->code[pc];  /* calling instruction */
   switch (GET_OPCODE(i)) {
     case OP_CALL:
@@ -527,7 +518,7 @@ l_noret luaG_typeerror (const LuaValue *o, const char *op) {
     kind = getupvalname(ci, o, name);  /* check whether 'o' is an upvalue */
     if (!kind && isinstack(ci, o)) {
       /* no? try a register */
-      kind = getobjname2(ci->getFunc()->getLClosure()->proto_, currentpc(ci), cast_int(o - ci->getBase()), name);
+      kind = getobjname2(ci->getFunc()->getLClosure()->proto_, ci->getCurrentPC(), cast_int(o - ci->getBase()), name);
     }
   }
   if (kind)
@@ -615,7 +606,7 @@ l_noret luaG_runerror (const char* fmt, ...) {
   LuaStackFrame *ci = L->stack_.callinfo_;
 
   if (ci->isLua()) {  /* is Lua code? */
-    int line = currentline(ci);
+    int line = ci->getCurrentLine();
     LuaString *src = ci->getFunc()->getLClosure()->proto_->source;
     if (src) {
       std::string buff = luaO_chunkid2(src->c_str());

@@ -3,6 +3,7 @@
 #include "LuaCallinfo.h"
 #include "LuaClosure.h"
 #include "LuaGlobals.h" // for thread_G->l_registry
+#include "LuaProto.h"
 #include "LuaUpval.h"
 
 #include <assert.h>
@@ -464,12 +465,11 @@ LuaStackFrame* LuaStack::findProtectedCall() {
   return NULL;  /* no pending pcall */
 }
 
-LuaResult LuaStack::createCCall2(StkId func, int nresults, int nstack) {
+LuaResult LuaStack::createCCall2(int nargs, int nresults) {
   // ensure minimum stack size
-  ptrdiff_t func_index = func - begin();
-  LuaResult result = reserve2(nstack);
+  LuaResult result = reserve2(LUA_MINSTACK);
   if(result != LUA_OK) return result;
-  func = begin() + func_index;
+  StkId func = &top_[-nargs-1];
 
   LuaStackFrame* ci = nextCallinfo();  /* now 'enter' new function */
   
@@ -477,15 +477,37 @@ LuaResult LuaStack::createCCall2(StkId func, int nresults, int nstack) {
   
   ci->setFunc(func);
   ci->setBase(func + 1);
-  ci->setTop(top_ + nstack);
+  ci->setTop(top_ + LUA_MINSTACK);
   ci->callstatus = 0;
 
   assert(ci->getTop() <= last());
   return LUA_OK;
 }
 
-/*
-LuaResult LuaStack::createLuaCall() {
+LuaResult LuaStack::createLuaCall(int nargs, int nresults) {
+  LuaProto* p = top_[-nargs-1].getLClosure()->proto_;
+
+  LuaResult result = reserve2(p->maxstacksize);
+  handleResult(result);
+
+  for (; nargs < p->numparams; nargs++) {
+    push_nocheck(LuaValue::Nil());  /* complete missing arguments */
+  }
+
+  LuaValue* func = &top_[-nargs-1];
+  StkId base = func + 1;
+  
+  if(p->is_vararg) {
+
+    for (int i=0; i < p->numparams; i++) {
+      top_[i] = top_[i - nargs];
+      top_[i - nargs] = LuaValue::Nil();
+    }
+
+    base = top_;
+    top_ += p->numparams;
+  }
+
   LuaStackFrame* ci = nextCallinfo();
   ci->nresults = nresults;
   
@@ -498,9 +520,9 @@ LuaResult LuaStack::createLuaCall() {
   ci->savedpc = func->getLClosure()->proto_->code.begin();
   ci->callstatus = CIST_LUA;
 
-  L->stack_.top_ = ci->getTop();
+  top_ = ci->getTop();
+  return LUA_OK;
 }
-*/
 
 //------------------------------------------------------------------------------
 

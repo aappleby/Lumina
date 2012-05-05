@@ -115,10 +115,8 @@ static StkId tryfuncTM (LuaThread *L, StkId func) {
   return func;
 }
 
-void luaD_precallC(LuaThread* L, StkId func, int /*nargs*/, int nresults) {
-  LuaCallback f = func->isCallback() ? func->getCallback() : func->getCClosure()->cfunction_;
-
-  LuaResult result = L->stack_.createCCall2(func, nresults, LUA_MINSTACK);
+void luaD_precallC(LuaThread* L, int nargs, int nresults) {
+  LuaResult result = L->stack_.createCCall2(nargs, nresults);
   if(result != LUA_OK) {
     handleResult(result);
   }
@@ -134,6 +132,8 @@ void luaD_precallC(LuaThread* L, StkId func, int /*nargs*/, int nresults) {
     throwError(LUA_ERRERR);
   }
 
+  LuaValue f1 = L->stack_.top_[-nargs-1];
+  LuaCallback f = f1.isCallback() ? f1.getCallback() : f1.getCClosure()->cfunction_;
   int n = (*f)(L);  /* do the actual call */
 
   L->stack_.checkArgs(n);
@@ -141,54 +141,15 @@ void luaD_precallC(LuaThread* L, StkId func, int /*nargs*/, int nresults) {
   luaD_postcall(L, L->stack_.top_ - n);
 }
 
-void luaD_precallLua(LuaThread* L, StkId func, int nargs2, int nresults) {
-  LuaProto *p = func->getLClosure()->proto_;
-
-  ptrdiff_t funcr = L->stack_.indexOf(func);
-  LuaResult result = L->stack_.reserve2(p->maxstacksize);
-  handleResult(result);
-
-  func = L->stack_.atIndex(funcr);
-
-  int nargs = cast_int(L->stack_.top_ - func) - 1;  /* number of real arguments */
-
-  if(nargs != nargs2) {
-    int b = 0;
-    b++;
-  }
-
-  for (; nargs < p->numparams; nargs++) {
-    L->stack_.push_nocheck(LuaValue::Nil());  /* complete missing arguments */
-  }
-
-  StkId base = func + 1;
-  
-  if(p->is_vararg) {
-
-    for (int i=0; i < p->numparams; i++) {
-      L->stack_.top_[i] = L->stack_.top_[i - nargs];
-      L->stack_.top_[i - nargs] = LuaValue::Nil();
-    }
-
-    base = L->stack_.top_;
-    L->stack_.top_ += p->numparams;
-  }
-
-  LuaStackFrame* ci = NULL;
-
-  ci = L->stack_.nextCallinfo();  /* now 'enter' new function */
-  ci->nresults = nresults;
-  ci->setFunc(func);
-  ci->setBase(base);
-  ci->setTop(base + p->maxstacksize);
-  assert(ci->getTop() <= L->stack_.last());
-  ci->savedpc = p->code.begin();
-  ci->callstatus = CIST_LUA;
-  L->stack_.top_ = ci->getTop();
+void luaD_precallLua(LuaThread* L, int nargs, int nresults) {
+  L->stack_.createLuaCall(nargs, nresults);
 
   if (L->hookmask & LUA_MASKCALL) {
     THREAD_CHECK(L);
     int hook = LUA_HOOKCALL;
+
+    LuaStackFrame* ci = L->stack_.callinfo_;
+
     if (ci->previous->isLua() && GET_OPCODE(*(ci->previous->savedpc - 1)) == OP_TAILCALL) {
       ci->callstatus |= CIST_TAIL;
       hook = LUA_HOOKTAILCALL;
@@ -209,11 +170,11 @@ int luaD_precall (LuaThread *L, StkId func, int nargs, int nresults) {
   }
 
   if(func->isCallback() || func->isCClosure()) {
-    luaD_precallC(L, func, nargs, nresults);
+    luaD_precallC(L, nargs, nresults);
     return 1;
   }
 
-  luaD_precallLua(L, func, nargs, nresults);
+  luaD_precallLua(L, nargs, nresults);
   return 0;
 }
 

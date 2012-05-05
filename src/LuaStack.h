@@ -58,7 +58,8 @@ public:
 
   LuaStackFrame* findProtectedCall();
 
-  LuaResult createCCall2(StkId func, int nresults, int nstack);
+  LuaResult createCCall2(int nargs, int nresults);
+  LuaResult createLuaCall(int nargs, int nresults);
 
   //----------
   // Upvalue support
