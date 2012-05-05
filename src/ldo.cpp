@@ -118,15 +118,8 @@ static void tryfuncTM (LuaThread *L, int funcindex) {
 /*
 ** returns true if function has been executed (C function)
 */
-int luaD_precall (LuaThread *L, int funcindex, int nresults) {
+int luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
   THREAD_CHECK(L);
-
-  ScopedCallDepth d(L);
-  if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
-    luaG_runerror("C stack overflow");
-  } else if (L->l_G->call_depth_ >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3))) {
-    throwError(LUA_ERRERR);
-  }
 
   LuaValue func = L->stack_[funcindex];
 
@@ -160,6 +153,12 @@ int luaD_precall (LuaThread *L, int funcindex, int nresults) {
     }
   }
 
+  return isC;
+}
+
+int luaD_precall (LuaThread *L, int funcindex, int nresults) {
+
+  int isC = luaD_precall2(L, funcindex, nresults);
   if(isC) {
     luaV_execute(L, funcindex, nresults);
   }
