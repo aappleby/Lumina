@@ -884,7 +884,7 @@ int lua_pcall (LuaThread *L, int nargs, int nresults, int errfunc) {
 
     int funcIndex = L->stack_.topsize() - nargs - 1;
 
-    if (!luaD_precall(L, funcIndex, nargs, nresults)) {
+    if (!luaD_precall(L, funcIndex, nresults)) {
       luaV_execute(L);
     }
 

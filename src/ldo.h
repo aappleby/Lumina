@@ -18,7 +18,7 @@ typedef void (*Pfunc) (LuaThread *L, void *ud);
 
 int luaD_protectedparser (LuaThread *L, ZIO *z, const char *name, const char *mode);
 void luaD_hook (LuaThread *L, int event, int line);
-int luaD_precall (LuaThread *L, int stackindex, int nargs, int nresults);
+int luaD_precall (LuaThread *L, int stackindex, int nresults);
 void luaD_call (LuaThread *L, int nargs, int nresults, int allowyield);
 int luaD_postcall (LuaThread *L, StkId firstResult);
 
