@@ -647,7 +647,7 @@ void luaV_finishOp (LuaThread *L) {
 #define RKB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgK, ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i))
 #define RKC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgK, ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
 
-void luaV_execute (LuaThread *L) {
+void luaV_run (LuaThread *L) {
   THREAD_CHECK(L);
   
   /* main loop of interpreter */
@@ -1243,12 +1243,18 @@ void luaV_execute (LuaThread *L) {
   }
 }
 
-void luaV_executeC(LuaThread* L, int funcindex, int /*nresults*/) {
+void luaV_execute (LuaThread *L, int funcindex, int /*nresults*/) {
   LuaValue f1 = L->stack_[funcindex];
-  LuaCallback f = f1.isCallback() ? f1.getCallback() : f1.getCClosure()->cfunction_;
-  int n = (*f)(L);  /* do the actual call */
 
-  L->stack_.checkArgs(n);
+  if(f1.isCClosure() || f1.isCallback()) {
+    LuaCallback f = f1.isCallback() ? f1.getCallback() : f1.getCClosure()->cfunction_;
+    int n = (*f)(L);  /* do the actual call */
 
-  luaD_postcall(L, L->stack_.top_ - n);
+    L->stack_.checkArgs(n);
+
+    luaD_postcall(L, L->stack_.top_ - n);
+  }
+  else {
+    luaV_run(L);
+  }
 }

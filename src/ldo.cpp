@@ -160,7 +160,7 @@ int luaD_precall (LuaThread *L, int funcindex, int nresults) {
   }
 
   if(isC) {
-    luaV_executeC(L, funcindex, nresults);
+    luaV_execute(L, funcindex, nresults);
   }
 
   return isC;
@@ -220,7 +220,7 @@ void luaD_call (LuaThread *L, int nargs, int nResults, int allowyield) {
   int funcindex = L->stack_.topsize() - nargs - 1;
 
   if (!luaD_precall(L, funcindex, nResults)) {
-    luaV_execute(L);
+    luaV_execute(L, funcindex, nResults);
   }
   if (!allowyield) L->nonyieldable_count_--;
 
@@ -303,7 +303,7 @@ static void unroll (LuaThread *L, void *ud) {
     }
     else {  /* Lua function */
       luaV_finishOp(L);  /* finish interrupted instruction */
-      luaV_execute(L);  /* execute down to higher C 'boundary' */
+      luaV_run(L);  /* execute down to higher C 'boundary' */
     }
   }
 }
@@ -367,7 +367,7 @@ static void resume_coroutine (LuaThread *L, StkId firstArg, int nargs) {
     int funcindex = L->stack_.topsize() - nargs - 1;
 
     if (!luaD_precall(L, funcindex, LUA_MULTRET)) {
-      luaV_execute(L);
+      luaV_execute(L, funcindex, LUA_MULTRET);
     }
     return;
   }
@@ -382,7 +382,7 @@ static void resume_coroutine (LuaThread *L, StkId firstArg, int nargs) {
 
   if (L->stack_.callinfo_->isLua()) {
     /* yielded inside a hook? */
-    luaV_execute(L);  /* just continue running Lua code */
+    luaV_run(L);  /* just continue running Lua code */
     unroll(L, NULL);
     return;
   }
