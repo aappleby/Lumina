@@ -63,7 +63,7 @@ static void callTM (LuaThread *L, const LuaValue *f, const LuaValue *p1,
   handleResult(result2);
 
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->stack_.top_ - (4 - hasres), hasres ? 2 : 3, hasres, L->stack_.callinfo_->isLua());
+  luaD_call(L, hasres ? 2 : 3, hasres, L->stack_.callinfo_->isLua());
   if (hasres) {  /* if has result, move it to its place */
     p3 = L->stack_.atIndex(result);
     *p3 = L->stack_.pop();
@@ -84,7 +84,7 @@ static void callTM3 (LuaThread *L,
   handleResult(result2);
 
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->stack_.top_ - 3, 2, 1, L->stack_.callinfo_->isLua());
+  luaD_call(L, 2, 1, L->stack_.callinfo_->isLua());
   result = L->stack_.pop();
 }
 
@@ -103,7 +103,7 @@ static void callTM1 (LuaThread *L,
   handleResult(result);
 
   /* metamethod may yield only when called from Lua code */
-  luaD_call(L, L->stack_.top_ - 4, 3, 0, L->stack_.callinfo_->isLua());
+  luaD_call(L, 3, 0, L->stack_.callinfo_->isLua());
 }
 
 LuaResult luaV_gettable2 (LuaThread *L, LuaValue source, LuaValue key, LuaValue& outResult) {
@@ -1048,7 +1048,7 @@ void luaV_execute (LuaThread *L) {
 
           int top2 = L->stack_.top_ - L->stack_.buf_;
 
-          if (luaD_precall(L, ra, nargs, nresults)) {  /* C function? */
+          if (luaD_precall(L, nargs, nresults)) {  /* C function? */
 
             int top3 = L->stack_.top_ - L->stack_.buf_;
 
@@ -1089,7 +1089,7 @@ void luaV_execute (LuaThread *L) {
           }
           assert(GETARG_C(i) - 1 == LUA_MULTRET);
 
-          if (!luaD_precall(L, ra, nargs, LUA_MULTRET)) {
+          if (!luaD_precall(L, nargs, LUA_MULTRET)) {
             /* tail call: put called frame (n) in place of caller one (o) */
             LuaStackFrame *nci = L->stack_.callinfo_;  /* called frame */
             LuaStackFrame *oci = nci->previous;  /* caller frame */
@@ -1182,7 +1182,7 @@ void luaV_execute (LuaThread *L) {
           cb[0] = ra[0];
 
           L->stack_.top_ = cb + 3;  /* func. + 2 args (state and index) */
-          luaD_call(L, cb, 2, C, 1);
+          luaD_call(L, 2, C, 1);
           L->stack_.top_ = ci->getTop();
           
           break;

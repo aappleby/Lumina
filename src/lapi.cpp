@@ -881,7 +881,7 @@ int lua_pcall (LuaThread *L, int nargs, int nresults, int errfunc) {
   LuaResult status = LUA_OK;
   try {
     L->nonyieldable_count_++;
-    if (!luaD_precall(L, func, nargs, nresults)) {
+    if (!luaD_precall(L, nargs, nresults)) {
       luaV_execute(L);
     }
 
@@ -934,7 +934,7 @@ int lua_pcallk (LuaThread *L, int nargs, int nresults, int errfunc,
   L->errfunc = errfunc_index;
 
   ci->callstatus |= CIST_YPCALL;
-  luaD_call(L, func, nargs, nresults, 1);  /* do the call */
+  luaD_call(L, nargs, nresults, 1);  /* do the call */
   ci->callstatus &= ~CIST_YPCALL;
 
   L->errfunc = ci->old_errfunc;

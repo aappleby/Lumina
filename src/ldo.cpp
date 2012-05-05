@@ -92,27 +92,24 @@ void luaD_hook (LuaThread *L, int event, int line) {
 }
 
 
-static StkId tryfuncTM (LuaThread *L, StkId func) {
+static void tryfuncTM (LuaThread *L, int nargs, int /*nresults*/) {
   THREAD_CHECK(L);
+
+  LuaValue* func = &L->stack_.top_[-nargs-1];
   LuaValue tm = luaT_gettmbyobj2(*func, TM_CALL);
 
-  if (!tm.isFunction())
+  if (!tm.isFunction()) {
     luaG_typeerror(func, "call");
-
-  /* Open a hole inside the stack at `func' */
-  for (StkId p = L->stack_.top_; p > func; p--) {
-    p[0] = p[-1];
   }
 
-  ptrdiff_t funcr = func - L->stack_.begin();
+  for(int i = 0; i < nargs + 1; i++) {
+    L->stack_.top_[-i] = L->stack_.top_[-i-1];
+  }
+  L->stack_.top_[-nargs-1] = tm;
   L->stack_.top_++;
 
   LuaResult result = L->stack_.reserve2(0);
   handleResult(result);
-
-  func = L->stack_.begin() + funcr; /* previous call may change stack */
-  *func = tm;  /* tag method is the new function to be called */
-  return func;
 }
 
 void luaD_precallC(LuaThread* L, int nargs, int nresults) {
@@ -161,15 +158,17 @@ void luaD_precallLua(LuaThread* L, int nargs, int nresults) {
 /*
 ** returns true if function has been executed (C function)
 */
-int luaD_precall (LuaThread *L, StkId func, int nargs, int nresults) {
+int luaD_precall (LuaThread *L, int nargs, int nresults) {
   THREAD_CHECK(L);
 
-  if(!func->isFunction()) {
-    func = tryfuncTM(L, func);  /* retry with 'function' tag method */
-    return luaD_precall(L, func, nargs + 1, nresults);  /* now it must be a function */
+  LuaValue func = L->stack_.top_[-nargs-1];
+
+  if(!func.isFunction()) {
+    tryfuncTM(L, nargs, nresults);  /* retry with 'function' tag method */
+    return luaD_precall(L, nargs + 1, nresults);  /* now it must be a function */
   }
 
-  if(func->isCallback() || func->isCClosure()) {
+  if(func.isCallback() || func.isCClosure()) {
     luaD_precallC(L, nargs, nresults);
     return 1;
   }
@@ -220,7 +219,7 @@ int luaD_postcall (LuaThread *L, StkId firstResult) {
 ** When returns, all the results are on the stack, starting at the original
 ** function position.
 */
-void luaD_call (LuaThread *L, StkId func, int nargs, int nResults, int allowyield) {
+void luaD_call (LuaThread *L, int nargs, int nResults, int allowyield) {
   THREAD_CHECK(L);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
 
@@ -228,7 +227,7 @@ void luaD_call (LuaThread *L, StkId func, int nargs, int nResults, int allowyiel
   //checkresults(L, nargs, nResults);
 
   if (!allowyield) L->nonyieldable_count_++;
-  if (!luaD_precall(L, func, nargs, nResults)) {
+  if (!luaD_precall(L, nargs, nResults)) {
     luaV_execute(L);
   }
   if (!allowyield) L->nonyieldable_count_--;
@@ -242,9 +241,8 @@ void lua_call (LuaThread *L, int nargs, int nresults) {
 
   L->stack_.checkArgs(nargs+1);
   checkresults(L, nargs, nresults);
-  StkId func = L->stack_.top_ - (nargs+1);
 
-  luaD_call(L, func, nargs, nresults, 0);
+  luaD_call(L, nargs, nresults, 0);
 }
 
 
@@ -260,13 +258,11 @@ void lua_callk (LuaThread *L, int nargs, int nresults, int ctx, LuaCallback k) {
   if (k != NULL && L->nonyieldable_count_ == 0) {  /* need to prepare continuation? */
     L->stack_.callinfo_->continuation_ = k;  /* save continuation */
     L->stack_.callinfo_->continuation_context_ = ctx;  /* save context */
-    StkId func = L->stack_.top_ - (nargs+1);
-    luaD_call(L, func, nargs, nresults, 1);  /* do the call */
+    luaD_call(L, nargs, nresults, 1);  /* do the call */
   }
   else {
     /* no continuation or no yieldable */
-    StkId func = L->stack_.top_ - (nargs+1);
-    luaD_call(L, func, nargs, nresults, 0);  /* just do the call */
+    luaD_call(L, nargs, nresults, 0);  /* just do the call */
   }
   adjustresults(L, nresults);
 }
@@ -376,7 +372,7 @@ static void resume_coroutine (LuaThread *L, StkId firstArg, int nargs) {
 
     /* coroutine is in base level; start running it */
     // Lua function? call it.
-    if (!luaD_precall(L, firstArg - 1, nargs, LUA_MULTRET)) {
+    if (!luaD_precall(L, nargs, LUA_MULTRET)) {
       luaV_execute(L);
     }
     return;

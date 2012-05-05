@@ -323,7 +323,7 @@ static void runOneFinalizer (int propagateerrors) {
     L->stack_.top_[1] = o; // ... and its argument
     L->stack_.top_ += 2;  // and (next line) call the finalizer
 
-    luaD_call(L, L->stack_.top_ - 2, 1, 0, 0);
+    luaD_call(L, 1, 0, 0);
   }
   catch(LuaResult error) {
     status = error;
