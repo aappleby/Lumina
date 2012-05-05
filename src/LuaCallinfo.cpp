@@ -13,6 +13,19 @@ void LuaStackFrame::sanityCheck() {
   }
 }
 
+int LuaStackFrame::beginInstruction() {
+  int result = savedpc[0];
+  savedpc++;
+  return result;
+}
+
+void LuaStackFrame::endInstruction() {
+}
+
+void LuaStackFrame::undoInstruction() {
+  savedpc--;
+}
+
 int LuaStackFrame::getCurrentPC() {
   if(!isLua()) return -1;
 

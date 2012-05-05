@@ -23,6 +23,10 @@ public:
     savedpc += offset;
   }
 
+  int beginInstruction();
+  void endInstruction();
+  void undoInstruction();
+
   int getCurrentPC();
   int getCurrentLine();
   int getCurrentInstruction();
@@ -46,9 +50,6 @@ public:
   int nresults;  /* expected number of results from this function */
   int callstatus;
 
-  // only for Lua functions
-  const Instruction *savedpc;
-
   // only for C functions
   LuaCallback continuation_;  /* continuation in case of yields */
   int continuation_context_;  /* context info. in case of yields */
@@ -59,6 +60,9 @@ public:
   int status;
 
 protected:
+
+  // only for Lua functions
+  const Instruction *savedpc;
 
   LuaStackFrame() {
     stack_ = NULL;

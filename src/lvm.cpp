@@ -661,8 +661,7 @@ void luaV_run (LuaThread *L) {
 
     l_memcontrol.checkLimit();
 
-    ci->savedpc++;
-    Instruction i = ci->getCurrentInstruction();
+    Instruction i = ci->beginInstruction();
     OpCode opcode = (OpCode)(i & 0x0000003F);
 
     uint32_t A  = (i >>  6) & 0x000000FF;
@@ -700,7 +699,8 @@ void luaV_run (LuaThread *L) {
       L->oldpc = ci->getCurrentPC();
 
       if (L->status == LUA_YIELD) {  /* did hook yield? */
-        ci->savedpc--;  /* undo increment (resume will increment it again) */
+        /* undo increment (resume will increment it again) */
+        ci->undoInstruction();
         throwError(LUA_YIELD);
       }
     }
@@ -1244,6 +1244,8 @@ void luaV_run (LuaThread *L) {
           break;
         }
     }
+
+    ci->endInstruction();
   }
 }
 
