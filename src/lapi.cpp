@@ -881,7 +881,10 @@ int lua_pcall (LuaThread *L, int nargs, int nresults, int errfunc) {
   LuaResult status = LUA_OK;
   try {
     L->nonyieldable_count_++;
-    if (!luaD_precall(L, nargs, nresults)) {
+
+    int funcIndex = L->stack_.topsize() - nargs - 1;
+
+    if (!luaD_precall(L, funcIndex, nargs, nresults)) {
       luaV_execute(L);
     }
 

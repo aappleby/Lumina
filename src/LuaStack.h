@@ -25,6 +25,7 @@ public:
   LuaValue* getTop() { return top_; }
   void    setTop(LuaValue* newtop) { top_ = newtop; }
 
+  int topsize() { return top_ - buf_; }
   int  getTopIndex();
   void setTopIndex(int index);
 
