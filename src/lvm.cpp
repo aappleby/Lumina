@@ -692,12 +692,12 @@ void luaV_run (LuaThread *L) {
 
       if (mask & LUA_MASKLINE) {
         if (npc == 0 ||  /* call linehook when enter a new function, */
-            ci->savedpc <= L->oldpc ||  /* when jump back (loop), or when */
-            newline != p->getLine(pcRel(L->oldpc, p)))  /* enter a new line */
+            ci->getCurrentPC() <= L->oldpc ||  /* when jump back (loop), or when */
+            newline != p->getLine(L->oldpc))  /* enter a new line */
           luaD_hook(L, LUA_HOOKLINE, newline);
       }
 
-      L->oldpc = ci->savedpc;
+      L->oldpc = ci->getCurrentPC();
 
       if (L->status == LUA_YIELD) {  /* did hook yield? */
         ci->savedpc--;  /* undo increment (resume will increment it again) */

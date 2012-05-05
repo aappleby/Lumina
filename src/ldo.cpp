@@ -169,7 +169,7 @@ int luaD_postcall (LuaThread *L, StkId firstResult) {
       luaD_hook(L, LUA_HOOKRET, -1);
       firstResult = L->stack_.atIndex(fr);
     }
-    L->oldpc = ci->previous->savedpc;  /* 'oldpc' for caller function */
+    L->oldpc = ci->previous->getCurrentPC();  /* 'oldpc' for caller function */
   }
 
   res = ci->getFunc();  /* res == final position of 1st result */

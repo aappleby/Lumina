@@ -28,7 +28,7 @@ LuaThread::LuaThread(LuaVM* g) : LuaObject(LUA_TTHREAD) {
   l_G = g;
   linkGC(l_G->allgc);
 
-  oldpc = NULL;
+  oldpc = -1;
   hookmask = 0;
   basehookcount = 0;
   hookcount = 0;
@@ -47,7 +47,7 @@ LuaThread::LuaThread(LuaThread* parent_thread) : LuaObject(LUA_TTHREAD) {
   l_G = parent_thread->l_G;
   linkGC(l_G->allgc);
 
-  oldpc = NULL;
+  oldpc = -1;
   hookmask = 0;
   basehookcount = 0;
   hookcount = 0;

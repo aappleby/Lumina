@@ -30,7 +30,7 @@ public:
   int status;
   LuaVM *l_G;
 
-  const Instruction *oldpc;  /* last pc traced */
+  int oldpc;  /* last pc traced */
 
   LuaStack stack_;
 
