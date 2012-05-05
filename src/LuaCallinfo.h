@@ -19,8 +19,15 @@ public:
     return callstatus & CIST_LUA ? true : false;
   }
 
+  void Jump ( int offset ) {
+    savedpc += offset;
+  }
+
   int getCurrentPC();
   int getCurrentLine();
+  int getCurrentInstruction();
+  int getCurrentOp();
+  int getNextOp();
 
   const StkId getFunc() const { return stack_->begin() + func_index_; }
   const StkId getTop() const  { return stack_->begin() + top_index_; }

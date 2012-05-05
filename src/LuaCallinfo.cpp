@@ -8,7 +8,7 @@
 void LuaStackFrame::sanityCheck() {
   if(isLua()) {
     LuaProto *p = getFunc()->getLClosure()->proto_;
-    assert(p->code.begin() <= savedpc);
+    assert(savedpc >= p->code.begin());
     assert(savedpc <= p->code.end());
   }
 }
@@ -25,4 +25,24 @@ int LuaStackFrame::getCurrentLine() {
 
   LuaProto* p = getFunc()->getLClosure()->proto_;
   return p->getLine( getCurrentPC() );
+}
+
+int LuaStackFrame::getCurrentInstruction() {
+  if(!isLua()) return -1;
+
+  return savedpc[-1];
+}
+
+int LuaStackFrame::getCurrentOp() {
+  if(!isLua()) return -1;
+
+  Instruction i = savedpc[-1];
+  return (i & 0x0000003F);
+}
+
+int LuaStackFrame::getNextOp() {
+  if(!isLua()) return -1;
+
+  Instruction i = savedpc[0];
+  return (i & 0x0000003F);
 }

@@ -578,8 +578,9 @@ void luaV_finishOp (LuaThread *L) {
   THREAD_CHECK(L);
   LuaStackFrame *ci = L->stack_.callinfo_;
   StkId base = ci->getBase();
-  Instruction inst = *(ci->savedpc - 1);  /* interrupted instruction */
-  OpCode op = GET_OPCODE(inst);
+
+  Instruction inst = (Instruction)ci->getCurrentInstruction();  /* interrupted instruction */
+  OpCode op = (OpCode)ci->getCurrentOp();
   switch (op) {  /* finish its execution */
     case OP_ADD: case OP_SUB: case OP_MUL: case OP_DIV:
     case OP_MOD: case OP_POW: case OP_UNM: case OP_LEN:
@@ -596,7 +597,7 @@ void luaV_finishOp (LuaThread *L) {
       if (op == OP_LE && (tm.isNone() || tm.isNil())) {
         res = !res;  /* invert result */
       }
-      assert(GET_OPCODE(*ci->savedpc) == OP_JMP);
+      assert(ci->getNextOp() == OP_JMP);
       if (res != GETARG_A(inst)) {
         /* condition failed? */
         ci->savedpc++;  /* skip jump instruction */
@@ -618,7 +619,7 @@ void luaV_finishOp (LuaThread *L) {
       break;
     }
     case OP_TFORCALL: {
-      assert(GET_OPCODE(*ci->savedpc) == OP_TFORLOOP);
+      assert(ci->getNextOp() == OP_TFORLOOP);
       L->stack_.top_ = ci->getTop();  /* correct top */
       break;
     }
@@ -633,14 +634,6 @@ void luaV_finishOp (LuaThread *L) {
   }
 }
 
-inline void skipNextInstruction(LuaStackFrame* frame) {
-  frame->savedpc++;
-}
-
-inline void doJump(LuaStackFrame* frame, int offset) {
-  frame->savedpc += offset;
-}
-
 
 /*
 ** some macros for common tasks in `luaV_execute'
@@ -653,7 +646,6 @@ inline void doJump(LuaStackFrame* frame, int offset) {
 
 #define RKB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgK, ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i))
 #define RKC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgK, ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
-#define KBx(i)  (k + (GETARG_Bx(i) != 0 ? GETARG_Bx(i) - 1 : GETARG_Ax(*ci->savedpc++)))
 
 void luaV_execute (LuaThread *L) {
   THREAD_CHECK(L);
@@ -686,7 +678,8 @@ void luaV_execute (LuaThread *L) {
     ci->savedpc++;
 
     int mask = L->hookmask;
-    if ((mask & (LUA_MASKLINE | LUA_MASKCOUNT)) && (--L->hookcount == 0 || mask & LUA_MASKLINE)) {
+    if (mask & (LUA_MASKLINE | LUA_MASKCOUNT)) {
+      L->hookcount--;
 
       if ((mask & LUA_MASKCOUNT) && L->hookcount == 0) {
         L->hookcount = L->basehookcount;
@@ -705,6 +698,7 @@ void luaV_execute (LuaThread *L) {
       }
 
       L->oldpc = ci->savedpc;
+
       if (L->status == LUA_YIELD) {  /* did hook yield? */
         ci->savedpc--;  /* undo increment (resume will increment it again) */
         throwError(LUA_YIELD);
@@ -734,14 +728,14 @@ void luaV_execute (LuaThread *L) {
         {
           assert(GET_OPCODE(*ci->savedpc) == OP_EXTRAARG);
           base[A] = k[GETARG_Ax(*ci->savedpc)];
-          ci->savedpc++;
+          ci->Jump(1);
           break;
         }
 
       case OP_LOADBOOL:
         {
           base[A] = B ? true : false;
-          if (C) ci->savedpc++;  /* skip next instruction (if C) */
+          if (C) ci->Jump(1);  /* skip next instruction (if C) */
           break;
         }
 
@@ -967,7 +961,7 @@ void luaV_execute (LuaThread *L) {
           if (A > 0) {
             L->stack_.closeUpvals(&base[A-1]);
           }
-          doJump(ci, GETARG_sBx(i));
+          ci->Jump(GETARG_sBx(i));
           break;
         }
 
@@ -976,7 +970,7 @@ void luaV_execute (LuaThread *L) {
           LuaValue* rb = (B & 256) ? &k[Bk] : &base[Bk];
           LuaValue* rc = (C & 256) ? &k[Ck] : &base[Ck];
           if (cast_int(luaV_equalobj_(L, rb, rc)) != GETARG_A(i)) {
-            ci->savedpc++;
+            ci->Jump(1);
           }
           break;
         }
@@ -988,7 +982,7 @@ void luaV_execute (LuaThread *L) {
 
           int result = luaV_lessthan(L, rb, rc);
 
-          if (result != (int)A) ci->savedpc++;
+          if (result != (int)A) ci->Jump(1);
           break;
         }
 
@@ -999,7 +993,7 @@ void luaV_execute (LuaThread *L) {
 
           int result = luaV_lessequal(L, rb, rc);
 
-          if (result != (int)A) ci->savedpc++;
+          if (result != (int)A) ci->Jump(1);
           break;
         }
 
@@ -1007,7 +1001,7 @@ void luaV_execute (LuaThread *L) {
         {
           bool isfalse = base[A].isFalse();
 
-          if (isfalse == (C ? true : false)) ci->savedpc++;
+          if (isfalse == (C ? true : false)) ci->Jump(1);
           break;
         }
 
@@ -1016,7 +1010,7 @@ void luaV_execute (LuaThread *L) {
           bool isfalse = base[B].isFalse();
 
           if (isfalse == (C ? true : false)) {
-            ci->savedpc++;
+            ci->Jump(1);
           } else {
             base[A] = base[B];
           }
@@ -1120,7 +1114,7 @@ void luaV_execute (LuaThread *L) {
           index += step;
 
           if ((step > 0) ? (index <= limit) : (index >= limit)) {
-            ci->savedpc += GETARG_sBx(i);  /* jump back */
+            ci->Jump(GETARG_sBx(i));  /* jump back */
             base[A+0] = index;  /* update internal index... */
             base[A+3] = index;  /* ...and external index */
           }
@@ -1141,7 +1135,7 @@ void luaV_execute (LuaThread *L) {
           base[A+1] = limit;
           base[A+2] = step;
 
-          ci->savedpc += GETARG_sBx(i);
+          ci->Jump(GETARG_sBx(i));
           break;
         }
       
@@ -1163,7 +1157,7 @@ void luaV_execute (LuaThread *L) {
         {
           if (ra[1].isNotNil()) {  /* continue loop? */
             ra[0] = ra[1];  /* save control variable */
-            ci->savedpc += GETARG_sBx(i);  /* jump back */
+            ci->Jump(GETARG_sBx(i));  /* jump back */
           }
           break;
         }

@@ -140,7 +140,7 @@ void luaD_precallLua(LuaThread* L, int nargs, int nresults) {
 
     LuaStackFrame* ci = L->stack_.callinfo_;
 
-    if (ci->previous->isLua() && GET_OPCODE(*(ci->previous->savedpc - 1)) == OP_TAILCALL) {
+    if (ci->previous->getCurrentOp() == OP_TAILCALL) {
       ci->callstatus |= CIST_TAIL;
       hook = LUA_HOOKTAILCALL;
     }
