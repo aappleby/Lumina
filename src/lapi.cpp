@@ -854,6 +854,7 @@ void adjustresults(LuaThread* L, int nres) {
 */
 
 int lua_pcall (LuaThread *L, int nargs, int nresults, int errfunc) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(L);
 
   if(nresults == LUA_MULTRET) {
@@ -884,7 +885,9 @@ int lua_pcall (LuaThread *L, int nargs, int nresults, int errfunc) {
 
     int funcIndex = L->stack_.topsize() - nargs - 1;
 
-    luaD_precall2(L, funcIndex, nresults);
+    result = luaD_precall2(L, funcIndex, nresults);
+    handleResult(result);
+
     luaV_execute(L, funcIndex, nresults);
 
     // IMPORTANT - If we ran out of memory during this pcall, make sure the error

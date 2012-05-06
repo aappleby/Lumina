@@ -120,7 +120,7 @@ static LuaResult  tryfuncTM (LuaThread *L, int funcindex) {
 /*
 ** returns true if function has been executed (C function)
 */
-void luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
+LuaResult luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(L);
 
@@ -128,7 +128,7 @@ void luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
 
   if(!func.isFunction()) {
     result = tryfuncTM(L, funcindex);  /* retry with 'function' tag method */
-    handleResult(result);
+    if(result != LUA_OK) return result;
     func = L->stack_[funcindex];
     assert(func.isFunction());
   }
@@ -138,12 +138,12 @@ void luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
   int nargs = L->stack_.topsize() - funcindex - 1;
 
   if(isC) {
-    LuaResult r = L->stack_.createCCall2(nargs, nresults);
-    handleResult(r);
+    result = L->stack_.createCCall2(nargs, nresults);
+    if(result != LUA_OK) return result;
   }
   else {
-    LuaResult r = L->stack_.createLuaCall(nargs, nresults);
-    handleResult(r);
+    result = L->stack_.createLuaCall(nargs, nresults);
+    if(result != LUA_OK) return result;
     L->stack_.top_ = L->stack_.callinfo_->next->getTop();
   }
 
@@ -160,6 +160,8 @@ void luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
       luaD_hook(L, LUA_HOOKCALL, -1);
     }
   }
+
+  return result;
 }
 
 void luaD_postcall (LuaThread *L, StkId firstResult) {
@@ -202,6 +204,7 @@ void luaD_postcall (LuaThread *L, StkId firstResult) {
 ** function position.
 */
 void luaD_call (LuaThread *L, int nargs, int nResults, int allowyield) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(L);
   api_check(L->status == LUA_OK, "cannot do calls on non-normal thread");
 
@@ -212,7 +215,9 @@ void luaD_call (LuaThread *L, int nargs, int nResults, int allowyield) {
 
   int funcindex = L->stack_.topsize() - nargs - 1;
 
-  luaD_precall2(L, funcindex, nResults);
+  result = luaD_precall2(L, funcindex, nResults);
+  handleResult(result);
+
   luaV_execute(L, funcindex, nResults);
 
   if (!allowyield) L->nonyieldable_count_--;
@@ -346,6 +351,8 @@ static l_noret resume_error (LuaThread *L, const char *msg, StkId firstArg) {
 ** do the work for 'lua_resume' in protected mode
 */
 static void resume_coroutine (LuaThread *L, StkId firstArg, int nargs) {
+  LuaResult result = LUA_OK;
+
   THREAD_CHECK(L);
 
   if (L->status == LUA_OK) {  /* may be starting a coroutine */
@@ -358,7 +365,9 @@ static void resume_coroutine (LuaThread *L, StkId firstArg, int nargs) {
     // Lua function? call it.
     int funcindex = L->stack_.topsize() - nargs - 1;
 
-    luaD_precall2(L, funcindex, LUA_MULTRET);
+    result = luaD_precall2(L, funcindex, LUA_MULTRET);
+    handleResult(result);
+    
     luaV_execute(L, funcindex, LUA_MULTRET);
 
     return;

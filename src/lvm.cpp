@@ -1064,7 +1064,8 @@ RunResult luaV_run2 (LuaThread *L) {
           int funcindex = L->stack_.topsize() - nargs - 1;
           LuaValue func = L->stack_[funcindex];
 
-          luaD_precall2(L, funcindex, nresults);
+          result = luaD_precall2(L, funcindex, nresults);
+          handleResult(result);
 
           if (func.isCallback() || func.isCClosure()) {  /* C function? */
             luaV_execute(L, funcindex, nresults);
@@ -1094,7 +1095,8 @@ RunResult luaV_run2 (LuaThread *L) {
 
           int funcindex = L->stack_.topsize() - nargs - 1;
 
-          luaD_precall2(L, funcindex, LUA_MULTRET);
+          result = luaD_precall2(L, funcindex, LUA_MULTRET);
+          handleResult(result);
 
           LuaValue func = L->stack_[funcindex];
           if (!func.isCallback() && !func.isCClosure()) {
