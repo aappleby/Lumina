@@ -523,11 +523,17 @@ int luaD_protectedparser (LuaThread *L, ZIO *z, const char *name, const char *mo
       Mbuffer buff;
       Dyndata dyd;
       result = luaY_parser(L, z, &buff, &dyd, name, c, new_proto);
-      handleResult(result);
+      if(result != LUA_OK) {
+        L->restoreState(s, result, 0);
+        return result;
+      }
     }
     
     LuaResult result = L->stack_.push_reserve2(LuaValue(new_proto));
-    handleResult(result);
+    if(result != LUA_OK) {
+      L->restoreState(s, result, 0);
+      return result;
+    }
 
     LuaClosure* cl = new LuaClosure(new_proto, (int)new_proto->upvalues.size());
     L->stack_.top_[-1] = LuaValue(cl);
@@ -542,7 +548,6 @@ int luaD_protectedparser (LuaThread *L, ZIO *z, const char *name, const char *mo
   }
 
   L->restoreState(s, result, 0);
-
   return result;
 }
 

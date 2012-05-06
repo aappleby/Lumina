@@ -569,7 +569,7 @@ l_noret luaG_errormsg () {
   }
 }
 
-l_noret luaG_errormsg2 ( const char* message ) {
+LuaResult luaG_errormsg2 ( const char* message ) {
   LuaThread *L = thread_L;
 
   LuaString* s = L->l_G->strings_->Create(message);
@@ -585,15 +585,16 @@ l_noret luaG_errormsg2 ( const char* message ) {
     LuaResult result = L->stack_.reserve2(0);
     handleResult(result);
     luaD_call(L, 1, 1, 0);  /* call it */
-    throwError(LUA_ERRRUN);
+    return LUA_ERRRUN;
   }
   else {
     L->stack_.push_nocheck(error_arg);
-    throwError(LUA_ERRRUN);
+    return LUA_ERRRUN;
   }
 }
 
 l_noret luaG_runerror (const char* fmt, ...) {
+  LuaResult result = LUA_OK;
   char buffer1[256];
   char buffer2[256];
   
@@ -611,15 +612,18 @@ l_noret luaG_runerror (const char* fmt, ...) {
     if (src) {
       std::string buff = luaO_chunkid2(src->c_str());
       _snprintf(buffer2, 256, "%s:%d: %s", buff.c_str(), line, buffer1);
-      luaG_errormsg2(buffer2);
+      result = luaG_errormsg2(buffer2);
+      handleResult(result);
     }
     else {
       // no source available; use "?" instead
       _snprintf(buffer2, 256, "?:%d: %s", line, buffer1);
-      luaG_errormsg2(buffer2);
+      result = luaG_errormsg2(buffer2);
+      handleResult(result);
     }
   }
   else {
-    luaG_errormsg2(buffer1);
+    result = luaG_errormsg2(buffer1);
+    handleResult(result);
   }
 }
