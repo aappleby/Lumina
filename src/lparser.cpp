@@ -75,12 +75,10 @@ static l_noret semerror (LexState *ls, const char *msg) {
 }
 
 
-static l_noret error_expected (LexState *ls, int token) {
-  LuaResult result = LUA_OK;
+static LuaResult error_expected (LexState *ls, int token) {
   const char* token_text = luaX_token2str(ls, token);
   const char* text = luaO_pushfstring(ls->L, "%s expected", token_text);
-  result = luaX_syntaxerror(ls, text);
-  handleResult(result);
+  return luaX_syntaxerror(ls, text);
 }
 
 
@@ -112,14 +110,19 @@ static int testnext (LexState *ls, int c) {
 }
 
 
-static void check (LexState *ls, int c) {
-  if (ls->t.token != c)
-    error_expected(ls, c);
+static LuaResult check_token (LexState *ls, int c) {
+  LuaResult result = LUA_OK;
+  if (ls->t.token != c) {
+    result = error_expected(ls, c);
+  }
+  return result;
 }
 
 
 static void checknext (LexState *ls, int c) {
-  check(ls, c);
+  LuaResult result = LUA_OK;
+  result = check_token(ls, c);
+  handleResult(result);
   luaX_next(ls);
 }
 
@@ -139,8 +142,10 @@ static void check_condition(LexState* ls, bool c, const char* msg) {
 static void check_match (LexState *ls, int what, int who, int where) {
   LuaResult result = LUA_OK;
   if (!testnext(ls, what)) {
-    if (where == ls->linenumber)
-      error_expected(ls, what);
+    if (where == ls->linenumber) {
+      result = error_expected(ls, what);
+      handleResult(result);
+    }
     else {
       const char* what_token = luaX_token2str(ls, what);
       const char* who_token = luaX_token2str(ls, who);
@@ -153,8 +158,10 @@ static void check_match (LexState *ls, int what, int who, int where) {
 
 
 static LuaString *str_checkname (LexState *ls) {
+  LuaResult result = LUA_OK;
   LuaString *ts;
-  check(ls, TK_NAME);
+  result = check_token(ls, TK_NAME);
+  handleResult(result);
   ts = ls->t.seminfo.ts;
   luaX_next(ls);
   return ts;
@@ -1646,6 +1653,7 @@ static void statement (LexState *ls) {
 
 LuaProto *luaY_parser (LuaThread *L, ZIO *z, Mbuffer *buff,
                     Dyndata *dyd, const char *name, int firstchar) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(L);
   LexState lexstate;
   FuncState funcstate;
@@ -1654,7 +1662,7 @@ LuaProto *luaY_parser (LuaThread *L, ZIO *z, Mbuffer *buff,
 
   tname = thread_G->strings_->Create(name);
   /* push name to protect it */
-  LuaResult result = L->stack_.push_reserve2(LuaValue(tname));
+  result = L->stack_.push_reserve2(LuaValue(tname));
   handleResult(result);
 
   lexstate.buff = buff;
@@ -1664,7 +1672,10 @@ LuaProto *luaY_parser (LuaThread *L, ZIO *z, Mbuffer *buff,
   open_mainfunc(&lexstate, &funcstate, &bl);
   luaX_next(&lexstate);  /* read first token */
   statlist(&lexstate);  /* main body */
-  check(&lexstate, TK_EOS);
+  
+  result = check_token(&lexstate, TK_EOS);
+  handleResult(result);
+
   close_func(&lexstate);
   L->stack_.pop();  /* pop name */
   assert(!funcstate.prev && funcstate.num_upvals == 1 && !lexstate.fs);
