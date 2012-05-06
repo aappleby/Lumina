@@ -180,6 +180,7 @@ static void pushstr (LuaThread *L, const char *str, int l) {
 
 /* this function handles only `%d', `%c', %f, %p, and `%s' formats */
 const char *luaO_pushvfstring (const char *fmt, va_list argp) {
+  LuaResult result = LUA_OK;
   LuaThread* L = thread_L;
   int n = 0;
   for (;;) {
@@ -187,7 +188,7 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
     if (e == NULL) break;
 
     LuaString* s = thread_G->strings_->Create(fmt, int(e - fmt));
-    LuaResult result = L->stack_.push_reserve2(LuaValue(s));
+    result = L->stack_.push_reserve2(LuaValue(s));
     handleResult(result);
 
     switch (*(e+1)) {
@@ -205,13 +206,13 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
       }
       case 'd': 
         {
-          LuaResult result = L->stack_.push_reserve2( LuaValue(va_arg(argp, int)) );
+          result = L->stack_.push_reserve2( LuaValue(va_arg(argp, int)) );
           handleResult(result);
           break;
         }
       case 'f': 
         {
-          LuaResult result = L->stack_.push_reserve2( LuaValue(va_arg(argp, double)) );
+          result = L->stack_.push_reserve2( LuaValue(va_arg(argp, double)) );
           handleResult(result);
           break;
         }
@@ -226,7 +227,8 @@ const char *luaO_pushvfstring (const char *fmt, va_list argp) {
         break;
       }
       default: {
-        luaG_runerror("invalid option " LUA_QL("%%%c") " to " LUA_QL("lua_pushfstring"), *(e + 1));
+        result = luaG_runerror("invalid option " LUA_QL("%%%c") " to " LUA_QL("lua_pushfstring"), *(e + 1));
+        handleResult(result);
       }
     }
     n += 2;

@@ -509,6 +509,7 @@ static const char *getupvalname (LuaStackFrame *ci, const LuaValue *o, std::stri
 
 
 l_noret luaG_typeerror (const LuaValue *o, const char *op) {
+  LuaResult result = LUA_OK;
   LuaThread*L = thread_L;
   LuaStackFrame *ci = L->stack_.callinfo_;
   std::string name;
@@ -521,11 +522,14 @@ l_noret luaG_typeerror (const LuaValue *o, const char *op) {
       kind = getobjname2(ci->getFunc()->getLClosure()->proto_, ci->getCurrentPC(), cast_int(o - ci->getBase()), name);
     }
   }
-  if (kind)
-    luaG_runerror("attempt to %s %s " LUA_QS " (a %s value)",
-                op, kind, name.c_str(), t);
-  else
-    luaG_runerror("attempt to %s a %s value", op, t);
+  if (kind) {
+    result = luaG_runerror("attempt to %s %s " LUA_QS " (a %s value)", op, kind, name.c_str(), t);
+    handleResult(result);
+  }
+  else {
+    result = luaG_runerror("attempt to %s a %s value", op, t);
+    handleResult(result);
+  }
 }
 
 
@@ -537,12 +541,17 @@ l_noret luaG_concaterror (StkId p1, StkId p2) {
 
 
 l_noret luaG_ordererror (const LuaValue *p1, const LuaValue *p2) {
+  LuaResult result = LUA_OK;
   const char *t1 = objtypename(p1);
   const char *t2 = objtypename(p2);
-  if (t1 == t2)
-    luaG_runerror("attempt to compare two %s values", t1);
-  else
-    luaG_runerror("attempt to compare %s with %s", t1, t2);
+  if (t1 == t2) {
+    result = luaG_runerror("attempt to compare two %s values", t1);
+    handleResult(result);
+  }
+  else {
+    result = luaG_runerror("attempt to compare %s with %s", t1, t2);
+    handleResult(result);
+  }
 }
 
 l_noret luaG_errormsg () {
@@ -593,8 +602,7 @@ LuaResult luaG_errormsg2 ( const char* message ) {
   }
 }
 
-l_noret luaG_runerror (const char* fmt, ...) {
-  LuaResult result = LUA_OK;
+LuaResult luaG_runerror (const char* fmt, ...) {
   char buffer1[256];
   char buffer2[256];
   
@@ -612,18 +620,15 @@ l_noret luaG_runerror (const char* fmt, ...) {
     if (src) {
       std::string buff = luaO_chunkid2(src->c_str());
       _snprintf(buffer2, 256, "%s:%d: %s", buff.c_str(), line, buffer1);
-      result = luaG_errormsg2(buffer2);
-      handleResult(result);
+      return luaG_errormsg2(buffer2);
     }
     else {
       // no source available; use "?" instead
       _snprintf(buffer2, 256, "?:%d: %s", line, buffer1);
-      result = luaG_errormsg2(buffer2);
-      handleResult(result);
+      return luaG_errormsg2(buffer2);
     }
   }
   else {
-    result = luaG_errormsg2(buffer1);
-    handleResult(result);
+    return luaG_errormsg2(buffer1);
   }
 }

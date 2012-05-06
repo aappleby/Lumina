@@ -6,7 +6,7 @@
 #include <assert.h>
 
 l_noret luaG_typeerror (const LuaValue *o, const char *op);
-l_noret luaG_runerror (const char *fmt, ...);
+LuaResult luaG_runerror (const char *fmt, ...);
 
 __declspec(thread) LuaThread* thread_L = NULL;
 __declspec(thread) LuaVM* thread_G = NULL;
@@ -73,12 +73,15 @@ void throwError(LuaResult err) {
 
 void handleResult(LuaResult err, const LuaValue* val)
 {
+  LuaResult result = LUA_OK;
+
   switch(err) {
     case LUA_OK:
       return;
 
     case LUA_ERRSTACK:
-      luaG_runerror("stack overflow");
+      result = luaG_runerror("stack overflow");
+      handleResult(result);
       return;
 
     case LUA_BAD_TABLE:
@@ -90,7 +93,8 @@ void handleResult(LuaResult err, const LuaValue* val)
       return;
 
     case LUA_META_LOOP:
-      luaG_runerror("loop in gettable");
+      result = luaG_runerror("loop in gettable");
+      handleResult(result);
       return;
 
     default:

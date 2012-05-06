@@ -1074,7 +1074,7 @@ int lua_error (LuaThread *L) {
 }
 
 int lua_next (LuaThread* L, int idx) {
-
+  LuaResult result = LUA_OK;
   LuaTable* t = L->stack_.at(idx).getTable();
 
   LuaValue key = L->stack_.pop();
@@ -1083,7 +1083,8 @@ int lua_next (LuaThread* L, int idx) {
   if(!key.isNil()) {
     bool found = t->keyToTableIndex(key,start);
     if(!found) {
-      luaG_runerror("invalid key to 'next'");
+      result = luaG_runerror("invalid key to 'next'");
+      handleResult(result);
     }
   }
 

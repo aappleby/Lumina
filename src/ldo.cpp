@@ -440,14 +440,19 @@ int lua_resume (LuaThread *L, LuaThread * /*from*/, int nargs) {
 
 
 int lua_yield (LuaThread *L, int nresults) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(L);
   LuaStackFrame *ci = L->stack_.callinfo_;
   L->stack_.checkArgs(nresults);
   if (L->nonyieldable_count_ > 0) {
-    if (L != G(L)->mainthread)
-      luaG_runerror("attempt to yield across metamethod/C-call boundary");
-    else
-      luaG_runerror("attempt to yield from outside a coroutine");
+    if (L != G(L)->mainthread) {
+      result = luaG_runerror("attempt to yield across metamethod/C-call boundary");
+      handleResult(result);
+    }
+    else {
+      result = luaG_runerror("attempt to yield from outside a coroutine");
+      handleResult(result);
+    }
   }
 
   L->status = LUA_YIELD;
@@ -463,14 +468,19 @@ int lua_yield (LuaThread *L, int nresults) {
 }
 
 int lua_yieldk (LuaThread *L, int nresults, int ctx, LuaCallback k) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(L);
   L->stack_.checkArgs(nresults);
 
   if (L->nonyieldable_count_ > 0) {
-    if (L != G(L)->mainthread)
-      luaG_runerror("attempt to yield across metamethod/C-call boundary");
-    else
-      luaG_runerror("attempt to yield from outside a coroutine");
+    if (L != G(L)->mainthread) {
+      result = luaG_runerror("attempt to yield across metamethod/C-call boundary");
+      handleResult(result);
+    }
+    else {
+      result = luaG_runerror("attempt to yield from outside a coroutine");
+      handleResult(result);
+    }
   }
 
   L->status = LUA_YIELD;

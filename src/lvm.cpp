@@ -181,6 +181,7 @@ void luaV_gettable (LuaThread *L, const LuaValue *source, LuaValue *key, StkId o
 // as an example of baaaaaad code.
 
 void luaV_settable (LuaThread *L, const LuaValue *t2, LuaValue *key, StkId val) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(L);
   int loop;
   LuaValue cursor = *t2;
@@ -192,12 +193,19 @@ void luaV_settable (LuaThread *L, const LuaValue *t2, LuaValue *key, StkId val) 
       /* if previous value is not nil, there must be a previous entry
          in the table; moreover, a metamethod has no relevance */
       if (!oldval.isNone() && !oldval.isNil()) {
-        if(key->isNil()) luaG_runerror("Key is invalid (either nil or NaN)");
-        if(key->isNone()) luaG_runerror("Key is invalid (either nil or NaN)");
+        if(key->isNil()) {
+          result = luaG_runerror("Key is invalid (either nil or NaN)");
+          handleResult(result);
+        }
+        if(key->isNone()) {
+          result = luaG_runerror("Key is invalid (either nil or NaN)");
+          handleResult(result);
+        }
         if(key->isNumber()) {
           double n = key->getNumber();
           if(n != n) {
-            luaG_runerror("Key is invalid (either nil or NaN)");
+            result = luaG_runerror("Key is invalid (either nil or NaN)");
+            handleResult(result);
           }
         }
 
@@ -211,12 +219,19 @@ void luaV_settable (LuaThread *L, const LuaValue *t2, LuaValue *key, StkId val) 
       LuaValue tagmethod = fasttm2(h->metatable, TM_NEWINDEX);
       if (tagmethod.isNil() || tagmethod.isNone()) {
         // no metamethod, add (key,val) to table
-        if(key->isNil()) luaG_runerror("Key is invalid (either nil or NaN)");
-        if(key->isNone()) luaG_runerror("Key is invalid (either nil or NaN)");
+        if(key->isNil()) {
+          result = luaG_runerror("Key is invalid (either nil or NaN)");
+          handleResult(result);
+        }
+        if(key->isNone()) {
+          result = luaG_runerror("Key is invalid (either nil or NaN)");
+          handleResult(result);
+        }
         if(key->isNumber()) {
           double n = key->getNumber();
           if(n != n) {
-            luaG_runerror("Key is invalid (either nil or NaN)");
+            result = luaG_runerror("Key is invalid (either nil or NaN)");
+            handleResult(result);
           }
         }
 
@@ -252,7 +267,8 @@ void luaV_settable (LuaThread *L, const LuaValue *t2, LuaValue *key, StkId val) 
       }
     }
   }
-  luaG_runerror("loop in settable");
+  result = luaG_runerror("loop in settable");
+  handleResult(result);
 }
 
 
@@ -392,6 +408,7 @@ int luaV_equalobj_ (LuaThread *L, const LuaValue *t1, const LuaValue *t2) {
 // Having code with side effects (tostring) in conditionals doesn't help.
 
 void luaV_concat (LuaThread *L, int total) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(L);
   assert(total >= 2);
   do {
@@ -446,8 +463,10 @@ void luaV_concat (LuaThread *L, int total) {
       }
 
       size_t l = top[-i-1].getString()->getLen();
-      if (l >= (MAX_SIZET/sizeof(char)) - tl)
-        luaG_runerror("string length overflow");
+      if (l >= (MAX_SIZET/sizeof(char)) - tl) {
+        result = luaG_runerror("string length overflow");
+        handleResult(result);
+      }
       tl += l;
     }
     buffer = luaZ_openspace(L, &G(L)->buff, tl);
@@ -652,6 +671,8 @@ enum RunResult {
 };
 
 RunResult luaV_run2 (LuaThread *L) {
+  LuaResult result = LUA_OK;
+
   THREAD_CHECK(L);
   
   /* main loop of interpreter */
@@ -1148,9 +1169,18 @@ RunResult luaV_run2 (LuaThread *L) {
           LuaValue limit = base[A+1].convertToNumber();
           LuaValue step  = base[A+2].convertToNumber();
 
-          if (index.isNone()) luaG_runerror(LUA_QL("for") " initial value must be a number");
-          if (limit.isNone()) luaG_runerror(LUA_QL("for") " limit must be a number");
-          if (step.isNone())  luaG_runerror(LUA_QL("for") " step must be a number");
+          if (index.isNone()) {
+            result = luaG_runerror(LUA_QL("for") " initial value must be a number");
+            handleResult(result);
+          }
+          if (limit.isNone()) {
+            result = luaG_runerror(LUA_QL("for") " limit must be a number");
+            handleResult(result);
+          }
+          if (step.isNone()) {
+            result = luaG_runerror(LUA_QL("for") " step must be a number");
+            handleResult(result);
+          }
 
           base[A+0] = index.getNumber() - step.getNumber();
           base[A+1] = limit;
@@ -1267,12 +1297,15 @@ void luaV_run (LuaThread *L) {
 }
 
 void luaV_execute (LuaThread *L, int funcindex, int /*nresults*/) {
+  LuaResult result = LUA_OK;
 
   ScopedCallDepth d(L);
   if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
-    luaG_runerror("C stack overflow");
+    result = luaG_runerror("C stack overflow");
+    handleResult(result);
   } else if (L->l_G->call_depth_ >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3))) {
-    throwError(LUA_ERRERR);
+    result = LUA_ERRERR;
+    handleResult(result);
   }
 
   LuaValue f1 = L->stack_[funcindex];

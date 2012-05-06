@@ -10,7 +10,7 @@
 
 #include "ldo.h"
 
-l_noret luaG_runerror (const char *fmt, ...);
+LuaResult luaG_runerror (const char *fmt, ...);
 
 //-----------------------------------------------------------------------------
 
