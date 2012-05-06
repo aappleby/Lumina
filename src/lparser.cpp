@@ -52,7 +52,7 @@ public:
 /*
 ** prototypes for recursive non-terminal functions
 */
-static void statement (LexState *ls);
+static LuaResult statement (LexState *ls);
 static void expr (LexState *ls, expdesc *v);
 
 
@@ -630,13 +630,16 @@ static int block_follow (LexState *ls, int withuntil) {
 
 
 static void statlist (LexState *ls) {
+  LuaResult result = LUA_OK;
   /* statlist -> { stat [`;'] } */
   while (!block_follow(ls, 1)) {
     if (ls->t.token == TK_RETURN) {
-      statement(ls);
+      result = statement(ls);
+      handleResult(result);
       return;  /* 'return' must be last statement */
     }
-    statement(ls);
+    result = statement(ls);
+    handleResult(result);
   }
 }
 
@@ -1201,12 +1204,12 @@ static void check_conflict (LexState *ls, struct LHS_assign *lh, expdesc *v) {
 }
 
 
-static void assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
+static LuaResult assignment2 (LexState *ls, struct LHS_assign *lh, int nvars) {
   LuaResult result = LUA_OK;
   expdesc e;
 
   result = check_condition(ls, vkisvar(lh->v.k), "syntax error");
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   if (testnext(ls, ',')) {  /* assignment -> `,' primaryexp assignment */
     struct LHS_assign nv;
@@ -1221,13 +1224,14 @@ static void assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
       errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
     }
 
-    assignment(ls, &nv, nvars+1);
+    result = assignment2(ls, &nv, nvars+1);
+    if(result != LUA_OK) return result;
   }
   else {  /* assignment -> `=' explist */
     int nexps;
     
     result = check_next(ls, '=');
-    handleResult(result);
+    if(result != LUA_OK) return result;
 
     nexps = explist(ls, &e);
     if (nexps != nvars) {
@@ -1238,11 +1242,12 @@ static void assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
     else {
       luaK_setoneret(ls->fs, &e);  /* close last expression */
       luaK_storevar(ls->fs, &lh->v, &e);
-      return;  /* avoid default */
+      return result;  /* avoid default */
     }
   }
   init_exp(&e, VNONRELOC, ls->fs->freereg-1);  /* default assignment */
   luaK_storevar(ls->fs, &lh->v, &e);
+  return result;
 }
 
 
@@ -1297,8 +1302,10 @@ static void labelstat (LexState *ls, LuaString *label, int line) {
   /* create new entry for this label */
   l = newlabelentry(ls, ll, label, line, fs->pc);
   /* skip other no-op statements */
-  while (ls->t.token == ';' || ls->t.token == TK_DBCOLON)
-    statement(ls);
+  while (ls->t.token == ';' || ls->t.token == TK_DBCOLON) {
+    result = statement(ls);
+    handleResult(result);
+  }
   if (block_follow(ls, 0)) {  /* label is last no-op statement in the block? */
     /* assume that locals are already out of scope */
     ll->arr[l].nactvar = fs->bl->nactvar;
@@ -1592,16 +1599,18 @@ static void funcstat (LexState *ls, int line) {
 }
 
 
-static void exprstat (LexState *ls) {
+static LuaResult exprstat (LexState *ls) {
   /* stat -> func | assignment */
   FuncState *fs = ls->fs;
   struct LHS_assign v;
   primaryexp(ls, &v.v);
-  if (v.v.k == VCALL)  /* stat -> func */
+  if (v.v.k == VCALL) {  /* stat -> func */
     SETARG_C(getcode(fs, &v.v), 1);  /* call statement uses no results */
+    return LUA_OK;
+  }
   else {  /* stat -> assignment */
     v.prev = NULL;
-    assignment(ls, &v, 1);
+    return assignment2(ls, &v, 1);
   }
 }
 
@@ -1639,14 +1648,13 @@ static void retstat (LexState *ls) {
 }
 
 
-static void statement (LexState *ls) {
+static LuaResult statement (LexState *ls) {
   LuaResult result = LUA_OK;
   ScopedCallDepth d(ls->L);
 
   if (ls->L->l_G->call_depth_ > LUAI_MAXCCALLS) {
     errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
   }
-
 
   int line = ls->linenumber;  /* may be needed for error messages */
 
@@ -1667,7 +1675,7 @@ static void statement (LexState *ls) {
       luaX_next(ls);  /* skip DO */
       block(ls);
       result = check_match(ls, TK_END, TK_DO, line);
-      handleResult(result);
+      if(result != LUA_OK) return result;
       break;
     }
     case TK_FOR: {  /* stat -> forstat */
@@ -1706,13 +1714,15 @@ static void statement (LexState *ls) {
       break;
     }
     default: {  /* stat -> func | assignment */
-      exprstat(ls);
+      result = exprstat(ls);
+      if(result != LUA_OK) return result;
       break;
     }
   }
   assert(ls->fs->f->maxstacksize >= ls->fs->freereg &&
              ls->fs->freereg >= ls->fs->nactvar);
   ls->fs->freereg = ls->fs->nactvar;  /* free registers */
+  return result;
 }
 
 /* }====================================================================== */
