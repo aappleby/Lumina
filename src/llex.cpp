@@ -141,17 +141,14 @@ LuaString *luaX_newstring (LexState *ls, const char *str, size_t l) {
 ** \n, \r, \n\r, or \r\n)
 */
 static void inclinenumber (LexState *ls) {
-  LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   int old = ls->current;
   assert(currIsNewline(ls));
   next(ls);  /* skip `\n' or `\r' */
-  if (currIsNewline(ls) && ls->current != old)
+  if (currIsNewline(ls) && ls->current != old) {
     next(ls);  /* skip `\n\r' or `\r\n' */
-  if (++ls->linenumber >= MAX_INT) {
-    result = luaX_syntaxerror(ls, "chunk has too many lines");
-    handleResult(result);
   }
+  ls->linenumber++;
 }
 
 
@@ -271,7 +268,7 @@ static int skip_sep (LexState *ls) {
 }
 
 
-static void read_long_string (LexState *ls, SemInfo *seminfo, int sep) {
+static LuaResult read_long_string (LexState *ls, SemInfo *seminfo, int sep) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   /* skip 2nd `[' */
@@ -284,9 +281,9 @@ static void read_long_string (LexState *ls, SemInfo *seminfo, int sep) {
   for (;;) {
     switch (ls->current) {
       case EOZ:
-        result = lexerror(ls, (seminfo) ? "unfinished long string" :
-                                          "unfinished long comment", TK_EOS);
-        handleResult(result);
+        return lexerror(ls, (seminfo) ? "unfinished long string" :
+                                        "unfinished long comment", TK_EOS);
+        
         break;  /* to avoid warnings */
       case ']': {
         if (skip_sep(ls) == sep) {
@@ -319,6 +316,7 @@ endloop:
     seminfo->ts = luaX_newstring(ls, luaZ_buffer(ls->buff) + (2 + sep),
                                      luaZ_bufflen(ls->buff) - 2*(2 + sep));
   }
+  return result;
 }
 
 
@@ -462,7 +460,8 @@ static LuaResult llex (LexState *ls, SemInfo *seminfo, int& out) {
           int sep = skip_sep(ls);
           luaZ_resetbuffer(ls->buff);  /* `skip_sep' may dirty the buffer */
           if (sep >= 0) {
-            read_long_string(ls, NULL, sep);  /* skip long comment */
+            result = read_long_string(ls, NULL, sep);  /* skip long comment */
+            if(result != LUA_OK) return result;
             luaZ_resetbuffer(ls->buff);  /* previous call may dirty the buff. */
             break;
           }
@@ -475,7 +474,8 @@ static LuaResult llex (LexState *ls, SemInfo *seminfo, int& out) {
       case '[': {  /* long string or simply '[' */
         int sep = skip_sep(ls);
         if (sep >= 0) {
-          read_long_string(ls, seminfo, sep);
+          result = read_long_string(ls, seminfo, sep);
+          if(result != LUA_OK) return result;
           out = TK_STRING;
           return result;
         }
