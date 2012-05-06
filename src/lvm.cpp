@@ -1062,7 +1062,11 @@ RunResult luaV_run2 (LuaThread *L) {
           }
 
           int funcindex = L->stack_.topsize() - nargs - 1;
-          if (luaD_precall2(L, funcindex, nresults)) {  /* C function? */
+          LuaValue func = L->stack_[funcindex];
+
+          luaD_precall2(L, funcindex, nresults);
+
+          if (func.isCallback() || func.isCClosure()) {  /* C function? */
             luaV_execute(L, funcindex, nresults);
             if (nresults >= 0) {
               L->stack_.top_ = ci->getTop();  /* adjust results */
@@ -1090,7 +1094,10 @@ RunResult luaV_run2 (LuaThread *L) {
 
           int funcindex = L->stack_.topsize() - nargs - 1;
 
-          if (!luaD_precall2(L, funcindex, LUA_MULTRET)) {
+          luaD_precall2(L, funcindex, LUA_MULTRET);
+
+          LuaValue func = L->stack_[funcindex];
+          if (!func.isCallback() && !func.isCClosure()) {
             /* tail call: put called frame (n) in place of caller one (o) */
             LuaStackFrame *nci = L->stack_.callinfo_;  /* called frame */
             LuaStackFrame *oci = nci->previous;  /* caller frame */

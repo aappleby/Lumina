@@ -92,7 +92,7 @@ void luaD_hook (LuaThread *L, int event, int line) {
 }
 
 
-static void tryfuncTM (LuaThread *L, int funcindex) {
+static LuaResult  tryfuncTM (LuaThread *L, int funcindex) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(L);
 
@@ -101,7 +101,7 @@ static void tryfuncTM (LuaThread *L, int funcindex) {
 
   if (!tm.isFunction()) {
     result = luaG_typeerror(func, "call");
-    handleResult(result);
+    if(result != LUA_OK) return result;
   }
 
   int nargs = L->stack_.topsize() - funcindex - 1;
@@ -113,20 +113,22 @@ static void tryfuncTM (LuaThread *L, int funcindex) {
   L->stack_.top_++;
 
   result = L->stack_.reserve2(0);
-  handleResult(result);
+  return result;
 }
 
 
 /*
 ** returns true if function has been executed (C function)
 */
-int luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
+void luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(L);
 
   LuaValue func = L->stack_[funcindex];
 
   if(!func.isFunction()) {
-    tryfuncTM(L, funcindex);  /* retry with 'function' tag method */
+    result = tryfuncTM(L, funcindex);  /* retry with 'function' tag method */
+    handleResult(result);
     func = L->stack_[funcindex];
     assert(func.isFunction());
   }
@@ -158,8 +160,6 @@ int luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
       luaD_hook(L, LUA_HOOKCALL, -1);
     }
   }
-
-  return isC;
 }
 
 void luaD_postcall (LuaThread *L, StkId firstResult) {
