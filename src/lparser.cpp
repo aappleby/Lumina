@@ -53,7 +53,7 @@ public:
 ** prototypes for recursive non-terminal functions
 */
 static LuaResult statement (LexState *ls);
-static void expr (LexState *ls, expdesc *v);
+static LuaResult expr (LexState *ls, expdesc *v);
 
 
 static void anchor_token (LexState *ls) {
@@ -659,7 +659,8 @@ static void yindex (LexState *ls, expdesc *v) {
   LuaResult result = LUA_OK;
   /* index -> '[' expr ']' */
   luaX_next(ls);  /* skip the '[' */
-  expr(ls, v);
+  result = expr(ls, v);
+  handleResult(result);
   luaK_exp2val(ls->fs, v);
   result = check_next(ls, ']');
   handleResult(result);
@@ -699,7 +700,8 @@ static void recfield (LexState *ls, struct ConsControl *cc) {
   result = check_next(ls, '=');
   handleResult(result);
   rkkey = luaK_exp2RK(fs, &key);
-  expr(ls, &val);
+  result = expr(ls, &val);
+  handleResult(result);
   luaK_codeABC(fs, OP_SETTABLE, cc->t->info, rkkey, luaK_exp2RK(fs, &val));
   fs->freereg = reg;  /* free registers */
 }
@@ -732,8 +734,10 @@ static void lastlistfield (FuncState *fs, struct ConsControl *cc) {
 
 
 static void listfield (LexState *ls, struct ConsControl *cc) {
+  LuaResult result = LUA_OK;
   /* listfield -> exp */
-  expr(ls, &cc->v);
+  result = expr(ls, &cc->v);
+  handleResult(result);
   checklimit(ls->fs, cc->na, MAX_INT, "items in a constructor");
   cc->na++;
   cc->tostore++;
@@ -865,12 +869,15 @@ static void body (LexState *ls, expdesc *e, int ismethod, int line) {
 
 
 static int explist (LexState *ls, expdesc *v) {
+  LuaResult result = LUA_OK;
   /* explist -> expr { `,' expr } */
   int n = 1;  /* at least one expression */
-  expr(ls, v);
+  result = expr(ls, v);
+  handleResult(result);
   while (testnext(ls, ',')) {
     luaK_exp2nextreg(ls->fs, v);
-    expr(ls, v);
+    result = expr(ls, v);
+    handleResult(result);
     n++;
   }
   return n;
@@ -942,7 +949,8 @@ static LuaResult prefixexp (LexState *ls, expdesc *v) {
     case '(': {
       int line = ls->linenumber;
       luaX_next(ls);
-      expr(ls, v);
+      result = expr(ls, v);
+      if(result != LUA_OK) return result;
       
       result = check_match(ls, ')', '(', line);
       if(result != LUA_OK) return result;
@@ -1102,7 +1110,8 @@ static const struct {
 ** subexpr -> (simpleexp | unop subexpr) { binop subexpr }
 ** where `binop' is any binary operator with a priority higher than `limit'
 */
-static void subexpr (LexState *ls, expdesc *v, int limit, BinOpr& out) {
+static LuaResult subexpr (LexState *ls, expdesc *v, int limit, BinOpr& out) {
+  LuaResult result = LUA_OK;
   ScopedCallDepth d(ls->L);
 
   if (ls->L->l_G->call_depth_ > LUAI_MAXCCALLS) {
@@ -1114,12 +1123,13 @@ static void subexpr (LexState *ls, expdesc *v, int limit, BinOpr& out) {
     int line = ls->linenumber;
     luaX_next(ls);
     BinOpr temp;
-    subexpr(ls, v, UNARY_PRIORITY, temp);
+    result = subexpr(ls, v, UNARY_PRIORITY, temp);
+    if(result != LUA_OK) return result;
     luaK_prefix(ls->fs, uop, v, line);
   }
   else {
     LuaResult result = simpleexp(ls, v);
-    handleResult(result);
+    if(result != LUA_OK) return result;
   }
 
   /* expand while operators have priorities higher than `limit' */
@@ -1131,19 +1141,21 @@ static void subexpr (LexState *ls, expdesc *v, int limit, BinOpr& out) {
     luaX_next(ls);
     luaK_infix(ls->fs, op, v);
     /* read sub-expression with higher priority */
-    subexpr(ls, &v2, priority[op].right, nextop);
+    result = subexpr(ls, &v2, priority[op].right, nextop);
+    if(result != LUA_OK) return result;
     luaK_posfix(ls->fs, op, v, &v2, line);
     op = nextop;
   }
 
   /* return first untreated operator */
   out = op;
+  return result;
 }
 
 
-static void expr (LexState *ls, expdesc *v) {
+static LuaResult expr (LexState *ls, expdesc *v) {
   BinOpr temp;
-  subexpr(ls, v, 0, temp);
+  return subexpr(ls, v, 0, temp);
 }
 
 /* }==================================================================== */
@@ -1265,9 +1277,11 @@ static LuaResult assignment2 (LexState *ls, struct LHS_assign *lh, int nvars) {
 
 
 static int cond (LexState *ls) {
+  LuaResult result = LUA_OK;
   /* cond -> exp */
   expdesc v;
-  expr(ls, &v);  /* read condition */
+  result = expr(ls, &v);  /* read condition */
+  handleResult(result);
   if (v.k == VNIL) v.k = VFALSE;  /* `falses' are all equal here */
   luaK_goiftrue(ls->fs, &v);
   return v.f;
@@ -1379,9 +1393,11 @@ static void repeatstat (LexState *ls, int line) {
 
 
 static int exp1 (LexState *ls) {
+  LuaResult result = LUA_OK;
   expdesc e;
   int reg;
-  expr(ls, &e);
+  result = expr(ls, &e);
+  handleResult(result);
   luaK_exp2nextreg(ls->fs, &e);
   assert(e.k == VNONRELOC);
   reg = e.info;
@@ -1515,7 +1531,8 @@ static void test_then_block (LexState *ls, int *escapelist) {
   expdesc v;
   int jf;  /* instruction to skip 'then' code (if condition is false) */
   luaX_next(ls);  /* skip IF or ELSEIF */
-  expr(ls, &v);  /* read condition */
+  result = expr(ls, &v);  /* read condition */
+  handleResult(result);
   
   result = check_next(ls, TK_THEN);
   handleResult(result);
