@@ -325,11 +325,11 @@ static int singlevaraux (FuncState *fs, LuaString *n, expdesc *var, int base) {
 }
 
 
-static void singlevar (LexState *ls, expdesc *var) {
+static LuaResult singlevar (LexState *ls, expdesc *var) {
   LuaResult result = LUA_OK;
   LuaString *varname;
   result = str_checkname(ls, varname);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   FuncState *fs = ls->fs;
   if (singlevaraux(fs, varname, var, 1) == VVOID) {  /* global name? */
@@ -339,6 +339,7 @@ static void singlevar (LexState *ls, expdesc *var) {
     codestring(ls, &key, varname);  /* key is variable name */
     luaK_indexed(fs, var, &key);  /* env[varname] */
   }
+  return result;
 }
 
 
@@ -976,8 +977,7 @@ static LuaResult prefixexp (LexState *ls, expdesc *v) {
       return result;
     }
     case TK_NAME: {
-      singlevar(ls, v);
-      return result;
+      return singlevar(ls, v);
     }
     default: {
       result = luaX_syntaxerror(ls, "unexpected symbol");
@@ -1653,29 +1653,35 @@ static void localstat (LexState *ls) {
 }
 
 
-static int funcname (LexState *ls, expdesc *v) {
+static LuaResult funcname (LexState *ls, expdesc *v, int& out) {
+  LuaResult result = LUA_OK;
   /* funcname -> NAME {fieldsel} [`:' NAME] */
   int ismethod = 0;
-  singlevar(ls, v);
+  result = singlevar(ls, v);
+  if(result != LUA_OK) return result;
   while (ls->t.token == '.')
     fieldsel(ls, v);
   if (ls->t.token == ':') {
     ismethod = 1;
     fieldsel(ls, v);
   }
-  return ismethod;
+  out = ismethod;
+  return result;
 }
 
 
-static void funcstat (LexState *ls, int line) {
+static LuaResult funcstat (LexState *ls, int line) {
+  LuaResult result = LUA_OK;
   /* funcstat -> FUNCTION funcname body */
   int ismethod;
   expdesc v, b;
   luaX_next(ls);  /* skip FUNCTION */
-  ismethod = funcname(ls, &v);
+  result = funcname(ls, &v, ismethod);
+  if(result != LUA_OK) return result;
   body(ls, &b, ismethod, line);
   luaK_storevar(ls->fs, &v, &b);
   luaK_fixline(ls->fs, line);  /* definition `happens' in the first line */
+  return result;
 }
 
 
@@ -1775,22 +1781,25 @@ static LuaResult statement (LexState *ls) {
       break;
     }
     case TK_FUNCTION: {  /* stat -> funcstat */
-      funcstat(ls, line);
+      result = funcstat(ls, line);
+      if(result != LUA_OK) return result;
       break;
     }
     case TK_LOCAL: {  /* stat -> localstat */
       luaX_next(ls);  /* skip LOCAL */
-      if (testnext(ls, TK_FUNCTION))  /* local function? */
+      if (testnext(ls, TK_FUNCTION)) {  /* local function? */
         localfunc(ls);
-      else
+      }
+      else {
         localstat(ls);
+      }
       break;
     }
     case TK_DBCOLON: {  /* stat -> label */
       luaX_next(ls);  /* skip double colon */
       LuaString* temp;
       result = str_checkname(ls, temp);
-      handleResult(result);
+      if(result != LUA_OK) return result;
       labelstat(ls, temp, line);
       break;
     }
