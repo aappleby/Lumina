@@ -158,8 +158,6 @@ int luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
 
 int luaD_postcall (LuaThread *L, StkId firstResult) {
   THREAD_CHECK(L);
-  StkId res;
-  int wanted, i;
 
   LuaStackFrame *ci = L->stack_.callinfo_;
 
@@ -172,22 +170,26 @@ int luaD_postcall (LuaThread *L, StkId firstResult) {
     L->oldpc = ci->previous->getCurrentPC();  /* 'oldpc' for caller function */
   }
 
-  res = ci->getFunc();  /* res == final position of 1st result */
-  wanted = ci->nresults;
-  L->stack_.callinfo_ = ci = ci->previous;  /* back to caller */
+  LuaValue* res = ci->getFunc();  /* res == final position of 1st result */
 
   /* move results to correct place */
-  for (i = wanted; i != 0 && firstResult < L->stack_.top_; i--) {
-    *res = *firstResult;
-    res++;
-    firstResult++;
+  int nresults = (ci->nresults == LUA_MULTRET) ? L->stack_.top_ - firstResult : ci->nresults;
+
+  for(int i = 0; i < nresults; i++) {
+    if(firstResult < L->stack_.top_) {
+      res[i] = *firstResult++;
+    }
+    else {
+      res[i] = LuaValue::Nil();
+    }
   }
-  while (i-- > 0) {
-    *res = LuaValue::Nil();
-    res++;
-  }
-  L->stack_.top_ = res;
-  return (wanted - LUA_MULTRET);  /* 0 iff wanted == LUA_MULTRET */
+
+  L->stack_.top_ = res + nresults;
+
+  int result = ci->nresults + 1;
+
+  L->stack_.callinfo_ = ci->previous;  /* back to caller */
+  return result;  /* 0 iff wanted == LUA_MULTRET */
 }
 
 

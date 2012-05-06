@@ -1087,12 +1087,23 @@ void luaV_run (LuaThread *L) {
           break;
         }
 
-        // NO BREAK
       case OP_RETURN:
         {
+          int nresults = GETARG_B(i) - 1;
+
+          if(nresults == -1) {
+            nresults = L->stack_.top_ - ra;
+          }
+          else {
+             L->stack_.top_ = ra + nresults;
+          }
+
           int b = GETARG_B(i);
-          if (b != 0) L->stack_.top_ = ra+b-1;
-          if (cl->proto_->subprotos_.size() > 0) L->stack_.closeUpvals(base);
+
+          if (cl->proto_->subprotos_.size() > 0) {
+            L->stack_.closeUpvals(base);
+          }
+
           b = luaD_postcall(L, ra);
           if (!(ci->callstatus & CIST_REENTRY)) {  /* 'ci' still the called one */
             return;  /* external invocation: return */
