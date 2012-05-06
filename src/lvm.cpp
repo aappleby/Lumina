@@ -1098,19 +1098,18 @@ void luaV_run (LuaThread *L) {
              L->stack_.top_ = ra + nresults;
           }
 
-          int b = GETARG_B(i);
-
           if (cl->proto_->subprotos_.size() > 0) {
             L->stack_.closeUpvals(base);
           }
 
-          b = luaD_postcall(L, ra);
+          int wanted = ci->nresults;
+          luaD_postcall(L, ra);
           if (!(ci->callstatus & CIST_REENTRY)) {  /* 'ci' still the called one */
             return;  /* external invocation: return */
           }
           else {  /* invocation via reentry: continue execution */
             ci = L->stack_.callinfo_;
-            if (b) {
+            if (wanted >= 0) {
               L->stack_.top_ = ci->getTop();
             }
             assert(ci->getCurrentOp() == OP_CALL);

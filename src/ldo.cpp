@@ -156,7 +156,7 @@ int luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
   return isC;
 }
 
-int luaD_postcall (LuaThread *L, StkId firstResult) {
+void luaD_postcall (LuaThread *L, StkId firstResult) {
   THREAD_CHECK(L);
 
   LuaStackFrame *ci = L->stack_.callinfo_;
@@ -185,11 +185,7 @@ int luaD_postcall (LuaThread *L, StkId firstResult) {
   }
 
   L->stack_.top_ = res + nresults;
-
-  int result = ci->nresults + 1;
-
   L->stack_.callinfo_ = ci->previous;  /* back to caller */
-  return result;  /* 0 iff wanted == LUA_MULTRET */
 }
 
 
