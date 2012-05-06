@@ -62,7 +62,7 @@ protected:
 
   // only for Lua functions
   const Instruction* code;
-  const Instruction* savedpc;
+  int savedpc;
 
   LuaStackFrame() {
     stack_ = NULL;
@@ -73,7 +73,7 @@ protected:
     nresults = 0;
     callstatus = 0;
     base_index_ = 0;
-    savedpc = NULL;
+    savedpc = -1;
 
     continuation_ = NULL;
     continuation_context_ = 0;
