@@ -879,14 +879,16 @@ int lua_pcall (LuaThread *L, int nargs, int nresults, int errfunc) {
 
   L->errfunc = errfunc_index;
 
-  LuaResult status = LUA_OK;
   try {
     L->nonyieldable_count_++;
 
     int funcIndex = L->stack_.topsize() - nargs - 1;
 
     result = luaD_precall2(L, funcIndex, nresults);
-    handleResult(result);
+    if(result != LUA_OK) {
+      L->restoreState(s, result, nresults);
+      return result;
+    }
 
     luaV_execute(L, funcIndex, nresults);
 
@@ -897,11 +899,11 @@ int lua_pcall (LuaThread *L, int nargs, int nresults, int errfunc) {
     l_memcontrol.checkLimit();
   }
   catch(LuaResult error) {
-    status = error;
+    result = error;
   }
 
-  L->restoreState(s, status, nresults);
-  return status;
+  L->restoreState(s, result, nresults);
+  return result;
 }
 
 int lua_pcallk (LuaThread *L, int nargs, int nresults, int errfunc,
