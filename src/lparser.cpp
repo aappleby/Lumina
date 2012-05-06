@@ -935,9 +935,9 @@ static void funcargs (LexState *ls, expdesc *f, int line) {
 */
 
 
-static void prefixexp (LexState *ls, expdesc *v) {
+// prefixexp -> NAME | '(' expr ')'
+static LuaResult prefixexp (LexState *ls, expdesc *v) {
   LuaResult result = LUA_OK;
-  /* prefixexp -> NAME | '(' expr ')' */
   switch (ls->t.token) {
     case '(': {
       int line = ls->linenumber;
@@ -945,29 +945,31 @@ static void prefixexp (LexState *ls, expdesc *v) {
       expr(ls, v);
       
       result = check_match(ls, ')', '(', line);
-      handleResult(result);
+      if(result != LUA_OK) return result;
 
       luaK_dischargevars(ls->fs, v);
-      return;
+      return result;
     }
     case TK_NAME: {
       singlevar(ls, v);
-      return;
+      return result;
     }
     default: {
       result = luaX_syntaxerror(ls, "unexpected symbol");
-      handleResult(result);
+      if(result != LUA_OK) return result;
     }
   }
+  return result;
 }
 
 
-static void primaryexp (LexState *ls, expdesc *v) {
-  /* primaryexp ->
-        prefixexp { `.' NAME | `[' exp `]' | `:' NAME funcargs | funcargs } */
+// primaryexp -> prefixexp { `.' NAME | `[' exp `]' | `:' NAME funcargs | funcargs }
+static LuaResult primaryexp (LexState *ls, expdesc *v) {
+  LuaResult result = LUA_OK;
   FuncState *fs = ls->fs;
   int line = ls->linenumber;
-  prefixexp(ls, v);
+  result = prefixexp(ls, v);
+  if(result != LUA_OK) return result;
   for (;;) {
     switch (ls->t.token) {
       case '.': {  /* fieldsel */
@@ -994,16 +996,15 @@ static void primaryexp (LexState *ls, expdesc *v) {
         funcargs(ls, v, line);
         break;
       }
-      default: return;
+      default: return result;
     }
   }
 }
 
 
-static void simpleexp (LexState *ls, expdesc *v) {
+// simpleexp -> NUMBER | STRING | NIL | TRUE | FALSE | ... | constructor | FUNCTION body | primaryexp
+static LuaResult simpleexp (LexState *ls, expdesc *v) {
   LuaResult result = LUA_OK;
-  /* simpleexp -> NUMBER | STRING | NIL | TRUE | FALSE | ... |
-                  constructor | FUNCTION body | primaryexp */
   switch (ls->t.token) {
     case TK_NUMBER: {
       init_exp(v, VKNUM, 0);
@@ -1029,25 +1030,27 @@ static void simpleexp (LexState *ls, expdesc *v) {
     case TK_DOTS: {  /* vararg */
       FuncState *fs = ls->fs;
       result = check_condition(ls, fs->f->is_vararg, "cannot use " LUA_QL("...") " outside a vararg function");
-      handleResult(result);
+      if(result != LUA_OK) return result;
       init_exp(v, VVARARG, luaK_codeABC(fs, OP_VARARG, 0, 1, 0));
       break;
     }
     case '{': {  /* constructor */
       constructor(ls, v);
-      return;
+      return result;
     }
     case TK_FUNCTION: {
       luaX_next(ls);
       body(ls, v, 0, ls->linenumber);
-      return;
+      return result;
     }
     default: {
-      primaryexp(ls, v);
-      return;
+      result = primaryexp(ls, v);
+      handleResult(result);
+      return result;
     }
   }
   luaX_next(ls);
+  return result;
 }
 
 
@@ -1116,7 +1119,8 @@ static BinOpr subexpr (LexState *ls, expdesc *v, int limit) {
     luaK_prefix(ls->fs, uop, v, line);
   }
   else {
-    simpleexp(ls, v);
+    LuaResult result = simpleexp(ls, v);
+    handleResult(result);
   }
 
   /* expand while operators have priorities higher than `limit' */
@@ -1152,7 +1156,7 @@ static void expr (LexState *ls, expdesc *v) {
 */
 
 
-static void block (LexState *ls) {
+static LuaResult block2 (LexState *ls) {
   LuaResult result = LUA_OK;
   /* block -> statlist */
   FuncState *fs = ls->fs;
@@ -1160,9 +1164,10 @@ static void block (LexState *ls) {
   enterblock(fs, &bl, 0);
   
   result = statlist(ls);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   leaveblock(fs);
+  return result;
 }
 
 
@@ -1220,7 +1225,8 @@ static LuaResult assignment2 (LexState *ls, struct LHS_assign *lh, int nvars) {
   if (testnext(ls, ',')) {  /* assignment -> `,' primaryexp assignment */
     struct LHS_assign nv;
     nv.prev = lh;
-    primaryexp(ls, &nv.v);
+    result = primaryexp(ls, &nv.v);
+    if(result != LUA_OK) return result;
     if (nv.v.k != VINDEXED)
       check_conflict(ls, lh, &nv.v);
 
@@ -1335,7 +1341,9 @@ static void whilestat (LexState *ls, int line) {
   result = check_next(ls, TK_DO);
   handleResult(result);
   
-  block(ls);
+  result = block2(ls);
+  handleResult(result);
+
   luaK_jumpto(fs, whileinit);
   result = check_match(ls, TK_END, TK_WHILE, line);
   handleResult(result);
@@ -1395,7 +1403,9 @@ static void forbody (LexState *ls, int base, int line, int nvars, int isnum) {
   enterblock(fs, &bl, 0);  /* scope for declared variables */
   adjustlocalvars(ls, nvars);
   luaK_reserveregs(fs, nvars);
-  block(ls);
+  result = block2(ls);
+  handleResult(result);
+
   leaveblock(fs);  /* end of scope for declared variables */
   luaK_patchtohere(fs, prep);
   if (isnum)  /* numeric for? */
@@ -1544,8 +1554,10 @@ static void ifstat (LexState *ls, int line) {
   test_then_block(ls, &escapelist);  /* IF cond THEN block */
   while (ls->t.token == TK_ELSEIF)
     test_then_block(ls, &escapelist);  /* ELSEIF cond THEN block */
-  if (testnext(ls, TK_ELSE))
-    block(ls);  /* `else' part */
+  if (testnext(ls, TK_ELSE)) {
+    result = block2(ls);  /* `else' part */
+    handleResult(result);
+  }
   result = check_match(ls, TK_END, TK_IF, line);
   handleResult(result);
 
@@ -1611,10 +1623,12 @@ static void funcstat (LexState *ls, int line) {
 
 
 static LuaResult exprstat (LexState *ls) {
+  LuaResult result = LUA_OK;
   /* stat -> func | assignment */
   FuncState *fs = ls->fs;
   struct LHS_assign v;
-  primaryexp(ls, &v.v);
+  result = primaryexp(ls, &v.v);
+  if(result != LUA_OK) return result;
   if (v.v.k == VCALL) {  /* stat -> func */
     SETARG_C(getcode(fs, &v.v), 1);  /* call statement uses no results */
     return LUA_OK;
@@ -1684,7 +1698,10 @@ static LuaResult statement (LexState *ls) {
     }
     case TK_DO: {  /* stat -> DO block END */
       luaX_next(ls);  /* skip DO */
-      block(ls);
+      
+      result = block2(ls);
+      if(result != LUA_OK) return result;
+
       result = check_match(ls, TK_END, TK_DO, line);
       if(result != LUA_OK) return result;
       break;
