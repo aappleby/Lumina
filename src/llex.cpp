@@ -221,7 +221,7 @@ static void buffreplace (LexState *ls, char from, char to) {
 ** in case of format error, try to change decimal point separator to
 ** the one defined in the current locale and check again
 */
-static void trydecpoint (LexState *ls, SemInfo *seminfo) {
+static LuaResult trydecpoint (LexState *ls, SemInfo *seminfo) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   char old = ls->decpoint;
@@ -230,14 +230,15 @@ static void trydecpoint (LexState *ls, SemInfo *seminfo) {
   if (!buff2d(ls->buff, &seminfo->r)) {
     /* format error with correct decimal point: no more options */
     buffreplace(ls, ls->decpoint, '.');  /* undo change (for error message) */
-    result = lexerror(ls, "malformed number", TK_NUMBER);
-    handleResult(result);
+    return lexerror(ls, "malformed number", TK_NUMBER);
   }
+  return result;
 }
 
 
 /* double */
-static void read_numeral (LexState *ls, SemInfo *seminfo) {
+static LuaResult read_numeral (LexState *ls, SemInfo *seminfo) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   assert(lisdigit(ls->current));
   do {
@@ -247,8 +248,11 @@ static void read_numeral (LexState *ls, SemInfo *seminfo) {
   } while (lislalnum(ls->current) || ls->current == '.');
   save(ls, '\0');
   buffreplace(ls, '.', ls->decpoint);  /* follow locale for decimal point */
-  if (!buff2d(ls->buff, &seminfo->r))  /* format error? */
-    trydecpoint(ls, seminfo); /* try to update decimal point separator */
+  if (!buff2d(ls->buff, &seminfo->r)) {
+    /* format error? */
+    return trydecpoint(ls, seminfo); /* try to update decimal point separator */
+  }
+  return result;
 }
 
 
@@ -505,7 +509,8 @@ static int llex (LexState *ls, SemInfo *seminfo) {
       }
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9': {
-        read_numeral(ls, seminfo);
+        result = read_numeral(ls, seminfo);
+        handleResult(result);
         return TK_NUMBER;
       }
       case EOZ: {

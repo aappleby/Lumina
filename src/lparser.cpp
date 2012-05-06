@@ -904,7 +904,7 @@ static LuaResult explist (LexState *ls, expdesc *v, int& out) {
 }
 
 
-static void funcargs (LexState *ls, expdesc *f, int line) {
+static LuaResult funcargs2 (LexState *ls, expdesc *f, int line) {
   LuaResult result = LUA_OK;
   FuncState *fs = ls->fs;
   expdesc args;
@@ -918,11 +918,11 @@ static void funcargs (LexState *ls, expdesc *f, int line) {
       else {
         int temp;
         result = explist(ls, &args, temp);
-        handleResult(result);
+        if(result != LUA_OK) return result;
         luaK_setmultret(fs, &args);
       }
       result = check_match(ls, ')', '(', line);
-      handleResult(result);
+      if(result != LUA_OK) return result;
       break;
     }
     case '{': {  /* funcargs -> constructor */
@@ -936,7 +936,7 @@ static void funcargs (LexState *ls, expdesc *f, int line) {
     }
     default: {
       result = luaX_syntaxerror(ls, "function arguments expected");
-      handleResult(result);
+      if(result != LUA_OK) return result;
     }
   }
   assert(f->k == VNONRELOC);
@@ -952,6 +952,7 @@ static void funcargs (LexState *ls, expdesc *f, int line) {
   luaK_fixline(fs, line);
   fs->freereg = base+1;  /* call remove function and arguments and leaves
                             (unless changed) one result */
+  return result;
 }
 
 
@@ -1017,12 +1018,14 @@ static LuaResult primaryexp (LexState *ls, expdesc *v) {
         luaX_next(ls);
         checkname(ls, &key);
         luaK_self(fs, v, &key);
-        funcargs(ls, v, line);
+        result = funcargs2(ls, v, line);
+        if(result != LUA_OK) return result;
         break;
       }
       case '(': case TK_STRING: case '{': {  /* funcargs */
         luaK_exp2nextreg(fs, v);
-        funcargs(ls, v, line);
+        result = funcargs2(ls, v, line);
+        if(result != LUA_OK) return result;
         break;
       }
       default: return result;
