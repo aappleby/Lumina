@@ -72,7 +72,7 @@ void luaX_setinput (LuaThread *L, LexState *ls, ZIO *z,
 LuaString *luaX_newstring (LexState *ls, const char *str, size_t l);
 void luaX_next (LexState *ls);
 int luaX_lookahead (LexState *ls);
-l_noret luaX_syntaxerror (LexState *ls, const char *s);
+LuaResult luaX_syntaxerror (LexState *ls, const char *s);
 const char *luaX_token2str (LexState *ls, int token);
 
 

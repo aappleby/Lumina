@@ -68,19 +68,24 @@ static void anchor_token (LexState *ls) {
 
 /* semantic error */
 static l_noret semerror (LexState *ls, const char *msg) {
+  LuaResult result = LUA_OK;
   ls->t.token = 0;  /* remove 'near to' from final message */
-  luaX_syntaxerror(ls, msg);
+  result = luaX_syntaxerror(ls, msg);
+  handleResult(result);
 }
 
 
 static l_noret error_expected (LexState *ls, int token) {
+  LuaResult result = LUA_OK;
   const char* token_text = luaX_token2str(ls, token);
   const char* text = luaO_pushfstring(ls->L, "%s expected", token_text);
-  luaX_syntaxerror(ls, text);
+  result = luaX_syntaxerror(ls, text);
+  handleResult(result);
 }
 
 
 static l_noret errorlimit (FuncState *fs, int limit, const char *what) {
+  LuaResult result = LUA_OK;
   LuaThread *L = fs->ls->L;
   const char *msg;
   int line = fs->f->linedefined;
@@ -88,7 +93,8 @@ static l_noret errorlimit (FuncState *fs, int limit, const char *what) {
                       ? "main function"
                       : luaO_pushfstring(L, "function at line %d", line);
   msg = luaO_pushfstring(L, "too many %s (limit is %d) in %s", what, limit, where);
-  luaX_syntaxerror(fs->ls, msg);
+  result = luaX_syntaxerror(fs->ls, msg);
+  handleResult(result);
 }
 
 
@@ -118,11 +124,20 @@ static void checknext (LexState *ls, int c) {
 }
 
 
-#define check_condition(ls,c,msg)	{ if (!(c)) luaX_syntaxerror(ls, msg); }
+//#define check_condition(ls,c,msg)	{ if (!(c)) luaX_syntaxerror(ls, msg); }
+
+static void check_condition(LexState* ls, bool c, const char* msg) {
+  LuaResult result = LUA_OK;
+  if(!c) {
+    result = luaX_syntaxerror(ls, msg);
+    handleResult(result);
+  }
+}
 
 
 
 static void check_match (LexState *ls, int what, int who, int where) {
+  LuaResult result = LUA_OK;
   if (!testnext(ls, what)) {
     if (where == ls->linenumber)
       error_expected(ls, what);
@@ -130,7 +145,8 @@ static void check_match (LexState *ls, int what, int who, int where) {
       const char* what_token = luaX_token2str(ls, what);
       const char* who_token = luaX_token2str(ls, who);
       const char* text = luaO_pushfstring(ls->L, "%s expected (to close %s at line %d)", what_token, who_token, where);
-      luaX_syntaxerror(ls, text);
+      result = luaX_syntaxerror(ls, text);
+      handleResult(result);
     }
   }
 }
@@ -763,6 +779,7 @@ static void constructor (LexState *ls, expdesc *t) {
 
 
 static void parlist (LexState *ls) {
+  LuaResult result = LUA_OK;
   /* parlist -> [ param { `,' param } ] */
   FuncState *fs = ls->fs;
   LuaProto *f = fs->f;
@@ -781,7 +798,10 @@ static void parlist (LexState *ls) {
           f->is_vararg = true;
           break;
         }
-        default: luaX_syntaxerror(ls, "<name> or " LUA_QL("...") " expected");
+        default: {
+          result = luaX_syntaxerror(ls, "<name> or " LUA_QL("...") " expected");
+          handleResult(result);
+        }
       }
     } while (!f->is_vararg && testnext(ls, ','));
   }
@@ -826,8 +846,10 @@ static int explist (LexState *ls, expdesc *v) {
 
 
 static void funcargs (LexState *ls, expdesc *f, int line) {
+  LuaResult result = LUA_OK;
   FuncState *fs = ls->fs;
   expdesc args;
+  memset(&args,0,sizeof(args));
   int base, nparams;
   switch (ls->t.token) {
     case '(': {  /* funcargs -> `(' [ explist ] `)' */
@@ -851,7 +873,8 @@ static void funcargs (LexState *ls, expdesc *f, int line) {
       break;
     }
     default: {
-      luaX_syntaxerror(ls, "function arguments expected");
+      result = luaX_syntaxerror(ls, "function arguments expected");
+      handleResult(result);
     }
   }
   assert(f->k == VNONRELOC);
@@ -880,6 +903,7 @@ static void funcargs (LexState *ls, expdesc *f, int line) {
 
 
 static void prefixexp (LexState *ls, expdesc *v) {
+  LuaResult result = LUA_OK;
   /* prefixexp -> NAME | '(' expr ')' */
   switch (ls->t.token) {
     case '(': {
@@ -895,7 +919,8 @@ static void prefixexp (LexState *ls, expdesc *v) {
       return;
     }
     default: {
-      luaX_syntaxerror(ls, "unexpected symbol");
+      result = luaX_syntaxerror(ls, "unexpected symbol");
+      handleResult(result);
     }
   }
 }
@@ -1369,6 +1394,7 @@ static void forlist (LexState *ls, LuaString *indexname) {
 
 
 static void forstat (LexState *ls, int line) {
+  LuaResult result = LUA_OK;
   /* forstat -> FOR (fornum | forlist) END */
   FuncState *fs = ls->fs;
   LuaString *varname;
@@ -1379,7 +1405,10 @@ static void forstat (LexState *ls, int line) {
   switch (ls->t.token) {
     case '=': fornum(ls, varname, line); break;
     case ',': case TK_IN: forlist(ls, varname); break;
-    default: luaX_syntaxerror(ls, LUA_QL("=") " or " LUA_QL("in") " expected");
+    default: {
+      result = luaX_syntaxerror(ls, LUA_QL("=") " or " LUA_QL("in") " expected");
+      handleResult(result);
+    }
   }
   check_match(ls, TK_END, TK_FOR, line);
   leaveblock(fs);  /* loop scope (`break' jumps to this point) */

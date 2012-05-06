@@ -82,12 +82,15 @@ static int condjump (FuncState *fs, OpCode op, int A, int B, int C) {
 
 
 static void fixjump (FuncState *fs, int pc, int dest) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(fs->ls->L);
   Instruction *jmp = &fs->f->code[pc];
   int offset = dest-(pc+1);
   assert(dest != NO_JUMP);
-  if (abs(offset) > MAXARG_sBx)
-    luaX_syntaxerror(fs->ls, "control structure too long");
+  if (abs(offset) > MAXARG_sBx) {
+    result = luaX_syntaxerror(fs->ls, "control structure too long");
+    handleResult(result);
+  }
   SETARG_sBx(*jmp, offset);
 }
 
@@ -283,11 +286,14 @@ int luaK_codek (FuncState *fs, int reg, int k) {
 
 
 void luaK_checkstack (FuncState *fs, int n) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(fs->ls->L);
   int newstack = fs->freereg + n;
   if (newstack > fs->f->maxstacksize) {
-    if (newstack >= MAXSTACK)
-      luaX_syntaxerror(fs->ls, "function or expression too complex");
+    if (newstack >= MAXSTACK) {
+      result = luaX_syntaxerror(fs->ls, "function or expression too complex");
+      handleResult(result);
+    }
     fs->f->maxstacksize = cast_byte(newstack);
   }
 }
@@ -933,6 +939,7 @@ void luaK_fixline (FuncState *fs, int line) {
 
 
 void luaK_setlist (FuncState *fs, int base, int nelems, int tostore) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(fs->ls->L);
   int c =  (nelems - 1)/LFIELDS_PER_FLUSH + 1;
   int b = (tostore == LUA_MULTRET) ? 0 : tostore;
@@ -943,8 +950,10 @@ void luaK_setlist (FuncState *fs, int base, int nelems, int tostore) {
     luaK_codeABC(fs, OP_SETLIST, base, b, 0);
     codeextraarg(fs, c);
   }
-  else
-    luaX_syntaxerror(fs->ls, "constructor too long");
+  else {
+    result = luaX_syntaxerror(fs->ls, "constructor too long");
+    handleResult(result);
+  }
   fs->freereg = base + 1;  /* free registers with list values */
 }
 

@@ -46,16 +46,19 @@ int luaX_tokens_count = sizeof(luaX_tokens) / sizeof(luaX_tokens[0]);
 #define save_and_next(ls) (save(ls, ls->current), next(ls))
 
 
-static l_noret lexerror (LexState *ls, const char *msg, int token);
+static LuaResult lexerror (LexState *ls, const char *msg, int token);
 
 
 static void save (LexState *ls, int c) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   Mbuffer *b = ls->buff;
   if (luaZ_bufflen(b) + 1 > luaZ_sizebuffer(b)) {
     size_t newsize;
-    if (luaZ_sizebuffer(b) >= MAX_SIZET/2)
-      lexerror(ls, "lexical element too long", 0);
+    if (luaZ_sizebuffer(b) >= MAX_SIZET/2) {
+      result = lexerror(ls, "lexical element too long", 0);
+      handleResult(result);
+    }
     newsize = luaZ_sizebuffer(b) * 2;
 
     b->buffer.resize_nocheck(newsize);
@@ -99,20 +102,20 @@ static const char *txtToken (LexState *ls, int token) {
 }
 
 
-static l_noret lexerror (LexState *ls, const char *msg, int token) {
+static LuaResult lexerror (LexState *ls, const char *msg, int token) {
   THREAD_CHECK(ls->L);
   std::string buff = luaO_chunkid2(ls->source->c_str());
   msg = luaO_pushfstring(ls->L, "%s:%d: %s", buff.c_str(), ls->linenumber, msg);
   if (token) {
     luaO_pushfstring(ls->L, "%s near %s", msg, txtToken(ls, token));
   }
-  throwError(LUA_ERRSYNTAX);
+  return LUA_ERRSYNTAX;
 }
 
 
-l_noret luaX_syntaxerror (LexState *ls, const char *msg) {
+LuaResult luaX_syntaxerror (LexState *ls, const char *msg) {
   THREAD_CHECK(ls->L);
-  lexerror(ls, msg, ls->t.token);
+  return lexerror(ls, msg, ls->t.token);
 }
 
 
@@ -145,14 +148,17 @@ LuaString *luaX_newstring (LexState *ls, const char *str, size_t l) {
 ** \n, \r, \n\r, or \r\n)
 */
 static void inclinenumber (LexState *ls) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   int old = ls->current;
   assert(currIsNewline(ls));
   next(ls);  /* skip `\n' or `\r' */
   if (currIsNewline(ls) && ls->current != old)
     next(ls);  /* skip `\n\r' or `\r\n' */
-  if (++ls->linenumber >= MAX_INT)
-    luaX_syntaxerror(ls, "chunk has too many lines");
+  if (++ls->linenumber >= MAX_INT) {
+    result = luaX_syntaxerror(ls, "chunk has too many lines");
+    handleResult(result);
+  }
 }
 
 
@@ -216,6 +222,7 @@ static void buffreplace (LexState *ls, char from, char to) {
 ** the one defined in the current locale and check again
 */
 static void trydecpoint (LexState *ls, SemInfo *seminfo) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   char old = ls->decpoint;
   ls->decpoint = getlocaledecpoint();
@@ -223,7 +230,8 @@ static void trydecpoint (LexState *ls, SemInfo *seminfo) {
   if (!buff2d(ls->buff, &seminfo->r)) {
     /* format error with correct decimal point: no more options */
     buffreplace(ls, ls->decpoint, '.');  /* undo change (for error message) */
-    lexerror(ls, "malformed number", TK_NUMBER);
+    result = lexerror(ls, "malformed number", TK_NUMBER);
+    handleResult(result);
   }
 }
 
@@ -263,6 +271,7 @@ static int skip_sep (LexState *ls) {
 
 
 static void read_long_string (LexState *ls, SemInfo *seminfo, int sep) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   save_and_next(ls);  /* skip 2nd `[' */
   if (currIsNewline(ls))  /* string starts with a newline? */
@@ -270,8 +279,9 @@ static void read_long_string (LexState *ls, SemInfo *seminfo, int sep) {
   for (;;) {
     switch (ls->current) {
       case EOZ:
-        lexerror(ls, (seminfo) ? "unfinished long string" :
-                                 "unfinished long comment", TK_EOS);
+        result = lexerror(ls, (seminfo) ? "unfinished long string" :
+                                          "unfinished long comment", TK_EOS);
+        handleResult(result);
         break;  /* to avoid warnings */
       case ']': {
         if (skip_sep(ls) == sep) {
@@ -303,13 +313,15 @@ endloop:
 
 
 static void escerror (LexState *ls, int *c, int n, const char *msg) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   int i;
   luaZ_resetbuffer(ls->buff);  /* prepare error message */
   save(ls, '\\');
   for (i = 0; i < n && c[i] != EOZ; i++)
     save(ls, c[i]);
-  lexerror(ls, msg, TK_STRING);
+  result = lexerror(ls, msg, TK_STRING);
+  handleResult(result);
 }
 
 
@@ -344,16 +356,19 @@ static int readdecesc (LexState *ls) {
 
 
 static void read_string (LexState *ls, int del, SemInfo *seminfo) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   save_and_next(ls);  /* keep delimiter (for error messages) */
   while (ls->current != del) {
     switch (ls->current) {
       case EOZ:
-        lexerror(ls, "unfinished string", TK_EOS);
+        result = lexerror(ls, "unfinished string", TK_EOS);
+        handleResult(result);
         break;  /* to avoid warnings */
       case '\n':
       case '\r':
-        lexerror(ls, "unfinished string", TK_STRING);
+        result = lexerror(ls, "unfinished string", TK_STRING);
+        handleResult(result);
         break;  /* to avoid warnings */
       case '\\': {  /* escape sequences */
         int c;  /* final character to be saved */
@@ -405,6 +420,7 @@ static void read_string (LexState *ls, int del, SemInfo *seminfo) {
 
 
 static int llex (LexState *ls, SemInfo *seminfo) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   luaZ_resetbuffer(ls->buff);
   for (;;) {
@@ -443,7 +459,10 @@ static int llex (LexState *ls, SemInfo *seminfo) {
           return TK_STRING;
         }
         else if (sep == -1) return '[';
-        else lexerror(ls, "invalid long string delimiter", TK_STRING);
+        else {
+          result = lexerror(ls, "invalid long string delimiter", TK_STRING);
+          handleResult(result);
+        }
       }
       case '=': {
         next(ls);
