@@ -629,18 +629,18 @@ static int block_follow (LexState *ls, int withuntil) {
 }
 
 
-static void statlist (LexState *ls) {
+static LuaResult statlist (LexState *ls) {
   LuaResult result = LUA_OK;
   /* statlist -> { stat [`;'] } */
   while (!block_follow(ls, 1)) {
     if (ls->t.token == TK_RETURN) {
       result = statement(ls);
-      handleResult(result);
-      return;  /* 'return' must be last statement */
+      return result;  /* 'return' must be last statement */
     }
     result = statement(ls);
-    handleResult(result);
+    if(result != LUA_OK) return result;
   }
+  return result;
 }
 
 
@@ -851,7 +851,9 @@ static void body (LexState *ls, expdesc *e, int ismethod, int line) {
   result = check_next(ls, ')');
   handleResult(result);
   
-  statlist(ls);
+  result = statlist(ls);
+  handleResult(result);
+
   new_fs.f->lastlinedefined = ls->linenumber;
   
   result = check_match(ls, TK_END, TK_FUNCTION, line);
@@ -1151,11 +1153,15 @@ static void expr (LexState *ls, expdesc *v) {
 
 
 static void block (LexState *ls) {
+  LuaResult result = LUA_OK;
   /* block -> statlist */
   FuncState *fs = ls->fs;
   BlockCnt bl;
   enterblock(fs, &bl, 0);
-  statlist(ls);
+  
+  result = statlist(ls);
+  handleResult(result);
+
   leaveblock(fs);
 }
 
@@ -1348,7 +1354,10 @@ static void repeatstat (LexState *ls, int line) {
   enterblock(fs, &bl1, 1);  /* loop block */
   enterblock(fs, &bl2, 0);  /* scope block */
   luaX_next(ls);  /* skip REPEAT */
-  statlist(ls);
+  
+  result = statlist(ls);
+  handleResult(result);
+
   result = check_match(ls, TK_UNTIL, TK_REPEAT, line);
   handleResult(result);
   condexit = cond(ls);  /* read condition (inside scope block) */
@@ -1516,7 +1525,9 @@ static void test_then_block (LexState *ls, int *escapelist) {
     enterblock(fs, &bl, 0);
     jf = v.f;
   }
-  statlist(ls);  /* `then' part */
+  result = statlist(ls);  /* `then' part */
+  handleResult(result);
+
   leaveblock(fs);
   if (ls->t.token == TK_ELSE ||
       ls->t.token == TK_ELSEIF)  /* followed by 'else'/'elseif'? */
@@ -1748,7 +1759,9 @@ LuaProto *luaY_parser (LuaThread *L, ZIO *z, Mbuffer *buff,
   luaX_setinput(L, &lexstate, z, tname, firstchar);
   open_mainfunc(&lexstate, &funcstate, &bl);
   luaX_next(&lexstate);  /* read first token */
-  statlist(&lexstate);  /* main body */
+  
+  result = statlist(&lexstate);  /* main body */
+  handleResult(result);
   
   result = check_token(&lexstate, TK_EOS);
   handleResult(result);
