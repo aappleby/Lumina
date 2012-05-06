@@ -67,11 +67,9 @@ static void anchor_token (LexState *ls) {
 
 
 /* semantic error */
-static l_noret semerror (LexState *ls, const char *msg) {
-  LuaResult result = LUA_OK;
+static LuaResult semerror (LexState *ls, const char *msg) {
   ls->t.token = 0;  /* remove 'near to' from final message */
-  result = luaX_syntaxerror(ls, msg);
-  handleResult(result);
+  return luaX_syntaxerror(ls, msg);
 }
 
 
@@ -82,8 +80,7 @@ static LuaResult error_expected (LexState *ls, int token) {
 }
 
 
-static l_noret errorlimit (FuncState *fs, int limit, const char *what) {
-  LuaResult result = LUA_OK;
+static LuaResult errorlimit (FuncState *fs, int limit, const char *what) {
   LuaThread *L = fs->ls->L;
   const char *msg;
   int line = fs->f->linedefined;
@@ -91,13 +88,16 @@ static l_noret errorlimit (FuncState *fs, int limit, const char *what) {
                       ? "main function"
                       : luaO_pushfstring(L, "function at line %d", line);
   msg = luaO_pushfstring(L, "too many %s (limit is %d) in %s", what, limit, where);
-  result = luaX_syntaxerror(fs->ls, msg);
-  handleResult(result);
+  return luaX_syntaxerror(fs->ls, msg);
 }
 
 
-static void checklimit (FuncState *fs, int v, int l, const char *what) {
-  if (v > l) errorlimit(fs, l, what);
+static LuaResult checklimit (FuncState *fs, int v, int l, const char *what) {
+  LuaResult result = LUA_OK;
+  if (v > l) {
+    return errorlimit(fs, l, what);
+  }
+  return result;
 }
 
 
@@ -207,11 +207,13 @@ static int registerlocalvar (LexState *ls, LuaString *varname) {
 
 
 static void new_localvar (LexState *ls, LuaString *name) {
+  LuaResult result = LUA_OK;
   FuncState *fs = ls->fs;
   Dyndata *dyd = ls->dyd;
   int reg = registerlocalvar(ls, name);
-  checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal,
-                  MAXVARS, "local variables");
+  result = checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal,
+                      MAXVARS, "local variables");
+  handleResult(result);
   if(dyd->actvar.n+1 >= (int)dyd->actvar.arr.size()) {
     dyd->actvar.arr.grow();
   }
@@ -261,9 +263,11 @@ static int searchupvalue (FuncState *fs, LuaString *name) {
 
 
 static int newupvalue (FuncState *fs, LuaString *name, expdesc *v) {
+  LuaResult result = LUA_OK;
   LuaProto *f = fs->f;
   int oldsize = (int)f->upvalues.size();
-  checklimit(fs, fs->num_upvals + 1, MAXUPVAL, "upvalues");
+  result = checklimit(fs, fs->num_upvals + 1, MAXUPVAL, "upvalues");
+  handleResult(result);
   if(fs->num_upvals >= (int)f->upvalues.size()) {
     f->upvalues.grow();
   }
@@ -367,6 +371,7 @@ static void adjust_assign (LexState *ls, int nvars, int nexps, expdesc *e) {
 
 
 static void closegoto (LexState *ls, int g, Labeldesc *label) {
+  LuaResult result = LUA_OK;
   int i;
   FuncState *fs = ls->fs;
   Labellist *gl = &ls->dyd->gt;
@@ -377,7 +382,8 @@ static void closegoto (LexState *ls, int g, Labeldesc *label) {
     const char *msg = luaO_pushfstring(ls->L,
       "<goto %s> at line %d jumps into the scope of local " LUA_QS,
       gt->name->c_str(), gt->line, vname->c_str());
-    semerror(ls, msg);
+    result = semerror(ls, msg);
+    handleResult(result);
   }
   luaK_patchlist(fs, gt->pc, label->pc);
   /* remove goto from pending list */
@@ -491,11 +497,13 @@ static void breaklabel (LexState *ls) {
 ** message when label name is a reserved word (which can only be 'break')
 */
 static l_noret undefgoto (LexState *ls, Labeldesc *gt) {
+  LuaResult result = LUA_OK;
   const char *msg = (gt->name->getReserved() > 0)
                     ? "<%s> at line %d not inside a loop"
                     : "no visible label " LUA_QS " for <goto> at line %d";
   msg = luaO_pushfstring(ls->L, msg, gt->name->c_str(), gt->line);
-  semerror(ls, msg);
+  result = semerror(ls, msg);
+  handleResult(result);
 }
 
 
@@ -709,7 +717,8 @@ static void recfield (LexState *ls, struct ConsControl *cc) {
   expdesc key, val;
   int rkkey;
   if (ls->t.token == TK_NAME) {
-    checklimit(fs, cc->nh, MAX_INT, "items in a constructor");
+    result = checklimit(fs, cc->nh, MAX_INT, "items in a constructor");
+    handleResult(result);
     checkname(ls, &key);
   }
   else  /* ls->t.token == '[' */
@@ -756,7 +765,8 @@ static void listfield (LexState *ls, struct ConsControl *cc) {
   /* listfield -> exp */
   result = expr(ls, &cc->v);
   handleResult(result);
-  checklimit(ls->fs, cc->na, MAX_INT, "items in a constructor");
+  result = checklimit(ls->fs, cc->na, MAX_INT, "items in a constructor");
+  handleResult(result);
   cc->na++;
   cc->tostore++;
 }
@@ -1154,7 +1164,7 @@ static LuaResult subexpr (LexState *ls, expdesc *v, int limit, BinOpr& out) {
   ScopedCallDepth d(ls->L);
 
   if (ls->L->l_G->call_depth_ > LUAI_MAXCCALLS) {
-    errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
+    return errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
   }
 
   UnOpr uop = getunopr(ls->t.token);
@@ -1287,7 +1297,7 @@ static LuaResult assignment2 (LexState *ls, struct LHS_assign *lh, int nvars) {
     // Because this operates recursively, having the left hand side of an expression be
     // "a,a,a,a,a,.......,a,a = 100" with too many A's could overflow the stack
     if ((nvars + ls->L->l_G->call_depth_) > LUAI_MAXCCALLS) {
-      errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
+      return errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
     }
 
     result = assignment2(ls, &nv, nvars+1);
@@ -1352,13 +1362,15 @@ static void gotostat (LexState *ls, int pc) {
 
 /* check for repeated labels on the same block */
 static void checkrepeated (FuncState *fs, Labellist *ll, LuaString *label) {
+  LuaResult result = LUA_OK;
   int i;
   for (i = fs->bl->firstlabel; i < ll->n; i++) {
     if (label == ll->arr[i].name) {
       const char *msg = luaO_pushfstring(fs->ls->L,
                           "label " LUA_QS " already defined on line %d",
                           label->c_str(), ll->arr[i].line);
-      semerror(fs->ls, msg);
+      result = semerror(fs->ls, msg);
+      handleResult(result);
     }
   }
 }
@@ -1743,17 +1755,18 @@ static LuaResult exprstat (LexState *ls) {
 }
 
 
-static void retstat (LexState *ls) {
+static LuaResult retstat (LexState *ls) {
   LuaResult result = LUA_OK;
   /* stat -> RETURN [explist] [';'] */
   FuncState *fs = ls->fs;
   expdesc e;
   int first, nret;  /* registers with returned values */
-  if (block_follow(ls, 1) || ls->t.token == ';')
+  if (block_follow(ls, 1) || ls->t.token == ';') {
     first = nret = 0;  /* return no values */
+  }
   else {
     result = explist(ls, &e, nret);  /* optional return values */
-    handleResult(result);
+    if(result != LUA_OK) return result;
 
     if (hasmultret(e.k)) {
       luaK_setmultret(fs, &e);
@@ -1765,8 +1778,10 @@ static void retstat (LexState *ls) {
       nret = LUA_MULTRET;  /* return all values */
     }
     else {
-      if (nret == 1)  /* only one single value? */
+      if (nret == 1) {
+        /* only one single value? */
         first = luaK_exp2anyreg(fs, &e);
+      }
       else {
         luaK_exp2nextreg(fs, &e);  /* values must go to the `stack' */
         first = fs->nactvar;  /* return all `active' values */
@@ -1776,6 +1791,7 @@ static void retstat (LexState *ls) {
   }
   luaK_ret(fs, first, nret);
   testnext(ls, ';');  /* skip optional semicolon */
+  return result;
 }
 
 
@@ -1784,7 +1800,7 @@ static LuaResult statement (LexState *ls) {
   ScopedCallDepth d(ls->L);
 
   if (ls->L->l_G->call_depth_ > LUAI_MAXCCALLS) {
-    errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
+    return errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
   }
 
   int line = ls->linenumber;  /* may be needed for error messages */
@@ -1852,7 +1868,8 @@ static LuaResult statement (LexState *ls) {
     case TK_RETURN: {  /* stat -> retstat */
       result = luaX_next(ls);  /* skip RETURN */
       if(result != LUA_OK) return result;
-      retstat(ls);
+      result = retstat(ls);
+      if(result != LUA_OK) return result;
       break;
     }
     case TK_BREAK:   /* stat -> breakstat */
