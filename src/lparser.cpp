@@ -23,7 +23,7 @@
 #include "lparser.h"
 #include "lstate.h"
 
-
+#pragma warning(disable:4127)
 
 /* maximum number of local variables per function (must be smaller
    than 250, due to the bytecode format) */
@@ -101,14 +101,16 @@ static LuaResult checklimit (FuncState *fs, int v, int l, const char *what) {
 }
 
 
-static int testnext (LexState *ls, int c) {
+static void testnext (LexState *ls, int c, int& out) {
   LuaResult result = LUA_OK;
   if (ls->t.token == c) {
     result = luaX_next(ls);
     handleResult(result);
-    return 1;
+    out = 1;
   }
-  else return 0;
+  else {
+    out = 0;
+  }
 }
 
 
@@ -140,7 +142,9 @@ static LuaResult check_condition(LexState* ls, bool c, const char* msg) {
 
 static LuaResult check_match (LexState *ls, int what, int who, int where) {
   LuaResult result = LUA_OK;
-  if (!testnext(ls, what)) {
+  int temp;
+  testnext(ls, what, temp);
+  if (!temp) {
     if (where == ls->linenumber) {
       result = error_expected(ls, what);
       if(result != LUA_OK) return result;
@@ -811,12 +815,15 @@ static void constructor (LexState *ls, expdesc *t) {
   result = check_next(ls, '{');
   handleResult(result);
 
+  int temp1, temp2;
   do {
     assert(cc.v.k == VVOID || cc.tostore > 0);
     if (ls->t.token == '}') break;
     closelistfield(fs, &cc);
     field(ls, &cc);
-  } while (testnext(ls, ',') || testnext(ls, ';'));
+    testnext(ls, ',', temp1);
+    testnext(ls, ';', temp2);
+  } while (temp1 || temp2);
   
   result = check_match(ls, '}', '{', line);
   handleResult(result);
@@ -838,6 +845,7 @@ static LuaResult parlist (LexState *ls) {
   int nparams = 0;
   f->is_vararg = false;
   if (ls->t.token != ')') {  /* is `parlist' not empty? */
+    int temp;
     do {
       switch (ls->t.token) {
         case TK_NAME: {  /* param -> NAME */
@@ -860,7 +868,8 @@ static LuaResult parlist (LexState *ls) {
           if(result != LUA_OK) return result;
         }
       }
-    } while (!f->is_vararg && testnext(ls, ','));
+      testnext(ls, ',', temp);
+    } while (!f->is_vararg && temp);
   }
   adjustlocalvars(ls, nparams);
   f->numparams = cast_byte(fs->nactvar);
@@ -912,7 +921,10 @@ static LuaResult explist (LexState *ls, expdesc *v, int& out) {
   result = expr(ls, v);
   if(result != LUA_OK) return result;
 
-  while (testnext(ls, ',')) {
+  int temp;
+  while (1) {
+    testnext(ls, ',', temp);
+    if(!temp) break;
     luaK_exp2nextreg(ls->fs, v);
     result = expr(ls, v);
     if(result != LUA_OK) return result;
@@ -1286,7 +1298,9 @@ static LuaResult assignment2 (LexState *ls, struct LHS_assign *lh, int nvars) {
   result = check_condition(ls, vkisvar(lh->v.k), "syntax error");
   if(result != LUA_OK) return result;
 
-  if (testnext(ls, ',')) {  /* assignment -> `,' primaryexp assignment */
+  int temp;
+  testnext(ls, ',', temp);
+  if (temp) {  /* assignment -> `,' primaryexp assignment */
     struct LHS_assign nv;
     nv.prev = lh;
     result = primaryexp(ls, &nv.v);
@@ -1346,7 +1360,9 @@ static void gotostat (LexState *ls, int pc) {
   int line = ls->linenumber;
   LuaString *label;
   int g;
-  if (testnext(ls, TK_GOTO)) {
+  int temp;
+  testnext(ls, TK_GOTO, temp);
+  if (temp) {
     result = str_checkname(ls, label);
     handleResult(result);
   }
@@ -1518,8 +1534,11 @@ static void fornum (LexState *ls, LuaString *varname, int line) {
   handleResult(result);
   
   exp1(ls);  /* limit */
-  if (testnext(ls, ','))
+  int temp;
+  testnext(ls, ',', temp);
+  if (temp) {
     exp1(ls);  /* optional step */
+  }
   else {  /* default step = 1 */
     luaK_codek(fs, fs->freereg, luaK_numberK(fs, 1));
     luaK_reserveregs(fs, 1);
@@ -1545,7 +1564,10 @@ static void forlist (LexState *ls, LuaString *indexname) {
   /* create declared variables */
   new_localvar(ls, indexname);
 
-  while (testnext(ls, ',')) {
+  int temp;
+  while (1) {
+    testnext(ls, ',', temp);
+    if(!temp) break;
     LuaString* temp;
     result = str_checkname(ls, temp);
     handleResult(result);
@@ -1557,10 +1579,12 @@ static void forlist (LexState *ls, LuaString *indexname) {
   handleResult(result);
 
   line = ls->linenumber;
-  int temp;
+
   result = explist(ls, &e, temp);
   handleResult(result);
+
   adjust_assign(ls, 3, temp, &e);
+
   luaK_checkstack(fs, 3);  /* extra space to call generator */
   forbody(ls, base, line, nvars - 3, 0);
 }
@@ -1645,9 +1669,12 @@ static void ifstat (LexState *ls, int line) {
   FuncState *fs = ls->fs;
   int escapelist = NO_JUMP;  /* exit list for finished parts */
   test_then_block(ls, &escapelist);  /* IF cond THEN block */
-  while (ls->t.token == TK_ELSEIF)
+  while (ls->t.token == TK_ELSEIF) {
     test_then_block(ls, &escapelist);  /* ELSEIF cond THEN block */
-  if (testnext(ls, TK_ELSE)) {
+  }
+  int temp;
+  testnext(ls, TK_ELSE, temp);
+  if (temp) {
     result = block2(ls);  /* `else' part */
     handleResult(result);
   }
@@ -1680,14 +1707,19 @@ static void localstat (LexState *ls) {
   int nvars = 0;
   int nexps;
   expdesc e;
+  
+  int temp1;
   do {
     LuaString* temp;
     result = str_checkname(ls, temp);
     handleResult(result);
     new_localvar(ls, temp);
     nvars++;
-  } while (testnext(ls, ','));
-  if (testnext(ls, '=')) {
+    testnext(ls, ',', temp1);
+  } while (temp1);
+
+  testnext(ls, '=', temp1);
+  if (temp1) {
     result = explist(ls, &e, nexps);
     handleResult(result);
   }
@@ -1790,7 +1822,8 @@ static LuaResult retstat (LexState *ls) {
     }
   }
   luaK_ret(fs, first, nret);
-  testnext(ls, ';');  /* skip optional semicolon */
+  int temp;
+  testnext(ls, ';', temp);  /* skip optional semicolon */
   return result;
 }
 
@@ -1847,7 +1880,9 @@ static LuaResult statement (LexState *ls) {
       result = luaX_next(ls);  /* skip LOCAL */
       if(result != LUA_OK) return result;
 
-      if (testnext(ls, TK_FUNCTION)) {  /* local function? */
+      int temp;
+      testnext(ls, TK_FUNCTION, temp);
+      if (temp) {  /* local function? */
         localfunc(ls);
       }
       else {
