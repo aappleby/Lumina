@@ -147,18 +147,8 @@ void LuaStack::shrink() {
 
 //------------------------------------------------------------------------------
 
-int maxNewSize = 0;
-
 LuaResult LuaStack::reserve2(int newsize) {
-  if(newsize > maxNewSize) {
-    maxNewSize = newsize;
-  }
-
   if ((last() - top_) <= newsize) {
-    if(newsize == 0) {
-      int b = 0;
-      b++;
-    }
     return grow2(newsize);
   }
 
@@ -351,11 +341,10 @@ LuaStackFrame* LuaStack::extendCallinfo() {
 
 LuaStackFrame* LuaStack::nextCallinfo() {
   if(callinfo_->next == NULL) {
-    callinfo_ = extendCallinfo();
+    return extendCallinfo();
   } else {
-    callinfo_ = callinfo_->next;
+    return callinfo_->next;
   }
-  return callinfo_;
 }
 
 void LuaStack::sweepCallinfo() {
@@ -468,7 +457,9 @@ LuaStackFrame* LuaStack::findProtectedCall() {
 LuaResult LuaStack::createCCall2(int nargs, int nresults) {
   // ensure minimum stack size
   LuaResult result = reserve2(LUA_MINSTACK);
-  if(result != LUA_OK) return result;
+  if(result != LUA_OK) {
+    return result;
+  }
   StkId func = &top_[-nargs-1];
 
   LuaStackFrame* ci = nextCallinfo();  /* now 'enter' new function */
@@ -481,6 +472,7 @@ LuaResult LuaStack::createCCall2(int nargs, int nresults) {
   ci->callstatus = 0;
 
   assert(ci->getTop() <= last());
+
   return LUA_OK;
 }
 
@@ -488,7 +480,9 @@ LuaResult LuaStack::createLuaCall(int nargs, int nresults) {
   LuaProto* p = top_[-nargs-1].getLClosure()->proto_;
 
   LuaResult result = reserve2(p->maxstacksize);
-  handleResult(result);
+  if(result != LUA_OK) {
+    return result;
+  }
 
   for (; nargs < p->numparams; nargs++) {
     push_nocheck(LuaValue::Nil());  /* complete missing arguments */
@@ -520,7 +514,6 @@ LuaResult LuaStack::createLuaCall(int nargs, int nresults) {
   ci->callstatus = CIST_LUA;
   ci->resetPC();
 
-  top_ = ci->getTop();
   return LUA_OK;
 }
 

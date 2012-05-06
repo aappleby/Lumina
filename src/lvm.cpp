@@ -647,7 +647,11 @@ void luaV_finishOp (LuaThread *L) {
 #define RKB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgK, ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i))
 #define RKC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgK, ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
 
-void luaV_run (LuaThread *L) {
+enum RunResult {
+  RR_DONE
+};
+
+RunResult luaV_run2 (LuaThread *L) {
   THREAD_CHECK(L);
   
   /* main loop of interpreter */
@@ -1107,7 +1111,7 @@ void luaV_run (LuaThread *L) {
           LuaStackFrame* new_frame = L->stack_.callinfo_;
 
           if (!(old_frame->callstatus & CIST_REENTRY)) {  /* 'ci' still the called one */
-            return;  /* external invocation: return */
+            return RR_DONE;  /* external invocation: return */
           }
           else {  /* invocation via reentry: continue execution */
             if (old_frame->nresults >= 0) {
@@ -1256,6 +1260,10 @@ void luaV_run (LuaThread *L) {
         }
     }
   }
+}
+
+void luaV_run (LuaThread *L) {
+  luaV_run2(L);
 }
 
 void luaV_execute (LuaThread *L, int funcindex, int /*nresults*/) {

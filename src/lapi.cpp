@@ -940,7 +940,6 @@ int lua_pcallk (LuaThread *L, int nargs, int nresults, int errfunc,
   ci->callstatus &= ~CIST_YPCALL;
 
   L->errfunc = ci->old_errfunc;
-  adjustresults(L, nresults);
   return LUA_OK;
 }
 

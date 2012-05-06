@@ -134,12 +134,16 @@ int luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
   int nargs = L->stack_.topsize() - funcindex - 1;
 
   if(isC) {
-    L->stack_.createCCall2(nargs, nresults);
+    LuaResult r = L->stack_.createCCall2(nargs, nresults);
+    handleResult(r);
   }
   else {
-    L->stack_.createLuaCall(nargs, nresults);
+    LuaResult r = L->stack_.createLuaCall(nargs, nresults);
+    handleResult(r);
+    L->stack_.top_ = L->stack_.callinfo_->next->getTop();
   }
 
+  L->stack_.callinfo_ = L->stack_.callinfo_->next;
 
   if (L->hookmask & LUA_MASKCALL) {
     LuaStackFrame* ci = L->stack_.callinfo_;
@@ -243,7 +247,6 @@ void lua_callk (LuaThread *L, int nargs, int nresults, int ctx, LuaCallback k) {
     /* no continuation or no yieldable */
     luaD_call(L, nargs, nresults, 0);  /* just do the call */
   }
-  adjustresults(L, nresults);
 }
 
 
