@@ -128,33 +128,31 @@ static LuaResult check_next (LexState *ls, int c) {
 }
 
 
-//#define check_condition(ls,c,msg)	{ if (!(c)) luaX_syntaxerror(ls, msg); }
-
-static void check_condition(LexState* ls, bool c, const char* msg) {
-  LuaResult result = LUA_OK;
+static LuaResult check_condition(LexState* ls, bool c, const char* msg) {
   if(!c) {
-    result = luaX_syntaxerror(ls, msg);
-    handleResult(result);
+    return luaX_syntaxerror(ls, msg);
   }
+  return LUA_OK;
 }
 
 
 
-static void check_match (LexState *ls, int what, int who, int where) {
+static LuaResult check_match (LexState *ls, int what, int who, int where) {
   LuaResult result = LUA_OK;
   if (!testnext(ls, what)) {
     if (where == ls->linenumber) {
       result = error_expected(ls, what);
-      handleResult(result);
+      if(result != LUA_OK) return result;
     }
     else {
       const char* what_token = luaX_token2str(ls, what);
       const char* who_token = luaX_token2str(ls, who);
       const char* text = luaO_pushfstring(ls->L, "%s expected (to close %s at line %d)", what_token, who_token, where);
       result = luaX_syntaxerror(ls, text);
-      handleResult(result);
+      if(result != LUA_OK) return result;
     }
   }
+  return result;
 }
 
 
@@ -784,7 +782,10 @@ static void constructor (LexState *ls, expdesc *t) {
     closelistfield(fs, &cc);
     field(ls, &cc);
   } while (testnext(ls, ',') || testnext(ls, ';'));
-  check_match(ls, '}', '{', line);
+  
+  result = check_match(ls, '}', '{', line);
+  handleResult(result);
+
   lastlistfield(fs, &cc);
   SETARG_B(fs->f->code[pc], luaO_int2fb(cc.na)); /* set initial array size */
   SETARG_C(fs->f->code[pc], luaO_int2fb(cc.nh));  /* set initial table size */
@@ -849,7 +850,10 @@ static void body (LexState *ls, expdesc *e, int ismethod, int line) {
   
   statlist(ls);
   new_fs.f->lastlinedefined = ls->linenumber;
-  check_match(ls, TK_END, TK_FUNCTION, line);
+  
+  result = check_match(ls, TK_END, TK_FUNCTION, line);
+  handleResult(result);
+
   codeclosure(ls, new_fs.f, e);
   close_func(ls);
 }
@@ -883,7 +887,8 @@ static void funcargs (LexState *ls, expdesc *f, int line) {
         explist(ls, &args);
         luaK_setmultret(fs, &args);
       }
-      check_match(ls, ')', '(', line);
+      result = check_match(ls, ')', '(', line);
+      handleResult(result);
       break;
     }
     case '{': {  /* funcargs -> constructor */
@@ -933,7 +938,10 @@ static void prefixexp (LexState *ls, expdesc *v) {
       int line = ls->linenumber;
       luaX_next(ls);
       expr(ls, v);
-      check_match(ls, ')', '(', line);
+      
+      result = check_match(ls, ')', '(', line);
+      handleResult(result);
+
       luaK_dischargevars(ls->fs, v);
       return;
     }
@@ -988,6 +996,7 @@ static void primaryexp (LexState *ls, expdesc *v) {
 
 
 static void simpleexp (LexState *ls, expdesc *v) {
+  LuaResult result = LUA_OK;
   /* simpleexp -> NUMBER | STRING | NIL | TRUE | FALSE | ... |
                   constructor | FUNCTION body | primaryexp */
   switch (ls->t.token) {
@@ -1014,7 +1023,8 @@ static void simpleexp (LexState *ls, expdesc *v) {
     }
     case TK_DOTS: {  /* vararg */
       FuncState *fs = ls->fs;
-      check_condition(ls, fs->f->is_vararg, "cannot use " LUA_QL("...") " outside a vararg function");
+      result = check_condition(ls, fs->f->is_vararg, "cannot use " LUA_QL("...") " outside a vararg function");
+      handleResult(result);
       init_exp(v, VVARARG, luaK_codeABC(fs, OP_VARARG, 0, 1, 0));
       break;
     }
@@ -1194,7 +1204,10 @@ static void check_conflict (LexState *ls, struct LHS_assign *lh, expdesc *v) {
 static void assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
   LuaResult result = LUA_OK;
   expdesc e;
-  check_condition(ls, vkisvar(lh->v.k), "syntax error");
+
+  result = check_condition(ls, vkisvar(lh->v.k), "syntax error");
+  handleResult(result);
+
   if (testnext(ls, ',')) {  /* assignment -> `,' primaryexp assignment */
     struct LHS_assign nv;
     nv.prev = lh;
@@ -1311,13 +1324,15 @@ static void whilestat (LexState *ls, int line) {
   
   block(ls);
   luaK_jumpto(fs, whileinit);
-  check_match(ls, TK_END, TK_WHILE, line);
+  result = check_match(ls, TK_END, TK_WHILE, line);
+  handleResult(result);
   leaveblock(fs);
   luaK_patchtohere(fs, condexit);  /* false conditions finish the loop */
 }
 
 
 static void repeatstat (LexState *ls, int line) {
+  LuaResult result = LUA_OK;
   /* repeatstat -> REPEAT block UNTIL cond */
   int condexit;
   FuncState *fs = ls->fs;
@@ -1327,7 +1342,8 @@ static void repeatstat (LexState *ls, int line) {
   enterblock(fs, &bl2, 0);  /* scope block */
   luaX_next(ls);  /* skip REPEAT */
   statlist(ls);
-  check_match(ls, TK_UNTIL, TK_REPEAT, line);
+  result = check_match(ls, TK_UNTIL, TK_REPEAT, line);
+  handleResult(result);
   condexit = cond(ls);  /* read condition (inside scope block) */
   if (bl2.upval)  /* upvalues? */
     luaK_patchclose(fs, condexit, bl2.nactvar);
@@ -1456,7 +1472,9 @@ static void forstat (LexState *ls, int line) {
       handleResult(result);
     }
   }
-  check_match(ls, TK_END, TK_FOR, line);
+  result = check_match(ls, TK_END, TK_FOR, line);
+  handleResult(result);
+
   leaveblock(fs);  /* loop scope (`break' jumps to this point) */
 }
 
@@ -1501,6 +1519,7 @@ static void test_then_block (LexState *ls, int *escapelist) {
 
 
 static void ifstat (LexState *ls, int line) {
+  LuaResult result = LUA_OK;
   /* ifstat -> IF cond THEN block {ELSEIF cond THEN block} [ELSE block] END */
   FuncState *fs = ls->fs;
   int escapelist = NO_JUMP;  /* exit list for finished parts */
@@ -1509,7 +1528,9 @@ static void ifstat (LexState *ls, int line) {
     test_then_block(ls, &escapelist);  /* ELSEIF cond THEN block */
   if (testnext(ls, TK_ELSE))
     block(ls);  /* `else' part */
-  check_match(ls, TK_END, TK_IF, line);
+  result = check_match(ls, TK_END, TK_IF, line);
+  handleResult(result);
+
   luaK_patchtohere(fs, escapelist);  /* patch escape list to 'if' end */
 }
 
@@ -1619,6 +1640,7 @@ static void retstat (LexState *ls) {
 
 
 static void statement (LexState *ls) {
+  LuaResult result = LUA_OK;
   ScopedCallDepth d(ls->L);
 
   if (ls->L->l_G->call_depth_ > LUAI_MAXCCALLS) {
@@ -1644,7 +1666,8 @@ static void statement (LexState *ls) {
     case TK_DO: {  /* stat -> DO block END */
       luaX_next(ls);  /* skip DO */
       block(ls);
-      check_match(ls, TK_END, TK_DO, line);
+      result = check_match(ls, TK_END, TK_DO, line);
+      handleResult(result);
       break;
     }
     case TK_FOR: {  /* stat -> forstat */
