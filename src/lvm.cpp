@@ -1249,20 +1249,16 @@ void luaV_run (LuaThread *L) {
 
 void luaV_execute (LuaThread *L, int funcindex, int /*nresults*/) {
 
+  ScopedCallDepth d(L);
+  if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
+    luaG_runerror("C stack overflow");
+  } else if (L->l_G->call_depth_ >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3))) {
+    throwError(LUA_ERRERR);
+  }
+
   LuaValue f1 = L->stack_[funcindex];
 
   if(f1.isCClosure() || f1.isCallback()) {
-
-    // TODO(aappleby): We can't check this at the top of luaV_execute because of the whole
-    // "savedpc is assumed to be preincremented" thing, which causes runerror to crash. Bleh.
-
-    ScopedCallDepth d(L);
-    if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
-      luaG_runerror("C stack overflow");
-    } else if (L->l_G->call_depth_ >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3))) {
-      throwError(LUA_ERRERR);
-    }
-
     LuaCallback f = f1.isCallback() ? f1.getCallback() : f1.getCClosure()->cfunction_;
     int n = (*f)(L);  /* do the actual call */
 

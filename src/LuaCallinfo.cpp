@@ -29,6 +29,8 @@ int LuaStackFrame::getCurrentPC() {
 int LuaStackFrame::getCurrentLine() {
   if(!isLua()) return -1;
 
+  if(savedpc == -1) return -1;
+
   LuaProto *p = getFunc()->getLClosure()->proto_;
   return p->getLine( savedpc );
 }
