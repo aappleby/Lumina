@@ -1102,17 +1102,18 @@ void luaV_run (LuaThread *L) {
             L->stack_.closeUpvals(base);
           }
 
-          int wanted = ci->nresults;
+          LuaStackFrame* old_frame = L->stack_.callinfo_;
           luaD_postcall(L, ra);
-          if (!(ci->callstatus & CIST_REENTRY)) {  /* 'ci' still the called one */
+          LuaStackFrame* new_frame = L->stack_.callinfo_;
+
+          if (!(old_frame->callstatus & CIST_REENTRY)) {  /* 'ci' still the called one */
             return;  /* external invocation: return */
           }
           else {  /* invocation via reentry: continue execution */
-            ci = L->stack_.callinfo_;
-            if (wanted >= 0) {
-              L->stack_.top_ = ci->getTop();
+            if (old_frame->nresults >= 0) {
+              L->stack_.top_ = new_frame->getTop();
             }
-            assert(ci->getCurrentOp() == OP_CALL);
+            assert(new_frame->getCurrentOp() == OP_CALL);
           }
           break;
         }
