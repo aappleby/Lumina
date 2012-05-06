@@ -50,17 +50,10 @@ static LuaResult lexerror (LexState *ls, const char *msg, int token);
 
 
 static void save (LexState *ls, int c) {
-  LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   Mbuffer *b = ls->buff;
   if (luaZ_bufflen(b) + 1 > luaZ_sizebuffer(b)) {
-    size_t newsize;
-    if (luaZ_sizebuffer(b) >= MAX_SIZET/2) {
-      result = lexerror(ls, "lexical element too long", 0);
-      handleResult(result);
-    }
-    newsize = luaZ_sizebuffer(b) * 2;
-
+    size_t newsize = luaZ_sizebuffer(b) * 2;
     b->buffer.resize_nocheck(newsize);
   }
   b->buffer[luaZ_bufflen(b)++] = cast(char, c);
