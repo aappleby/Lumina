@@ -1044,9 +1044,7 @@ static LuaResult simpleexp (LexState *ls, expdesc *v) {
       return result;
     }
     default: {
-      result = primaryexp(ls, v);
-      handleResult(result);
-      return result;
+      return primaryexp(ls, v);
     }
   }
   luaX_next(ls);
@@ -1104,7 +1102,7 @@ static const struct {
 ** subexpr -> (simpleexp | unop subexpr) { binop subexpr }
 ** where `binop' is any binary operator with a priority higher than `limit'
 */
-static BinOpr subexpr (LexState *ls, expdesc *v, int limit) {
+static void subexpr (LexState *ls, expdesc *v, int limit, BinOpr& out) {
   ScopedCallDepth d(ls->L);
 
   if (ls->L->l_G->call_depth_ > LUAI_MAXCCALLS) {
@@ -1115,7 +1113,8 @@ static BinOpr subexpr (LexState *ls, expdesc *v, int limit) {
   if (uop != OPR_NOUNOPR) {
     int line = ls->linenumber;
     luaX_next(ls);
-    subexpr(ls, v, UNARY_PRIORITY);
+    BinOpr temp;
+    subexpr(ls, v, UNARY_PRIORITY, temp);
     luaK_prefix(ls->fs, uop, v, line);
   }
   else {
@@ -1132,17 +1131,19 @@ static BinOpr subexpr (LexState *ls, expdesc *v, int limit) {
     luaX_next(ls);
     luaK_infix(ls->fs, op, v);
     /* read sub-expression with higher priority */
-    nextop = subexpr(ls, &v2, priority[op].right);
+    subexpr(ls, &v2, priority[op].right, nextop);
     luaK_posfix(ls->fs, op, v, &v2, line);
     op = nextop;
   }
 
-  return op;  /* return first untreated operator */
+  /* return first untreated operator */
+  out = op;
 }
 
 
 static void expr (LexState *ls, expdesc *v) {
-  subexpr(ls, v, 0);
+  BinOpr temp;
+  subexpr(ls, v, 0, temp);
 }
 
 /* }==================================================================== */
