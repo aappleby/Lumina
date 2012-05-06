@@ -423,7 +423,7 @@ static void read_string (LexState *ls, int del, SemInfo *seminfo) {
 }
 
 
-static int llex (LexState *ls, SemInfo *seminfo) {
+static void llex (LexState *ls, SemInfo *seminfo, int& out) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   luaZ_resetbuffer(ls->buff);
@@ -439,7 +439,10 @@ static int llex (LexState *ls, SemInfo *seminfo) {
       }
       case '-': {  /* '-' or '--' (comment) */
         next(ls);
-        if (ls->current != '-') return '-';
+        if (ls->current != '-') {
+          out = '-';
+          return;
+        }
         /* else is a comment */
         next(ls);
         if (ls->current == '[') {  /* long comment? */
@@ -460,9 +463,13 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         int sep = skip_sep(ls);
         if (sep >= 0) {
           read_long_string(ls, seminfo, sep);
-          return TK_STRING;
+          out = TK_STRING;
+          return;
         }
-        else if (sep == -1) return '[';
+        else if (sep == -1) {
+          out = '[';
+          return;
+        }
         else {
           result = lexerror(ls, "invalid long string delimiter", TK_STRING);
           handleResult(result);
@@ -470,51 +477,97 @@ static int llex (LexState *ls, SemInfo *seminfo) {
       }
       case '=': {
         next(ls);
-        if (ls->current != '=') return '=';
-        else { next(ls); return TK_EQ; }
+        if (ls->current != '=') {
+          out = '=';
+          return;
+        }
+        else {
+          next(ls);
+          out = TK_EQ;
+          return;
+        }
       }
       case '<': {
         next(ls);
-        if (ls->current != '=') return '<';
-        else { next(ls); return TK_LE; }
+        if (ls->current != '=') {
+          out = '<';
+          return;
+        }
+        else {
+          next(ls);
+          out = TK_LE;
+          return;
+        }
       }
       case '>': {
         next(ls);
-        if (ls->current != '=') return '>';
-        else { next(ls); return TK_GE; }
+        if (ls->current != '=') {
+          out = '>';
+          return;
+        }
+        else {
+          next(ls);
+          out = TK_GE;
+          return;
+        }
       }
       case '~': {
         next(ls);
-        if (ls->current != '=') return '~';
-        else { next(ls); return TK_NE; }
+        if (ls->current != '=') {
+          out = '~';
+          return;
+        }
+        else {
+          next(ls);
+          out = TK_NE;
+          return;
+        }
       }
       case ':': {
         next(ls);
-        if (ls->current != ':') return ':';
-        else { next(ls); return TK_DBCOLON; }
+        if (ls->current != ':') {
+          out = ':';
+          return;
+        }
+        else {
+          next(ls);
+          out = TK_DBCOLON;
+          return;
+        }
       }
       case '"': case '\'': {  /* short literal strings */
         read_string(ls, ls->current, seminfo);
-        return TK_STRING;
+        out = TK_STRING;
+        return;
       }
       case '.': {  /* '.', '..', '...', or number */
         save_and_next(ls);
         if (check_next(ls, ".")) {
-          if (check_next(ls, "."))
-            return TK_DOTS;   /* '...' */
-          else return TK_CONCAT;   /* '..' */
+          if (check_next(ls, ".")) {
+            out = TK_DOTS;   /* '...' */
+            return;
+          }
+          else {
+            out = TK_CONCAT;   /* '..' */
+            return;
+          }
         }
-        else if (!lisdigit(ls->current)) return '.';
+        else if (!lisdigit(ls->current)) {
+          out = '.';
+          return;
+        }
         /* else go through */
       }
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9': {
         result = read_numeral(ls, seminfo);
         handleResult(result);
-        return TK_NUMBER;
+        out = TK_NUMBER;
+        return;
       }
       case EOZ: {
-        return TK_EOS;
+        out = TK_EOS;
+        return;
       }
       default: {
         if (lislalpha(ls->current)) {  /* identifier or reserved word? */
@@ -526,16 +579,21 @@ static int llex (LexState *ls, SemInfo *seminfo) {
           ts = luaX_newstring(ls, luaZ_buffer(ls->buff), luaZ_bufflen(ls->buff));
 
           seminfo->ts = ts;
-          if (ts->getReserved() > 0)  /* reserved word? */
-            return ts->getReserved() - 1 + FIRST_RESERVED;
+          if (ts->getReserved() > 0) {
+            /* reserved word? */
+            out = ts->getReserved() - 1 + FIRST_RESERVED;
+            return;
+          }
           else {
-            return TK_NAME;
+            out = TK_NAME;
+            return;
           }
         }
         else {  /* single-char tokens (+ - / ...) */
           int c = ls->current;
           next(ls);
-          return c;
+          out = c;
+          return;
         }
       }
     }
@@ -550,15 +608,16 @@ void luaX_next (LexState *ls) {
     ls->t = ls->lookahead;  /* use this one */
     ls->lookahead.token = TK_EOS;  /* and discharge it */
   }
-  else
-    ls->t.token = llex(ls, &ls->t.seminfo);  /* read next token */
+  else {
+    llex(ls, &ls->t.seminfo, ls->t.token);  /* read next token */
+  }
 }
 
 
 int luaX_lookahead (LexState *ls) {
   THREAD_CHECK(ls->L);
   assert(ls->lookahead.token == TK_EOS);
-  ls->lookahead.token = llex(ls, &ls->lookahead.seminfo);
+  llex(ls, &ls->lookahead.seminfo, ls->lookahead.token);
   return ls->lookahead.token;
 }
 
