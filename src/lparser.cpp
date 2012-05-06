@@ -868,19 +868,21 @@ static void body (LexState *ls, expdesc *e, int ismethod, int line) {
 }
 
 
-static int explist (LexState *ls, expdesc *v) {
+static LuaResult explist (LexState *ls, expdesc *v, int& out) {
   LuaResult result = LUA_OK;
   /* explist -> expr { `,' expr } */
   int n = 1;  /* at least one expression */
   result = expr(ls, v);
-  handleResult(result);
+  if(result != LUA_OK) return result;
+
   while (testnext(ls, ',')) {
     luaK_exp2nextreg(ls->fs, v);
     result = expr(ls, v);
-    handleResult(result);
+    if(result != LUA_OK) return result;
     n++;
   }
-  return n;
+  out = n;
+  return result;
 }
 
 
@@ -896,7 +898,9 @@ static void funcargs (LexState *ls, expdesc *f, int line) {
       if (ls->t.token == ')')  /* arg list is empty? */
         args.k = VVOID;
       else {
-        explist(ls, &args);
+        int temp;
+        result = explist(ls, &args, temp);
+        handleResult(result);
         luaK_setmultret(fs, &args);
       }
       result = check_match(ls, ')', '(', line);
@@ -1258,7 +1262,9 @@ static LuaResult assignment2 (LexState *ls, struct LHS_assign *lh, int nvars) {
     result = check_next(ls, '=');
     if(result != LUA_OK) return result;
 
-    nexps = explist(ls, &e);
+    result = explist(ls, &e, nexps);
+    if(result != LUA_OK) return result;
+
     if (nexps != nvars) {
       adjust_assign(ls, nvars, nexps, &e);
       if (nexps > nvars)
@@ -1492,7 +1498,10 @@ static void forlist (LexState *ls, LuaString *indexname) {
   handleResult(result);
 
   line = ls->linenumber;
-  adjust_assign(ls, 3, explist(ls, &e), &e);
+  int temp;
+  result = explist(ls, &e, temp);
+  handleResult(result);
+  adjust_assign(ls, 3, temp, &e);
   luaK_checkstack(fs, 3);  /* extra space to call generator */
   forbody(ls, base, line, nvars - 3, 0);
 }
@@ -1595,6 +1604,7 @@ static void localfunc (LexState *ls) {
 
 
 static void localstat (LexState *ls) {
+  LuaResult result = LUA_OK;
   /* stat -> LOCAL NAME {`,' NAME} [`=' explist] */
   int nvars = 0;
   int nexps;
@@ -1603,8 +1613,10 @@ static void localstat (LexState *ls) {
     new_localvar(ls, str_checkname(ls));
     nvars++;
   } while (testnext(ls, ','));
-  if (testnext(ls, '='))
-    nexps = explist(ls, &e);
+  if (testnext(ls, '=')) {
+    result = explist(ls, &e, nexps);
+    handleResult(result);
+  }
   else {
     e.k = VVOID;
     nexps = 0;
@@ -1659,6 +1671,7 @@ static LuaResult exprstat (LexState *ls) {
 
 
 static void retstat (LexState *ls) {
+  LuaResult result = LUA_OK;
   /* stat -> RETURN [explist] [';'] */
   FuncState *fs = ls->fs;
   expdesc e;
@@ -1666,7 +1679,9 @@ static void retstat (LexState *ls) {
   if (block_follow(ls, 1) || ls->t.token == ';')
     first = nret = 0;  /* return no values */
   else {
-    nret = explist(ls, &e);  /* optional return values */
+    result = explist(ls, &e, nret);  /* optional return values */
+    handleResult(result);
+
     if (hasmultret(e.k)) {
       luaK_setmultret(fs, &e);
       if (e.k == VCALL && nret == 1) {  /* tail call? */
