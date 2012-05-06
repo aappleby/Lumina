@@ -508,8 +508,7 @@ static const char *getupvalname (LuaStackFrame *ci, const LuaValue *o, std::stri
 }
 
 
-l_noret luaG_typeerror (const LuaValue *o, const char *op) {
-  LuaResult result = LUA_OK;
+LuaResult luaG_typeerror (const LuaValue *o, const char *op) {
   LuaThread*L = thread_L;
   LuaStackFrame *ci = L->stack_.callinfo_;
   std::string name;
@@ -523,20 +522,20 @@ l_noret luaG_typeerror (const LuaValue *o, const char *op) {
     }
   }
   if (kind) {
-    result = luaG_runerror("attempt to %s %s " LUA_QS " (a %s value)", op, kind, name.c_str(), t);
-    handleResult(result);
+    return luaG_runerror("attempt to %s %s " LUA_QS " (a %s value)", op, kind, name.c_str(), t);
   }
   else {
-    result = luaG_runerror("attempt to %s a %s value", op, t);
-    handleResult(result);
+    return luaG_runerror("attempt to %s a %s value", op, t);
   }
 }
 
 
 l_noret luaG_concaterror (StkId p1, StkId p2) {
+  LuaResult result = LUA_OK;
   if (p1->isString() || p1->isNumber()) p1 = p2;
   assert(!p1->isString() && !p2->isNumber());
-  luaG_typeerror(p1, "concatenate");
+  result = luaG_typeerror(p1, "concatenate");
+  handleResult(result);
 }
 
 

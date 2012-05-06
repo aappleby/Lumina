@@ -255,7 +255,8 @@ void luaV_settable (LuaThread *L, const LuaValue *t2, LuaValue *key, StkId val) 
       /* not a table; check metamethod */
       LuaValue tagmethod = luaT_gettmbyobj2(cursor, TM_NEWINDEX);
       if (tagmethod.isNone() || tagmethod.isNil()) {
-        luaG_typeerror(&cursor, "index");
+        result = luaG_typeerror(&cursor, "index");
+        handleResult(result);
       }
       else if (tagmethod.isFunction()) {
         callTM1(L, tagmethod, cursor, *key, *val);
@@ -487,6 +488,7 @@ void luaV_concat (LuaThread *L, int total) {
 
 
 void luaV_objlen (LuaThread *L, StkId ra, const LuaValue *rb) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(L);
 
   if(rb->isString()) {
@@ -505,19 +507,22 @@ void luaV_objlen (LuaThread *L, StkId ra, const LuaValue *rb) {
     return;
   }
 
-  luaG_typeerror(rb, "get length of");
+  result = luaG_typeerror(rb, "get length of");
+  handleResult(result);
   return;
 }
 
 
 void luaV_arith (LuaThread *L, StkId ra, const LuaValue *rb, const LuaValue *rc, TMS op) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(L);
 
   LuaValue nb = rb->convertToNumber();
 
   if(nb.isNone()) {
     if (!call_binTM(L, rb, rc, ra, op)) {
-      luaG_typeerror(rb, "perform arithmetic on");
+      result = luaG_typeerror(rb, "perform arithmetic on");
+      handleResult(result);
     }
     return;
   }
@@ -526,7 +531,8 @@ void luaV_arith (LuaThread *L, StkId ra, const LuaValue *rb, const LuaValue *rc,
 
   if(nc.isNone()) {
     if (!call_binTM(L, rb, rc, ra, op)) {
-      luaG_typeerror(rc, "perform arithmetic on");
+      result = luaG_typeerror(rc, "perform arithmetic on");
+      handleResult(result);
     }
     return;
   }

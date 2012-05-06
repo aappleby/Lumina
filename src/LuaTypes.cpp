@@ -5,7 +5,7 @@
 
 #include <assert.h>
 
-l_noret luaG_typeerror (const LuaValue *o, const char *op);
+LuaResult luaG_typeerror (const LuaValue *o, const char *op);
 LuaResult luaG_runerror (const char *fmt, ...);
 
 __declspec(thread) LuaThread* thread_L = NULL;
@@ -85,11 +85,13 @@ void handleResult(LuaResult err, const LuaValue* val)
       return;
 
     case LUA_BAD_TABLE:
-      luaG_typeerror(val, "index");
+      result = luaG_typeerror(val, "index");
+      handleResult(result);
       return;
 
     case LUA_BAD_INDEX_TM:
-      luaG_typeerror(val, "invalid type in __index method");
+      result = luaG_typeerror(val, "invalid type in __index method");
+      handleResult(result);
       return;
 
     case LUA_META_LOOP:

@@ -93,13 +93,15 @@ void luaD_hook (LuaThread *L, int event, int line) {
 
 
 static void tryfuncTM (LuaThread *L, int funcindex) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(L);
 
   LuaValue* func = &L->stack_[funcindex];
   LuaValue tm = luaT_gettmbyobj2(*func, TM_CALL);
 
   if (!tm.isFunction()) {
-    luaG_typeerror(func, "call");
+    result = luaG_typeerror(func, "call");
+    handleResult(result);
   }
 
   int nargs = L->stack_.topsize() - funcindex - 1;
@@ -110,7 +112,7 @@ static void tryfuncTM (LuaThread *L, int funcindex) {
   L->stack_.top_[-nargs-1] = tm;
   L->stack_.top_++;
 
-  LuaResult result = L->stack_.reserve2(0);
+  result = L->stack_.reserve2(0);
   handleResult(result);
 }
 
