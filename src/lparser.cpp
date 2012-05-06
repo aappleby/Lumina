@@ -156,14 +156,15 @@ static LuaResult check_match (LexState *ls, int what, int who, int where) {
 }
 
 
-static void str_checkname (LexState *ls, LuaString*& out) {
+static LuaResult str_checkname (LexState *ls, LuaString*& out) {
   LuaResult result = LUA_OK;
   LuaString *ts;
   result = check_token(ls, TK_NAME);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   ts = ls->t.seminfo.ts;
   luaX_next(ls);
   out = ts;
+  return result;
 }
 
 
@@ -180,8 +181,10 @@ static void codestring (LexState *ls, expdesc *e, LuaString *s) {
 
 
 static void checkname (LexState *ls, expdesc *e) {
+  LuaResult result = LUA_OK;
   LuaString* temp;
-  str_checkname(ls, temp);
+  result = str_checkname(ls, temp);
+  handleResult(result);
   codestring(ls, e, temp);
 }
 
@@ -323,8 +326,10 @@ static int singlevaraux (FuncState *fs, LuaString *n, expdesc *var, int base) {
 
 
 static void singlevar (LexState *ls, expdesc *var) {
+  LuaResult result = LUA_OK;
   LuaString *varname;
-  str_checkname(ls, varname);
+  result = str_checkname(ls, varname);
+  handleResult(result);
 
   FuncState *fs = ls->fs;
   if (singlevaraux(fs, varname, var, 1) == VVOID) {  /* global name? */
@@ -818,7 +823,9 @@ static void parlist (LexState *ls) {
       switch (ls->t.token) {
         case TK_NAME: {  /* param -> NAME */
           LuaString* temp;
-          str_checkname(ls, temp);
+          result = str_checkname(ls, temp);
+          handleResult(result);
+
           new_localvar(ls, temp);
           nparams++;
           break;
@@ -1301,11 +1308,13 @@ static int cond (LexState *ls) {
 
 
 static void gotostat (LexState *ls, int pc) {
+  LuaResult result = LUA_OK;
   int line = ls->linenumber;
   LuaString *label;
   int g;
   if (testnext(ls, TK_GOTO)) {
-    str_checkname(ls, label);
+    result = str_checkname(ls, label);
+    handleResult(result);
   }
   else {
     luaX_next(ls);  /* skip break */
@@ -1498,7 +1507,8 @@ static void forlist (LexState *ls, LuaString *indexname) {
 
   while (testnext(ls, ',')) {
     LuaString* temp;
-    str_checkname(ls, temp);
+    result = str_checkname(ls, temp);
+    handleResult(result);
     new_localvar(ls, temp);
     nvars++;
   }
@@ -1524,7 +1534,8 @@ static void forstat (LexState *ls, int line) {
   BlockCnt bl;
   enterblock(fs, &bl, 1);  /* scope for loop and control variables */
   luaX_next(ls);  /* skip `for' */
-  str_checkname(ls, varname);  /* first variable name */
+  result = str_checkname(ls, varname);  /* first variable name */
+  handleResult(result);
   switch (ls->t.token) {
     case '=': fornum(ls, varname, line); break;
     case ',': case TK_IN: forlist(ls, varname); break;
@@ -1602,10 +1613,12 @@ static void ifstat (LexState *ls, int line) {
 
 
 static void localfunc (LexState *ls) {
+  LuaResult result = LUA_OK;
   expdesc b;
   FuncState *fs = ls->fs;
   LuaString* temp;
-  str_checkname(ls, temp);
+  result = str_checkname(ls, temp);
+  handleResult(result);
   new_localvar(ls, temp);  /* new local variable */
   adjustlocalvars(ls, 1);  /* enter its scope */
   body(ls, &b, 0, ls->linenumber);  /* function created in next register */
@@ -1622,7 +1635,8 @@ static void localstat (LexState *ls) {
   expdesc e;
   do {
     LuaString* temp;
-    str_checkname(ls, temp);
+    result = str_checkname(ls, temp);
+    handleResult(result);
     new_localvar(ls, temp);
     nvars++;
   } while (testnext(ls, ','));
@@ -1775,7 +1789,8 @@ static LuaResult statement (LexState *ls) {
     case TK_DBCOLON: {  /* stat -> label */
       luaX_next(ls);  /* skip double colon */
       LuaString* temp;
-      str_checkname(ls, temp);
+      result = str_checkname(ls, temp);
+      handleResult(result);
       labelstat(ls, temp, line);
       break;
     }
