@@ -43,7 +43,7 @@ const char* luaX_tokens[] = {
 int luaX_tokens_count = sizeof(luaX_tokens) / sizeof(luaX_tokens[0]);
 
 
-#define save_and_next(ls) (save(ls, ls->current), next(ls))
+//#define save_and_next(ls) (save(ls, ls->current), next(ls))
 
 
 static LuaResult lexerror (LexState *ls, const char *msg, int token);
@@ -193,7 +193,8 @@ static int check_next (LexState *ls, const char *set) {
   THREAD_CHECK(ls->L);
   if (ls->current == '\0' || !strchr(set, ls->current))
     return 0;
-  save_and_next(ls);
+  save(ls, ls->current);
+  next(ls);
   return 1;
 }
 
@@ -242,7 +243,8 @@ static LuaResult read_numeral (LexState *ls, SemInfo *seminfo) {
   THREAD_CHECK(ls->L);
   assert(lisdigit(ls->current));
   do {
-    save_and_next(ls);
+    save(ls, ls->current);
+    next(ls);
     if (check_next(ls, "EePp"))  /* exponent part? */
       check_next(ls, "+-");  /* optional exponent sign */
   } while (lislalnum(ls->current) || ls->current == '.');
@@ -265,9 +267,11 @@ static int skip_sep (LexState *ls) {
   int count = 0;
   int s = ls->current;
   assert(s == '[' || s == ']');
-  save_and_next(ls);
+  save(ls, ls->current);
+  next(ls);
   while (ls->current == '=') {
-    save_and_next(ls);
+    save(ls, ls->current);
+    next(ls);
     count++;
   }
   return (ls->current == s) ? count : (-count) - 1;
@@ -277,9 +281,13 @@ static int skip_sep (LexState *ls) {
 static void read_long_string (LexState *ls, SemInfo *seminfo, int sep) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
-  save_and_next(ls);  /* skip 2nd `[' */
-  if (currIsNewline(ls))  /* string starts with a newline? */
+  /* skip 2nd `[' */
+  save(ls, ls->current);
+  next(ls);
+  if (currIsNewline(ls)) {
+    /* string starts with a newline? */
     inclinenumber(ls);  /* skip it */
+  }
   for (;;) {
     switch (ls->current) {
       case EOZ:
@@ -289,7 +297,9 @@ static void read_long_string (LexState *ls, SemInfo *seminfo, int sep) {
         break;  /* to avoid warnings */
       case ']': {
         if (skip_sep(ls) == sep) {
-          save_and_next(ls);  /* skip 2nd `]' */
+          /* skip 2nd `]' */
+          save(ls, ls->current);
+          next(ls);
           goto endloop;
         }
         break;
@@ -301,7 +311,10 @@ static void read_long_string (LexState *ls, SemInfo *seminfo, int sep) {
         break;
       }
       default: {
-        if (seminfo) save_and_next(ls);
+        if (seminfo) {
+          save(ls, ls->current);
+          next(ls);
+        }
         else next(ls);
       }
     }
@@ -362,7 +375,10 @@ static int readdecesc (LexState *ls) {
 static void read_string (LexState *ls, int del, SemInfo *seminfo) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
-  save_and_next(ls);  /* keep delimiter (for error messages) */
+  /* keep delimiter (for error messages) */
+  save(ls, ls->current);
+  next(ls);
+
   while (ls->current != del) {
     switch (ls->current) {
       case EOZ:
@@ -411,12 +427,16 @@ static void read_string (LexState *ls, int del, SemInfo *seminfo) {
        only_save: save(ls, c);  /* save 'c' */
        no_save: break;
       }
-      default:
-        save_and_next(ls);
+      default: {
+        save(ls, ls->current);
+        next(ls);
+      }
     }
   }
 
-  save_and_next(ls);  /* skip delimiter */
+  /* skip delimiter */
+  save(ls, ls->current);
+  next(ls);
 
   seminfo->ts = luaX_newstring(ls, luaZ_buffer(ls->buff) + 1,
                                    luaZ_bufflen(ls->buff) - 2);
@@ -540,7 +560,8 @@ static LuaResult llex (LexState *ls, SemInfo *seminfo, int& out) {
         return result;
       }
       case '.': {  /* '.', '..', '...', or number */
-        save_and_next(ls);
+        save(ls, ls->current);
+        next(ls);
         if (check_next(ls, ".")) {
           if (check_next(ls, ".")) {
             out = TK_DOTS;   /* '...' */
@@ -572,7 +593,8 @@ static LuaResult llex (LexState *ls, SemInfo *seminfo, int& out) {
         if (lislalpha(ls->current)) {  /* identifier or reserved word? */
           LuaString *ts;
           do {
-            save_and_next(ls);
+            save(ls, ls->current);
+            next(ls);
           } while (lislalnum(ls->current));
 
           ts = luaX_newstring(ls, luaZ_buffer(ls->buff), luaZ_bufflen(ls->buff));
