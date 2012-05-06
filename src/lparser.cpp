@@ -102,8 +102,10 @@ static void checklimit (FuncState *fs, int v, int l, const char *what) {
 
 
 static int testnext (LexState *ls, int c) {
+  LuaResult result = LUA_OK;
   if (ls->t.token == c) {
-    luaX_next(ls);
+    result = luaX_next(ls);
+    handleResult(result);
     return 1;
   }
   else return 0;
@@ -123,8 +125,7 @@ static LuaResult check_next (LexState *ls, int c) {
   LuaResult result = LUA_OK;
   result = check_token(ls, c);
   if(result != LUA_OK) return result;
-  luaX_next(ls);
-  return result;
+  return luaX_next(ls);
 }
 
 
@@ -162,7 +163,8 @@ static LuaResult str_checkname (LexState *ls, LuaString*& out) {
   result = check_token(ls, TK_NAME);
   if(result != LUA_OK) return result;
   ts = ls->t.seminfo.ts;
-  luaX_next(ls);
+  result = luaX_next(ls);
+  if(result != LUA_OK) return result;
   out = ts;
   return result;
 }
@@ -655,11 +657,13 @@ static LuaResult statlist (LexState *ls) {
 
 
 static void fieldsel (LexState *ls, expdesc *v) {
+  LuaResult result = LUA_OK;
   /* fieldsel -> ['.' | ':'] NAME */
   FuncState *fs = ls->fs;
   expdesc key;
   luaK_exp2anyregup(fs, v);
-  luaX_next(ls);  /* skip the dot or colon */
+  result = luaX_next(ls);  /* skip the dot or colon */
+  handleResult(result);
   checkname(ls, &key);
   luaK_indexed(fs, v, &key);
 }
@@ -668,10 +672,14 @@ static void fieldsel (LexState *ls, expdesc *v) {
 static void yindex (LexState *ls, expdesc *v) {
   LuaResult result = LUA_OK;
   /* index -> '[' expr ']' */
-  luaX_next(ls);  /* skip the '[' */
+  result = luaX_next(ls);  /* skip the '[' */
+  handleResult(result);
+
   result = expr(ls, v);
   handleResult(result);
+  
   luaK_exp2val(ls->fs, v);
+  
   result = check_next(ls, ']');
   handleResult(result);
 }
@@ -832,7 +840,8 @@ static LuaResult parlist (LexState *ls) {
           break;
         }
         case TK_DOTS: {  /* param -> `...' */
-          luaX_next(ls);
+          result = luaX_next(ls);
+          if(result != LUA_OK) return result;
           f->is_vararg = true;
           break;
         }
@@ -912,7 +921,9 @@ static LuaResult funcargs2 (LexState *ls, expdesc *f, int line) {
   int base, nparams;
   switch (ls->t.token) {
     case '(': {  /* funcargs -> `(' [ explist ] `)' */
-      luaX_next(ls);
+      result = luaX_next(ls);
+      if(result != LUA_OK) return result;
+
       if (ls->t.token == ')')  /* arg list is empty? */
         args.k = VVOID;
       else {
@@ -931,7 +942,8 @@ static LuaResult funcargs2 (LexState *ls, expdesc *f, int line) {
     }
     case TK_STRING: {  /* funcargs -> STRING */
       codestring(ls, &args, ls->t.seminfo.ts);
-      luaX_next(ls);  /* must use `seminfo' before `next' */
+      result = luaX_next(ls);  /* must use `seminfo' before `next' */
+      if(result != LUA_OK) return result;
       break;
     }
     default: {
@@ -971,7 +983,9 @@ static LuaResult prefixexp (LexState *ls, expdesc *v) {
   switch (ls->t.token) {
     case '(': {
       int line = ls->linenumber;
-      luaX_next(ls);
+      result = luaX_next(ls);
+      if(result != LUA_OK) return result;
+
       result = expr(ls, v);
       if(result != LUA_OK) return result;
       
@@ -1015,7 +1029,9 @@ static LuaResult primaryexp (LexState *ls, expdesc *v) {
       }
       case ':': {  /* `:' NAME funcargs */
         expdesc key;
-        luaX_next(ls);
+        result = luaX_next(ls);
+        if(result != LUA_OK) return result;
+
         checkname(ls, &key);
         luaK_self(fs, v, &key);
         result = funcargs2(ls, v, line);
@@ -1071,15 +1087,15 @@ static LuaResult simpleexp (LexState *ls, expdesc *v) {
       return result;
     }
     case TK_FUNCTION: {
-      luaX_next(ls);
+      result = luaX_next(ls);
+      if(result != LUA_OK) return result;
       return body2(ls, v, 0, ls->linenumber);
     }
     default: {
       return primaryexp(ls, v);
     }
   }
-  luaX_next(ls);
-  return result;
+  return luaX_next(ls);
 }
 
 
@@ -1144,7 +1160,8 @@ static LuaResult subexpr (LexState *ls, expdesc *v, int limit, BinOpr& out) {
   UnOpr uop = getunopr(ls->t.token);
   if (uop != OPR_NOUNOPR) {
     int line = ls->linenumber;
-    luaX_next(ls);
+    result = luaX_next(ls);
+    if(result != LUA_OK) return result;
     BinOpr temp;
     result = subexpr(ls, v, UNARY_PRIORITY, temp);
     if(result != LUA_OK) return result;
@@ -1161,7 +1178,8 @@ static LuaResult subexpr (LexState *ls, expdesc *v, int limit, BinOpr& out) {
     expdesc v2;
     BinOpr nextop;
     int line = ls->linenumber;
-    luaX_next(ls);
+    result = luaX_next(ls);
+    if(result != LUA_OK) return result;
     luaK_infix(ls->fs, op, v);
     /* read sub-expression with higher priority */
     result = subexpr(ls, &v2, priority[op].right, nextop);
@@ -1323,7 +1341,8 @@ static void gotostat (LexState *ls, int pc) {
     handleResult(result);
   }
   else {
-    luaX_next(ls);  /* skip break */
+    result = luaX_next(ls);  /* skip break */
+    handleResult(result);
     label = thread_G->strings_->Create("break");
   }
   g = newlabelentry(ls, &ls->dyd->gt, label, line, pc);
@@ -1376,7 +1395,9 @@ static void whilestat (LexState *ls, int line) {
   int whileinit;
   int condexit;
   BlockCnt bl;
-  luaX_next(ls);  /* skip WHILE */
+  result = luaX_next(ls);  /* skip WHILE */
+  handleResult(result);
+
   whileinit = luaK_getlabel(fs);
   condexit = cond(ls);
   enterblock(fs, &bl, 1);
@@ -1404,7 +1425,8 @@ static void repeatstat (LexState *ls, int line) {
   BlockCnt bl1, bl2;
   enterblock(fs, &bl1, 1);  /* loop block */
   enterblock(fs, &bl2, 0);  /* scope block */
-  luaX_next(ls);  /* skip REPEAT */
+  result = luaX_next(ls);  /* skip REPEAT */
+  handleResult(result);
   
   result = statlist(ls);
   handleResult(result);
@@ -1539,7 +1561,10 @@ static void forstat (LexState *ls, int line) {
   LuaString *varname;
   BlockCnt bl;
   enterblock(fs, &bl, 1);  /* scope for loop and control variables */
-  luaX_next(ls);  /* skip `for' */
+  
+  result= luaX_next(ls);  /* skip `for' */
+  handleResult(result);
+
   result = str_checkname(ls, varname);  /* first variable name */
   handleResult(result);
   switch (ls->t.token) {
@@ -1565,7 +1590,10 @@ static void test_then_block (LexState *ls, int *escapelist) {
   FuncState *fs = ls->fs;
   expdesc v;
   int jf;  /* instruction to skip 'then' code (if condition is false) */
-  luaX_next(ls);  /* skip IF or ELSEIF */
+  
+  result = luaX_next(ls);  /* skip IF or ELSEIF */
+  handleResult(result);
+
   result = expr(ls, &v);  /* read condition */
   handleResult(result);
   
@@ -1682,7 +1710,8 @@ static LuaResult funcstat (LexState *ls, int line) {
   /* funcstat -> FUNCTION funcname body */
   int ismethod;
   expdesc v, b;
-  luaX_next(ls);  /* skip FUNCTION */
+  result = luaX_next(ls);  /* skip FUNCTION */
+  if(result != LUA_OK) return result;
   
   result = funcname(ls, &v, ismethod);
   if(result != LUA_OK) return result;
@@ -1762,7 +1791,8 @@ static LuaResult statement (LexState *ls) {
 
   switch (ls->t.token) {
     case ';': {  /* stat -> ';' (empty statement) */
-      luaX_next(ls);  /* skip ';' */
+      result = luaX_next(ls);  /* skip ';' */
+      if(result != LUA_OK) return result;
       break;
     }
     case TK_IF: {  /* stat -> ifstat */
@@ -1774,7 +1804,8 @@ static LuaResult statement (LexState *ls) {
       break;
     }
     case TK_DO: {  /* stat -> DO block END */
-      luaX_next(ls);  /* skip DO */
+      result = luaX_next(ls);  /* skip DO */
+      if(result != LUA_OK) return result;
       
       result = block2(ls);
       if(result != LUA_OK) return result;
@@ -1797,7 +1828,9 @@ static LuaResult statement (LexState *ls) {
       break;
     }
     case TK_LOCAL: {  /* stat -> localstat */
-      luaX_next(ls);  /* skip LOCAL */
+      result = luaX_next(ls);  /* skip LOCAL */
+      if(result != LUA_OK) return result;
+
       if (testnext(ls, TK_FUNCTION)) {  /* local function? */
         localfunc(ls);
       }
@@ -1807,7 +1840,9 @@ static LuaResult statement (LexState *ls) {
       break;
     }
     case TK_DBCOLON: {  /* stat -> label */
-      luaX_next(ls);  /* skip double colon */
+      result = luaX_next(ls);  /* skip double colon */
+      if(result != LUA_OK) return result;
+
       LuaString* temp;
       result = str_checkname(ls, temp);
       if(result != LUA_OK) return result;
@@ -1815,7 +1850,8 @@ static LuaResult statement (LexState *ls) {
       break;
     }
     case TK_RETURN: {  /* stat -> retstat */
-      luaX_next(ls);  /* skip RETURN */
+      result = luaX_next(ls);  /* skip RETURN */
+      if(result != LUA_OK) return result;
       retstat(ls);
       break;
     }
@@ -1863,7 +1899,8 @@ LuaResult luaY_parser (LuaThread *L,
   dyd->actvar.n = dyd->gt.n = dyd->label.n = 0;
   luaX_setinput(L, &lexstate, z, tname, firstchar);
   open_mainfunc(&lexstate, &funcstate, &bl);
-  luaX_next(&lexstate);  /* read first token */
+  result = luaX_next(&lexstate);  /* read first token */
+  if(result != LUA_OK) return result;
   
   result = statlist(&lexstate);  /* main body */
   if(result != LUA_OK) return result;

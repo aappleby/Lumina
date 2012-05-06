@@ -600,7 +600,7 @@ static LuaResult llex (LexState *ls, SemInfo *seminfo, int& out) {
 }
 
 
-void luaX_next (LexState *ls) {
+LuaResult luaX_next (LexState *ls) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   ls->lastline = ls->linenumber;
@@ -610,8 +610,9 @@ void luaX_next (LexState *ls) {
   }
   else {
     result = llex(ls, &ls->t.seminfo, ls->t.token);  /* read next token */
-    handleResult(result);
+    if(result != LUA_OK) return result;
   }
+  return result;
 }
 
 
