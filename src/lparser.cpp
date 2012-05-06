@@ -812,7 +812,7 @@ static void constructor (LexState *ls, expdesc *t) {
 
 
 
-static void parlist (LexState *ls) {
+static LuaResult parlist (LexState *ls) {
   LuaResult result = LUA_OK;
   /* parlist -> [ param { `,' param } ] */
   FuncState *fs = ls->fs;
@@ -825,7 +825,7 @@ static void parlist (LexState *ls) {
         case TK_NAME: {  /* param -> NAME */
           LuaString* temp;
           result = str_checkname(ls, temp);
-          handleResult(result);
+          if(result != LUA_OK) return result;
 
           new_localvar(ls, temp);
           nparams++;
@@ -838,7 +838,7 @@ static void parlist (LexState *ls) {
         }
         default: {
           result = luaX_syntaxerror(ls, "<name> or " LUA_QL("...") " expected");
-          handleResult(result);
+          if(result != LUA_OK) return result;
         }
       }
     } while (!f->is_vararg && testnext(ls, ','));
@@ -846,10 +846,11 @@ static void parlist (LexState *ls) {
   adjustlocalvars(ls, nparams);
   f->numparams = cast_byte(fs->nactvar);
   luaK_reserveregs(fs, fs->nactvar);  /* reserve register for parameters */
+  return result;
 }
 
 
-static void body (LexState *ls, expdesc *e, int ismethod, int line) {
+static LuaResult body2 (LexState *ls, expdesc *e, int ismethod, int line) {
   LuaResult result = LUA_OK;
   /* body ->  `(' parlist `)' block END */
   FuncState new_fs;
@@ -858,27 +859,30 @@ static void body (LexState *ls, expdesc *e, int ismethod, int line) {
   new_fs.f->linedefined = line;
 
   result = check_next(ls, '(');
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   if (ismethod) {
     new_localvarliteral(ls, "self");  /* create 'self' parameter */
     adjustlocalvars(ls, 1);
   }
-  parlist(ls);
+
+  result = parlist(ls);
+  if(result != LUA_OK) return result;
   
   result = check_next(ls, ')');
-  handleResult(result);
+  if(result != LUA_OK) return result;
   
   result = statlist(ls);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   new_fs.f->lastlinedefined = ls->linenumber;
   
   result = check_match(ls, TK_END, TK_FUNCTION, line);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   codeclosure(ls, new_fs.f, e);
   close_func(ls);
+  return result;
 }
 
 
@@ -1065,8 +1069,7 @@ static LuaResult simpleexp (LexState *ls, expdesc *v) {
     }
     case TK_FUNCTION: {
       luaX_next(ls);
-      body(ls, v, 0, ls->linenumber);
-      return result;
+      return body2(ls, v, 0, ls->linenumber);
     }
     default: {
       return primaryexp(ls, v);
@@ -1621,7 +1624,8 @@ static void localfunc (LexState *ls) {
   handleResult(result);
   new_localvar(ls, temp);  /* new local variable */
   adjustlocalvars(ls, 1);  /* enter its scope */
-  body(ls, &b, 0, ls->linenumber);  /* function created in next register */
+  result = body2(ls, &b, 0, ls->linenumber);  /* function created in next register */
+  handleResult(result);
   /* debug information will only see the variable after this point! */
   getlocvar(fs, b.info)->startpc = fs->pc;
 }
@@ -1676,9 +1680,13 @@ static LuaResult funcstat (LexState *ls, int line) {
   int ismethod;
   expdesc v, b;
   luaX_next(ls);  /* skip FUNCTION */
+  
   result = funcname(ls, &v, ismethod);
   if(result != LUA_OK) return result;
-  body(ls, &b, ismethod, line);
+  
+  result = body2(ls, &b, ismethod, line);
+  if(result != LUA_OK) return result;
+  
   luaK_storevar(ls->fs, &v, &b);
   luaK_fixline(ls->fs, line);  /* definition `happens' in the first line */
   return result;
