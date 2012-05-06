@@ -119,11 +119,12 @@ static LuaResult check_token (LexState *ls, int c) {
 }
 
 
-static void checknext (LexState *ls, int c) {
+static LuaResult check_next (LexState *ls, int c) {
   LuaResult result = LUA_OK;
   result = check_token(ls, c);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   luaX_next(ls);
+  return result;
 }
 
 
@@ -654,11 +655,13 @@ static void fieldsel (LexState *ls, expdesc *v) {
 
 
 static void yindex (LexState *ls, expdesc *v) {
+  LuaResult result = LUA_OK;
   /* index -> '[' expr ']' */
   luaX_next(ls);  /* skip the '[' */
   expr(ls, v);
   luaK_exp2val(ls->fs, v);
-  checknext(ls, ']');
+  result = check_next(ls, ']');
+  handleResult(result);
 }
 
 
@@ -679,6 +682,7 @@ struct ConsControl {
 
 
 static void recfield (LexState *ls, struct ConsControl *cc) {
+  LuaResult result = LUA_OK;
   /* recfield -> (NAME | `['exp1`]') = exp1 */
   FuncState *fs = ls->fs;
   int reg = ls->fs->freereg;
@@ -691,7 +695,8 @@ static void recfield (LexState *ls, struct ConsControl *cc) {
   else  /* ls->t.token == '[' */
     yindex(ls, &key);
   cc->nh++;
-  checknext(ls, '=');
+  result = check_next(ls, '=');
+  handleResult(result);
   rkkey = luaK_exp2RK(fs, &key);
   expr(ls, &val);
   luaK_codeABC(fs, OP_SETTABLE, cc->t->info, rkkey, luaK_exp2RK(fs, &val));
@@ -757,6 +762,7 @@ static void field (LexState *ls, struct ConsControl *cc) {
 
 
 static void constructor (LexState *ls, expdesc *t) {
+  LuaResult result = LUA_OK;
   /* constructor -> '{' [ field { sep field } [sep] ] '}'
      sep -> ',' | ';' */
   FuncState *fs = ls->fs;
@@ -768,7 +774,10 @@ static void constructor (LexState *ls, expdesc *t) {
   init_exp(t, VRELOCABLE, pc);
   init_exp(&cc.v, VVOID, 0);  /* no value (yet) */
   luaK_exp2nextreg(ls->fs, t);  /* fix it at stack top */
-  checknext(ls, '{');
+
+  result = check_next(ls, '{');
+  handleResult(result);
+
   do {
     assert(cc.v.k == VVOID || cc.tostore > 0);
     if (ls->t.token == '}') break;
@@ -819,18 +828,25 @@ static void parlist (LexState *ls) {
 
 
 static void body (LexState *ls, expdesc *e, int ismethod, int line) {
+  LuaResult result = LUA_OK;
   /* body ->  `(' parlist `)' block END */
   FuncState new_fs;
   BlockCnt bl;
   open_func(ls, &new_fs, &bl);
   new_fs.f->linedefined = line;
-  checknext(ls, '(');
+
+  result = check_next(ls, '(');
+  handleResult(result);
+
   if (ismethod) {
     new_localvarliteral(ls, "self");  /* create 'self' parameter */
     adjustlocalvars(ls, 1);
   }
   parlist(ls);
-  checknext(ls, ')');
+  
+  result = check_next(ls, ')');
+  handleResult(result);
+  
   statlist(ls);
   new_fs.f->lastlinedefined = ls->linenumber;
   check_match(ls, TK_END, TK_FUNCTION, line);
@@ -1176,6 +1192,7 @@ static void check_conflict (LexState *ls, struct LHS_assign *lh, expdesc *v) {
 
 
 static void assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
+  LuaResult result = LUA_OK;
   expdesc e;
   check_condition(ls, vkisvar(lh->v.k), "syntax error");
   if (testnext(ls, ',')) {  /* assignment -> `,' primaryexp assignment */
@@ -1195,7 +1212,10 @@ static void assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
   }
   else {  /* assignment -> `=' explist */
     int nexps;
-    checknext(ls, '=');
+    
+    result = check_next(ls, '=');
+    handleResult(result);
+
     nexps = explist(ls, &e);
     if (nexps != nvars) {
       adjust_assign(ls, nvars, nexps, &e);
@@ -1253,12 +1273,14 @@ static void checkrepeated (FuncState *fs, Labellist *ll, LuaString *label) {
 
 
 static void labelstat (LexState *ls, LuaString *label, int line) {
+  LuaResult result = LUA_OK;
   /* label -> '::' NAME '::' */
   FuncState *fs = ls->fs;
   Labellist *ll = &ls->dyd->label;
   int l;  /* index of new label being created */
   checkrepeated(fs, ll, label);  /* check for repeated labels */
-  checknext(ls, TK_DBCOLON);  /* skip double colon */
+  result = check_next(ls, TK_DBCOLON);  /* skip double colon */
+  handleResult(result);
   /* create new entry for this label */
   l = newlabelentry(ls, ll, label, line, fs->pc);
   /* skip other no-op statements */
@@ -1273,6 +1295,7 @@ static void labelstat (LexState *ls, LuaString *label, int line) {
 
 
 static void whilestat (LexState *ls, int line) {
+  LuaResult result = LUA_OK;
   /* whilestat -> WHILE cond DO block END */
   FuncState *fs = ls->fs;
   int whileinit;
@@ -1282,7 +1305,10 @@ static void whilestat (LexState *ls, int line) {
   whileinit = luaK_getlabel(fs);
   condexit = cond(ls);
   enterblock(fs, &bl, 1);
-  checknext(ls, TK_DO);
+  
+  result = check_next(ls, TK_DO);
+  handleResult(result);
+  
   block(ls);
   luaK_jumpto(fs, whileinit);
   check_match(ls, TK_END, TK_WHILE, line);
@@ -1323,12 +1349,16 @@ static int exp1 (LexState *ls) {
 
 
 static void forbody (LexState *ls, int base, int line, int nvars, int isnum) {
+  LuaResult result = LUA_OK;
   /* forbody -> DO block */
   BlockCnt bl;
   FuncState *fs = ls->fs;
   int prep, endfor;
   adjustlocalvars(ls, 3);  /* control variables */
-  checknext(ls, TK_DO);
+
+  result = check_next(ls, TK_DO);
+  handleResult(result);
+
   prep = isnum ? luaK_codeAsBx(fs, OP_FORPREP, base, NO_JUMP) : luaK_jump(fs);
   enterblock(fs, &bl, 0);  /* scope for declared variables */
   adjustlocalvars(ls, nvars);
@@ -1349,6 +1379,7 @@ static void forbody (LexState *ls, int base, int line, int nvars, int isnum) {
 
 
 static void fornum (LexState *ls, LuaString *varname, int line) {
+  LuaResult result = LUA_OK;
   /* fornum -> NAME = exp1,exp1[,exp1] forbody */
   FuncState *fs = ls->fs;
   int base = fs->freereg;
@@ -1358,9 +1389,13 @@ static void fornum (LexState *ls, LuaString *varname, int line) {
     new_localvarliteral(ls, "(for step)");
     new_localvar(ls, varname);
   }
-  checknext(ls, '=');
+  result = check_next(ls, '=');
+  handleResult(result);
+
   exp1(ls);  /* initial value */
-  checknext(ls, ',');
+  result = check_next(ls, ',');
+  handleResult(result);
+  
   exp1(ls);  /* limit */
   if (testnext(ls, ','))
     exp1(ls);  /* optional step */
@@ -1373,6 +1408,8 @@ static void fornum (LexState *ls, LuaString *varname, int line) {
 
 
 static void forlist (LexState *ls, LuaString *indexname) {
+  LuaResult result = LUA_OK;
+
   /* forlist -> NAME {,NAME} IN explist forbody */
   FuncState *fs = ls->fs;
   expdesc e;
@@ -1392,7 +1429,9 @@ static void forlist (LexState *ls, LuaString *indexname) {
     nvars++;
   }
 
-  checknext(ls, TK_IN);
+  result = check_next(ls, TK_IN);
+  handleResult(result);
+
   line = ls->linenumber;
   adjust_assign(ls, 3, explist(ls, &e), &e);
   luaK_checkstack(fs, 3);  /* extra space to call generator */
@@ -1423,6 +1462,8 @@ static void forstat (LexState *ls, int line) {
 
 
 static void test_then_block (LexState *ls, int *escapelist) {
+  LuaResult result = LUA_OK;
+
   /* test_then_block -> [IF | ELSEIF] cond THEN block */
   BlockCnt bl;
   FuncState *fs = ls->fs;
@@ -1430,7 +1471,10 @@ static void test_then_block (LexState *ls, int *escapelist) {
   int jf;  /* instruction to skip 'then' code (if condition is false) */
   luaX_next(ls);  /* skip IF or ELSEIF */
   expr(ls, &v);  /* read condition */
-  checknext(ls, TK_THEN);
+  
+  result = check_next(ls, TK_THEN);
+  handleResult(result);
+  
   if (ls->t.token == TK_GOTO || ls->t.token == TK_BREAK) {
     luaK_goiffalse(ls->fs, &v);  /* will jump to label if condition is true */
     enterblock(fs, &bl, 0);  /* must enter block before 'goto' */
