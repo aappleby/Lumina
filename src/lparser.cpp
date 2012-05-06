@@ -1739,8 +1739,13 @@ static LuaResult statement (LexState *ls) {
 /* }====================================================================== */
 
 
-LuaProto *luaY_parser (LuaThread *L, ZIO *z, Mbuffer *buff,
-                    Dyndata *dyd, const char *name, int firstchar) {
+LuaResult luaY_parser (LuaThread *L,
+                       ZIO *z,
+                       Mbuffer *buff,
+                       Dyndata *dyd, 
+                       const char *name, 
+                       int firstchar,
+                       LuaProto*& out) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(L);
   LexState lexstate;
@@ -1751,7 +1756,7 @@ LuaProto *luaY_parser (LuaThread *L, ZIO *z, Mbuffer *buff,
   tname = thread_G->strings_->Create(name);
   /* push name to protect it */
   result = L->stack_.push_reserve2(LuaValue(tname));
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   lexstate.buff = buff;
   lexstate.dyd = dyd;
@@ -1761,16 +1766,17 @@ LuaProto *luaY_parser (LuaThread *L, ZIO *z, Mbuffer *buff,
   luaX_next(&lexstate);  /* read first token */
   
   result = statlist(&lexstate);  /* main body */
-  handleResult(result);
+  if(result != LUA_OK) return result;
   
   result = check_token(&lexstate, TK_EOS);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   close_func(&lexstate);
   L->stack_.pop();  /* pop name */
   assert(!funcstate.prev && funcstate.num_upvals == 1 && !lexstate.fs);
   /* all scopes should be correctly finished */
   assert(dyd->actvar.n == 0 && dyd->gt.n == 0 && dyd->label.n == 0);
-  return funcstate.f;
+  out = funcstate.f;
+  return result;
 }
 

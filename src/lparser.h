@@ -111,8 +111,13 @@ public:
 };
 
 
-LuaProto *luaY_parser (LuaThread *L, ZIO *z, Mbuffer *buff,
-                              Dyndata *dyd, const char *name, int firstchar);
+LuaResult luaY_parser (LuaThread *L,
+                       ZIO *z,
+                       Mbuffer *buff,
+                       Dyndata *dyd, 
+                       const char *name, 
+                       int firstchar,
+                       LuaProto*& out);
 
 
 #endif

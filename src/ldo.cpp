@@ -504,11 +504,11 @@ static void checkmode (LuaThread *L, const char *mode, const char *x) {
 }
 
 int luaD_protectedparser (LuaThread *L, ZIO *z, const char *name, const char *mode) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(L);
   LuaExecutionState s = L->saveState(L->stack_.top_);
   L->nonyieldable_count_++;  /* cannot yield during parsing */
 
-  int result = LUA_OK;
   try {
     LuaProto *new_proto;
 
@@ -522,7 +522,8 @@ int luaD_protectedparser (LuaThread *L, ZIO *z, const char *name, const char *mo
       checkmode(L, mode, "text");
       Mbuffer buff;
       Dyndata dyd;
-      new_proto = luaY_parser(L, z, &buff, &dyd, name, c);
+      result = luaY_parser(L, z, &buff, &dyd, name, c, new_proto);
+      handleResult(result);
     }
     
     LuaResult result = L->stack_.push_reserve2(LuaValue(new_proto));
