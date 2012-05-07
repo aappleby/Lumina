@@ -1929,7 +1929,6 @@ static LuaResult statement (LexState *ls) {
 
 LuaResult luaY_parser (LuaThread *L,
                        ZIO *z,
-                       Mbuffer *buff,
                        Dyndata *dyd, 
                        const char *name, 
                        int firstchar,
@@ -1945,11 +1944,6 @@ LuaResult luaY_parser (LuaThread *L,
   /* push name to protect it */
   result = L->stack_.push_reserve2(LuaValue(tname));
   if(result != LUA_OK) return result;
-
-  lexstate.buff_.resize(buff->size_);
-  if(buff->size_) {
-    memcpy(&lexstate.buff_[0], buff->buffer.buf_, buff->size_);
-  }
 
   lexstate.dyd = dyd;
   dyd->actvar.n = dyd->gt.n = dyd->label.n = 0;

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "LuaBuffer.h"
+#include <vector>
+
 #include "LuaCollector.h"
 #include "LuaList.h"
 #include "LuaUpval.h" // for uvhead
@@ -101,7 +102,7 @@ public:
   LuaCollector gc_;
 
   LuaUpvalue uvhead;  /* head of double-linked list of all open upvalues */
-  Mbuffer buff;  /* temporary buffer for string concatenation */
+  std::vector<char> buff;  /* temporary buffer for string concatenation */
   int gcpause;  /* size of pause between successive GCs */
   int gcmajorinc;  /* how much to wait for a major GC (only in gen. mode) */
   int gcstepmul;  /* GC `granularity' */

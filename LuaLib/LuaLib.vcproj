@@ -513,14 +513,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\LuaBuffer.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\LuaBuffer.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\LuaCallinfo.cpp"
 				>
 			</File>

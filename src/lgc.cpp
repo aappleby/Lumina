@@ -608,7 +608,7 @@ static ptrdiff_t singlestep () {
         // save some RAM by reducing the size of our internal buffers.
         if (g->gckind != KGC_EMERGENCY) {
           g->strings_->Shrink();
-          g->buff.buffer.clear();
+          g->buff.clear();
         }
         
         g->gcstate = GCSpause;

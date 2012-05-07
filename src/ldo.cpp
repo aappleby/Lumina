@@ -549,14 +549,12 @@ int luaD_protectedparser (LuaThread *L, ZIO *z, const char *name, const char *mo
     int c = zgetc(z);  /* read first character */
     if (c == LUA_SIGNATURE[0]) {
       checkmode(L, mode, "binary");
-      Mbuffer buff;
-      new_proto = luaU_undump(L, z, &buff, name);
+      new_proto = luaU_undump(L, z, name);
     }
     else {
       checkmode(L, mode, "text");
-      Mbuffer buff;
       Dyndata dyd;
-      result = luaY_parser(L, z, &buff, &dyd, name, c, new_proto);
+      result = luaY_parser(L, z, &dyd, name, c, new_proto);
       if(result != LUA_OK) {
         L->restoreState(s, result, 0);
         return result;

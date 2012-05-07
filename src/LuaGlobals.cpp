@@ -159,7 +159,7 @@ LuaVM::~LuaVM() {
   delete strings_;
   strings_ = NULL;
 
-  buff.buffer.clear();
+  buff.clear();
 
   assert(getTotalBytes() == sizeof(LuaVM));
   assert(mainthread == NULL);

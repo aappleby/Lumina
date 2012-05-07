@@ -196,8 +196,6 @@ static void buffreplace (LexState *ls, char from, char to) {
 #endif
 
 
-#define buff2d(b,e)	luaO_str2d(luaZ_buffer(b), luaZ_bufflen(b) - 1, e)
-
 /*
 ** in case of format error, try to change decimal point separator to
 ** the one defined in the current locale and check again

@@ -9,6 +9,7 @@
 #include "LuaState.h"
 
 #include <string.h>
+#include <vector>
 
 #include "lua.h"
 
@@ -22,7 +23,7 @@
 typedef struct {
  LuaThread* L;
  ZIO* Z;
- Mbuffer* b;
+ std::vector<char> b_;
  const char* name;
 } LoadState;
 
@@ -76,9 +77,9 @@ static LuaString* LoadString(LoadState* S)
     return NULL;
   }
   else {
-    char* s=luaZ_openspace(S->L,S->b,size);
-    LoadBlock(S,s,size*sizeof(char));
-    return thread_G->strings_->Create(s,size-1); /* remove trailing '\0' */
+    S->b_.resize(size);
+    LoadBlock(S,&S->b_[0],size*sizeof(char));
+    return thread_G->strings_->Create(&S->b_[0],size-1); /* remove trailing '\0' */
   }
 }
 
@@ -216,7 +217,7 @@ static void LoadHeader(LoadState* S)
 /*
 ** load precompiled chunk
 */
-LuaProto* luaU_undump (LuaThread* L, ZIO* Z, Mbuffer* buff, const char* name)
+LuaProto* luaU_undump (LuaThread* L, ZIO* Z, const char* name)
 {
  THREAD_CHECK(L);
  LoadState S;
@@ -228,7 +229,6 @@ LuaProto* luaU_undump (LuaThread* L, ZIO* Z, Mbuffer* buff, const char* name)
   S.name=name;
  S.L=L;
  S.Z=Z;
- S.b=buff;
  LoadHeader(&S);
  return luai_verifycode(L,buff,LoadFunction(&S));
 }

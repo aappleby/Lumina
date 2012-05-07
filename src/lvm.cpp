@@ -453,7 +453,6 @@ void luaV_concat (LuaThread *L, int total) {
 
     /* at least two non-empty string values; get as many as possible */
     size_t tl = top[-1].getString()->getLen();
-    char *buffer;
     int i;
     /* collect total length */
     for (i = 1; i < total; i++) {
@@ -470,16 +469,16 @@ void luaV_concat (LuaThread *L, int total) {
       }
       tl += l;
     }
-    buffer = luaZ_openspace(L, &G(L)->buff, tl);
+    G(L)->buff.resize(tl);
     tl = 0;
     n = i;
     do {  /* concat all strings */
       size_t l = top[-i].getString()->getLen();
-      memcpy(buffer+tl, top[-i].getString()->c_str(), l * sizeof(char));
+      memcpy(&G(L)->buff[0] + tl, top[-i].getString()->c_str(), l * sizeof(char));
       tl += l;
     } while (--i > 0);
 
-    top[-n] = thread_G->strings_->Create(buffer, tl);
+    top[-n] = thread_G->strings_->Create(&G(L)->buff[0], tl);
 
     total -= n-1;  /* got 'n' strings to create 1 new */
     L->stack_.top_ -= n-1;  /* popped 'n' strings and pushed one */
