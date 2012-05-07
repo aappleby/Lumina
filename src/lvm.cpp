@@ -673,7 +673,10 @@ void luaV_finishOp (LuaThread *L) {
 #define RKC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgK, ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
 
 enum RunResult {
-  RR_DONE
+  RR_DONE,
+  RR_CALL,
+  RR_TAILCALL,
+  RR_RETURN,
 };
 
 RunResult luaV_run2 (LuaThread *L) {
@@ -739,7 +742,7 @@ RunResult luaV_run2 (LuaThread *L) {
     //assert(base <= L->stack_.top_ && L->stack_.top_ < L->stack_.end());
     LuaValue* base = ci->getBase();
     StkId ra = &base[A];
-    LuaClosure* cl = ci->getFunc()->getLClosure();
+    LuaClosure* cl = ci->getFunc()->getClosure();
     LuaValue* k = ci->getConstants();
 
     switch(opcode) {
@@ -1076,6 +1079,7 @@ RunResult luaV_run2 (LuaThread *L) {
           else {  /* Lua function */
             ci = L->stack_.callinfo_;
             ci->callstatus |= CIST_REENTRY;
+            return RR_CALL;
           }
           break;
         }
@@ -1308,7 +1312,10 @@ RunResult luaV_run2 (LuaThread *L) {
 }
 
 void luaV_run (LuaThread *L) {
-  luaV_run2(L);
+  RunResult r;
+  do {
+    r = luaV_run2(L);
+  } while(r != RR_DONE);
 }
 
 void luaV_execute (LuaThread *L, int funcindex, int /*nresults*/) {

@@ -7,6 +7,8 @@
 #ifndef llex_h
 #define llex_h
 
+#include<vector>
+
 #include "lobject.h"
 #include "lzio.h"
 
@@ -51,6 +53,11 @@ class FuncState;
    functions */
 class LexState {
 public:
+
+  LexState() {
+    buff_.reserve(128);
+  }
+
   int current;  /* current character (charint) */
   int linenumber;  /* input line counter */
   int lastline;  /* line of last token `consumed' */
@@ -59,7 +66,9 @@ public:
   FuncState *fs;  /* current function (parser) */
   LuaThread *L;
   ZIO *z;  /* input stream */
-  Mbuffer *buff;  /* buffer for tokens */
+  // buffer for tokens
+  std::vector<char> buff_;
+
   struct Dyndata *dyd;  /* dynamic structures used by the parser */
   LuaString *source;  /* current source name */
   LuaString *envn;  /* environment variable name */

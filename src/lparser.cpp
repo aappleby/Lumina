@@ -1946,7 +1946,11 @@ LuaResult luaY_parser (LuaThread *L,
   result = L->stack_.push_reserve2(LuaValue(tname));
   if(result != LUA_OK) return result;
 
-  lexstate.buff = buff;
+  lexstate.buff_.resize(buff->size_);
+  if(buff->size_) {
+    memcpy(&lexstate.buff_[0], buff->buffer.buf_, buff->size_);
+  }
+
   lexstate.dyd = dyd;
   dyd->actvar.n = dyd->gt.n = dyd->label.n = 0;
   luaX_setinput(L, &lexstate, z, tname, firstchar);
