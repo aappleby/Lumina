@@ -740,7 +740,7 @@ RunResult luaV_run2 (LuaThread *L) {
     LuaValue* base = ci->getBase();
     StkId ra = &base[A];
     LuaClosure* cl = ci->getFunc()->getLClosure();
-    LuaValue* k = cl->proto_->constants.begin(); 
+    LuaValue* k = ci->getConstants();
 
     switch(opcode) {
       case OP_MOVE:
@@ -1143,7 +1143,7 @@ RunResult luaV_run2 (LuaThread *L) {
           }
 
           LuaStackFrame* old_frame = L->stack_.callinfo_;
-          luaD_postcall(L, ra);
+          luaD_postcall(L, ra, nresults);
           LuaStackFrame* new_frame = L->stack_.callinfo_;
 
           if (!(old_frame->callstatus & CIST_REENTRY)) {  /* 'ci' still the called one */
@@ -1331,7 +1331,7 @@ void luaV_execute (LuaThread *L, int funcindex, int /*nresults*/) {
 
     L->stack_.checkArgs(n);
 
-    luaD_postcall(L, L->stack_.top_ - n);
+    luaD_postcall(L, L->stack_.top_ - n, n);
   }
   else {
     luaV_run(L);

@@ -43,6 +43,8 @@ public:
   void setTop(StkId top)   { top_index_ = int(top - stack_->begin()); }
   void setBase(StkId base) { base_index_ = int(base - stack_->begin()); }
 
+  LuaValue* getConstants() const;
+
   LuaStackFrame* previous;
   LuaStackFrame* next;  /* dynamic call link */
 
@@ -61,7 +63,8 @@ public:
 protected:
 
   // only for Lua functions
-  const Instruction* code;
+  const Instruction* code_;
+  LuaValue* constants_;
   int savedpc;
 
   LuaStackFrame() {

@@ -117,9 +117,6 @@ static LuaResult  tryfuncTM (LuaThread *L, int funcindex) {
 }
 
 
-/*
-** returns true if function has been executed (C function)
-*/
 LuaResult luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(L);
@@ -144,10 +141,10 @@ LuaResult luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
   else {
     result = L->stack_.createLuaCall(nargs, nresults);
     if(result != LUA_OK) return result;
-    L->stack_.top_ = L->stack_.callinfo_->next->getTop();
   }
 
   L->stack_.callinfo_ = L->stack_.callinfo_->next;
+  if(!isC) L->stack_.top_ = L->stack_.callinfo_->getTop();
 
   if (L->hookmask & LUA_MASKCALL) {
     LuaStackFrame* ci = L->stack_.callinfo_;
@@ -164,7 +161,7 @@ LuaResult luaD_precall2 (LuaThread *L, int funcindex, int nresults) {
   return result;
 }
 
-void luaD_postcall (LuaThread *L, StkId firstResult) {
+void luaD_postcall (LuaThread *L, StkId firstResult, int /*nresults2*/) {
   THREAD_CHECK(L);
 
   LuaStackFrame *ci = L->stack_.callinfo_;
@@ -181,7 +178,11 @@ void luaD_postcall (LuaThread *L, StkId firstResult) {
   LuaValue* res = ci->getFunc();  /* res == final position of 1st result */
 
   /* move results to correct place */
-  int nresults = (ci->nresults == LUA_MULTRET) ? L->stack_.top_ - firstResult : ci->nresults;
+  //int nresults = (ci->nresults == LUA_MULTRET) ? L->stack_.top_ - firstResult : ci->nresults;
+  int nresults = ci->nresults;
+  if(nresults == LUA_MULTRET) {
+    nresults = L->stack_.top_ - firstResult;
+  }
 
   for(int i = 0; i < nresults; i++) {
     if(firstResult < L->stack_.top_) {
@@ -266,9 +267,11 @@ static void finishCcall (LuaThread *L) {
   LuaStackFrame *ci = L->stack_.callinfo_;
   assert(ci->continuation_ != NULL);  /* must have a continuation */
   assert(L->nonyieldable_count_ == 0);
+
   /* finish 'luaD_call' */
   /* finish 'lua_callk' */
   adjustresults(L, ci->nresults);
+
   /* call continuation function */
   if (!(ci->callstatus & CIST_STAT)) {
     /* no call status? */
@@ -280,8 +283,9 @@ static void finishCcall (LuaThread *L) {
   int n = (*ci->continuation_)(L);
 
   L->stack_.checkArgs(n);
+
   /* finish 'luaD_precall' */
-  luaD_postcall(L, L->stack_.top_ - n);
+  luaD_postcall(L, L->stack_.top_ - n, n);
 }
 
 
@@ -289,13 +293,12 @@ static void unroll (LuaThread *L, void *ud) {
   THREAD_CHECK(L);
   UNUSED(ud);
   for (int depth = 0;; depth++) {
-    if (L->stack_.callinfoEmpty())  /* stack is empty? */
+    if (L->stack_.callinfoEmpty()) {
+      /* stack is empty? */
       return;  /* coroutine finished normally */
+    }
+
     if (!L->stack_.callinfo_->isLua()) {  /* C function? */
-      if(depth != 0) {
-        int b = 0;
-        b++;
-      }
       finishCcall(L);
     }
     else {  /* Lua function */
@@ -350,10 +353,12 @@ static l_noret resume_error (LuaThread *L, const char *msg, StkId firstArg) {
 /*
 ** do the work for 'lua_resume' in protected mode
 */
-static void resume_coroutine (LuaThread *L, StkId firstArg, int nargs) {
+static void resume_coroutine (LuaThread *L, int nargs) {
   LuaResult result = LUA_OK;
 
   THREAD_CHECK(L);
+
+  StkId firstArg = L->stack_.top_ - nargs;
 
   if (L->status == LUA_OK) {  /* may be starting a coroutine */
     if (L->stack_.callinfo_ != L->stack_.callinfo_head_) {
@@ -362,7 +367,6 @@ static void resume_coroutine (LuaThread *L, StkId firstArg, int nargs) {
     }
 
     /* coroutine is in base level; start running it */
-    // Lua function? call it.
     int funcindex = L->stack_.topsize() - nargs - 1;
 
     result = luaD_precall2(L, funcindex, LUA_MULTRET);
@@ -390,6 +394,7 @@ static void resume_coroutine (LuaThread *L, StkId firstArg, int nargs) {
 
   // 'common' yield
   L->stack_.callinfo_->setFunc(L->stack_.atIndex(L->stack_.callinfo_->old_func_));
+
   if (L->stack_.callinfo_->continuation_ != NULL) {  /* does it have a continuation? */
     int n;
     L->stack_.callinfo_->status = LUA_YIELD;  /* 'default' status */
@@ -398,9 +403,17 @@ static void resume_coroutine (LuaThread *L, StkId firstArg, int nargs) {
     L->stack_.checkArgs(n);
     firstArg = L->stack_.top_ - n;  /* yield results come from continuation */
   }
+
   /* finish 'luaD_call' */
   /* finish 'luaD_precall' */
-  luaD_postcall(L, firstArg);  
+
+  if(L->stack_.callinfo_->nresults == -1) {
+    int b = 0;
+    b++;
+  }
+
+  luaD_postcall(L, firstArg, -1000000000);
+
   unroll(L, NULL);
 }
 
@@ -412,7 +425,7 @@ int lua_resume (LuaThread *L, LuaThread * /*from*/, int nargs) {
 
   int status = LUA_OK;
   try {
-    resume_coroutine(L, L->stack_.top_ - nargs, nargs);
+    resume_coroutine(L, nargs);
   }
   catch (LuaResult error) {
     status = error;

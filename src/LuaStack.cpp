@@ -455,6 +455,10 @@ LuaStackFrame* LuaStack::findProtectedCall() {
 }
 
 LuaResult LuaStack::createCCall2(int nargs, int nresults) {
+  if(nresults == -1) {
+    int b = callinfo_->getCurrentLine();
+    b++;
+  }
   // ensure minimum stack size
   LuaResult result = reserve2(LUA_MINSTACK);
   if(result != LUA_OK) {

@@ -84,6 +84,7 @@ public:
   bool isUpval() const        { return type_ == LUA_TUPVALUE; }
   bool isProto() const        { return type_ == LUA_TPROTO; }
 
+  bool isClosure() const      { return (type_ == LUA_TCCL) || (type_ == LUA_TLCL); }
   bool isCClosure() const     { return type_ == LUA_TCCL; }
   bool isLClosure() const     { return type_ == LUA_TLCL; }
   bool isCallback() const     { return type_ == LUA_TCALLBACK; }
@@ -124,6 +125,7 @@ public:
   int          getInteger() const   { assert(isNumber()); return (int)number_; }
   double       getNumber() const    { assert(isNumber()); return number_; }
   LuaObject*   getObject() const    { assert(isCollectable()); return object_; }
+  LuaClosure*  getClosure()         { assert(isClosure()); return reinterpret_cast<LuaClosure*>(object_); }
   LuaClosure*  getCClosure()        { assert(isCClosure()); return reinterpret_cast<LuaClosure*>(object_); }
   LuaClosure*  getLClosure()        { assert(isLClosure()); return reinterpret_cast<LuaClosure*>(object_); }
   LuaString*   getString() const    { assert(isString()); return reinterpret_cast<LuaString*>(object_); }

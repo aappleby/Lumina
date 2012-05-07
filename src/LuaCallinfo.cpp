@@ -15,7 +15,7 @@ void LuaStackFrame::sanityCheck() {
 
 int LuaStackFrame::beginInstruction() {
   savedpc++;
-  return code[savedpc];
+  return code_[savedpc];
 }
 
 void LuaStackFrame::undoInstruction() {
@@ -38,30 +38,36 @@ int LuaStackFrame::getCurrentLine() {
 int LuaStackFrame::getCurrentInstruction() {
   if(!isLua()) return -1;
 
-  return code[savedpc];
+  return code_[savedpc];
 }
 
 int LuaStackFrame::getCurrentOp() {
   if(!isLua()) return -1;
 
-  Instruction i = code[savedpc];
+  Instruction i = code_[savedpc];
   return (i & 0x0000003F);
 }
 
 int LuaStackFrame::getNextInstruction() {
-  return code[savedpc+1];
+  return code_[savedpc+1];
 }
 
 int LuaStackFrame::getNextOp() {
   if(!isLua()) return -1;
 
-  Instruction i = code[savedpc+1];
+  Instruction i = code_[savedpc+1];
   return (i & 0x0000003F);
 }
+
+LuaValue* LuaStackFrame::getConstants() const {
+ return constants_;
+}
+
 
 void LuaStackFrame::resetPC() {
   if(!isLua()) return;
 
-  code = getFunc()->getLClosure()->proto_->code.begin();
+  code_ = getFunc()->getLClosure()->proto_->code.begin();
+  constants_ = getFunc()->getLClosure()->proto_->constants.begin();
   savedpc = -1;
 }

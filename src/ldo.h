@@ -22,7 +22,7 @@ void luaD_hook (LuaThread *L, int event, int line);
 LuaResult luaD_precall2 (LuaThread *L, int funcindex, int nresults);
 
 void luaD_call (LuaThread *L, int nargs, int nresults, int allowyield);
-void luaD_postcall (LuaThread *L, StkId firstResult);
+void luaD_postcall (LuaThread *L, StkId firstResult, int nresults);
 
 l_noret luaD_throw (int errcode);
 
