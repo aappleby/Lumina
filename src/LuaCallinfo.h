@@ -66,6 +66,7 @@ protected:
   const Instruction* code_;
   LuaValue* constants_;
   int savedpc;
+  int line_;
 
   LuaStackFrame() {
     stack_ = NULL;

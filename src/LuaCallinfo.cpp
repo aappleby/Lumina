@@ -15,6 +15,7 @@ void LuaStackFrame::sanityCheck() {
 
 int LuaStackFrame::beginInstruction() {
   savedpc++;
+  //line_ = getFunc()->getLClosure()->proto_->getLine( savedpc );
   return code_[savedpc];
 }
 

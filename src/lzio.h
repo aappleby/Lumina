@@ -10,17 +10,13 @@
 
 #include "lua.h"
 
-#include "lmem.h"
-#include "LuaVector.h"
-
 #define EOZ	(-1)			/* end of stream */
 
 typedef struct Zio ZIO;
 
 #define zgetc(z)  (((z)->n--)>0 ?  cast_uchar(*(z)->p++) : luaZ_fill(z))
 
-void luaZ_init (LuaThread *L, ZIO *z, lua_Reader reader,
-                                        void *data);
+void luaZ_init (LuaThread *L, ZIO *z, lua_Reader reader, void *data);
 size_t luaZ_read (ZIO* z, void* b, size_t n);	/* read next n bytes */
 
 
