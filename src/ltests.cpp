@@ -360,7 +360,7 @@ int lua_checkmemory (LuaThread *L) {
 
 
 static char *buildop (LuaProto *p, int pc, char *buff) {
-  Instruction i = p->code[pc];
+  Instruction i = p->instructions_[pc];
   OpCode o = GET_OPCODE(i);
   const char *name = luaP_opnames[o];
   int line = p->getLine(pc);
@@ -396,7 +396,7 @@ static int listcode (LuaThread *L) {
 
   setnameval(L, "maxstack", p->maxstacksize);
   setnameval(L, "numparams", p->numparams);
-  for (pc=0; pc < (int)p->code.size(); pc++) {
+  for (pc=0; pc < (int)p->instructions_.size(); pc++) {
     char buff[100];
     lua_pushinteger(L, pc+1);
     lua_pushstring(L, buildop(p, pc, buff));

@@ -39,7 +39,7 @@ void luaK_nil (FuncState *fs, int from, int n) {
   Instruction *previous;
   int l = from + n - 1;  /* last register to set nil */
   if (fs->pc > fs->lasttarget) {  /* no jumps to current position? */
-    previous = &fs->f->code[fs->pc-1];
+    previous = &fs->f->instructions_[fs->pc-1];
     if (GET_OPCODE(*previous) == OP_LOADNIL) {
       int pfrom = GETARG_A(*previous);
       int pl = pfrom + GETARG_B(*previous);
@@ -84,7 +84,7 @@ static int condjump (FuncState *fs, OpCode op, int A, int B, int C) {
 static void fixjump (FuncState *fs, int pc, int dest) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(fs->ls->L);
-  Instruction *jmp = &fs->f->code[pc];
+  Instruction *jmp = &fs->f->instructions_[pc];
   int offset = dest-(pc+1);
   assert(dest != NO_JUMP);
   if (abs(offset) > MAXARG_sBx) {
@@ -108,7 +108,7 @@ int luaK_getlabel (FuncState *fs) {
 
 static int getjump (FuncState *fs, int pc) {
   THREAD_CHECK(fs->ls->L);
-  int offset = GETARG_sBx(fs->f->code[pc]);
+  int offset = GETARG_sBx(fs->f->instructions_[pc]);
   if (offset == NO_JUMP)  /* point to itself represents end of list */
     return NO_JUMP;  /* end of list */
   else
@@ -118,7 +118,7 @@ static int getjump (FuncState *fs, int pc) {
 
 static Instruction *getjumpcontrol (FuncState *fs, int pc) {
   THREAD_CHECK(fs->ls->L);
-  Instruction *pi = &fs->f->code[pc];
+  Instruction *pi = &fs->f->instructions_[pc];
   if (pc >= 1 && testTMode(GET_OPCODE(*(pi-1))))
     return pi-1;
   else
@@ -198,10 +198,10 @@ void luaK_patchclose (FuncState *fs, int list, int level) {
   level++;  /* argument is +1 to reserve 0 as non-op */
   while (list != NO_JUMP) {
     int next = getjump(fs, list);
-    assert(GET_OPCODE(fs->f->code[list]) == OP_JMP &&
-                (GETARG_A(fs->f->code[list]) == 0 ||
-                 GETARG_A(fs->f->code[list]) >= level));
-    SETARG_A(fs->f->code[list], level);
+    assert(GET_OPCODE(fs->f->instructions_[list]) == OP_JMP &&
+                (GETARG_A(fs->f->instructions_[list]) == 0 ||
+                 GETARG_A(fs->f->instructions_[list]) >= level));
+    SETARG_A(fs->f->instructions_[list], level);
     list = next;
   }
 }
@@ -234,10 +234,10 @@ static int luaK_code (FuncState *fs, Instruction i) {
   LuaProto *f = fs->f;
   dischargejpc(fs);  /* `pc' will change */
   /* put new instruction in code array */
-  if(fs->pc >= (int)f->code.size()) {
-    f->code.grow();
+  if(fs->pc >= (int)f->instructions_.size()) {
+    f->instructions_.grow();
   }
-  f->code[fs->pc] = i;
+  f->instructions_[fs->pc] = i;
   /* save corresponding line information */
   if(fs->pc >= (int)f->lineinfo.size()) {
     f->lineinfo.grow();

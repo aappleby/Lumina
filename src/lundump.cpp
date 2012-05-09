@@ -86,8 +86,8 @@ static LuaString* LoadString(LoadState* S)
 static void LoadCode(LoadState* S, LuaProto* f)
 {
   int n=LoadInt(S);
-  f->code.resize_nocheck(n);
-  LoadVector(S,&f->code[0],n,sizeof(Instruction));
+  f->instructions_.resize_nocheck(n);
+  LoadVector(S,&f->instructions_[0],n,sizeof(Instruction));
 }
 
 static LuaProto* LoadFunction(LoadState* S);

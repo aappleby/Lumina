@@ -339,7 +339,7 @@ static int findsetreg (LuaProto *p, int lastpc, int reg) {
   int pc;
   int setreg = -1;  /* keep last instruction that changed 'reg' */
   for (pc = 0; pc < lastpc; pc++) {
-    Instruction i = p->code[pc];
+    Instruction i = p->instructions_[pc];
     OpCode op = GET_OPCODE(i);
     int a = GETARG_A(i);
     switch (op) {
@@ -395,7 +395,7 @@ const char *getobjname2 (LuaProto *p, int lastpc, int reg, std::string& name) {
   /* else try symbolic execution */
   pc = findsetreg(p, lastpc, reg);
   if (pc != -1) {  /* could find instruction? */
-    Instruction i = p->code[pc];
+    Instruction i = p->instructions_[pc];
     OpCode op = GET_OPCODE(i);
     switch (op) {
       case OP_MOVE: {
@@ -421,7 +421,7 @@ const char *getobjname2 (LuaProto *p, int lastpc, int reg, std::string& name) {
       case OP_LOADK:
       case OP_LOADKX: {
         int b = (op == OP_LOADK) ? GETARG_Bx(i)
-                                 : GETARG_Ax(p->code[pc + 1]);
+                                 : GETARG_Ax(p->instructions_[pc + 1]);
         if (p->constants[b].isString()) {
           name = p->constants[b].getString()->c_str();
           return "constant";
@@ -444,7 +444,7 @@ const char* getfuncname2 (LuaThread *L, LuaStackFrame *ci, std::string& name) {
   TMS tm;
   LuaProto *p = ci->getFunc()->getLClosure()->proto_;  /* calling function */
   int pc = ci->getCurrentPC();  /* calling instruction index */
-  Instruction i = p->code[pc];  /* calling instruction */
+  Instruction i = p->instructions_[pc];  /* calling instruction */
   switch (GET_OPCODE(i)) {
     case OP_CALL:
     case OP_TAILCALL:  /* get function name */

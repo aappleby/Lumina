@@ -602,7 +602,7 @@ static void close_func (LexState *ls) {
   luaK_ret(fs, 0, 0);  /* final return */
   leaveblock(fs);
 
-  f->code.resize_nocheck(fs->pc);
+  f->instructions_.resize_nocheck(fs->pc);
   f->lineinfo.resize_nocheck(fs->pc);
   f->constants.resize_nocheck(fs->num_constants);
   f->subprotos_.resize_nocheck(fs->num_protos);
@@ -829,8 +829,8 @@ static void constructor (LexState *ls, expdesc *t) {
   handleResult(result);
 
   lastlistfield(fs, &cc);
-  SETARG_B(fs->f->code[pc], luaO_int2fb(cc.na)); /* set initial array size */
-  SETARG_C(fs->f->code[pc], luaO_int2fb(cc.nh));  /* set initial table size */
+  SETARG_B(fs->f->instructions_[pc], luaO_int2fb(cc.na)); /* set initial array size */
+  SETARG_C(fs->f->instructions_[pc], luaO_int2fb(cc.nh));  /* set initial table size */
 }
 
 /* }====================================================================== */

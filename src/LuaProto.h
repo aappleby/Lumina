@@ -43,7 +43,7 @@ public:
   }
 
   LuaVector<LuaValue> constants;
-  LuaVector<Instruction> code;
+  LuaVector<Instruction> instructions_;
   LuaVector<int> lineinfo;
   LuaVector<LuaProto*> subprotos_; // functions defined inside the function
   LuaVector<LocVar> locvars; // information about local variables (debug information)

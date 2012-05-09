@@ -9,7 +9,7 @@ void LuaStackFrame::sanityCheck() {
   if(isLua()) {
     LuaProto *p = getFunc()->getLClosure()->proto_;
     assert(savedpc >= -1);
-    assert(savedpc < (int)p->code.size());
+    assert(savedpc < (int)p->instructions_.size());
   }
 }
 
@@ -68,7 +68,7 @@ LuaValue* LuaStackFrame::getConstants() const {
 void LuaStackFrame::resetPC() {
   if(!isLua()) return;
 
-  code_ = getFunc()->getLClosure()->proto_->code.begin();
+  code_ = getFunc()->getLClosure()->proto_->instructions_.begin();
   constants_ = getFunc()->getLClosure()->proto_->constants.begin();
   savedpc = -1;
 }

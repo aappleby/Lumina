@@ -15,7 +15,7 @@
 //#define pcRel(pc, p)	(cast(int, (pc) - &(p)->code[0]) - 1)
 
 inline int pcRel(const Instruction* pc, LuaProto* p) {
-  int offset = (int)((pc-1) - p->code.begin());
+  int offset = (int)((pc-1) - p->instructions_.begin());
   return offset;
 }
 

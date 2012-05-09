@@ -73,7 +73,7 @@ static void DumpString(const LuaString* s, DumpState* D)
  }
 }
 
-#define DumpCode(f,D)	 DumpVector(&f->code[0],(int)f->code.size(),sizeof(Instruction),D)
+#define DumpCode(f,D)	 DumpVector(&f->instructions_[0],(int)f->instructions_.size(),sizeof(Instruction),D)
 
 static void DumpFunction(const LuaProto* f, DumpState* D);
 
