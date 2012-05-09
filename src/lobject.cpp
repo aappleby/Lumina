@@ -7,6 +7,7 @@
 #include "LuaGlobals.h"
 #include "LuaState.h"
 
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -162,7 +163,7 @@ int luaO_str2d (const char *s, size_t len, double *result) {
   else if (strpbrk(s, "xX"))  /* hexa? */
     *result = lua_strx2number(s, &endptr);
   else
-    *result = lua_str2number(s, &endptr);
+    *result = strtod(s, &endptr);
   if (endptr == s) return 0;  /* nothing recognized */
   while (lisspace(cast_uchar(*endptr))) endptr++;
   return (endptr == s + len);  /* OK if no trailing characters */

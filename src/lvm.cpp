@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #define lvm_c
 
@@ -333,28 +334,43 @@ static int l_strcmp (const LuaString *ls, const LuaString *rs) {
 
 int luaV_lessthan (LuaThread *L, const LuaValue *l, const LuaValue *r) {
   THREAD_CHECK(L);
-  int res;
-  if (l->isNumber() && r->isNumber())
-    return luai_numlt(L, l->getNumber(), r->getNumber());
-  else if (l->isString() && r->isString())
+
+  if (l->isNumber() && r->isNumber()) {
+    return l->getNumber() < r->getNumber();
+  }
+
+  if (l->isString() && r->isString()) {
     return l_strcmp(l->getString(), r->getString()) < 0;
-  else if ((res = call_orderTM(L, l, r, TM_LT)) < 0)
+  }
+
+  int res = call_orderTM(L, l, r, TM_LT);
+  if (res < 0) {
     luaG_ordererror(l, r);
+  }
+
   return res;
 }
 
 
 int luaV_lessequal (LuaThread *L, const LuaValue *l, const LuaValue *r) {
   THREAD_CHECK(L);
-  int res;
-  if (l->isNumber() && r->isNumber())
-    return luai_numle(L, l->getNumber(), r->getNumber());
-  else if (l->isString() && r->isString())
+
+  if (l->isNumber() && r->isNumber()) {
+    return l->getNumber() <= r->getNumber();
+  }
+
+  if (l->isString() && r->isString()) {
     return l_strcmp(l->getString(), r->getString()) <= 0;
-  else if ((res = call_orderTM(L, l, r, TM_LE)) >= 0)  /* first try `le' */
-    return res;
-  else if ((res = call_orderTM(L, r, l, TM_LT)) < 0)  /* else try `lt' */
-    luaG_ordererror(l, r);
+  }
+
+  // first try `le'
+  int res = call_orderTM(L, l, r, TM_LE);
+  if (res >= 0) return res;
+
+  // else try `lt'
+  res = call_orderTM(L, r, l, TM_LT);
+  if (res < 0) luaG_ordererror(l, r);
+
   return !res;
 }
 

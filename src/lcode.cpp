@@ -836,7 +836,7 @@ void luaK_prefix (FuncState *fs, UnOpr op, expdesc *e, int line) {
   switch (op) {
     case OPR_MINUS: {
       if (isnumeral(e))  /* minus constant? */
-        e->nval = luai_numunm(NULL, e->nval);  /* fold it */
+        e->nval = -e->nval;  /* fold it */
       else {
         luaK_exp2anyreg(fs, e);
         codearith(fs, OP_UNM, e, &e2, line);
