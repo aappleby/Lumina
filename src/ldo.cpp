@@ -546,7 +546,7 @@ int luaD_protectedparser (LuaThread *L, ZIO *z, const char *name, const char *mo
   try {
     LuaProto *new_proto;
 
-    int c = zgetc(z);  /* read first character */
+    int c = z->getc();  /* read first character */
     if (c == LUA_SIGNATURE[0]) {
       checkmode(L, mode, "binary");
       new_proto = luaU_undump(L, z, name);
