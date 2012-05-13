@@ -537,6 +537,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\LuaConversions.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaConversions.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\LuaDefines.cpp"
 				>
 			</File>
@@ -550,6 +558,14 @@
 			</File>
 			<File
 				RelativePath="..\src\LuaGlobals.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaLexer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaLexer.h"
 				>
 			</File>
 			<File
@@ -633,21 +649,17 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\LuaValue.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaValue.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\LuaVector.h"
 				>
 			</File>
-			<Filter
-				Name="_Done"
-				>
-				<File
-					RelativePath="..\src\LuaValue.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\src\LuaValue.h"
-					>
-				</File>
-			</Filter>
 		</Filter>
 		<File
 			RelativePath="..\src\lua.h"

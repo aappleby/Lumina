@@ -357,7 +357,6 @@ public:
   bool isvararg;        /* (u) */
   bool istailcall;	/* (t) */
   
-  //char short_src[LUA_IDSIZE]; /* (S) */
   std::string short_src2;
 
   /* private part */

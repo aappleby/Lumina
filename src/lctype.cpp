@@ -10,7 +10,53 @@
 
 #include "lctype.h"
 
-#if !LUA_USE_CTYPE	/* { */
+
+/*
+** WARNING: the functions defined here do not necessarily correspond
+** to the similar functions in the standard C ctype.h. They are
+** optimized for the specific needs of Lua
+*/
+
+#include <limits.h>
+
+#include "llimits.h"
+
+
+#define ALPHABIT	0
+#define DIGITBIT	1
+#define PRINTBIT	2
+#define SPACEBIT	3
+#define XDIGITBIT	4
+
+
+#define MASK(B)		(1 << (B))
+
+/* two more entries for 0 and -1 (EOZ) */
+extern const uint8_t luai_ctype_[UCHAR_MAX + 2];
+
+/*
+** add 1 to char to allow index -1 (EOZ)
+*/
+#define testprop(c,p)	(luai_ctype_[(c)+1] & (p))
+
+/*
+** 'lalpha' (Lua alphabetic) and 'lalnum' (Lua alphanumeric) both include '_'
+*/
+bool lislalpha(int c)	{ return testprop(c, MASK(ALPHABIT)) ? true : false; }
+bool lislalnum(int c)	{ return testprop(c, (MASK(ALPHABIT) | MASK(DIGITBIT))) ? true : false; }
+bool lisdigit(int c)	{ return testprop(c, MASK(DIGITBIT)) ? true : false; }
+bool lisspace(int c)	{ return testprop(c, MASK(SPACEBIT)) ? true : false; }
+bool lisprint(int c)	{ return testprop(c, MASK(PRINTBIT)) ? true : false; }
+bool lisxdigit(int c)	{ return testprop(c, MASK(XDIGITBIT)) ? true : false; }
+
+
+/*
+** this 'ltolower' only works for alphabetic characters
+*/
+
+int ltolower(int c) {
+  return ((c) | ('A' ^ 'a'));
+}
 
 #include <limits.h>
 
@@ -49,5 +95,3 @@ const uint8_t luai_ctype_[UCHAR_MAX + 2] = {
   0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,	/* f. */
   0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,
 };
-
-#endif			/* } */

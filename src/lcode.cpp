@@ -242,6 +242,7 @@ static int luaK_code (FuncState *fs, Instruction i) {
   if(fs->pc >= (int)f->lineinfo.size()) {
     f->lineinfo.grow();
   }
+
   f->lineinfo[fs->pc] = fs->ls->lastline;
   return fs->pc++;
 }

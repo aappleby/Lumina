@@ -140,14 +140,6 @@
 
 
 /*
-@@ LUA_IDSIZE gives the maximum size for the description of the source
-@* of a function in debug information.
-** CHANGE it if you want a different size.
-*/
-#define LUA_IDSIZE	60
-
-
-/*
 @@ luai_writestring/luai_writeline define how 'print' prints its results.
 ** They are only used in libraries and the stand-alone program. (The #if
 ** avoids including 'stdio.h' everywhere.)
