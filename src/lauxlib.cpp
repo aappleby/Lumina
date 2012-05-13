@@ -701,21 +701,29 @@ int luaL_loadfilex (LuaThread *L, const char *filename,
   LoadF lf;
   int status, readstatus;
   int c;
-  int fnameindex = L->stack_.getTopIndex() + 1;  /* index of filename on the stack */
+  std::string filename2;
   if (filename == NULL) {
-    lua_pushliteral(L, "=stdin");
+    filename2 = "=stdin";
     lf.f = stdin;
   }
   else {
-    lua_pushfstring(L, "@%s", filename);
+    filename2 = "@" + std::string(filename);
     lf.f = fopen(filename, "r");
-    if (lf.f == NULL) return errfile(L, "open", fnameindex);
+    if (lf.f == NULL) {
+      lua_pushstring(L, filename2.c_str());
+      return errfile(L, "open", L->stack_.getTopIndex());
+    }
   }
+
   if (skipcomment(&lf, &c))  /* read initial portion */
     lf.buff[lf.n++] = '\n';  /* add line to correct line numbers */
+
   if (c == LUA_SIGNATURE[0] && filename) {  /* binary file? */
     lf.f = freopen(filename, "rb", lf.f);  /* reopen in binary mode */
-    if (lf.f == NULL) return errfile(L, "reopen", fnameindex);
+    if (lf.f == NULL) {
+      lua_pushstring(L, filename2.c_str());
+      return errfile(L, "reopen", L->stack_.getTopIndex());
+    }
     skipcomment(&lf, &c);  /* re-read initial portion */
   }
   if (c != EOF) {
@@ -726,14 +734,13 @@ int luaL_loadfilex (LuaThread *L, const char *filename,
   Zio2 z;
   z.init(L, getF, &lf);
 
-  status = lua_load(L, &z, lua_tostring(L, -1), mode);
+  status = lua_load(L, &z, filename2.c_str(), mode);
   readstatus = ferror(lf.f);
   if (filename) fclose(lf.f);  /* close file (even in case of errors) */
   if (readstatus) {
-    L->stack_.setTopIndex(fnameindex);  /* ignore results from `lua_load' */
-    return errfile(L, "read", fnameindex);
+    lua_pushstring(L, filename2.c_str());
+    return errfile(L, "read", L->stack_.getTopIndex());
   }
-  L->stack_.remove(fnameindex);
   return status;
 }
 
