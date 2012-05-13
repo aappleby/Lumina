@@ -738,31 +738,10 @@ int luaL_loadfilex (LuaThread *L, const char *filename,
 }
 
 
-typedef struct LoadS {
-  const char *s;
-  size_t size;
-} LoadS;
-
-
-static const char *getS (LuaThread *L, void *ud, size_t *size) {
-  THREAD_CHECK(L);
-  LoadS *ls = (LoadS *)ud;
-  (void)L;  /* not used */
-  if (ls->size == 0) return NULL;
-  *size = ls->size;
-  ls->size = 0;
-  return ls->s;
-}
-
-
 int luaL_loadbufferx (LuaThread *L, const char *buff, size_t size,
                                  const char *name, const char *mode) {
   THREAD_CHECK(L);
-  LoadS ls;
-  ls.s = buff;
-  ls.size = size;
-  Zio2 z;
-  z.init(L, getS, &ls);
+  Zio3 z(buff, size);
   return lua_load(L, &z, name, mode);
 }
 

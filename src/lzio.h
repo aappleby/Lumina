@@ -9,6 +9,7 @@
 #define lzio_h
 
 #include "LuaTypes.h"
+#include <string>
 
 #define EOZ	(-1)			/* end of stream */
 
@@ -17,7 +18,6 @@ typedef const char * (*lua_Reader) (LuaThread *L, void *ud, size_t *sz);
 class Zio {
 public:
 
-  virtual void init (LuaThread* L, lua_Reader reader, void* data) = 0;
   virtual int getc() = 0;
   virtual size_t read(void* b, size_t n) = 0;
 };
@@ -41,6 +41,19 @@ private:
   void* data;			/* additional data */
   LuaThread *L;			/* Lua state (for reader) */
   bool eof_;
+};
+
+class Zio3 : public Zio {
+public:
+
+  Zio3(const char* buffer, size_t len);
+
+  virtual int getc();
+  virtual size_t read(void* b, size_t n);
+
+private:
+  std::string buffer_;
+  size_t cursor_;
 };
 
 #endif

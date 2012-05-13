@@ -49,3 +49,33 @@ size_t Zio2::read (void* buf, size_t len) {
   }
   return 0;
 }
+
+//------------------------------------------------------------------------------
+
+Zio3::Zio3(const char* buffer, size_t len)
+: buffer_(buffer, len),
+  cursor_(0) {
+}
+
+int Zio3::getc() {
+  if(cursor_ == buffer_.size()) {
+    return EOZ;
+  }
+  else {
+    return (unsigned char)buffer_[cursor_++];
+  }
+}
+
+size_t Zio3::read(void* buf, size_t len) {
+  size_t left = buffer_.size() - cursor_;
+  if(left > len) {
+    memcpy(buf, &buffer_.c_str()[cursor_], len);
+    cursor_ += len;
+    return 0;
+  }
+  else {
+    memcpy(buf, &buffer_.c_str()[cursor_], left);
+    cursor_ += left;
+    return len - left;
+  }
+}
