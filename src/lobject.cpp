@@ -49,11 +49,6 @@ int luaO_hexavalue (int c) {
 }
 
 
-#if !defined(lua_strx2number)
-
-#include <math.h>
-
-
 static int isneg (const char **s) {
   if (**s == '-') { (*s)++; return 1; }
   else if (**s == '+') (*s)++;
@@ -111,9 +106,6 @@ static double lua_strx2number (const char *s, char **endptr) {
   return ldexp(r, e);
 }
 
-#endif
-
-
 int luaO_str2d (const char *s, size_t len, double *result) {
   char *endptr;
   if (strpbrk(s, "nN"))  /* reject 'inf' and 'nan' */
@@ -136,65 +128,23 @@ static void pushstr (LuaThread *L, const char *str, int l) {
   handleResult(result);
 }
 
+bool StringVprintf(const char *fmt, va_list argp, std::string& result, std::string& error);
 
-/* this function handles only `%d', `%c', %f, %p, and `%s' formats */
 const char *luaO_pushvfstring (const char *fmt, va_list argp) {
   LuaResult result = LUA_OK;
   LuaThread* L = thread_L;
-  int n = 0;
-  for (;;) {
-    const char *e = strchr(fmt, '%');
-    if (e == NULL) break;
 
-    LuaString* s = thread_G->strings_->Create(fmt, int(e - fmt));
-    result = L->stack_.push_reserve2(LuaValue(s));
+  std::string result2;
+  std::string error2;
+  StringVprintf(fmt, argp, result2, error2);
+
+  if(error2.size()) {
+    result = luaG_runerror(error2.c_str());
     handleResult(result);
-
-    switch (*(e+1)) {
-      case 's': {
-        const char *s = va_arg(argp, char *);
-        if (s == NULL) s = "(null)";
-        pushstr(L, s, (int)strlen(s));
-        break;
-      }
-      case 'c': {
-        char buff;
-        buff = cast(char, va_arg(argp, int));
-        pushstr(L, &buff, 1);
-        break;
-      }
-      case 'd': 
-        {
-          result = L->stack_.push_reserve2( LuaValue(va_arg(argp, int)) );
-          handleResult(result);
-          break;
-        }
-      case 'f': 
-        {
-          result = L->stack_.push_reserve2( LuaValue(va_arg(argp, double)) );
-          handleResult(result);
-          break;
-        }
-      case 'p': {
-        char buff[4*sizeof(void *) + 8]; /* should be enough space for a `%p' */
-        int l = sprintf(buff, "%p", va_arg(argp, void *));
-        pushstr(L, buff, l);
-        break;
-      }
-      case '%': {
-        pushstr(L, "%", 1);
-        break;
-      }
-      default: {
-        result = luaG_runerror("invalid option " LUA_QL("%%%c") " to " LUA_QL("lua_pushfstring"), *(e + 1));
-        handleResult(result);
-      }
-    }
-    n += 2;
-    fmt = e+2;
   }
-  pushstr(L, fmt, (int)strlen(fmt));
-  if (n > 0) luaV_concat(L, n + 1);
+
+  pushstr(L, result2.c_str(), result2.size());
+
   return L->stack_.top_[-1].getString()->c_str();
 }
 

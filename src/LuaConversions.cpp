@@ -1,5 +1,6 @@
 #include "LuaConversions.h"
 
+#include "stdarg.h"
 #include <string>
 
 /*
@@ -70,4 +71,62 @@ std::string luaO_chunkid2 (std::string source) {
     if(line.size() > (size_t)bufflen) line.resize(bufflen);
     return "[string \"" + line + "...\"]";
   }
+}
+
+
+bool StringVprintf(const char *fmt, va_list argp, std::string& result, std::string& error) {
+  char buff[256];
+  int n = 0;
+  for (;;) {
+    const char *e = strchr(fmt, '%');
+    if (e == NULL) break;
+
+    result += std::string(fmt, e-fmt);
+
+    switch (*(e+1)) {
+      case 's': {
+        const char *s = va_arg(argp, char *);
+        if (s == NULL) s = "(null)";
+        result += s;
+        break;
+      }
+      case 'c': {
+        char buff;
+        buff = (char)va_arg(argp, int);
+        result += std::string(&buff,1);
+        break;
+      }
+      case 'd': {
+        int x = va_arg(argp, int);
+        int l = sprintf(buff, "%d", x);
+        result += std::string(buff, l);
+        break;
+      }
+      case 'f': {
+        double x = va_arg(argp, double);
+        int l = sprintf(buff, "%.14g", x);
+        result += std::string(buff, l);
+        break;
+      }
+      case 'p': {
+        int l = sprintf(buff, "%p", va_arg(argp, void *));
+        result += std::string(buff, l);
+        break;
+      }
+      case '%': {
+        result += "%";
+        break;
+      }
+      default: {
+        int l = sprintf(buff, "invalid option '%%%c' to 'lua_pushfstring'", *(e + 1));
+        error = std::string(buff, l);
+        return false;
+      }
+    }
+    n += 2;
+    fmt = e+2;
+  }
+  result += fmt;
+
+  return true;
 }
