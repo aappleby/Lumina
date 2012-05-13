@@ -186,9 +186,7 @@ int   (lua_pcallk) (LuaThread *L, int nargs, int nresults, int errfunc,
 int   (lua_pcall) (LuaThread *L, int nargs, int nresults, int errfunc);
 //#define lua_pcall(L,n,r,f)	lua_pcallk(L, (n), (r), (f), 0, NULL)
 
-int   (lua_load) (LuaThread *L, lua_Reader reader, void *dt,
-                                        const char *chunkname,
-                                        const char *mode);
+int   (lua_load) (LuaThread *L, Zio* z, const char *chunkname, const char *mode);
 
 int (lua_dump) (LuaThread *L, lua_Writer writer, void *data);
 

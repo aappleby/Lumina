@@ -12,7 +12,8 @@
 
 #define EOZ	(-1)			/* end of stream */
 
-struct Zio {
+class Zio {
+public:
 
   void init (LuaThread* L, lua_Reader reader, void* data);
 

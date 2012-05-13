@@ -348,7 +348,9 @@ static int luaB_load (LuaThread *L) {
     const char *chunkname = luaL_optstring(L, 2, "=(load)");
     luaL_checkIsFunction(L, 1);
     L->stack_.setTopIndex(RESERVEDSLOT);  /* create reserved slot */
-    status = lua_load(L, generic_reader, NULL, chunkname, mode);
+    Zio z;
+    z.init(L, generic_reader, NULL);
+    status = lua_load(L, &z, chunkname, mode);
   }
 
   if (status == LUA_OK && top >= 4) {  /* is there an 'env' argument */

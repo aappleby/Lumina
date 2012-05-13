@@ -142,7 +142,11 @@ static const LuaProto* combine(LuaThread* L, int n)
  {
   LuaProto* f;
   int i=n;
-  if (lua_load(L,reader,&i,"=(" PROGNAME ")",NULL)!=LUA_OK) fatal(lua_tostring(L,-1));
+  Zio z;
+  z.init(L, reader, &i);
+  if (lua_load(L, &z, "=(" PROGNAME ")", NULL) != LUA_OK) {
+    fatal(lua_tostring(L,-1));
+  }
   f = L->stack_.top_[-1].getLClosure()->proto_;
   for (i=0; i<n; i++)
   {

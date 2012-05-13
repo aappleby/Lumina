@@ -722,7 +722,9 @@ int luaL_loadfilex (LuaThread *L, const char *filename,
     // 'c' is the first character of the stream
     lf.buff[lf.n++] = (char)c;  
   }
-  status = lua_load(L, getF, &lf, lua_tostring(L, -1), mode);
+  Zio z;
+  z.init(L, getF, &lf);
+  status = lua_load(L, &z, lua_tostring(L, -1), mode);
   readstatus = ferror(lf.f);
   if (filename) fclose(lf.f);  /* close file (even in case of errors) */
   if (readstatus) {
@@ -757,7 +759,9 @@ int luaL_loadbufferx (LuaThread *L, const char *buff, size_t size,
   LoadS ls;
   ls.s = buff;
   ls.size = size;
-  return lua_load(L, getS, &ls, name, mode);
+  Zio z;
+  z.init(L, getS, &ls);
+  return lua_load(L, &z, name, mode);
 }
 
 

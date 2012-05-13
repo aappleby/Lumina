@@ -949,15 +949,14 @@ int lua_pcallk (LuaThread *L, int nargs, int nresults, int errfunc,
 }
 
 
-int lua_load (LuaThread *L, lua_Reader reader, void *data,
-                      const char *chunkname, const char *mode) {
+int lua_load (LuaThread *L, Zio* z, const char *chunkname, const char *mode) {
   THREAD_CHECK(L);
 
-  Zio z;
+  //Zio z;
+  //z.init(L, reader, data);
   int status;
   if (!chunkname) chunkname = "?";
-  z.init(L, reader, data);
-  status = luaD_protectedparser(L, &z, chunkname, mode);
+  status = luaD_protectedparser(L, z, chunkname, mode);
   if (status == LUA_OK) {  /* no errors? */
     LuaClosure *f = L->stack_.top_[-1].getLClosure();  /* get newly created function */
     if (f->nupvalues == 1) {  /* does it have one upvalue? */
