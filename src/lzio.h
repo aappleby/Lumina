@@ -10,6 +10,7 @@
 
 #include "LuaTypes.h"
 #include <string>
+#include <vector>
 
 #define EOZ	(-1)			/* end of stream */
 
@@ -20,6 +21,7 @@ public:
 
   virtual int getc() = 0;
   virtual size_t read(void* b, size_t n) = 0;
+  virtual void push(char c) = 0;
 };
 
 class Zio2 : public Zio {
@@ -28,18 +30,23 @@ public:
   void init (LuaThread* L, lua_Reader reader, void* data);
 
   int getc();
-
   size_t read(void* b, size_t n);
+  void push(char c);
 
 private:
 
   void fill();
 
-  size_t n;			/* bytes still unread */
-  const char *p;		/* current position in buffer */
-  lua_Reader reader;		/* reader function */
-  void* data;			/* additional data */
-  LuaThread *L;			/* Lua state (for reader) */
+  bool empty() {
+    return cursor_ == buffer_.size();
+  }
+
+  std::vector<char> buffer_;
+  size_t cursor_;
+
+  LuaThread *L;
+  lua_Reader reader;
+  void* data;
   bool eof_;
 };
 
@@ -48,8 +55,13 @@ public:
 
   Zio3(const char* buffer, size_t len);
 
+  int operator * () const;
+  void operator ++ ();
+  void operator += (size_t len);
+
   virtual int getc();
   virtual size_t read(void* b, size_t n);
+  void push(char c);
 
 private:
   std::string buffer_;

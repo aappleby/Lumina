@@ -642,6 +642,7 @@ bool readFileToString ( const char* filename, std::string& s ) {
   }
 
   fclose(f);
+  if(ferror(f)) return false;
 
   if(strcmp(s.c_str(), "\xEF\xBB\xBF") == 0) {
     s.erase(0,3);
@@ -651,10 +652,6 @@ bool readFileToString ( const char* filename, std::string& s ) {
     while(s.size() && (s[0] != '\n')) s.erase(0,1);
     if(strcmp(s.c_str(), LUA_SIGNATURE) != 0) {
       s.insert(s.begin(), '\n');
-    }
-    else {
-      int b = 0;
-      b++;
     }
   }
 
