@@ -10,32 +10,47 @@
 
 //------------------------------------------------------------------------------
 
-void skipHeader(Zio&) {
-  /*
-  if(strcmp(s.c_str(), "\xEF\xBB\xBF") == 0) {
-    s.erase(0,3);
+void skipHeader(Zio& z) {
+  // Skip the byte order mark if present.
+  if(z.next(3) == "\xEF\xBB\xBF") {
+    z.skip(3);
   }
 
-  if(s.size() && (s[0] == '#')) {
-    while(s.size() && (s[0] != '\n')) s.erase(0,1);
-    if(strcmp(s.c_str(), LUA_SIGNATURE) != 0) {
-      s.insert(s.begin(), '\n');
+  // If the first character in the stream is a '#', skip everything until the
+  // first newline.
+  if(z.next() == '#') {
+    while(z.next() != '\n') {
+      z.skip(1);
+    }
+    // If the data after the newline is the binary Lua signature, skip the
+    // newline too.
+    if(z.next(5) == "\n\033Lua") {
+      z.skip(1);
     }
   }
-  */
 }
 
 //------------------------------------------------------------------------------
 
+void Zio2::open(const char* filename) {
+  file_ = fopen(filename, "rb");
+  thread_ = NULL;
+  reader = NULL;
+  data = NULL;
+  cursor_ = 0;
+}
+
 void Zio2::init(LuaThread* L2, lua_Reader reader2, void* data2) {
-  L = L2;
+  file_ = NULL;
+  thread_ = L2;
   reader = reader2;
   data = data2;
   cursor_ = 0;
 }
 
 void Zio2::init(const char* buffer, size_t len) {
-  L = NULL;
+  file_ = NULL;
+  thread_ = NULL;
   reader = NULL;
   data = NULL;
   buffer_.resize(len);
@@ -43,11 +58,16 @@ void Zio2::init(const char* buffer, size_t len) {
   cursor_ = 0;
 }
 
+void Zio2::init2(LuaThread* L2, lua_Reader reader2, void* data2) {
+  init(L2, reader2, data2);
+  skipHeader(*this);
+}
+
 void Zio2::fill() {
   if(eof()) return;
 
   size_t len;
-  const char* buf = reader(L, data, &len);
+  const char* buf = reader(thread_, data, &len);
 
   if (len == 0 || buf == NULL) {
     reader = NULL;
@@ -64,7 +84,7 @@ int Zio2::next() {
 
 int Zio2::getc() {
   int result = next();
-  if(result != EOZ) cursor_++;
+  if(!eof()) cursor_++;
   return result;
 }
 
@@ -85,33 +105,28 @@ size_t Zio2::read (void* buf, size_t len) {
   return 0;
 }
 
-/*
 std::string Zio2::next(size_t len) {
-  std::string result;
 
   while((buffer_.size() - cursor_) < len) {
+    fill();
+    if((reader == NULL) && (file_ == NULL)) break;
+   }
 
-  }
+  size_t left = buffer_.size() - cursor_;
+  size_t m = (len < left) ? len : left;
 
-  while (len) {
-    if (empty()) fill();
-    if (eof_) return len;
-
-    size_t left = buffer_.size() - cursor_;
-    size_t m = (len < left) ? len : left;
-
-    result.insert(result.end(), buffer_.begin() + cursor, buffer_.begin() + cursor + m);
-
-    cursor_ += m;
-    len -= m;
-  }
-
-  return result;
+  return std::string(buffer_.begin() + cursor_,
+                     buffer_.begin() + cursor_ + m);
 }
-*/
 
 void Zio2::push(char c) {
   buffer_.insert(buffer_.begin() + cursor_, c);
+}
+
+void Zio2::skip(size_t len) {
+  for(size_t i = 0; i < len; i++) {
+    getc();
+  }
 }
 
 //------------------------------------------------------------------------------

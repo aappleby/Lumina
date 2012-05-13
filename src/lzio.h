@@ -20,25 +20,37 @@ class Zio {
 public:
 
   virtual int next() = 0;
+  virtual std::string next(size_t len) = 0;
   virtual int getc() = 0;
   virtual size_t read(void* b, size_t n) = 0;
   virtual void push(char c) = 0;
+  virtual void skip(size_t len) = 0;
+  virtual bool eof() = 0;
 };
 
 class Zio2 : public Zio {
 public:
 
-  void init (LuaThread* L, lua_Reader reader, void* data);
+  void open (const char* filename);
+  void init (LuaThread* thread, lua_Reader reader, void* data);
   void init (const char* buffer, size_t len);
 
+  void init2 (LuaThread* thread, lua_Reader reader, void* data);
+
+  // does _not_ advance the read cursor
   int next();
+  std::string next(size_t len);
+
   int getc();
   size_t read(void* b, size_t n);
 
-  // does _not_ advance the read cursor
-  std::string next(size_t len);
 
   void push(char c);
+  void skip(size_t len);
+
+  bool eof() {
+    return (cursor_ == buffer_.size()) && (file_ == NULL) && (reader == NULL);
+  }
 
 private:
 
@@ -48,14 +60,12 @@ private:
     return cursor_ == buffer_.size();
   }
 
-  bool eof() {
-    return (cursor_ == buffer_.size()) && (reader == NULL);
-  }
-
   std::vector<char> buffer_;
   size_t cursor_;
 
-  LuaThread *L;
+  FILE* file_;
+
+  LuaThread *thread_;
   lua_Reader reader;
   void* data;
 };
