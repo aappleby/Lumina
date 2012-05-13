@@ -143,7 +143,7 @@ static void inclinenumber (LexState *ls) {
 }
 
 
-void luaX_setinput (LuaThread *L, LexState *ls, ZIO *z, LuaString *source, int firstchar) {
+void luaX_setinput (LuaThread *L, LexState *ls, Zio *z, LuaString *source, int firstchar) {
   THREAD_CHECK(L);
 
   ls->decpoint = '.';

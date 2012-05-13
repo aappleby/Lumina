@@ -537,7 +537,7 @@ static void checkmode (LuaThread *L, const char *mode, const char *x) {
   }
 }
 
-int luaD_protectedparser (LuaThread *L, ZIO *z, const char *name, const char *mode) {
+int luaD_protectedparser (LuaThread *L, Zio *z, const char *name, const char *mode) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(L);
   LuaExecutionState s = L->saveState(L->stack_.top_);

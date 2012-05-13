@@ -112,7 +112,7 @@ public:
 
 
 LuaResult luaY_parser (LuaThread *L,
-                       ZIO *z,
+                       Zio *z,
                        Dyndata *dyd, 
                        const char *name, 
                        int firstchar,

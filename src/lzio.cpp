@@ -18,51 +18,44 @@
 #include "lzio.h"
 
 
-int luaZ_fill (ZIO *z) {
+int Zio::fill() {
   size_t size;
-  LuaThread *L = z->L;
-  const char *buff;
-  buff = z->reader(L, z->data, &size);
+  const char *buff = reader(L, data, &size);
   if (buff == NULL || size == 0)
     return EOZ;
-  z->n = size - 1;  /* discount char being returned */
-  z->p = buff;
-  return cast_uchar(*(z->p++));
+  n = size - 1;  /* discount char being returned */
+  p = buff;
+  return cast_uchar(*p++);
 }
 
 
-void luaZ_init (LuaThread *L, ZIO *z, lua_Reader reader, void *data) {
-  THREAD_CHECK(L);
-  z->L = L;
-  z->reader = reader;
-  z->data = data;
-  z->n = 0;
-  z->p = NULL;
+void Zio::init(LuaThread* L2, lua_Reader reader2, void* data2) {
+  THREAD_CHECK(L2);
+  L = L2;
+  reader = reader2;
+  data = data2;
+  n = 0;
+  p = NULL;
 }
 
 
-/* --------------------------------------------------------------- read --- */
-size_t luaZ_read (ZIO *z, void *b, size_t n) {
-  while (n) {
+size_t Zio::read (void *b, size_t n2) {
+  while (n2) {
     size_t m;
-    if (z->n == 0) {  /* no bytes in buffer? */
-      if (luaZ_fill(z) == EOZ)  /* try to read more */
-        return n;  /* no more input; return number of missing bytes */
+    if (n == 0) {  /* no bytes in buffer? */
+      if (fill() == EOZ)  /* try to read more */
+        return n2;  /* no more input; return number of missing bytes */
       else {
-        z->n++;  /* luaZ_fill consumed first byte; put it back */
-        z->p--;
+        n++;  /* luaZ_fill consumed first byte; put it back */
+        p--;
       }
     }
-    m = (n <= z->n) ? n : z->n;  /* min. between n and z->n */
-    memcpy(b, z->p, m);
-    z->n -= m;
-    z->p += m;
-    b = (char *)b + m;
+    m = (n2 <= n) ? n2 : n;  /* min. between n and z->n */
+    memcpy(b, p, m);
     n -= m;
+    p += m;
+    b = (char *)b + m;
+    n2 -= m;
   }
   return 0;
 }
-
-/* ------------------------------------------------------------------------ */
-
-

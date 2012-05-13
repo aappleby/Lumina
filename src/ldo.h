@@ -16,7 +16,7 @@
 /* type of protected functions, to be ran by `runprotected' */
 typedef void (*Pfunc) (LuaThread *L, void *ud);
 
-int luaD_protectedparser (LuaThread *L, ZIO *z, const char *name, const char *mode);
+int luaD_protectedparser (LuaThread *L, Zio *z, const char *name, const char *mode);
 void luaD_hook (LuaThread *L, int event, int line);
 
 LuaResult luaD_precall2 (LuaThread *L, int funcindex, int nresults);

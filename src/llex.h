@@ -65,7 +65,7 @@ public:
   Token lookahead;  /* look ahead token */
   FuncState *fs;  /* current function (parser) */
   LuaThread *L;
-  ZIO *z;  /* input stream */
+  Zio *z;  /* input stream */
   // buffer for tokens
   std::vector<char> buff_;
 
@@ -76,7 +76,7 @@ public:
 };
 
 
-void luaX_setinput (LuaThread *L, LexState *ls, ZIO *z,
+void luaX_setinput (LuaThread *L, LexState *ls, Zio *z,
                               LuaString *source, int firstchar);
 LuaString *luaX_newstring (LexState *ls, const char *str, size_t l);
 LuaResult luaX_next (LexState *ls);

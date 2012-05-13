@@ -12,27 +12,22 @@
 
 #define EOZ	(-1)			/* end of stream */
 
-typedef struct Zio ZIO;
-
-//#define zgetc(z)  (((z)->n--)>0 ?  cast_uchar(*(z)->p++) : luaZ_fill(z))
-
-void luaZ_init (LuaThread *L, ZIO *z, lua_Reader reader, void *data);
-size_t luaZ_read (ZIO* z, void* b, size_t n);	/* read next n bytes */
-
-int luaZ_fill (ZIO *z);
-
-/* --------- Private Part ------------------ */
-
 struct Zio {
+
+  void init (LuaThread* L, lua_Reader reader, void* data);
 
   int getc() {
     if(n-- > 0) {
       return (unsigned char)*p++;
     }
     else {
-      return luaZ_fill(this);
+      return fill();
     }
   }
+
+  size_t read(void* b, size_t n);
+
+  int fill();
 
   size_t n;			/* bytes still unread */
   const char *p;		/* current position in buffer */

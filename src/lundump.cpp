@@ -22,7 +22,7 @@
 
 typedef struct {
  LuaThread* L;
- ZIO* Z;
+ Zio* Z;
  std::vector<char> b_;
  const char* name;
 } LoadState;
@@ -44,7 +44,7 @@ static void error(LoadState* S, const char* why)
 
 static void LoadBlock(LoadState* S, void* b, size_t size)
 {
- if (luaZ_read(S->Z,b,size)!=0) error(S,"truncated");
+ if (S->Z->read(b,size)!=0) error(S,"truncated");
 }
 
 static int LoadChar(LoadState* S)
@@ -217,7 +217,7 @@ static void LoadHeader(LoadState* S)
 /*
 ** load precompiled chunk
 */
-LuaProto* luaU_undump (LuaThread* L, ZIO* Z, const char* name)
+LuaProto* luaU_undump (LuaThread* L, Zio* Z, const char* name)
 {
  THREAD_CHECK(L);
  LoadState S;
