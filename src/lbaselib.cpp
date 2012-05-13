@@ -325,8 +325,9 @@ static const char *generic_reader (LuaThread *L, void *ud, size_t *size) {
     *size = 0;
     return NULL;
   }
-  else if (!lua_isStringable(L, -1))
+  else if (!lua_isStringable(L, -1)) {
     luaL_error(L, "reader function must return a string");
+  }
   lua_replace(L, RESERVEDSLOT);  /* save string in reserved slot */
   return lua_tolstring(L, RESERVEDSLOT, size);
 }
@@ -348,7 +349,7 @@ static int luaB_load (LuaThread *L) {
     const char *chunkname = luaL_optstring(L, 2, "=(load)");
     luaL_checkIsFunction(L, 1);
     L->stack_.setTopIndex(RESERVEDSLOT);  /* create reserved slot */
-    Zio z;
+    Zio2 z;
     z.init(L, generic_reader, NULL);
     status = lua_load(L, &z, chunkname, mode);
   }

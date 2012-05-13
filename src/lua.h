@@ -25,22 +25,7 @@
 LuaValue* index2addr (LuaThread *L, int idx);
 LuaValue* index2addr2 (LuaThread *L, int idx);
 
-/*
-** functions that read/write blocks when loading/dumping Lua chunks
-*/
-typedef const char * (*lua_Reader) (LuaThread *L, void *ud, size_t *sz);
-
 typedef int (*lua_Writer) (LuaThread *L, const void* p, size_t sz, void* ud);
-
-
-/*
-** prototype for memory-allocation functions
-*/
-typedef void * (*lua_Alloc) (void *ptr, size_t osize, size_t nsize);
-
-
-
-
 
 
 

@@ -952,8 +952,6 @@ int lua_pcallk (LuaThread *L, int nargs, int nresults, int errfunc,
 int lua_load (LuaThread *L, Zio* z, const char *chunkname, const char *mode) {
   THREAD_CHECK(L);
 
-  //Zio z;
-  //z.init(L, reader, data);
   int status;
   if (!chunkname) chunkname = "?";
   status = luaD_protectedparser(L, z, chunkname, mode);

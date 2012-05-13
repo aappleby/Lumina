@@ -8,33 +8,39 @@
 #ifndef lzio_h
 #define lzio_h
 
-#include "lua.h"
+#include "LuaTypes.h"
 
 #define EOZ	(-1)			/* end of stream */
+
+typedef const char * (*lua_Reader) (LuaThread *L, void *ud, size_t *sz);
 
 class Zio {
 public:
 
+  virtual void init (LuaThread* L, lua_Reader reader, void* data) = 0;
+  virtual int getc() = 0;
+  virtual size_t read(void* b, size_t n) = 0;
+};
+
+class Zio2 : public Zio {
+public:
+
   void init (LuaThread* L, lua_Reader reader, void* data);
 
-  int getc() {
-    if(n-- > 0) {
-      return (unsigned char)*p++;
-    }
-    else {
-      return fill();
-    }
-  }
+  int getc();
 
   size_t read(void* b, size_t n);
 
-  int fill();
+private:
+
+  void fill();
 
   size_t n;			/* bytes still unread */
   const char *p;		/* current position in buffer */
   lua_Reader reader;		/* reader function */
   void* data;			/* additional data */
   LuaThread *L;			/* Lua state (for reader) */
+  bool eof_;
 };
 
 #endif

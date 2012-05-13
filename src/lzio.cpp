@@ -4,58 +4,48 @@
 ** See Copyright Notice in lua.h
 */
 
-#include "LuaState.h"
+#include "lzio.h"
 
 #include <string.h>
 
-#define lzio_c
-
-#include "lua.h"
-
-#include "llimits.h"
-#include "lmem.h"
-#include "lstate.h"
-#include "lzio.h"
-
-
-int Zio::fill() {
-  size_t size;
-  const char *buff = reader(L, data, &size);
-  if (buff == NULL || size == 0)
-    return EOZ;
-  n = size - 1;  /* discount char being returned */
-  p = buff;
-  return cast_uchar(*p++);
-}
-
-
-void Zio::init(LuaThread* L2, lua_Reader reader2, void* data2) {
-  THREAD_CHECK(L2);
+void Zio2::init(LuaThread* L2, lua_Reader reader2, void* data2) {
   L = L2;
   reader = reader2;
   data = data2;
   n = 0;
   p = NULL;
+  eof_ = false;
 }
 
+void Zio2::fill() {
+  if(eof_) return;
+  p = reader(L, data, &n);
+  if (p == NULL || n == 0) {
+    eof_ = true;
+  }
+}
 
-size_t Zio::read (void *b, size_t n2) {
-  while (n2) {
-    size_t m;
-    if (n == 0) {  /* no bytes in buffer? */
-      if (fill() == EOZ)  /* try to read more */
-        return n2;  /* no more input; return number of missing bytes */
-      else {
-        n++;  /* luaZ_fill consumed first byte; put it back */
-        p--;
-      }
-    }
-    m = (n2 <= n) ? n2 : n;  /* min. between n and z->n */
-    memcpy(b, p, m);
-    n -= m;
+int Zio2::getc() {
+  if(n <= 0) fill();
+  if(eof_) return EOZ;
+
+  n--;
+  return (unsigned char)*p++;
+}
+
+size_t Zio2::read (void* buf, size_t len) {
+  char* cursor = (char*)buf;
+  while (len) {
+    if (n == 0) fill();
+    if (eof_) return len;
+    size_t m = (len < n) ? len : n;  /* min. between n and z->n */
+    memcpy(cursor, p, m);
+
     p += m;
-    b = (char *)b + m;
-    n2 -= m;
+    n -= m;
+
+    cursor += m;
+    len -= m;
   }
   return 0;
 }

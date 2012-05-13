@@ -134,28 +134,30 @@ static const char* reader(LuaThread *L, void *ud, size_t *size)
  }
 }
 
+// This compiles a chunk of code consisting of N copies of a dummy function, then
+// hacks up the subprotos to point at protos on the stack... *headdesk*
 static const LuaProto* combine(LuaThread* L, int n)
 {
- if (n==1)
-  return L->stack_.top_[-1].getLClosure()->proto_;
- else
- {
-  LuaProto* f;
-  int i=n;
-  Zio z;
-  z.init(L, reader, &i);
-  if (lua_load(L, &z, "=(" PROGNAME ")", NULL) != LUA_OK) {
-    fatal(lua_tostring(L,-1));
+  if (n==1) {
+    return L->stack_.top_[-1].getLClosure()->proto_;
   }
-  f = L->stack_.top_[-1].getLClosure()->proto_;
-  for (i=0; i<n; i++)
+  else
   {
-   f->subprotos_[i] = L->stack_.top_[i-n-1].getLClosure()->proto_;
-   if (f->subprotos_[i]->upvalues.size()>0) f->subprotos_[i]->upvalues[0].instack = 0;
+    LuaProto* f;
+    int i=n;
+    Zio2 z;
+    z.init(L, reader, &i);
+    if (lua_load(L, &z, "=(" PROGNAME ")", NULL) != LUA_OK) {
+      fatal(lua_tostring(L,-1));
+    }
+    f = L->stack_.top_[-1].getLClosure()->proto_;
+    for (i=0; i<n; i++) {
+      f->subprotos_[i] = L->stack_.top_[i-n-1].getLClosure()->proto_;
+      if (f->subprotos_[i]->upvalues.size()>0) f->subprotos_[i]->upvalues[0].instack = 0;
+    }
+    f->lineinfo.clear();
+    return f;
   }
-  f->lineinfo.clear();
-  return f;
- }
 }
 
 static int writer(LuaThread* L, const void* p, size_t size, void* u)
