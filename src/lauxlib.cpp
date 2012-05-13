@@ -658,31 +658,6 @@ bool readFileToString ( const char* filename, std::string& s ) {
   return true;
 }
 
-typedef struct LoadF {
-  int n;  /* number of pre-read characters */
-  FILE *f;  /* file being read */
-  char buff[LUAL_BUFFERSIZE];  /* area for reading file */
-} LoadF;
-
-
-static const char *getF (LuaThread *L, void *ud, size_t *size) {
-  THREAD_CHECK(L);
-  LoadF *lf = (LoadF *)ud;
-  (void)L;  /* not used */
-  if (lf->n > 0) {  /* are there pre-read characters to be read? */
-    *size = lf->n;  /* return them (chars already in buffer) */
-    lf->n = 0;  /* no more pre-read characters */
-  }
-  else {  /* read a block from file */
-    /* 'fread' can return > 0 *and* set the EOF flag. If next call to
-       'getF' called 'fread', it might still wait for user input.
-       The next check avoids this problem. */
-    if (feof(lf->f)) return NULL;
-    *size = fread(lf->buff, 1, sizeof(lf->buff), lf->f);  /* read block */
-  }
-  return lf->buff;
-}
-
 
 static int errfile (LuaThread *L, const char *what, int fnameindex) {
   THREAD_CHECK(L);
@@ -693,92 +668,35 @@ static int errfile (LuaThread *L, const char *what, int fnameindex) {
   return LUA_ERRFILE;
 }
 
-
-static int skipBOM (LoadF *lf) {
-  const char *p = "\xEF\xBB\xBF";  /* Utf8 BOM mark */
-  lf->n = 0;
-  do {
-    int c = getc(lf->f);
-    if (c == EOF || c != *(unsigned char *)p++) return c;
-    lf->buff[lf->n++] = (char)c;  /* to be read by the parser */
-  } while (*p != '\0');
-  lf->n = 0;  /* prefix matched; discard it */
-  return getc(lf->f);  /* return next character */
-}
-
-
-/*
-** reads the first character of file 'f' and skips an optional BOM mark
-** in its beginning plus its first line if it starts with '#'. Returns
-** true if it skipped the first line.  In any case, '*cp' has the
-** first "valid" character of the file (after the optional BOM and
-** a first-line comment).
-*/
-static int skipcomment (LoadF *lf, int *cp) {
-  int c = *cp = skipBOM(lf);
-  if (c == '#') {  /* first line is a comment (Unix exec. file)? */
-    while ((c = getc(lf->f)) != EOF && c != '\n') ;  /* skip first line */
-    *cp = getc(lf->f);  /* skip end-of-line */
-    return 1;  /* there was a comment */
-  }
-  else return 0;  /* no comment */
-}
-
-
 int luaL_loadfilex (LuaThread *L, const char *filename,
                                              const char *mode) {
   THREAD_CHECK(L);
-  LoadF lf;
-  int status, readstatus;
-  int c;
+
   std::string filename2;
   if (filename == NULL) {
+    filename = "stdin";
     filename2 = "=stdin";
-    lf.f = stdin;
   }
   else {
     filename2 = "@" + std::string(filename);
-
-    std::string contents;
-    readFileToString(filename, contents);
-
-    lf.f = fopen(filename, "rb");
-    if (lf.f == NULL) {
-      lua_pushstring(L, filename2.c_str());
-      return errfile(L, "open", L->stack_.getTopIndex());
-    }
-  }
-
-  int hadComment = skipcomment(&lf, &c);
-
-  if (hadComment && (c != LUA_SIGNATURE[0])) {
-    lf.buff[lf.n++] = '\n';
-  }
-
-  if (c != EOF) {
-    // 'c' is the first character of the stream
-    lf.buff[lf.n++] = (char)c;  
   }
   
   Zio2 z;
-  z.init(L, getF, &lf);
-
-  status = lua_load(L, &z, filename2.c_str(), mode);
-  readstatus = ferror(lf.f);
-  if (filename) fclose(lf.f);  /* close file (even in case of errors) */
-  if (readstatus) {
+  z.open(filename);
+  if(z.error()) {
     lua_pushstring(L, filename2.c_str());
-    return errfile(L, "read", L->stack_.getTopIndex());
+    return errfile(L, "open", L->stack_.getTopIndex());
   }
-  return status;
+
+  return lua_load(L, &z, filename2.c_str(), mode);
 }
+
 
 
 int luaL_loadbufferx (LuaThread *L, const char *buff, size_t size,
                                  const char *name, const char *mode) {
   THREAD_CHECK(L);
   
-  //Zio3 z(buff, size);
   Zio2 z;
   z.init(buff, size);
   return lua_load(L, &z, name, mode);

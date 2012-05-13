@@ -19,6 +19,9 @@ typedef const char * (*lua_Reader) (LuaThread *L, void *ud, size_t *sz);
 class Zio {
 public:
 
+  Zio() {}
+  virtual ~Zio() {}
+
   virtual int next() = 0;
   virtual std::string next(size_t len) = 0;
   virtual int getc() = 0;
@@ -26,10 +29,16 @@ public:
   virtual void push(char c) = 0;
   virtual void skip(size_t len) = 0;
   virtual bool eof() = 0;
+  virtual bool error() = 0;
 };
 
 class Zio2 : public Zio {
 public:
+
+  Zio2()
+    : error_(false) {
+  }
+  ~Zio2();
 
   void open (const char* filename);
   void init (LuaThread* thread, lua_Reader reader, void* data);
@@ -49,7 +58,12 @@ public:
   void skip(size_t len);
 
   bool eof() {
+    if(error_) return true;
     return (cursor_ == buffer_.size()) && (file_ == NULL) && (reader == NULL);
+  }
+
+  bool error() {
+    return error_;
   }
 
 private:
@@ -64,6 +78,7 @@ private:
   size_t cursor_;
 
   FILE* file_;
+  bool error_;
 
   LuaThread *thread_;
   lua_Reader reader;

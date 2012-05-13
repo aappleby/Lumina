@@ -117,23 +117,6 @@ static int doargs(int argc, char* argv[])
  return i;
 }
 
-#define FUNCTION "(function()end)();"
-
-static const char* reader(LuaThread *L, void *ud, size_t *size)
-{
- UNUSED(L);
- if ((*(int*)ud)--)
- {
-  *size=sizeof(FUNCTION)-1;
-  return FUNCTION;
- }
- else
- {
-  *size=0;
-  return NULL;
- }
-}
-
 // This compiles a chunk of code consisting of N copies of a dummy function, then
 // hacks up the subprotos to point at protos on the stack... *headdesk*
 static const LuaProto* combine(LuaThread* L, int n)
@@ -143,15 +126,18 @@ static const LuaProto* combine(LuaThread* L, int n)
   }
   else
   {
-    LuaProto* f;
-    int i=n;
+    std::string buffer;
+    for(int i = 0; i < n; i++) {
+      buffer += "(function()end)();";
+    }
+
     Zio2 z;
-    z.init(L, reader, &i);
+    z.init(buffer.c_str(), buffer.size());
     if (lua_load(L, &z, "=(" PROGNAME ")", NULL) != LUA_OK) {
       fatal(lua_tostring(L,-1));
     }
-    f = L->stack_.top_[-1].getLClosure()->proto_;
-    for (i=0; i<n; i++) {
+    LuaProto* f = L->stack_.top_[-1].getLClosure()->proto_;
+    for (int i=0; i<n; i++) {
       f->subprotos_[i] = L->stack_.top_[i-n-1].getLClosure()->proto_;
       if (f->subprotos_[i]->upvalues.size()>0) f->subprotos_[i]->upvalues[0].instack = 0;
     }

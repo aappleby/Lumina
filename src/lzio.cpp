@@ -19,7 +19,7 @@ void skipHeader(Zio& z) {
   // If the first character in the stream is a '#', skip everything until the
   // first newline.
   if(z.next() == '#') {
-    while(z.next() != '\n') {
+    while((z.next() != '\n') && !z.eof()) {
       z.skip(1);
     }
     // If the data after the newline is the binary Lua signature, skip the
@@ -32,12 +32,28 @@ void skipHeader(Zio& z) {
 
 //------------------------------------------------------------------------------
 
+Zio2::~Zio2() {
+  if(file_ && (file_ != stdin)) {
+    fclose(file_);
+  }
+}
+
 void Zio2::open(const char* filename) {
-  file_ = fopen(filename, "rb");
+  if(strcmp(filename, "stdin") == 0) {
+    file_ = stdin;
+  }
+  else {
+    file_ = fopen(filename, "rb");
+  }
+  if(file_ == NULL) {
+    error_ = true;
+  }
   thread_ = NULL;
   reader = NULL;
   data = NULL;
   cursor_ = 0;
+
+  skipHeader(*this);
 }
 
 void Zio2::init(LuaThread* L2, lua_Reader reader2, void* data2) {
@@ -66,13 +82,27 @@ void Zio2::init2(LuaThread* L2, lua_Reader reader2, void* data2) {
 void Zio2::fill() {
   if(eof()) return;
 
-  size_t len;
-  const char* buf = reader(thread_, data, &len);
+  if(reader) {
+    size_t len;
+    const char* buf = reader(thread_, data, &len);
 
-  if (len == 0 || buf == NULL) {
-    reader = NULL;
-  } else {
-    buffer_.insert(buffer_.end(),  buf, buf+len);
+    if (len == 0 || buf == NULL) {
+      reader = NULL;
+    }
+    else {
+      buffer_.insert(buffer_.end(),  buf, buf+len);
+    }
+  }
+  else if(file_) {
+    char temp[256];
+    size_t read = fread(temp, 1, 256, file_);
+    if(read == 0) {
+      fclose(file_);
+      file_ = NULL;
+    }
+    else {
+      buffer_.insert(buffer_.end(), temp, temp + read);
+    }
   }
 }
 
