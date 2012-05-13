@@ -19,6 +19,7 @@ typedef const char * (*lua_Reader) (LuaThread *L, void *ud, size_t *sz);
 class Zio {
 public:
 
+  virtual int next() = 0;
   virtual int getc() = 0;
   virtual size_t read(void* b, size_t n) = 0;
   virtual void push(char c) = 0;
@@ -30,8 +31,13 @@ public:
   void init (LuaThread* L, lua_Reader reader, void* data);
   void init (const char* buffer, size_t len);
 
+  int next();
   int getc();
   size_t read(void* b, size_t n);
+
+  // does _not_ advance the read cursor
+  std::string next(size_t len);
+
   void push(char c);
 
 private:
@@ -42,31 +48,16 @@ private:
     return cursor_ == buffer_.size();
   }
 
+  bool eof() {
+    return (cursor_ == buffer_.size()) && (reader == NULL);
+  }
+
   std::vector<char> buffer_;
   size_t cursor_;
 
   LuaThread *L;
   lua_Reader reader;
   void* data;
-  bool eof_;
-};
-
-class Zio3 : public Zio {
-public:
-
-  Zio3(const char* buffer, size_t len);
-
-  int operator * () const;
-  void operator ++ ();
-  void operator += (size_t len);
-
-  virtual int getc();
-  virtual size_t read(void* b, size_t n);
-  void push(char c);
-
-private:
-  std::string buffer_;
-  size_t cursor_;
 };
 
 #endif
