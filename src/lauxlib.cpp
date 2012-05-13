@@ -708,24 +708,19 @@ int luaL_loadfilex (LuaThread *L, const char *filename,
   }
   else {
     filename2 = "@" + std::string(filename);
-    lf.f = fopen(filename, "r");
+    lf.f = fopen(filename, "rb");
     if (lf.f == NULL) {
       lua_pushstring(L, filename2.c_str());
       return errfile(L, "open", L->stack_.getTopIndex());
     }
   }
 
-  if (skipcomment(&lf, &c))  /* read initial portion */
-    lf.buff[lf.n++] = '\n';  /* add line to correct line numbers */
+  int hadComment = skipcomment(&lf, &c);
 
-  if (c == LUA_SIGNATURE[0] && filename) {  /* binary file? */
-    lf.f = freopen(filename, "rb", lf.f);  /* reopen in binary mode */
-    if (lf.f == NULL) {
-      lua_pushstring(L, filename2.c_str());
-      return errfile(L, "reopen", L->stack_.getTopIndex());
-    }
-    skipcomment(&lf, &c);  /* re-read initial portion */
+  if (hadComment && (c != LUA_SIGNATURE[0])) {
+    lf.buff[lf.n++] = '\n';
   }
+
   if (c != EOF) {
     // 'c' is the first character of the stream
     lf.buff[lf.n++] = (char)c;  
