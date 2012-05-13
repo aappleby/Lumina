@@ -300,15 +300,17 @@ static int luaB_loadfile (LuaThread *L) {
 ** =======================================================
 */
 
-
+// The user has passed a callback to the load() function.
+// Run it and buffer the output until it stops returning
+// more data.
 LuaResult run_reader(LuaThread* L, std::string& out) {
   THREAD_CHECK(L);
   LuaResult result = LUA_OK;
 
   while(result == LUA_OK) {
     luaL_checkstack(L, 2, "too many nested functions");
-    L->stack_.copy(1);  /* get function */
-    result = (LuaResult)lua_pcall(L, 0, 1, 0);  /* call it */
+    L->stack_.copy(1);
+    result = (LuaResult)lua_pcall(L, 0, 1, 0);
     if(result != LUA_OK) break;
 
     LuaValue v = L->stack_.at(-1);
@@ -346,7 +348,7 @@ static int luaB_load (LuaThread *L) {
     std::string buffer;
     status = run_reader(L, buffer);
     if(status == LUA_OK) {
-      Zio2 z;
+      Zio z;
       z.init(buffer.c_str(), buffer.size());
       status = (LuaResult)lua_load(L, &z, chunkname, mode);
     }

@@ -628,6 +628,26 @@ void luaL_unref(LuaThread* L, int ref) {
 ** =======================================================
 */
 
+void skipHeader(Zio& z) {
+  // Skip the byte order mark if present.
+  if(z.next(3) == "\xEF\xBB\xBF") {
+    z.skip(3);
+  }
+
+  // If the first character in the stream is a '#', skip everything until the
+  // first newline.
+  if(z.next() == '#') {
+    while((z.next() != '\n') && !z.empty()) {
+      z.skip(1);
+    }
+    // If the data after the newline is the binary Lua signature, skip the
+    // newline too.
+    if(z.next(5) == "\n\033Lua") {
+      z.skip(1);
+    }
+  }
+}
+
 bool readFileToString ( const char* filename, std::string& s ) {
 
   FILE* f = fopen(filename,"rb");
@@ -643,17 +663,6 @@ bool readFileToString ( const char* filename, std::string& s ) {
 
   fclose(f);
   if(ferror(f)) return false;
-
-  if(strcmp(s.c_str(), "\xEF\xBB\xBF") == 0) {
-    s.erase(0,3);
-  }
-
-  if(s.size() && (s[0] == '#')) {
-    while(s.size() && (s[0] != '\n')) s.erase(0,1);
-    if(strcmp(s.c_str(), LUA_SIGNATURE) != 0) {
-      s.insert(s.begin(), '\n');
-    }
-  }
 
   return true;
 }
@@ -681,14 +690,18 @@ int luaL_loadfilex (LuaThread *L, const char *filename,
     filename2 = "@" + std::string(filename);
   }
   
-  Zio2 z;
-  z.open(filename);
-  if(z.error()) {
+  std::string buffer;
+  if(readFileToString(filename,buffer)) {
+    Zio z;
+    z.init(buffer.c_str(), buffer.size());
+    skipHeader(z);
+    return lua_load(L, &z, filename2.c_str(), mode);
+  }
+  else {
     lua_pushstring(L, filename2.c_str());
     return errfile(L, "open", L->stack_.getTopIndex());
   }
 
-  return lua_load(L, &z, filename2.c_str(), mode);
 }
 
 
@@ -697,7 +710,7 @@ int luaL_loadbufferx (LuaThread *L, const char *buff, size_t size,
                                  const char *name, const char *mode) {
   THREAD_CHECK(L);
   
-  Zio2 z;
+  Zio z;
   z.init(buff, size);
   return lua_load(L, &z, name, mode);
 }

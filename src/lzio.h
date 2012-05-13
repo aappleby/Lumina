@@ -17,27 +17,8 @@ class Zio {
 public:
 
   Zio() {}
-  virtual ~Zio() {}
+  ~Zio() {}
 
-  virtual int next() = 0;
-  virtual std::string next(size_t len) = 0;
-  virtual int getc() = 0;
-  virtual size_t read(void* b, size_t n) = 0;
-  virtual void push(char c) = 0;
-  virtual void skip(size_t len) = 0;
-  virtual bool eof() = 0;
-  virtual bool error() = 0;
-};
-
-class Zio2 : public Zio {
-public:
-
-  Zio2()
-    : error_(false) {
-  }
-  ~Zio2();
-
-  void open (const char* filename);
   void init (const char* buffer, size_t len);
 
   // does _not_ advance the read cursor
@@ -47,32 +28,16 @@ public:
   int getc();
   size_t read(void* b, size_t n);
 
-
-  void push(char c);
   void skip(size_t len);
-
-  bool eof() {
-    if(error()) return true;
-    return (cursor_ == buffer_.size()) && (file_ == NULL);
-  }
-
-  bool error() {
-    return error_;
-  }
-
-private:
-
-  void fill();
 
   bool empty() {
     return cursor_ == buffer_.size();
   }
 
+private:
+
   std::vector<char> buffer_;
   size_t cursor_;
-
-  FILE* file_;
-  bool error_;
 };
 
 #endif

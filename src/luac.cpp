@@ -131,7 +131,7 @@ static const LuaProto* combine(LuaThread* L, int n)
       buffer += "(function()end)();";
     }
 
-    Zio2 z;
+    Zio z;
     z.init(buffer.c_str(), buffer.size());
     if (lua_load(L, &z, "=(" PROGNAME ")", NULL) != LUA_OK) {
       fatal(lua_tostring(L,-1));
