@@ -777,7 +777,10 @@ int luaL_loadfilex (LuaThread *L, const char *filename,
 int luaL_loadbufferx (LuaThread *L, const char *buff, size_t size,
                                  const char *name, const char *mode) {
   THREAD_CHECK(L);
-  Zio3 z(buff, size);
+  
+  //Zio3 z(buff, size);
+  Zio2 z;
+  z.init(buff, size);
   return lua_load(L, &z, name, mode);
 }
 

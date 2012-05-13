@@ -35,6 +35,16 @@ void Zio2::init(LuaThread* L2, lua_Reader reader2, void* data2) {
   cursor_ = 0;
 }
 
+void Zio2::init(const char* buffer, size_t len) {
+  L = NULL;
+  reader = NULL;
+  data = NULL;
+  eof_ = false;
+  buffer_.resize(len);
+  memcpy(&buffer_[0], buffer, len);
+  cursor_ = 0;
+}
+
 void Zio2::fill() {
   if(!empty()) return;
   if(eof_) return;

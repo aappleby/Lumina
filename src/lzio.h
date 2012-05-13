@@ -28,6 +28,7 @@ class Zio2 : public Zio {
 public:
 
   void init (LuaThread* L, lua_Reader reader, void* data);
+  void init (const char* buffer, size_t len);
 
   int getc();
   size_t read(void* b, size_t n);
