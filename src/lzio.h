@@ -8,13 +8,10 @@
 #ifndef lzio_h
 #define lzio_h
 
-#include "LuaTypes.h"
 #include <string>
 #include <vector>
 
 #define EOZ	(-1)			/* end of stream */
-
-typedef const char * (*lua_Reader) (LuaThread *L, void *ud, size_t *sz);
 
 class Zio {
 public:
@@ -41,10 +38,7 @@ public:
   ~Zio2();
 
   void open (const char* filename);
-  void init (LuaThread* thread, lua_Reader reader, void* data);
   void init (const char* buffer, size_t len);
-
-  void init2 (LuaThread* thread, lua_Reader reader, void* data);
 
   // does _not_ advance the read cursor
   int next();
@@ -58,8 +52,8 @@ public:
   void skip(size_t len);
 
   bool eof() {
-    if(error_) return true;
-    return (cursor_ == buffer_.size()) && (file_ == NULL) && (reader == NULL);
+    if(error()) return true;
+    return (cursor_ == buffer_.size()) && (file_ == NULL);
   }
 
   bool error() {
@@ -79,10 +73,6 @@ private:
 
   FILE* file_;
   bool error_;
-
-  LuaThread *thread_;
-  lua_Reader reader;
-  void* data;
 };
 
 #endif

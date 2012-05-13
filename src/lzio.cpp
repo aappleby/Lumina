@@ -48,52 +48,22 @@ void Zio2::open(const char* filename) {
   if(file_ == NULL) {
     error_ = true;
   }
-  thread_ = NULL;
-  reader = NULL;
-  data = NULL;
   cursor_ = 0;
 
   skipHeader(*this);
 }
 
-void Zio2::init(LuaThread* L2, lua_Reader reader2, void* data2) {
-  file_ = NULL;
-  thread_ = L2;
-  reader = reader2;
-  data = data2;
-  cursor_ = 0;
-}
-
 void Zio2::init(const char* buffer, size_t len) {
   file_ = NULL;
-  thread_ = NULL;
-  reader = NULL;
-  data = NULL;
   buffer_.resize(len);
   memcpy(&buffer_[0], buffer, len);
   cursor_ = 0;
 }
 
-void Zio2::init2(LuaThread* L2, lua_Reader reader2, void* data2) {
-  init(L2, reader2, data2);
-  skipHeader(*this);
-}
-
 void Zio2::fill() {
   if(eof()) return;
 
-  if(reader) {
-    size_t len;
-    const char* buf = reader(thread_, data, &len);
-
-    if (len == 0 || buf == NULL) {
-      reader = NULL;
-    }
-    else {
-      buffer_.insert(buffer_.end(),  buf, buf+len);
-    }
-  }
-  else if(file_) {
+  if(file_) {
     char temp[256];
     size_t read = fread(temp, 1, 256, file_);
     if(read == 0) {
@@ -139,7 +109,7 @@ std::string Zio2::next(size_t len) {
 
   while((buffer_.size() - cursor_) < len) {
     fill();
-    if((reader == NULL) && (file_ == NULL)) break;
+    if(file_ == NULL) break;
    }
 
   size_t left = buffer_.size() - cursor_;
