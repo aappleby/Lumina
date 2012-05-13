@@ -60,7 +60,7 @@ static void anchor_token (LexState *ls) {
   /* last token from outer function must be EOS */
   assert(ls->fs != NULL || ls->t.token == TK_EOS);
   if (ls->t.token == TK_NAME || ls->t.token == TK_STRING) {
-    LuaString *ts = ls->t.seminfo.ts;
+    LuaString *ts = ls->t.ts;
     luaX_newstring(ls, ts->c_str(), ts->getLen());
   }
 }
@@ -166,7 +166,7 @@ static LuaResult str_checkname (LexState *ls, LuaString*& out) {
   LuaString *ts;
   result = check_token(ls, TK_NAME);
   if(result != LUA_OK) return result;
-  ts = ls->t.seminfo.ts;
+  ts = ls->t.ts;
   result = luaX_next(ls);
   if(result != LUA_OK) return result;
   out = ts;
@@ -780,7 +780,7 @@ static void field (LexState *ls, struct ConsControl *cc) {
   /* field -> listfield | recfield */
   switch(ls->t.token) {
     case TK_NAME: {  /* may be 'listfield' or 'recfield' */
-      if (luaX_lookahead(ls) != '=')  /* expression? */
+      if (luaX_lookahead(ls) != '=')  // expression?
         listfield(ls, cc);
       else
         recfield(ls, cc);
@@ -963,7 +963,7 @@ static LuaResult funcargs2 (LexState *ls, expdesc *f, int line) {
       break;
     }
     case TK_STRING: {  /* funcargs -> STRING */
-      codestring(ls, &args, ls->t.seminfo.ts);
+      codestring(ls, &args, ls->t.ts);
       result = luaX_next(ls);  /* must use `seminfo' before `next' */
       if(result != LUA_OK) return result;
       break;
@@ -1078,11 +1078,11 @@ static LuaResult simpleexp (LexState *ls, expdesc *v) {
   switch (ls->t.token) {
     case TK_NUMBER: {
       init_exp(v, VKNUM, 0);
-      v->nval = ls->t.seminfo.r;
+      v->nval = ls->t.r;
       break;
     }
     case TK_STRING: {
-      codestring(ls, v, ls->t.seminfo.ts);
+      codestring(ls, v, ls->t.ts);
       break;
     }
     case TK_NIL: {

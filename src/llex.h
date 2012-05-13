@@ -36,16 +36,11 @@ enum RESERVED {
 #define NUM_RESERVED	(cast(int, TK_WHILE-FIRST_RESERVED+1))
 
 
-struct SemInfo{
+struct Token {
+  int token;
   double r;
   LuaString *ts;
-};  /* semantics information */
-
-
-typedef struct Token {
-  int token;
-  SemInfo seminfo;
-} Token;
+};
 
 class FuncState;
 
@@ -58,9 +53,10 @@ public:
     buff_.reserve(128);
   }
 
-  int current;  /* current character (charint) */
+  int current_;  /* current character (charint) */
   int linenumber;  /* input line counter */
   int lastline;  /* line of last token `consumed' */
+
   Token t;  /* current token */
   Token lookahead;  /* look ahead token */
   FuncState *fs;  /* current function (parser) */
