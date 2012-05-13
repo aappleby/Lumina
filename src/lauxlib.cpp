@@ -628,6 +628,39 @@ void luaL_unref(LuaThread* L, int ref) {
 ** =======================================================
 */
 
+bool readFileToString ( const char* filename, std::string& s ) {
+
+  FILE* f = fopen(filename,"rb");
+  if(f == NULL) return false;
+
+  char buffer[256];
+
+  while(f) {
+    size_t read = fread(buffer, 1, 256, f);
+    if(read == 0) break;
+    s += std::string(buffer, read);
+  }
+
+  fclose(f);
+
+  if(strcmp(s.c_str(), "\xEF\xBB\xBF") == 0) {
+    s.erase(0,3);
+  }
+
+  if(s.size() && (s[0] == '#')) {
+    while(s.size() && (s[0] != '\n')) s.erase(0,1);
+    if(strcmp(s.c_str(), LUA_SIGNATURE) != 0) {
+      s.insert(s.begin(), '\n');
+    }
+    else {
+      int b = 0;
+      b++;
+    }
+  }
+
+  return true;
+}
+
 typedef struct LoadF {
   int n;  /* number of pre-read characters */
   FILE *f;  /* file being read */
@@ -708,6 +741,10 @@ int luaL_loadfilex (LuaThread *L, const char *filename,
   }
   else {
     filename2 = "@" + std::string(filename);
+
+    std::string contents;
+    readFileToString(filename, contents);
+
     lf.f = fopen(filename, "rb");
     if (lf.f == NULL) {
       lua_pushstring(L, filename2.c_str());
