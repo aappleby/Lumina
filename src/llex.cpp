@@ -326,37 +326,43 @@ endloop:
 }
 
 
-static void escerror (LexState *ls, int *c, int n, const char *msg) {
+static LuaResult escerror (LexState *ls, int *c, int n, const char *msg) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   int i;
   /* prepare error message */
   ls->buff_.clear();
   save(ls, '\\');
-  for (i = 0; i < n && c[i] != EOZ; i++)
+  for (i = 0; i < n && c[i] != EOZ; i++) {
     save(ls, c[i]);
+  }
   result = lexerror(ls, msg, TK_STRING, ls->L->errors_);
   ls->L->PushErrors();
-  handleResult(result);
+  return result;
 }
 
 
-static int readhexaesc (LexState *ls) {
+static LuaResult readhexaesc (LexState *ls, int& out) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   int c[3], i;  /* keep input for error message */
   int r = 0;  /* result accumulator */
   c[0] = 'x';  /* for error message */
   for (i = 1; i < 3; i++) {  /* read two hexa digits */
     c[i] = ls->current_ = ls->z->getc();
-    if (!lisxdigit(c[i]))
-      escerror(ls, c, i + 1, "hexadecimal digit expected");
+    if (!lisxdigit(c[i])) {
+      result = escerror(ls, c, i + 1, "hexadecimal digit expected");
+      if(result != LUA_OK) return result;
+    }
     r = (r << 4) + luaO_hexavalue(c[i]);
   }
-  return r;
+  out = r;
+  return result;
 }
 
 
 static int readdecesc (LexState *ls) {
+  LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   int c[3], i;
   int r = 0;  /* result accumulator */
@@ -365,8 +371,10 @@ static int readdecesc (LexState *ls) {
     r = 10*r + c[i] - '0';
     ls->current_ = ls->z->getc();
   }
-  if (r > UCHAR_MAX)
-    escerror(ls, c, i, "decimal escape too large");
+  if (r > UCHAR_MAX) {
+    result = escerror(ls, c, i, "decimal escape too large");
+    handleResult(result);
+  }
   return r;
 }
 
@@ -402,7 +410,11 @@ static void read_string (LexState *ls, int del, Token* token) {
           case 'r': c = '\r'; goto read_save;
           case 't': c = '\t'; goto read_save;
           case 'v': c = '\v'; goto read_save;
-          case 'x': c = readhexaesc(ls); goto read_save;
+          case 'x': {
+            result = readhexaesc(ls, c);
+            handleResult(result);
+            goto read_save;
+          }
           case '\n': case '\r':
             inclinenumber(ls); c = '\n'; goto only_save;
           case '\\': case '\"': case '\'':
@@ -419,8 +431,10 @@ static void read_string (LexState *ls, int del, Token* token) {
             goto no_save;
           }
           default: {
-            if (!lisdigit(ls->current_))
-              escerror(ls, &ls->current_, 1, "invalid escape sequence");
+            if (!lisdigit(ls->current_)) {
+              result = escerror(ls, &ls->current_, 1, "invalid escape sequence");
+              handleResult(result);
+            }
             /* digital escape \ddd */
             c = readdecesc(ls);
             goto only_save;
