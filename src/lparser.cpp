@@ -61,8 +61,7 @@ static void anchor_token (LexState *ls) {
   /* last token from outer function must be EOS */
   assert(ls->fs != NULL || ls->t.token == TK_EOS);
   if (ls->t.token == TK_NAME || ls->t.token == TK_STRING) {
-    LuaString *ts = ls->t.ts;
-    luaX_newstring(ls, ts->c_str(), ts->getLen());
+    luaX_newstring(ls, ls->t.c_str(), ls->t.getLen());
   }
 }
 

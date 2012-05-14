@@ -35,10 +35,26 @@ enum RESERVED {
 /* number of reserved words */
 #define NUM_RESERVED	(cast(int, TK_WHILE-FIRST_RESERVED+1))
 
+class LexState;
 
 struct Token {
   int token;
   double r;
+
+  void setString(LexState* ls, const char* s, size_t len);
+
+  int getReserved();
+
+  const char* c_str() {
+    return ts ? ts->c_str() : NULL;
+  }
+
+  size_t getLen() {
+    return ts ? ts->getLen() : 0;
+  }
+
+//protected:
+
   LuaString *ts;
 };
 

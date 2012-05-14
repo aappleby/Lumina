@@ -47,6 +47,15 @@ int luaX_tokens_count = sizeof(luaX_tokens) / sizeof(luaX_tokens[0]);
 static LuaResult lexerror (LexState *ls, const char *msg, int token, ErrorList& errors);
 
 
+void Token::setString(LexState* ls, const char* s, size_t len) {
+  ts = luaX_newstring(ls, s, len);
+}
+
+int Token::getReserved() {
+  if(ts == NULL) return 0;
+  return ts->getReserved();
+}
+
 static void save (LexState *ls, int c) {
   ls->buff_.push_back((char)c);
 }
@@ -314,9 +323,9 @@ static LuaResult read_long_string (LexState *ls, Token* token, int sep) {
 endloop:
 
   if (token) {
-    token->ts = luaX_newstring(ls,
-                               &ls->buff_[0] + (2 + sep),
-                               ls->buff_.size() - 2*(2 + sep));
+    token->setString(ls,
+                     &ls->buff_[0] + (2 + sep),
+                     ls->buff_.size() - 2*(2 + sep));
   }
   return result;
 }
@@ -453,9 +462,9 @@ static LuaResult read_string (LexState *ls, int del, Token* token) {
   save(ls, ls->current_);
   ls->current_ = ls->z->getc();
 
-  token->ts = luaX_newstring(ls,
-                             &ls->buff_[0] + 1,
-                             ls->buff_.size() - 2);
+  token->setString(ls,
+                   &ls->buff_[0] + 1,
+                   ls->buff_.size() - 2);
   return result;
 }
 
@@ -618,10 +627,10 @@ static LuaResult llex (LexState *ls, Token* out) {
             ls->current_ = ls->z->getc();
           } while (lislalnum(ls->current_));
 
-          out->ts = luaX_newstring(ls, &ls->buff_[0], ls->buff_.size());
-          if (out->ts->getReserved() > 0) {
+          out->setString(ls, &ls->buff_[0], ls->buff_.size());
+          if (out->getReserved() > 0) {
             /* reserved word? */
-            out->token = out->ts->getReserved() - 1 + FIRST_RESERVED;
+            out->token = out->getReserved() - 1 + FIRST_RESERVED;
             return result;
           }
           else {
