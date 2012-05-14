@@ -1088,7 +1088,8 @@ static LuaResult simpleexp (LexState *ls, expdesc *v) {
       break;
     }
     case TK_STRING: {
-      codestring(ls, v, ls->t.ts);
+      LuaString* ts = luaX_newstring(ls, ls->t.c_str(), ls->t.getLen());
+      codestring(ls, v, ts);
       break;
     }
     case TK_NIL: {
