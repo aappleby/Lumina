@@ -90,9 +90,12 @@ static const char *txtToken (LexState *ls, int token) {
 static LuaResult lexerror (LexState *ls, const char *msg, int token) {
   THREAD_CHECK(ls->L);
   std::string buff = luaO_chunkid2(ls->source->c_str());
-  msg = luaO_pushfstring(ls->L, "%s:%d: %s", buff.c_str(), ls->linenumber, msg);
+  std::string temp1 = StringPrintf("%s:%d: %s", buff.c_str(), ls->linenumber, msg);
+  pushstr(ls->L, temp1);
+
   if (token) {
-    luaO_pushfstring(ls->L, "%s near %s", msg, txtToken(ls, token));
+    std::string temp2 = StringPrintf("%s near %s", temp1.c_str(), txtToken(ls, token));
+    pushstr(ls->L, temp2);
   }
   return LUA_ERRSYNTAX;
 }
