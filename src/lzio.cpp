@@ -12,7 +12,9 @@
 
 void Zio::init(const char* buffer, size_t len) {
   buffer_.resize(len);
-  memcpy(&buffer_[0], buffer, len);
+  if(len) {
+    memcpy(&buffer_[0], buffer, len);
+  }
   cursor_ = 0;
 }
 
