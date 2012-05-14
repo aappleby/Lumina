@@ -969,7 +969,8 @@ static LuaResult funcargs2 (LexState *ls, expdesc *f, int line) {
       break;
     }
     case TK_STRING: {  /* funcargs -> STRING */
-      codestring(ls, &args, ls->t.ts);
+      LuaString* ts = luaX_newstring(ls, ls->t.c_str(), ls->t.getLen());
+      codestring(ls, &args, ts);
       result = luaX_next(ls);  /* must use `seminfo' before `next' */
       if(result != LUA_OK) return result;
       break;

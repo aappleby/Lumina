@@ -41,7 +41,7 @@ struct Token {
   int token;
   double r;
 
-  void setString(LexState* ls, const char* s, size_t len);
+  void setString(LexState* ls, const char* s, size_t len)
 
   int getReserved();
 
@@ -53,7 +53,7 @@ struct Token {
     return ts ? ts->getLen() : 0;
   }
 
-//protected:
+protected:
 
   LuaString *ts;
 };
