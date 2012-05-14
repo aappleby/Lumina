@@ -116,11 +116,8 @@ LuaResult luaX_syntaxerror (LexState *ls, const char *msg) {
 ** (by that time it should be anchored in function's prototype)
 */
 LuaString *luaX_newstring (LexState *ls, const char *str, size_t l) {
-  THREAD_CHECK(ls->L);
-  LuaThread *L = ls->L;
 
   LuaString* ts = thread_G->strings_->Create(str, l);  /* create new string */
-  L->stack_.push_nocheck(LuaValue(ts));  /* temporarily anchor it in stack */
 
   // TODO(aappleby): Save string in 'ls->fs->h'. Why it does so exactly this way, I don't
   // know. Will have to investigate in the future.
@@ -129,7 +126,6 @@ LuaString *luaX_newstring (LexState *ls, const char *str, size_t l) {
 
   luaC_barrierback(ls->fs->constant_map, s);
 
-  L->stack_.pop();  /* remove string from stack */
   return ts;
 }
 
@@ -617,18 +613,15 @@ static LuaResult llex (LexState *ls, Token* out) {
       }
       default: {
         if (lislalpha(ls->current_)) {  /* identifier or reserved word? */
-          LuaString *ts;
           do {
             save(ls, ls->current_);
             ls->current_ = ls->z->getc();
           } while (lislalnum(ls->current_));
 
-          ts = luaX_newstring(ls, &ls->buff_[0], ls->buff_.size());
-
-          out->ts = ts;
-          if (ts->getReserved() > 0) {
+          out->ts = luaX_newstring(ls, &ls->buff_[0], ls->buff_.size());
+          if (out->ts->getReserved() > 0) {
             /* reserved word? */
-            out->token = ts->getReserved() - 1 + FIRST_RESERVED;
+            out->token = out->ts->getReserved() - 1 + FIRST_RESERVED;
             return result;
           }
           else {
