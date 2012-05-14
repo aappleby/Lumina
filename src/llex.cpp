@@ -361,7 +361,7 @@ static LuaResult readhexaesc (LexState *ls, int& out) {
 }
 
 
-static int readdecesc (LexState *ls) {
+static LuaResult readdecesc (LexState *ls, int& out) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   int c[3], i;
@@ -373,13 +373,14 @@ static int readdecesc (LexState *ls) {
   }
   if (r > UCHAR_MAX) {
     result = escerror(ls, c, i, "decimal escape too large");
-    handleResult(result);
+    if(result != LUA_OK) return result;
   }
-  return r;
+  out = r;
+  return result;
 }
 
 
-static void read_string (LexState *ls, int del, Token* token) {
+static LuaResult read_string (LexState *ls, int del, Token* token) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   /* keep delimiter (for error messages) */
@@ -391,13 +392,13 @@ static void read_string (LexState *ls, int del, Token* token) {
       case EOZ:
         result = lexerror(ls, "unfinished string", TK_EOS, ls->L->errors_);
         ls->L->PushErrors();
-        handleResult(result);
+        if(result != LUA_OK) return result;
         break;  /* to avoid warnings */
       case '\n':
       case '\r':
         result = lexerror(ls, "unfinished string", TK_STRING, ls->L->errors_);
         ls->L->PushErrors();
-        handleResult(result);
+        if(result != LUA_OK) return result;
         break;  /* to avoid warnings */
       case '\\': {  /* escape sequences */
         int c;  /* final character to be saved */
@@ -412,7 +413,7 @@ static void read_string (LexState *ls, int del, Token* token) {
           case 'v': c = '\v'; goto read_save;
           case 'x': {
             result = readhexaesc(ls, c);
-            handleResult(result);
+           if(result != LUA_OK) return result;
             goto read_save;
           }
           case '\n': case '\r':
@@ -433,10 +434,11 @@ static void read_string (LexState *ls, int del, Token* token) {
           default: {
             if (!lisdigit(ls->current_)) {
               result = escerror(ls, &ls->current_, 1, "invalid escape sequence");
-              handleResult(result);
+              if(result != LUA_OK) return result;
             }
             /* digital escape \ddd */
-            c = readdecesc(ls);
+            result = readdecesc(ls, c);
+            if(result != LUA_OK) return result;
             goto only_save;
           }
         }
@@ -458,6 +460,7 @@ static void read_string (LexState *ls, int del, Token* token) {
   token->ts = luaX_newstring(ls,
                              &ls->buff_[0] + 1,
                              ls->buff_.size() - 2);
+  return result;
 }
 
 
@@ -578,7 +581,7 @@ static LuaResult llex (LexState *ls, Token* out) {
         }
       }
       case '"': case '\'': {  /* short literal strings */
-        read_string(ls, ls->current_, out);
+        result = read_string(ls, ls->current_, out);
         out->token = TK_STRING;
         return result;
       }
@@ -661,12 +664,13 @@ LuaResult luaX_next (LexState *ls) {
 }
 
 
-int luaX_lookahead (LexState *ls) {
+LuaResult luaX_lookahead (LexState *ls, int& out) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
   assert(ls->lookahead.token == TK_EOS);
   result = llex(ls, &ls->lookahead);
-  handleResult(result);
-  return ls->lookahead.token;
+  if(result != LUA_OK) return result;
+  out = ls->lookahead.token;
+  return result;
 }
 

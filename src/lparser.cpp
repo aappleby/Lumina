@@ -778,10 +778,14 @@ static void listfield (LexState *ls, struct ConsControl *cc) {
 
 
 static void field (LexState *ls, struct ConsControl *cc) {
+  LuaResult result = LUA_OK;
   /* field -> listfield | recfield */
   switch(ls->t.token) {
     case TK_NAME: {  /* may be 'listfield' or 'recfield' */
-      if (luaX_lookahead(ls) != '=')  // expression?
+      int temp;
+      result = luaX_lookahead(ls, temp);
+      handleResult(result);
+      if (temp != '=')  // expression?
         listfield(ls, cc);
       else
         recfield(ls, cc);
