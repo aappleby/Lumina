@@ -1,6 +1,9 @@
 #pragma once
 #include "stdint.h"
 
+#include <string>
+#include <vector>
+
 class LuaObject;
 class LuaString;
 class LuaThread;
@@ -30,14 +33,7 @@ typedef uint32_t Instruction;
 //-----------------------------------------------------------------------------
 // STL typedefs
 
-namespace std {
-  template<class _Elem,	class _Traits, class _Ax> class basic_string;
-  template<class _Elem> struct char_traits;
-  template<class _Ty> class allocator;
-  typedef basic_string<char, char_traits<char>, allocator<char> >	string;
-
-  template<class _Ty,	class _Ax> class vector;
-};
+typedef std::vector<std::string> ErrorList;
 
 //-----------------------------------------------------------------------------
 

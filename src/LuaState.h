@@ -3,6 +3,8 @@
 #include "LuaObject.h"
 #include "LuaStack.h"
 
+#include <vector>
+
 struct LuaExecutionState {
   LuaStackFrame*  callinfo_;
   int allowhook;
@@ -27,6 +29,8 @@ public:
   LuaExecutionState saveState(StkId top);
   void restoreState(LuaExecutionState s, int status, int nresults);
 
+  void PushErrors();
+
   int status;
   LuaVM *l_G;
 
@@ -43,6 +47,8 @@ public:
   LuaHook hook;
   
   ptrdiff_t errfunc;  /* current error handling function (stack index) */
+
+  std::vector<std::string> errors_;
 
   void closeUpvals(StkId level);
 };
