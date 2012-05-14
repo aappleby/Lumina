@@ -28,6 +28,18 @@ typedef int (*LuaCallback) (LuaThread *L);
 typedef uint32_t Instruction;
 
 //-----------------------------------------------------------------------------
+// STL typedefs
+
+namespace std {
+  template<class _Elem,	class _Traits, class _Ax> class basic_string;
+  template<class _Elem> struct char_traits;
+  template<class _Ty> class allocator;
+  typedef basic_string<char, char_traits<char>, allocator<char> >	string;
+
+  template<class _Ty,	class _Ax> class vector;
+};
+
+//-----------------------------------------------------------------------------
 
 void  luaM_free(void * blob);
 

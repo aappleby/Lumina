@@ -23,10 +23,10 @@
 
 
 double luaO_arith (int op, double v1, double v2);
-int luaO_str2d (const char *s, size_t len, double *result);
-int luaO_hexavalue (int c);
 const char *luaO_pushvfstring (const char *fmt, va_list argp);
 const char *luaO_pushfstring (LuaThread *L, const char *fmt, ...);
+
+void pushstr(LuaThread* L, const std::string& s);
 
 #endif
 

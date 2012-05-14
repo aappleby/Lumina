@@ -1,7 +1,11 @@
 #include "LuaConversions.h"
 
-#include "stdarg.h"
+#include <assert.h>
+#include <math.h>
+#include <stdarg.h>
 #include <string>
+
+#include "lctype.h"
 
 /*
 ** converts an integer to a "floating point byte", represented as
@@ -129,4 +133,102 @@ bool StringVprintf(const char *fmt, va_list argp, std::string& result, std::stri
   result += fmt;
 
   return true;
+}
+
+bool StringVprintf (const char *fmt, va_list argp, std::string& result) {
+  std::string error;
+  return StringVprintf(fmt, argp, result, error);
+}
+
+std::string StringPrintf(const char* fmt, ...) {
+  va_list argp;
+  va_start(argp, fmt);
+
+  std::string result;
+  std::string error;
+
+  bool ok = StringVprintf(fmt, argp, result, error);
+  assert(ok);
+
+  va_end(argp);
+
+  return result;
+}
+
+
+
+int luaO_hexavalue (int c) {
+  if (lisdigit(c)) return c - '0';
+  else return ltolower(c) - 'a' + 10;
+}
+
+
+static int isneg (const char **s) {
+  if (**s == '-') { (*s)++; return 1; }
+  else if (**s == '+') (*s)++;
+  return 0;
+}
+
+
+static double readhexa (const char **s, double r, int *count) {
+  for (; lisxdigit(unsigned char(**s)); (*s)++) {  /* read integer part */
+    r = (r * 16.0) + double(luaO_hexavalue(unsigned char(**s)));
+    (*count)++;
+  }
+  return r;
+}
+
+
+/*
+** convert an hexadecimal numeric string to a number, following
+** C99 specification for 'strtod'
+*/
+static double lua_strx2number (const char *s, char **endptr) {
+  double r = 0.0;
+  int e = 0, i = 0;
+  int neg = 0;  /* 1 if number is negative */
+  *endptr = (char *)s;  /* nothing is valid yet */
+  while (lisspace(unsigned char(*s))) s++;  /* skip initial spaces */
+  neg = isneg(&s);  /* check signal */
+  if (!(*s == '0' && (*(s + 1) == 'x' || *(s + 1) == 'X')))  /* check '0x' */
+    return 0.0;  /* invalid format (no '0x') */
+  s += 2;  /* skip '0x' */
+  r = readhexa(&s, r, &i);  /* read integer part */
+  if (*s == '.') {
+    s++;  /* skip dot */
+    r = readhexa(&s, r, &e);  /* read fractional part */
+  }
+  if (i == 0 && e == 0)
+    return 0.0;  /* invalid format (no digit) */
+  e *= -4;  /* each fractional digit divides value by 2^-4 */
+  *endptr = (char *)s;  /* valid up to here */
+  if (*s == 'p' || *s == 'P') {  /* exponent part? */
+    int exp1 = 0;
+    int neg1;
+    s++;  /* skip 'p' */
+    neg1 = isneg(&s);  /* signal */
+    if (!lisdigit(unsigned char(*s)))
+      goto ret;  /* must have at least one digit */
+    while (lisdigit(unsigned char(*s)))  /* read exponent */
+      exp1 = exp1 * 10 + *(s++) - '0';
+    if (neg1) exp1 = -exp1;
+    e += exp1;
+  }
+  *endptr = (char *)s;  /* valid up to here */
+ ret:
+  if (neg) r = -r;
+  return ldexp(r, e);
+}
+
+int luaO_str2d (const char *s, size_t len, double *result) {
+  char *endptr;
+  if (strpbrk(s, "nN"))  /* reject 'inf' and 'nan' */
+    return 0;
+  else if (strpbrk(s, "xX"))  /* hexa? */
+    *result = lua_strx2number(s, &endptr);
+  else
+    *result = strtod(s, &endptr);
+  if (endptr == s) return 0;  /* nothing recognized */
+  while (lisspace(unsigned char(*endptr))) endptr++;
+  return (endptr == s + len);  /* OK if no trailing characters */
 }
