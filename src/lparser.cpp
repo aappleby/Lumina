@@ -163,10 +163,12 @@ static LuaResult check_match (LexState *ls, int what, int who, int where) {
 
 static LuaResult str_checkname (LexState *ls, LuaString*& out) {
   LuaResult result = LUA_OK;
-  LuaString *ts;
   result = check_token(ls, TK_NAME);
   if(result != LUA_OK) return result;
-  ts = ls->t.ts;
+
+  //LuaString* ts = ls->t.ts;
+  LuaString* ts = luaX_newstring(ls, ls->t.c_str(), ls->t.getLen());
+
   result = luaX_next(ls);
   if(result != LUA_OK) return result;
   out = ts;
