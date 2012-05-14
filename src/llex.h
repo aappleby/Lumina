@@ -38,24 +38,30 @@ enum RESERVED {
 class LexState;
 
 struct Token {
+ 
+  Token()
+  : reserved_(0) {
+  }
+
   int token;
   double r;
 
-  void setString(LexState* ls, const char* s, size_t len)
+  void setString(const char* s, size_t len);
 
   int getReserved();
 
   const char* c_str() {
-    return ts ? ts->c_str() : NULL;
+    return text_.c_str();
   }
 
   size_t getLen() {
-    return ts ? ts->getLen() : 0;
+    return text_.size();
   }
 
 protected:
 
-  LuaString *ts;
+  std::string text_;
+  int reserved_;
 };
 
 class FuncState;

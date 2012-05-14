@@ -43,17 +43,22 @@ const char* luaX_tokens[] = {
 
 int luaX_tokens_count = sizeof(luaX_tokens) / sizeof(luaX_tokens[0]);
 
-
 static LuaResult lexerror (LexState *ls, const char *msg, int token, ErrorList& errors);
 
-
-void Token::setString(LexState* ls, const char* s, size_t len) {
-  ts = luaX_newstring(ls, s, len);
+void Token::setString(const char* s, size_t len) {
+  text_ = std::string(s,len);
+  reserved_ = 0;
+  // TODO(aappleby): Searching this list for every token will probably slow the lexer down...
+  for(int i = 0; i < luaX_tokens_count; i++) {
+    if(strcmp(text_.c_str(), luaX_tokens[i]) == 0) {
+      reserved_ = i+1;
+      break;
+    }
+  }
 }
 
 int Token::getReserved() {
-  if(ts == NULL) return 0;
-  return ts->getReserved();
+  return reserved_;
 }
 
 static void save (LexState *ls, int c) {
@@ -323,8 +328,7 @@ static LuaResult read_long_string (LexState *ls, Token* token, int sep) {
 endloop:
 
   if (token) {
-    token->setString(ls,
-                     &ls->buff_[0] + (2 + sep),
+    token->setString(&ls->buff_[0] + (2 + sep),
                      ls->buff_.size() - 2*(2 + sep));
   }
   return result;
@@ -462,8 +466,7 @@ static LuaResult read_string (LexState *ls, int del, Token* token) {
   save(ls, ls->current_);
   ls->current_ = ls->z->getc();
 
-  token->setString(ls,
-                   &ls->buff_[0] + 1,
+  token->setString(&ls->buff_[0] + 1,
                    ls->buff_.size() - 2);
   return result;
 }
@@ -627,7 +630,7 @@ static LuaResult llex (LexState *ls, Token* out) {
             ls->current_ = ls->z->getc();
           } while (lislalnum(ls->current_));
 
-          out->setString(ls, &ls->buff_[0], ls->buff_.size());
+          out->setString(&ls->buff_[0], ls->buff_.size());
           if (out->getReserved() > 0) {
             /* reserved word? */
             out->token = out->getReserved() - 1 + FIRST_RESERVED;
