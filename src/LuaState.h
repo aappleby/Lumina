@@ -29,7 +29,7 @@ public:
   LuaExecutionState saveState(StkId top);
   void restoreState(LuaExecutionState s, int status, int nresults);
 
-  void PushErrors();
+  void PushErrors(ErrorList& errors);
 
   int status;
   LuaVM *l_G;

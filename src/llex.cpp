@@ -65,22 +65,6 @@ static void save (LexState *ls, int c) {
   ls->lexer_.save((char)c);
 }
 
-std::string luaX_token2str2 (int token) {
-  if (token < FIRST_RESERVED) {
-    assert(token == cast(unsigned char, token));
-    return (lisprint(token)) ? StringPrintf("'%c'", token) :
-                               StringPrintf("char(%d)", token);
-  }
-  else {
-    if (token < TK_EOS) {
-      return StringPrintf("'%s'", luaX_tokens[token - FIRST_RESERVED]);
-    }
-    else {
-      return luaX_tokens[token - FIRST_RESERVED];
-    }
-  }
-}
-
 const char *luaX_token2str (LexState *ls, int token) {
   THREAD_CHECK(ls->L);
   if (token < FIRST_RESERVED) {
@@ -99,26 +83,15 @@ const char *luaX_token2str (LexState *ls, int token) {
   }
 }
 
-std::string txtToken2 (LexState *ls, int token) {
-  switch (token) {
-    case TK_NAME:
-    case TK_STRING:
-    case TK_NUMBER:
-      {
-        ls->lexer_.save(0);
-        return StringPrintf("'%s'", ls->lexer_.getBuffer());
-      }
-    default:
-      return luaX_token2str2(token);
-  }
-}
-
-static LuaResult lexerror (LexState *ls, const char *msg, int token, ErrorList& errors) {
+static LuaResult lexerror (LexState *ls,
+                           const char *msg,
+                           int token,
+                           ErrorList& errors) {
   THREAD_CHECK(ls->L);
   std::string buff = luaO_chunkid2(ls->source_.c_str());
 
   if (token) {
-    std::string temp3 = txtToken2(ls, token);
+    std::string temp3 = ls->lexer_.getDebugToken(token);
     std::string temp2 = StringPrintf("%s:%d: %s near %s", buff.c_str(), ls->linenumber, msg, temp3.c_str());
     errors.push_back(temp2);
   }
@@ -134,7 +107,7 @@ static LuaResult lexerror (LexState *ls, const char *msg, int token, ErrorList& 
 LuaResult luaX_syntaxerror (LexState *ls, const char *msg) {
   THREAD_CHECK(ls->L);
   LuaResult result = lexerror(ls, msg, ls->t.token, ls->L->errors_);
-  ls->L->PushErrors();
+  ls->L->PushErrors(ls->L->errors_);
   return result;
 }
 
@@ -248,7 +221,7 @@ static LuaResult trydecpoint (LexState *ls, Token* token) {
     /* format error with correct decimal point: no more options */
     buffreplace(ls, ls->decpoint, '.');  /* undo change (for error message) */
     result = lexerror(ls, "malformed number", TK_NUMBER, ls->L->errors_);
-    ls->L->PushErrors();
+    ls->L->PushErrors(ls->L->errors_);
     return result;
   }
   return result;
@@ -313,7 +286,7 @@ static LuaResult read_long_string (LexState *ls, Token* token, int sep) {
       case EOZ:
         result = lexerror(ls, (token) ? "unfinished long string" :
                                         "unfinished long comment", TK_EOS, ls->L->errors_);
-        ls->L->PushErrors();
+        ls->L->PushErrors(ls->L->errors_);
         return result;
         break;  /* to avoid warnings */
       case ']': {
@@ -364,7 +337,7 @@ static LuaResult escerror (LexState *ls, int *c, int n, const char *msg) {
     save(ls, c[i]);
   }
   result = lexerror(ls, msg, TK_STRING, ls->L->errors_);
-  ls->L->PushErrors();
+  ls->L->PushErrors(ls->L->errors_);
   return result;
 }
 
@@ -418,13 +391,13 @@ static LuaResult read_string (LexState *ls, int del, Token* token) {
     switch (ls->current_) {
       case EOZ:
         result = lexerror(ls, "unfinished string", TK_EOS, ls->L->errors_);
-        ls->L->PushErrors();
+        ls->L->PushErrors(ls->L->errors_);
         if(result != LUA_OK) return result;
         break;  /* to avoid warnings */
       case '\n':
       case '\r':
         result = lexerror(ls, "unfinished string", TK_STRING, ls->L->errors_);
-        ls->L->PushErrors();
+        ls->L->PushErrors(ls->L->errors_);
         if(result != LUA_OK) return result;
         break;  /* to avoid warnings */
       case '\\': {  /* escape sequences */
@@ -542,7 +515,7 @@ static LuaResult llex (LexState *ls, Token* out) {
         }
         else {
           result = lexerror(ls, "invalid long string delimiter", TK_STRING, ls->L->errors_);
-          ls->L->PushErrors();
+          ls->L->PushErrors(ls->L->errors_);
           return result;
         }
       }
