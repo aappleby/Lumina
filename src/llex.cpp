@@ -103,7 +103,7 @@ static const char *txtToken (LexState *ls, int token) {
 
 static LuaResult lexerror (LexState *ls, const char *msg, int token, ErrorList& errors) {
   THREAD_CHECK(ls->L);
-  std::string buff = luaO_chunkid2(ls->source->c_str());
+  std::string buff = luaO_chunkid2(ls->source_.c_str());
   std::string temp1 = StringPrintf("%s:%d: %s", buff.c_str(), ls->linenumber, msg);
   errors.push_back(temp1);
 
@@ -171,7 +171,7 @@ void luaX_setinput (LuaThread *L, LexState *ls, Zio *z, LuaString *source, int f
   ls->fs = NULL;
   ls->linenumber = 1;
   ls->lastline = 1;
-  ls->source = source;
+  ls->source_ = source->c_str();
   ls->envn = thread_G->strings_->Create(LUA_ENV);  /* create env name */
   ls->envn->setFixed();  /* never collect this name */
 }

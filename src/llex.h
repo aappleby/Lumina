@@ -88,7 +88,7 @@ public:
   std::vector<char> buff_;
 
   struct Dyndata *dyd;  /* dynamic structures used by the parser */
-  LuaString *source;  /* current source name */
+  std::string source_;
   LuaString *envn;  /* environment variable name */
   char decpoint;  /* locale decimal point */
 };
