@@ -62,7 +62,7 @@ int Token::getReserved() {
 }
 
 static void save (LexState *ls, int c) {
-  ls->buff_.push_back((char)c);
+  ls->lexer_.save((char)c);
 }
 
 
@@ -93,7 +93,7 @@ static const char *txtToken (LexState *ls, int token) {
     case TK_NUMBER:
       {
         save(ls, '\0');
-        return luaO_pushfstring(ls->L, LUA_QS, &ls->buff_[0]);
+        return luaO_pushfstring(ls->L, LUA_QS, ls->lexer_.getBuffer());
       }
     default:
       return luaX_token2str(ls, token);
@@ -201,10 +201,13 @@ static int check_next (LexState *ls, const char *set) {
 */
 static void buffreplace (LexState *ls, char from, char to) {
   THREAD_CHECK(ls->L);
+  /*
   size_t n = ls->buff_.size();
   char *p = &ls->buff_[0];
   while (n--)
     if (p[n] == from) p[n] = to;
+  */
+  ls->lexer_.replace(from,to);
 }
 
 
@@ -225,7 +228,7 @@ static LuaResult trydecpoint (LexState *ls, Token* token) {
   buffreplace(ls, old, ls->decpoint);  /* try new decimal separator */
 
   
-  int ok = luaO_str2d(&ls->buff_[0], ls->buff_.size() - 1, &token->r);
+  int ok = luaO_str2d(ls->lexer_.getBuffer(), ls->lexer_.getLen() - 1, &token->r);
   if (!ok) {
     /* format error with correct decimal point: no more options */
     buffreplace(ls, ls->decpoint, '.');  /* undo change (for error message) */
@@ -251,7 +254,7 @@ static LuaResult read_numeral (LexState *ls, Token* token) {
   } while (lislalnum(ls->current_) || ls->current_ == '.');
   save(ls, '\0');
   buffreplace(ls, '.', ls->decpoint);  /* follow locale for decimal point */
-  int ok = luaO_str2d(&ls->buff_[0], ls->buff_.size() - 1, &token->r);
+  int ok = luaO_str2d(ls->lexer_.getBuffer(), ls->lexer_.getLen() - 1, &token->r);
   if (!ok) {
     /* format error? */
     return trydecpoint(ls, token); /* try to update decimal point separator */
@@ -310,7 +313,7 @@ static LuaResult read_long_string (LexState *ls, Token* token, int sep) {
       case '\n': case '\r': {
         save(ls, '\n');
         inclinenumber(ls);
-        if (!token) ls->buff_.clear(); /* avoid wasting space */
+        if (!token) ls->lexer_.clearBuffer(); /* avoid wasting space */
         break;
       }
       default: {
@@ -328,8 +331,8 @@ static LuaResult read_long_string (LexState *ls, Token* token, int sep) {
 endloop:
 
   if (token) {
-    token->setString(&ls->buff_[0] + (2 + sep),
-                     ls->buff_.size() - 2*(2 + sep));
+    token->setString(ls->lexer_.getBuffer() + (2 + sep),
+                     ls->lexer_.getLen() - 2*(2 + sep));
   }
   return result;
 }
@@ -340,7 +343,7 @@ static LuaResult escerror (LexState *ls, int *c, int n, const char *msg) {
   THREAD_CHECK(ls->L);
   int i;
   /* prepare error message */
-  ls->buff_.clear();
+  ls->lexer_.clearBuffer();
   save(ls, '\\');
   for (i = 0; i < n && c[i] != EOZ; i++) {
     save(ls, c[i]);
@@ -466,8 +469,8 @@ static LuaResult read_string (LexState *ls, int del, Token* token) {
   save(ls, ls->current_);
   ls->current_ = ls->z->getc();
 
-  token->setString(&ls->buff_[0] + 1,
-                   ls->buff_.size() - 2);
+  token->setString(ls->lexer_.getBuffer() + 1,
+                   ls->lexer_.getLen() - 2);
   return result;
 }
 
@@ -475,7 +478,7 @@ static LuaResult read_string (LexState *ls, int del, Token* token) {
 static LuaResult llex (LexState *ls, Token* out) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(ls->L);
-  ls->buff_.clear();
+  ls->lexer_.clearBuffer();
   for (;;) {
     switch (ls->current_) {
       case '\n': case '\r': {  /* line breaks */
@@ -496,11 +499,11 @@ static LuaResult llex (LexState *ls, Token* out) {
         ls->current_ = ls->z->getc();
         if (ls->current_ == '[') {  /* long comment? */
           int sep = skip_sep(ls);
-          ls->buff_.clear();  /* `skip_sep' may dirty the buffer */
+          ls->lexer_.clearBuffer();  /* `skip_sep' may dirty the buffer */
           if (sep >= 0) {
             result = read_long_string(ls, NULL, sep);  /* skip long comment */
             if(result != LUA_OK) return result;
-            ls->buff_.clear();  /* previous call may dirty the buff. */
+            ls->lexer_.clearBuffer();  /* previous call may dirty the buff. */
             break;
           }
         }
@@ -630,7 +633,7 @@ static LuaResult llex (LexState *ls, Token* out) {
             ls->current_ = ls->z->getc();
           } while (lislalnum(ls->current_));
 
-          out->setString(&ls->buff_[0], ls->buff_.size());
+          out->setString(ls->lexer_.getBuffer(), ls->lexer_.getLen());
           if (out->getReserved() > 0) {
             /* reserved word? */
             out->token = out->getReserved() - 1 + FIRST_RESERVED;

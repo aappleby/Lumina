@@ -7,6 +7,8 @@
 #ifndef llex_h
 #define llex_h
 
+#include "LuaLexer.h"
+
 #include<vector>
 
 #include "lobject.h"
@@ -37,33 +39,6 @@ enum RESERVED {
 
 class LexState;
 
-struct Token {
- 
-  Token()
-  : reserved_(0) {
-  }
-
-  int token;
-  double r;
-
-  void setString(const char* s, size_t len);
-
-  int getReserved();
-
-  const char* c_str() {
-    return text_.c_str();
-  }
-
-  size_t getLen() {
-    return text_.size();
-  }
-
-protected:
-
-  std::string text_;
-  int reserved_;
-};
-
 class FuncState;
 
 /* state of the lexer plus state of the parser when shared by all
@@ -72,7 +47,6 @@ class LexState {
 public:
 
   LexState() {
-    buff_.reserve(128);
   }
 
   int current_;  /* current character (charint) */
@@ -84,13 +58,13 @@ public:
   FuncState *fs;  /* current function (parser) */
   LuaThread *L;
   Zio *z;  /* input stream */
-  // buffer for tokens
-  std::vector<char> buff_;
 
   struct Dyndata *dyd;  /* dynamic structures used by the parser */
   std::string source_;
   LuaString *envn;  /* environment variable name */
   char decpoint;  /* locale decimal point */
+
+  LuaLexer lexer_;
 };
 
 
