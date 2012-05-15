@@ -65,6 +65,21 @@ static void save (LexState *ls, int c) {
   ls->lexer_.save((char)c);
 }
 
+std::string luaX_token2str2 (int token) {
+  if (token < FIRST_RESERVED) {
+    assert(token == cast(unsigned char, token));
+    return (lisprint(token)) ? StringPrintf("'%c'", token) :
+                               StringPrintf("char(%d)", token);
+  }
+  else {
+    if (token < TK_EOS) {
+      return StringPrintf("'%s'", luaX_tokens[token - FIRST_RESERVED]);
+    }
+    else {
+      return luaX_tokens[token - FIRST_RESERVED];
+    }
+  }
+}
 
 const char *luaX_token2str (LexState *ls, int token) {
   THREAD_CHECK(ls->L);
@@ -84,32 +99,32 @@ const char *luaX_token2str (LexState *ls, int token) {
   }
 }
 
-
-static const char *txtToken (LexState *ls, int token) {
-  THREAD_CHECK(ls->L);
+std::string txtToken2 (LexState *ls, int token) {
   switch (token) {
     case TK_NAME:
     case TK_STRING:
     case TK_NUMBER:
       {
-        save(ls, '\0');
-        return luaO_pushfstring(ls->L, LUA_QS, ls->lexer_.getBuffer());
+        ls->lexer_.save(0);
+        return StringPrintf("'%s'", ls->lexer_.getBuffer());
       }
     default:
-      return luaX_token2str(ls, token);
+      return luaX_token2str2(token);
   }
 }
-
 
 static LuaResult lexerror (LexState *ls, const char *msg, int token, ErrorList& errors) {
   THREAD_CHECK(ls->L);
   std::string buff = luaO_chunkid2(ls->source_.c_str());
-  std::string temp1 = StringPrintf("%s:%d: %s", buff.c_str(), ls->linenumber, msg);
-  errors.push_back(temp1);
 
   if (token) {
-    std::string temp2 = StringPrintf("%s near %s", temp1.c_str(), txtToken(ls, token));
+    std::string temp3 = txtToken2(ls, token);
+    std::string temp2 = StringPrintf("%s:%d: %s near %s", buff.c_str(), ls->linenumber, msg, temp3.c_str());
     errors.push_back(temp2);
+  }
+  else {
+    std::string temp1 = StringPrintf("%s:%d: %s", buff.c_str(), ls->linenumber, msg);
+    errors.push_back(temp1);
   }
 
   return LUA_ERRSYNTAX;
