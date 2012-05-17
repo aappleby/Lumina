@@ -57,15 +57,6 @@ static LuaResult statement (LexState *ls);
 static LuaResult expr (LexState *ls, expdesc *v);
 
 
-static void anchor_token (LexState *ls) {
-  /* last token from outer function must be EOS */
-  assert(ls->fs != NULL || ls->t.token == TK_EOS);
-  if (ls->t.token == TK_NAME || ls->t.token == TK_STRING) {
-    luaX_newstring(ls, ls->t.c_str(), ls->t.getLen());
-  }
-}
-
-
 /* semantic error */
 static LuaResult semerror (LexState *ls, const char *msg) {
   ls->t.token = 0;  /* remove 'near to' from final message */
@@ -613,8 +604,6 @@ static void close_func (LexState *ls) {
 
   assert(fs->bl == NULL);
   ls->fs = fs->prev;
-  /* last token read was anchored in defunct function; must re-anchor it */
-  anchor_token(ls);
   L->stack_.pop();  /* pop table of constants */
   L->stack_.pop();  /* pop prototype (after possible collection) */
 }
