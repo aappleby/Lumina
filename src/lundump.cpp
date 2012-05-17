@@ -20,53 +20,60 @@
 #include "lundump.h"
 #include "lzio.h"
 
-typedef struct {
+struct LoadState {
  LuaThread* L;
  Zio* Z;
  std::vector<char> b_;
  const char* name;
-} LoadState;
+};
 
-static void error(LoadState* S, const char* why)
+static LuaResult error3(LoadState* S, const char* why)
 {
   luaO_pushfstring(S->L,"%s: %s precompiled chunk",S->name,why);
-  throwError(LUA_ERRSYNTAX);
+  return LUA_ERRSYNTAX;
 }
 
-#define LoadMem(S,b,n,size)	LoadBlock(S,b,(n)*(size))
 #define LoadByte(S)		(uint8_t)LoadChar(S)
 #define LoadVar(S,x)		LoadMem(S,&x,1,sizeof(x))
 #define LoadVector(S,b,n,size)	LoadMem(S,b,n,size)
 
-#if !defined(luai_verifycode)
-#define luai_verifycode(L,b,f)	(f)
-#endif
-
 static void LoadBlock(LoadState* S, void* b, size_t size)
 {
- if (S->Z->read(b,size)!=0) error(S,"truncated");
+  LuaResult result = LUA_OK;
+  if (S->Z->read(b,size)!=0) {
+    result = error3(S, "truncated");
+    handleResult(result);
+  }
+}
+
+static void LoadMem(LoadState* S, void* b, int n, size_t size) {
+  return LoadBlock(S,b,n*size);
 }
 
 static int LoadChar(LoadState* S)
 {
- char x;
- LoadVar(S,x);
- return x;
+  char x;
+  LoadVar(S,x);
+  return x;
 }
 
 static int LoadInt(LoadState* S)
 {
- int x;
- LoadVar(S,x);
- if (x<0) error(S,"corrupted");
- return x;
+  LuaResult result = LUA_OK;
+  int x;
+  LoadVar(S,x);
+  if(x < 0) {
+    result = error3(S,"corrupted");
+    handleResult(result);
+  }
+  return x;
 }
 
 static double LoadNumber(LoadState* S)
 {
- double x;
- LoadVar(S,x);
- return x;
+  double x;
+  LoadVar(S,x);
+  return x;
 }
 
 static LuaString* LoadString(LoadState* S)
@@ -201,17 +208,34 @@ static LuaProto* LoadFunction(LoadState* S)
 #define N2	N1+2
 #define N3	N2+6
 
-static void LoadHeader(LoadState* S)
+static LuaResult LoadHeader(LoadState* S)
 {
- uint8_t h[LUAC_HEADERSIZE];
- uint8_t s[LUAC_HEADERSIZE];
- luaU_header(h);
- memcpy(s,h,sizeof(char));			/* first char already read */
- LoadBlock(S,s+sizeof(char),LUAC_HEADERSIZE-sizeof(char));
- if (memcmp(h,s,N0)==0) return;
- if (memcmp(h,s,N1)!=0) error(S,"not a");
- if (memcmp(h,s,N2)!=0) error(S,"version mismatch in");
- if (memcmp(h,s,N3)!=0) error(S,"incompatible"); else error(S,"corrupted");
+  LuaResult result = LUA_OK;
+  uint8_t h[LUAC_HEADERSIZE];
+  uint8_t s[LUAC_HEADERSIZE];
+  luaU_header(h);
+  memcpy(s,h,sizeof(char));			/* first char already read */
+  LoadBlock(S,s+sizeof(char),LUAC_HEADERSIZE-sizeof(char));
+  if (memcmp(h,s,N0) == 0) {
+    return result;
+  }
+  if (memcmp(h,s,N1) != 0) {
+    result = error3(S,"not a");
+    if(result != LUA_OK) return result;
+  }
+  if (memcmp(h,s,N2) != 0) {
+    result = error3(S,"version mismatch in");
+    if(result != LUA_OK) return result;
+  }
+  if (memcmp(h,s,N3) != 0) {
+    result = error3(S,"incompatible");
+    if(result != LUA_OK) return result;
+  }
+  else {
+    result = error3(S,"corrupted");
+    if(result != LUA_OK) return result;
+  }
+  return result;
 }
 
 /*
@@ -219,18 +243,23 @@ static void LoadHeader(LoadState* S)
 */
 LuaProto* luaU_undump (LuaThread* L, Zio* Z, const char* name)
 {
- THREAD_CHECK(L);
- LoadState S;
- if (*name=='@' || *name=='=')
-  S.name=name+1;
- else if (*name==LUA_SIGNATURE[0])
-  S.name="binary string";
- else
-  S.name=name;
- S.L=L;
- S.Z=Z;
- LoadHeader(&S);
- return luai_verifycode(L,buff,LoadFunction(&S));
+  LuaResult result = LUA_OK;
+  THREAD_CHECK(L);
+  LoadState S;
+  if (*name=='@' || *name=='=') {
+    S.name=name+1;
+  }
+  else if (*name==LUA_SIGNATURE[0]) {
+    S.name="binary string";
+  }
+  else {
+    S.name=name;
+  }
+  S.L=L;
+  S.Z=Z;
+  result = LoadHeader(&S);
+  handleResult(result);
+  return LoadFunction(&S);
 }
 
 #define MYINT(s)	(s[0]-'0')
@@ -244,16 +273,16 @@ LuaProto* luaU_undump (LuaThread* L, Zio* Z, const char* name)
 */
 void luaU_header (uint8_t* h)
 {
- int x=1;
- memcpy(h,LUA_SIGNATURE,sizeof(LUA_SIGNATURE)-sizeof(char));
- h+=sizeof(LUA_SIGNATURE)-sizeof(char);
- *h++=cast_byte(VERSION);
- *h++=cast_byte(FORMAT);
- *h++=cast_byte(*(char*)&x);			/* endianness */
- *h++=cast_byte(sizeof(int));
- *h++=cast_byte(sizeof(size_t));
- *h++=cast_byte(sizeof(Instruction));
- *h++=cast_byte(sizeof(double));
- *h++=cast_byte(((double)0.5)==0);		/* is double integral? */
- memcpy(h,LUAC_TAIL,sizeof(LUAC_TAIL)-sizeof(char));
+  int x=1;
+  memcpy(h,LUA_SIGNATURE,sizeof(LUA_SIGNATURE)-sizeof(char));
+  h+=sizeof(LUA_SIGNATURE)-sizeof(char);
+  *h++=cast_byte(VERSION);
+  *h++=cast_byte(FORMAT);
+  *h++=cast_byte(*(char*)&x);			/* endianness */
+  *h++=cast_byte(sizeof(int));
+  *h++=cast_byte(sizeof(size_t));
+  *h++=cast_byte(sizeof(Instruction));
+  *h++=cast_byte(sizeof(double));
+  *h++=cast_byte(((double)0.5)==0);		/* is double integral? */
+  memcpy(h,LUAC_TAIL,sizeof(LUAC_TAIL)-sizeof(char));
 }

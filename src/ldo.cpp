@@ -529,15 +529,19 @@ int lua_yieldk (LuaThread *L, int nresults, int ctx, LuaCallback k) {
 ** Execute a protected parser.
 */
 
-static void checkmode (LuaThread *L, const char *mode, const char *x) {
+static LuaResult checkmode (LuaThread *L, const char *mode, const char *x) {
   THREAD_CHECK(L);
   if (mode && strchr(mode, x[0]) == NULL) {
     luaO_pushfstring(L, "attempt to load a %s chunk (mode is " LUA_QS ")", x, mode);
-    throwError(LUA_ERRSYNTAX);
+    return LUA_ERRSYNTAX;
   }
+  return LUA_OK;
 }
 
+int inparser = 0;
+
 int luaD_protectedparser (LuaThread *L, Zio *z, const char *name, const char *mode) {
+  inparser = 1;
   LuaResult result = LUA_OK;
   THREAD_CHECK(L);
   LuaExecutionState s = L->saveState(L->stack_.top_);
@@ -548,15 +552,26 @@ int luaD_protectedparser (LuaThread *L, Zio *z, const char *name, const char *mo
 
     int c = z->getc();  /* read first character */
     if (c == LUA_SIGNATURE[0]) {
-      checkmode(L, mode, "binary");
+      result = checkmode(L, mode, "binary");
+      if(result != LUA_OK) {
+        L->restoreState(s, result, 0);
+        inparser = 0;
+        return result;
+      }
       new_proto = luaU_undump(L, z, name);
     }
     else {
-      checkmode(L, mode, "text");
+      result = checkmode(L, mode, "text");
+      if(result != LUA_OK) {
+        L->restoreState(s, result, 0);
+        inparser = 0;
+        return result;
+      }
       Dyndata dyd;
       result = luaY_parser(L, z, &dyd, name, c, new_proto);
       if(result != LUA_OK) {
         L->restoreState(s, result, 0);
+        inparser = 0;
         return result;
       }
     }
@@ -564,6 +579,7 @@ int luaD_protectedparser (LuaThread *L, Zio *z, const char *name, const char *mo
     LuaResult result = L->stack_.push_reserve2(LuaValue(new_proto));
     if(result != LUA_OK) {
       L->restoreState(s, result, 0);
+      inparser = 0;
       return result;
     }
 
@@ -580,6 +596,7 @@ int luaD_protectedparser (LuaThread *L, Zio *z, const char *name, const char *mo
   }
 
   L->restoreState(s, result, 0);
+  inparser = 0;
   return result;
 }
 

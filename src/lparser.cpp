@@ -1720,7 +1720,7 @@ static void localfunc (LexState *ls) {
 }
 
 
-static void localstat (LexState *ls) {
+static LuaResult localstat (LexState *ls) {
   LuaResult result = LUA_OK;
   /* stat -> LOCAL NAME {`,' NAME} [`=' explist] */
   int nvars = 0;
@@ -1731,7 +1731,7 @@ static void localstat (LexState *ls) {
   do {
     LuaString* temp;
     result = str_checkname(ls, temp);
-    handleResult(result);
+    if(result != LUA_OK) return result;
     new_localvar(ls, temp);
     nvars++;
     testnext(ls, ',', temp1);
@@ -1740,7 +1740,7 @@ static void localstat (LexState *ls) {
   testnext(ls, '=', temp1);
   if (temp1) {
     result = explist(ls, &e, nexps);
-    handleResult(result);
+    if(result != LUA_OK) return result;
   }
   else {
     e.k = VVOID;
@@ -1748,6 +1748,7 @@ static void localstat (LexState *ls) {
   }
   adjust_assign(ls, nvars, nexps, &e);
   adjustlocalvars(ls, nvars);
+  return result;
 }
 
 
@@ -1905,7 +1906,8 @@ static LuaResult statement (LexState *ls) {
         localfunc(ls);
       }
       else {
-        localstat(ls);
+        result = localstat(ls);
+        if(result != LUA_OK) return result;
       }
       break;
     }
