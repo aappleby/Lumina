@@ -28,7 +28,6 @@ public:
   }
 
   int current_;  /* current character (charint) */
-  int linenumber;  /* input line counter */
   int lastline;  /* line of last token `consumed' */
 
   Token t;  /* current token */

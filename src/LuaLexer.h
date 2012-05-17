@@ -57,7 +57,7 @@ class LuaLexer {
 public:
 
   LuaLexer() {
-    buffer_.reserve(128);
+    Reset();
   }
 
   void save(char c) {
@@ -84,7 +84,36 @@ public:
 
   std::string getDebugToken(int token);
 
+  int getLineNumber() const {
+    return linenumber_;
+  }
+
+  void incLineNumber() {
+    linenumber_++;
+  }
+
+  void Reset() {
+    buffer_.clear();
+    buffer_.reserve(128);
+    linenumber_ = 1;
+  }
+  
+  const std::vector<std::string>& getErrors() {
+    return errors_;
+  }
+
+  std::vector<std::string>& getErrors2() {
+    return errors_;
+  }
+
+  void clearErrors() {
+    errors_.clear();
+  }
+
 private:
 
   std::vector<char> buffer_;
+  int linenumber_;  /* input line counter */
+
+  std::vector<std::string> errors_;
 };

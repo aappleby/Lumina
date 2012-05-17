@@ -145,7 +145,7 @@ static LuaResult check_match (LexState *ls, int what, int who, int where) {
   int temp;
   testnext(ls, what, temp);
   if (!temp) {
-    if (where == ls->linenumber) {
+    if (where == ls->lexer_.getLineNumber()) {
       result = error_expected(ls, what);
       if(result != LUA_OK) return result;
     }
@@ -809,7 +809,7 @@ static void constructor (LexState *ls, expdesc *t) {
   /* constructor -> '{' [ field { sep field } [sep] ] '}'
      sep -> ',' | ';' */
   FuncState *fs = ls->fs;
-  int line = ls->linenumber;
+  int line = ls->lexer_.getLineNumber();
   int pc = luaK_codeABC(fs, OP_NEWTABLE, 0, 0, 0);
   struct ConsControl cc;
   cc.na = cc.nh = cc.tostore = 0;
@@ -909,7 +909,7 @@ static LuaResult body2 (LexState *ls, expdesc *e, int ismethod, int line) {
   result = statlist(ls);
   if(result != LUA_OK) return result;
 
-  new_fs.f->lastlinedefined = ls->linenumber;
+  new_fs.f->lastlinedefined = ls->lexer_.getLineNumber();
   
   result = check_match(ls, TK_END, TK_FUNCTION, line);
   if(result != LUA_OK) return result;
@@ -1011,7 +1011,7 @@ static LuaResult prefixexp (LexState *ls, expdesc *v) {
   LuaResult result = LUA_OK;
   switch (ls->t.token) {
     case '(': {
-      int line = ls->linenumber;
+      int line = ls->lexer_.getLineNumber();
       result = luaX_next(ls);
       if(result != LUA_OK) return result;
 
@@ -1040,7 +1040,7 @@ static LuaResult prefixexp (LexState *ls, expdesc *v) {
 static LuaResult primaryexp (LexState *ls, expdesc *v) {
   LuaResult result = LUA_OK;
   FuncState *fs = ls->fs;
-  int line = ls->linenumber;
+  int line = ls->lexer_.getLineNumber();
   result = prefixexp(ls, v);
   if(result != LUA_OK) return result;
   for (;;) {
@@ -1119,7 +1119,7 @@ static LuaResult simpleexp (LexState *ls, expdesc *v) {
     case TK_FUNCTION: {
       result = luaX_next(ls);
       if(result != LUA_OK) return result;
-      return body2(ls, v, 0, ls->linenumber);
+      return body2(ls, v, 0, ls->lexer_.getLineNumber());
     }
     default: {
       return primaryexp(ls, v);
@@ -1189,7 +1189,7 @@ static LuaResult subexpr (LexState *ls, expdesc *v, int limit, BinOpr& out) {
 
   UnOpr uop = getunopr(ls->t.token);
   if (uop != OPR_NOUNOPR) {
-    int line = ls->linenumber;
+    int line = ls->lexer_.getLineNumber();
     result = luaX_next(ls);
     if(result != LUA_OK) return result;
     BinOpr temp;
@@ -1207,7 +1207,7 @@ static LuaResult subexpr (LexState *ls, expdesc *v, int limit, BinOpr& out) {
   while (op != OPR_NOBINOPR && priority[op].left > limit) {
     expdesc v2;
     BinOpr nextop;
-    int line = ls->linenumber;
+    int line = ls->lexer_.getLineNumber();
     result = luaX_next(ls);
     if(result != LUA_OK) return result;
     luaK_infix(ls->fs, op, v);
@@ -1365,7 +1365,7 @@ static int cond (LexState *ls) {
 
 static void gotostat (LexState *ls, int pc) {
   LuaResult result = LUA_OK;
-  int line = ls->linenumber;
+  int line = ls->lexer_.getLineNumber();
   LuaString *label;
   int g;
   int temp;
@@ -1586,7 +1586,7 @@ static void forlist (LexState *ls, LuaString *indexname) {
   result = check_next(ls, TK_IN);
   handleResult(result);
 
-  line = ls->linenumber;
+  line = ls->lexer_.getLineNumber();
 
   result = explist(ls, &e, temp);
   handleResult(result);
@@ -1702,7 +1702,7 @@ static void localfunc (LexState *ls) {
   handleResult(result);
   new_localvar(ls, temp);  /* new local variable */
   adjustlocalvars(ls, 1);  /* enter its scope */
-  result = body2(ls, &b, 0, ls->linenumber);  /* function created in next register */
+  result = body2(ls, &b, 0, ls->lexer_.getLineNumber());  /* function created in next register */
   handleResult(result);
   /* debug information will only see the variable after this point! */
   getlocvar(fs, b.info)->startpc = fs->pc;
@@ -1844,7 +1844,7 @@ static LuaResult statement (LexState *ls) {
     return errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
   }
 
-  int line = ls->linenumber;  /* may be needed for error messages */
+  int line = ls->lexer_.getLineNumber();  /* may be needed for error messages */
 
   switch (ls->t.token) {
     case ';': {  /* stat -> ';' (empty statement) */

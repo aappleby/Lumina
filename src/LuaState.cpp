@@ -167,11 +167,10 @@ void LuaThread::restoreState(LuaExecutionState s, int status, int nresults) {
 
 //-----------------------------------------------------------------------------
 
-void LuaThread::PushErrors(ErrorList& errors) {
+void LuaThread::PushErrors(const ErrorList& errors) {
   for(size_t i = 0; i < errors.size(); i++) {
     pushstr(this, errors[i]);
   }
-  errors.clear();
 }
 
 //-----------------------------------------------------------------------------

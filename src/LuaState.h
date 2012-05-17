@@ -29,7 +29,7 @@ public:
   LuaExecutionState saveState(StkId top);
   void restoreState(LuaExecutionState s, int status, int nresults);
 
-  void PushErrors(ErrorList& errors);
+  void PushErrors(const ErrorList& errors);
 
   int status;
   LuaVM *l_G;
@@ -47,8 +47,6 @@ public:
   LuaHook hook;
   
   ptrdiff_t errfunc;  /* current error handling function (stack index) */
-
-  std::vector<std::string> errors_;
 
   void closeUpvals(StkId level);
 };
