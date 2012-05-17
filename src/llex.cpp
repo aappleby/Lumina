@@ -63,34 +63,6 @@ static void save (LexState *ls, int c) {
   ls->lexer_.save((char)c);
 }
 
-const char *luaX_token2str (LexState *ls, int token) {
-  THREAD_CHECK(ls->L);
-  if (token < FIRST_RESERVED) {
-    assert(token == cast(unsigned char, token));
-    return (lisprint(token)) ? luaO_pushfstring(ls->L, LUA_QL("%c"), token) :
-                              luaO_pushfstring(ls->L, "char(%d)", token);
-  }
-  else {
-    const char *s = luaX_tokens[token - FIRST_RESERVED];
-    if (token < TK_EOS) {
-      return luaO_pushfstring(ls->L, LUA_QS, s);
-    }
-    else {
-      return s;
-    }
-  }
-}
-
-/*
-static LuaResult lexerror (LexState *ls,
-                           const char *msg,
-                           int token) {
-  ls->lexer_.RecordLexError(msg, token);
-  return LUA_ERRSYNTAX;
-}
-*/
-
-
 LuaResult luaX_syntaxerror (LexState *ls, const char *msg) {
   THREAD_CHECK(ls->L);
   ls->lexer_.RecordLexError(msg, ls->t.token);

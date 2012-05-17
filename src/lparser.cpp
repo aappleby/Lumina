@@ -65,9 +65,9 @@ static LuaResult semerror (LexState *ls, const char *msg) {
 
 
 static LuaResult error_expected (LexState *ls, int token) {
-  const char* token_text = luaX_token2str(ls, token);
-  const char* text = luaO_pushfstring(ls->L, "%s expected", token_text);
-  return luaX_syntaxerror(ls, text);
+  std::string text1 = ls->lexer_.getDebugToken(token);
+  std::string text2 = StringPrintf("%s expected", text1.c_str());
+  return luaX_syntaxerror(ls, text2.c_str());
 }
 
 
@@ -141,10 +141,10 @@ static LuaResult check_match (LexState *ls, int what, int who, int where) {
       if(result != LUA_OK) return result;
     }
     else {
-      const char* what_token = luaX_token2str(ls, what);
-      const char* who_token = luaX_token2str(ls, who);
-      const char* text = luaO_pushfstring(ls->L, "%s expected (to close %s at line %d)", what_token, who_token, where);
-      result = luaX_syntaxerror(ls, text);
+      std::string what_token = ls->lexer_.getDebugToken(what);
+      std::string who_token = ls->lexer_.getDebugToken(who);
+      std::string text = StringPrintf("%s expected (to close %s at line %d)", what_token.c_str(), who_token.c_str(), where);
+      result = luaX_syntaxerror(ls, text.c_str());
       if(result != LUA_OK) return result;
     }
   }

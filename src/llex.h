@@ -50,7 +50,6 @@ LuaString *luaX_newstring (LexState *ls, const char *str, size_t l);
 LuaResult luaX_next (LexState *ls);
 LuaResult luaX_lookahead (LexState *ls, int& out);
 LuaResult luaX_syntaxerror (LexState *ls, const char *s);
-const char *luaX_token2str (LexState *ls, int token);
 
 
 #endif

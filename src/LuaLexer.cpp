@@ -8,7 +8,7 @@
 extern const char* luaX_tokens[];
 extern int luaX_tokens_count;
 
-
+// Converts the current token into a debug-output-friendly form.
 std::string LuaLexer::getDebugToken(int token) {
   if((token == TK_NAME) || (token == TK_STRING) || (token == TK_NUMBER)) {
       std::string temp(buffer_.begin(), buffer_.end());
