@@ -37,7 +37,6 @@ public:
   Zio *z;  /* input stream */
 
   struct Dyndata *dyd;  /* dynamic structures used by the parser */
-  std::string source_;
   LuaString *envn;  /* environment variable name */
   char decpoint;  /* locale decimal point */
 

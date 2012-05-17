@@ -57,7 +57,7 @@ class LuaLexer {
 public:
 
   LuaLexer() {
-    Reset();
+    Reset(NULL);
   }
 
   void save(char c) {
@@ -92,7 +92,13 @@ public:
     linenumber_++;
   }
 
-  void Reset() {
+  void Reset(const char* source) {
+    if(source) {
+      source_ = source;
+    }
+    else {
+      source_.clear();
+    }
     buffer_.clear();
     buffer_.reserve(128);
     linenumber_ = 1;
@@ -110,7 +116,15 @@ public:
     errors_.clear();
   }
 
+  const std::string& getSource() {
+    return source_;
+  }
+
+  void RecordLexError(const char* msg, int token);
+
 private:
+
+  std::string source_;
 
   std::vector<char> buffer_;
   int linenumber_;  /* input line counter */

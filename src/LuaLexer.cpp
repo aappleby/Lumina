@@ -38,3 +38,17 @@ std::string LuaLexer::getDebugToken(int token) {
       return luaX_token2str2(token);
   }
 }
+
+void LuaLexer::RecordLexError(const char *msg, int token) {
+  std::string buff = luaO_chunkid2(source_.c_str());
+
+  if (token) {
+    std::string temp3 = getDebugToken(token);
+    std::string temp2 = StringPrintf("%s:%d: %s near %s", buff.c_str(), linenumber_, msg, temp3.c_str());
+    errors_.push_back(temp2);
+  }
+  else {
+    std::string temp1 = StringPrintf("%s:%d: %s", buff.c_str(), linenumber_, msg);
+    errors_.push_back(temp1);
+  }
+}

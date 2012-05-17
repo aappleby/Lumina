@@ -43,6 +43,7 @@ public:
   LuaStringTable();
   ~LuaStringTable();
 
+  LuaString* Create(const std::string& str);
   LuaString* Create(const char* str);
   LuaString* Create(const char* str, int len);
 

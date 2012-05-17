@@ -105,8 +105,11 @@ void LuaStringTable::Resize(int newsize) {
 
 //-----------------------------------------------------------------------------
 
-LuaString* LuaStringTable::Create( const char* str )
-{
+LuaString* LuaStringTable::Create(const std::string& str) {
+  return Create(str.c_str(), str.size());
+}
+
+LuaString* LuaStringTable::Create(const char* str) {
   return Create(str, strlen(str));
 }
 

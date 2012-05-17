@@ -584,7 +584,7 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   handleResult(result);
 
   fs->f = f;
-  f->source = ls->L->l_G->strings_->Create(ls->source_.c_str(), ls->source_.size());
+  f->source = ls->L->l_G->strings_->Create(ls->lexer_.getSource());
   f->maxstacksize = 2;  /* registers 0/1 are always valid */
 
   fs->constant_map = new LuaTable();
