@@ -151,6 +151,27 @@ static LuaResult check_match (LexState *ls, int what, int who, int where) {
   return result;
 }
 
+/*
+** creates a new string and anchors it in function's table so that
+** it will not be collected until the end of the function's compilation
+** (by that time it should be anchored in function's prototype)
+*/
+LuaString *luaX_newstring (LexState *ls, const char *str, size_t l) {
+
+  LuaString* ts = thread_G->strings_->Create(str, l);  /* create new string */
+
+  // TODO(aappleby): Save string in 'ls->fs->h'. Why it does so exactly this way, I don't
+  // know. Will have to investigate in the future.
+  LuaValue s(ts);
+  ls->fs->constant_map->set(s, LuaValue(true));
+
+  luaC_barrierback(ls->fs->constant_map, s);
+
+  return ts;
+}
+
+
+
 
 static LuaResult str_checkname (LexState *ls, LuaString*& out) {
   LuaResult result = LUA_OK;
@@ -495,10 +516,11 @@ static void breaklabel (LexState *ls) {
 */
 static l_noret undefgoto (LexState *ls, Labeldesc *gt) {
   LuaResult result = LUA_OK;
-  const char *msg = (gt->name->getReserved() > 0)
+  const char* name = gt->name->c_str();
+  const char *msg = (strcmp(name, "break") == 0)
                     ? "<%s> at line %d not inside a loop"
                     : "no visible label " LUA_QS " for <goto> at line %d";
-  msg = luaO_pushfstring(ls->L, msg, gt->name->c_str(), gt->line);
+  msg = luaO_pushfstring(ls->L, msg, name, gt->line);
   result = semerror(ls, msg);
   handleResult(result);
 }

@@ -31,34 +31,6 @@
 #define currIsNewline(ls)	(ls->current_ == '\n' || ls->current_ == '\r')
 
 
-/* ORDER RESERVED */
-const char* luaX_tokens[] = {
-    "and", "break", "do", "else", "elseif",
-    "end", "false", "for", "function", "goto", "if",
-    "in", "local", "nil", "not", "or", "repeat",
-    "return", "then", "true", "until", "while",
-    "..", "...", "==", ">=", "<=", "~=", "::", "<eof>",
-    "<number>", "<name>", "<string>"
-};
-
-int luaX_tokens_count = sizeof(luaX_tokens) / sizeof(luaX_tokens[0]);
-
-void Token::setString(const char* s, size_t len) {
-  text_ = std::string(s,len);
-  reserved_ = 0;
-  // TODO(aappleby): Searching this list for every token will probably slow the lexer down...
-  for(int i = 0; i < luaX_tokens_count; i++) {
-    if(strcmp(text_.c_str(), luaX_tokens[i]) == 0) {
-      reserved_ = i+1;
-      break;
-    }
-  }
-}
-
-int Token::getReserved() {
-  return reserved_;
-}
-
 static void save (LexState *ls, int c) {
   ls->lexer_.save((char)c);
 }
@@ -69,26 +41,6 @@ LuaResult luaX_syntaxerror (LexState *ls, const char *msg) {
   ls->L->PushErrors(ls->lexer_.getErrors());
   ls->lexer_.clearErrors();
   return LUA_ERRSYNTAX;
-}
-
-
-/*
-** creates a new string and anchors it in function's table so that
-** it will not be collected until the end of the function's compilation
-** (by that time it should be anchored in function's prototype)
-*/
-LuaString *luaX_newstring (LexState *ls, const char *str, size_t l) {
-
-  LuaString* ts = thread_G->strings_->Create(str, l);  /* create new string */
-
-  // TODO(aappleby): Save string in 'ls->fs->h'. Why it does so exactly this way, I don't
-  // know. Will have to investigate in the future.
-  LuaValue s(ts);
-  ls->fs->constant_map->set(s, LuaValue(true));
-
-  luaC_barrierback(ls->fs->constant_map, s);
-
-  return ts;
 }
 
 

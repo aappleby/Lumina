@@ -16,9 +16,6 @@ public:
   size_t getLen() const { return len_; }
   const char* c_str() const { return buf_; }
 
-  int getReserved() const { return reserved_; }
-  void setReserved(int r) { reserved_ = r; }
-
   virtual void VisitGC(LuaGCVisitor& visitor);
   virtual int PropagateGC(LuaGCVisitor& visitor);
 
@@ -31,7 +28,6 @@ protected:
   friend class LuaStringTable;
 
   char* buf_;
-  int reserved_;
   uint32_t hash_;
   size_t len_;  /* number of characters in string */
 

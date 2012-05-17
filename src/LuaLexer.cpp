@@ -5,8 +5,33 @@
 
 #include <assert.h>
 
-extern const char* luaX_tokens[];
-extern int luaX_tokens_count;
+/* ORDER RESERVED */
+const char* luaX_tokens[] = {
+    "and", "break", "do", "else", "elseif",
+    "end", "false", "for", "function", "goto", "if",
+    "in", "local", "nil", "not", "or", "repeat",
+    "return", "then", "true", "until", "while",
+    "..", "...", "==", ">=", "<=", "~=", "::", "<eof>",
+    "<number>", "<name>", "<string>"
+};
+
+int luaX_tokens_count = sizeof(luaX_tokens) / sizeof(luaX_tokens[0]);
+
+void Token::setString(const char* s, size_t len) {
+  text_ = std::string(s,len);
+  reserved_ = 0;
+  // TODO(aappleby): Searching this list for every token will probably slow the lexer down...
+  for(int i = 0; i < luaX_tokens_count; i++) {
+    if(strcmp(text_.c_str(), luaX_tokens[i]) == 0) {
+      reserved_ = i+1;
+      break;
+    }
+  }
+}
+
+int Token::getReserved() {
+  return reserved_;
+}
 
 // Converts the current token into a debug-output-friendly form.
 std::string LuaLexer::getDebugToken(int token) {

@@ -23,7 +23,6 @@ uint32_t hashString(const char* str, size_t len) {
 LuaString::LuaString(uint32_t hash, const char* str, int len)
 : LuaObject(LUA_TSTRING),
   buf_(NULL),
-  reserved_(0),
   hash_(hash),
   len_(len)
 {

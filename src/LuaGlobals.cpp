@@ -118,13 +118,6 @@ LuaVM::LuaVM()
     tagmethod_names_[i]->setFixed();
   }
 
-  // Create lexer reserved word strings.
-  for (int i = 0; i < luaX_tokens_count; i++) {
-    LuaString *ts = strings_->Create(luaX_tokens[i]);
-    ts->setFixed();
-    ts->setReserved(i+1);
-  }
-
   // Store global table in global table. Why?
   globals->set("_G", LuaValue(globals) );
 
