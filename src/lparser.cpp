@@ -658,7 +658,7 @@ static LuaResult open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
 }
 
 
-static void close_func (LexState *ls) {
+static LuaResult close_func (LexState *ls) {
   LuaResult result = LUA_OK;
 
   LuaThread *L = ls->L;
@@ -667,7 +667,7 @@ static void close_func (LexState *ls) {
   luaK_ret(fs, 0, 0);  /* final return */
   
   result = leaveblock(fs);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   f->instructions_.resize_nocheck(fs->pc);
   f->lineinfo.resize_nocheck(fs->pc);
@@ -680,6 +680,8 @@ static void close_func (LexState *ls) {
   ls->fs = fs->prev;
   L->stack_.pop();  /* pop table of constants */
   L->stack_.pop();  /* pop prototype (after possible collection) */
+
+  return result;
 }
 
 
@@ -687,16 +689,16 @@ static void close_func (LexState *ls) {
 ** opens the main function, which is a regular vararg function with an
 ** upvalue named LUA_ENV
 */
-static void open_mainfunc (LexState *ls, FuncState *fs, BlockCnt *bl) {
+static LuaResult open_mainfunc (LexState *ls, FuncState *fs, BlockCnt *bl) {
   LuaResult result = LUA_OK;
   expdesc v;
   result = open_func(ls, fs, bl);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   fs->f->is_vararg = true;  /* main function is always vararg */
   init_exp(&v, VLOCAL, 0);
   int temp;
   result = newupvalue(fs, ls->envn, &v, temp);  /* create environment upvalue */
-  handleResult(result);
+  return result;
 }
 
 
@@ -737,33 +739,37 @@ static LuaResult statlist (LexState *ls) {
 }
 
 
-static void fieldsel (LexState *ls, expdesc *v) {
+static LuaResult fieldsel (LexState *ls, expdesc *v) {
   LuaResult result = LUA_OK;
   /* fieldsel -> ['.' | ':'] NAME */
   FuncState *fs = ls->fs;
   expdesc key;
   luaK_exp2anyregup(fs, v);
+  
   result = luaX_next(ls);  /* skip the dot or colon */
-  handleResult(result);
+  if(result != LUA_OK) return result;
+
   result = checkname(ls, &key);
-  handleResult(result);
+  if(result != LUA_OK) return result;
+
   luaK_indexed(fs, v, &key);
+  return result;
 }
 
 
-static void yindex (LexState *ls, expdesc *v) {
+static LuaResult yindex (LexState *ls, expdesc *v) {
   LuaResult result = LUA_OK;
   /* index -> '[' expr ']' */
   result = luaX_next(ls);  /* skip the '[' */
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   result = expr(ls, v);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   
   luaK_exp2val(ls->fs, v);
   
   result = check_next(ls, ']');
-  handleResult(result);
+  return result;
 }
 
 
@@ -783,7 +789,7 @@ struct ConsControl {
 };
 
 
-static void recfield (LexState *ls, struct ConsControl *cc) {
+static LuaResult recfield (LexState *ls, struct ConsControl *cc) {
   LuaResult result = LUA_OK;
   /* recfield -> (NAME | `['exp1`]') = exp1 */
   FuncState *fs = ls->fs;
@@ -792,20 +798,24 @@ static void recfield (LexState *ls, struct ConsControl *cc) {
   int rkkey;
   if (ls->t.token == TK_NAME) {
     result = checklimit(fs, cc->nh, MAX_INT, "items in a constructor");
-    handleResult(result);
+    if(result != LUA_OK) return result;
     result = checkname(ls, &key);
-    handleResult(result);
+    if(result != LUA_OK) return result;
   }
-  else  /* ls->t.token == '[' */
-    yindex(ls, &key);
+  else {
+    /* ls->t.token == '[' */
+    result = yindex(ls, &key);
+    if(result != LUA_OK) return result;
+  }
   cc->nh++;
   result = check_next(ls, '=');
-  handleResult(result);
+  if(result != LUA_OK) return result;
   rkkey = luaK_exp2RK(fs, &key);
   result = expr(ls, &val);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   luaK_codeABC(fs, OP_SETTABLE, cc->t->info, rkkey, luaK_exp2RK(fs, &val));
   fs->freereg = reg;  /* free registers */
+  return result;
 }
 
 
@@ -835,41 +845,50 @@ static void lastlistfield (FuncState *fs, struct ConsControl *cc) {
 }
 
 
-static void listfield (LexState *ls, struct ConsControl *cc) {
+static LuaResult listfield (LexState *ls, struct ConsControl *cc) {
   LuaResult result = LUA_OK;
   /* listfield -> exp */
   result = expr(ls, &cc->v);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   result = checklimit(ls->fs, cc->na, MAX_INT, "items in a constructor");
-  handleResult(result);
+  if(result != LUA_OK) return result;
   cc->na++;
   cc->tostore++;
+  return result;
 }
 
 
-static void field (LexState *ls, struct ConsControl *cc) {
+static LuaResult field2 (LexState *ls, struct ConsControl *cc) {
   LuaResult result = LUA_OK;
   /* field -> listfield | recfield */
   switch(ls->t.token) {
     case TK_NAME: {  /* may be 'listfield' or 'recfield' */
       int temp;
       result = luaX_lookahead(ls, temp);
-      handleResult(result);
-      if (temp != '=')  // expression?
-        listfield(ls, cc);
-      else
-        recfield(ls, cc);
+      if(result != LUA_OK) return result;
+      // expression?
+      if (temp != '=') {
+        result = listfield(ls, cc);
+        if(result != LUA_OK) return result;
+      }
+      else {
+        result = recfield(ls, cc);
+        if(result != LUA_OK) return result;
+      }
       break;
     }
     case '[': {
-      recfield(ls, cc);
+      result = recfield(ls, cc);
+      if(result != LUA_OK) return result;
       break;
     }
     default: {
-      listfield(ls, cc);
+      result = listfield(ls, cc);
+      if(result != LUA_OK) return result;
       break;
     }
   }
+  return result;
 }
 
 
@@ -895,7 +914,8 @@ static void constructor (LexState *ls, expdesc *t) {
     assert(cc.v.k == VVOID || cc.tostore > 0);
     if (ls->t.token == '}') break;
     closelistfield(fs, &cc);
-    field(ls, &cc);
+    result = field2(ls, &cc);
+    handleResult(result);
     result = testnext(ls, ',', temp1);
     handleResult(result);
     result = testnext(ls, ';', temp2);
@@ -991,7 +1011,7 @@ static LuaResult body2 (LexState *ls, expdesc *e, int ismethod, int line) {
   if(result != LUA_OK) return result;
 
   codeclosure(ls, new_fs.f, e);
-  close_func(ls);
+  result = close_func(ls);
   return result;
 }
 
@@ -1123,13 +1143,15 @@ static LuaResult primaryexp (LexState *ls, expdesc *v) {
   for (;;) {
     switch (ls->t.token) {
       case '.': {  /* fieldsel */
-        fieldsel(ls, v);
+        result = fieldsel(ls, v);
+        if(result != LUA_OK) return result;
         break;
       }
       case '[': {  /* `[' exp1 `]' */
         expdesc key;
         luaK_exp2anyregup(fs, v);
-        yindex(ls, &key);
+        result = yindex(ls, &key);
+        if(result != LUA_OK) return result;
         luaK_indexed(fs, v, &key);
         break;
       }
@@ -1860,11 +1882,14 @@ static LuaResult funcname (LexState *ls, expdesc *v, int& out) {
   int ismethod = 0;
   result = singlevar(ls, v);
   if(result != LUA_OK) return result;
-  while (ls->t.token == '.')
-    fieldsel(ls, v);
+  while (ls->t.token == '.') {
+    result = fieldsel(ls, v);
+    if(result != LUA_OK) return result;
+  }
   if (ls->t.token == ':') {
     ismethod = 1;
-    fieldsel(ls, v);
+    result = fieldsel(ls, v);
+    if(result != LUA_OK) return result;
   }
   out = ismethod;
   return result;
@@ -2071,7 +2096,10 @@ LuaResult luaY_parser (LuaThread *L,
   lexstate.dyd = dyd;
   dyd->actvar.n = dyd->gt.n = dyd->label.n = 0;
   luaX_setinput(L, &lexstate, z, tname);
-  open_mainfunc(&lexstate, &funcstate, &bl);
+  
+  result = open_mainfunc(&lexstate, &funcstate, &bl);
+  if(result != LUA_OK) return result;
+
   result = luaX_next(&lexstate);  /* read first token */
   if(result != LUA_OK) return result;
   
@@ -2081,7 +2109,9 @@ LuaResult luaY_parser (LuaThread *L,
   result = check_token(&lexstate, TK_EOS);
   if(result != LUA_OK) return result;
 
-  close_func(&lexstate);
+  result = close_func(&lexstate);
+  if(result != LUA_OK) return result;
+
   L->stack_.pop();  /* pop name */
   assert(!funcstate.prev && funcstate.num_upvals == 1 && !lexstate.fs);
   /* all scopes should be correctly finished */
