@@ -552,19 +552,17 @@ static LuaResult breaklabel (LexState *ls) {
 ** generates an error for an undefined 'goto'; choose appropriate
 ** message when label name is a reserved word (which can only be 'break')
 */
-static l_noret undefgoto (LexState *ls, Labeldesc *gt) {
-  LuaResult result = LUA_OK;
+static LuaResult undefgoto (LexState *ls, Labeldesc *gt) {
   const char* name = gt->name->c_str();
   const char *msg = (strcmp(name, "break") == 0)
                     ? "<%s> at line %d not inside a loop"
                     : "no visible label " LUA_QS " for <goto> at line %d";
   msg = luaO_pushfstring(ls->L, msg, name, gt->line);
-  result = semerror(ls, msg);
-  handleResult(result);
+  return semerror(ls, msg);
 }
 
 
-static void leaveblock (FuncState *fs) {
+static LuaResult leaveblock (FuncState *fs) {
   LuaResult result = LUA_OK;
   BlockCnt *bl = fs->bl;
   LexState *ls = fs->ls;
@@ -576,7 +574,7 @@ static void leaveblock (FuncState *fs) {
   }
   if (bl->isloop) {
     result = breaklabel(ls);  /* close pending breaks */
-    handleResult(result);
+    if(result != LUA_OK) return result;
   }
   fs->bl = bl->previous;
   removevars(fs, bl->nactvar);
@@ -586,12 +584,14 @@ static void leaveblock (FuncState *fs) {
   if (bl->previous) {
     /* inner block? */
     result = movegotosout(fs, bl);  /* update pending gotos to outer block */
-    handleResult(result);
+    if(result != LUA_OK) return result;
   }
   else if (bl->firstgoto < ls->dyd->gt.n) {
     /* pending gotos in outer block? */
-    undefgoto(ls, &ls->dyd->gt.arr[bl->firstgoto]);  /* error */
+    result = undefgoto(ls, &ls->dyd->gt.arr[bl->firstgoto]);  /* error */
+    if(result != LUA_OK) return result;
   }
+  return result;
 }
 
 
@@ -616,7 +616,8 @@ static void codeclosure (LexState *ls, LuaProto *clp, expdesc *v) {
 }
 
 
-static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
+static LuaResult open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
+  LuaResult result = LUA_OK;
 
   LuaThread *L = ls->L;
 
@@ -639,8 +640,8 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   f->linkGC(getGlobalGCList());
 
   /* anchor prototype (to avoid being collected) */
-  LuaResult result = L->stack_.push_reserve2(LuaValue(f));
-  handleResult(result);
+  result = L->stack_.push_reserve2(LuaValue(f));
+  if(result != LUA_OK) return result;
 
   fs->f = f;
   f->source = ls->L->l_G->strings_->Create(ls->lexer_.getSource());
@@ -650,18 +651,23 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   /* anchor table of constants (to avoid being collected) */
   
   result = L->stack_.push_reserve2(LuaValue(fs->constant_map));
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   enterblock(fs, bl, 0);
+  return result;
 }
 
 
 static void close_func (LexState *ls) {
+  LuaResult result = LUA_OK;
+
   LuaThread *L = ls->L;
   FuncState *fs = ls->fs;
   LuaProto *f = fs->f;
   luaK_ret(fs, 0, 0);  /* final return */
-  leaveblock(fs);
+  
+  result = leaveblock(fs);
+  handleResult(result);
 
   f->instructions_.resize_nocheck(fs->pc);
   f->lineinfo.resize_nocheck(fs->pc);
@@ -684,7 +690,8 @@ static void close_func (LexState *ls) {
 static void open_mainfunc (LexState *ls, FuncState *fs, BlockCnt *bl) {
   LuaResult result = LUA_OK;
   expdesc v;
-  open_func(ls, fs, bl);
+  result = open_func(ls, fs, bl);
+  handleResult(result);
   fs->f->is_vararg = true;  /* main function is always vararg */
   init_exp(&v, VLOCAL, 0);
   int temp;
@@ -955,7 +962,9 @@ static LuaResult body2 (LexState *ls, expdesc *e, int ismethod, int line) {
   /* body ->  `(' parlist `)' block END */
   FuncState new_fs;
   BlockCnt bl;
-  open_func(ls, &new_fs, &bl);
+  result = open_func(ls, &new_fs, &bl);
+  if(result != LUA_OK) return result;
+
   new_fs.f->linedefined = line;
 
   result = check_next(ls, '(');
@@ -1320,7 +1329,7 @@ static LuaResult block2 (LexState *ls) {
   result = statlist(ls);
   if(result != LUA_OK) return result;
 
-  leaveblock(fs);
+  result = leaveblock(fs);
   return result;
 }
 
@@ -1522,7 +1531,8 @@ static void whilestat (LexState *ls, int line) {
   luaK_jumpto(fs, whileinit);
   result = check_match(ls, TK_END, TK_WHILE, line);
   handleResult(result);
-  leaveblock(fs);
+  result = leaveblock(fs);
+  handleResult(result);
   luaK_patchtohere(fs, condexit);  /* false conditions finish the loop */
 }
 
@@ -1547,9 +1557,11 @@ static void repeatstat (LexState *ls, int line) {
   condexit = cond(ls);  /* read condition (inside scope block) */
   if (bl2.upval)  /* upvalues? */
     luaK_patchclose(fs, condexit, bl2.nactvar);
-  leaveblock(fs);  /* finish scope */
+  result = leaveblock(fs);  /* finish scope */
+  handleResult(result);
   luaK_patchlist(fs, condexit, repeat_init);  /* close the loop */
-  leaveblock(fs);  /* finish loop */
+  result = leaveblock(fs);  /* finish loop */
+  handleResult(result);
 }
 
 
@@ -1584,7 +1596,8 @@ static void forbody (LexState *ls, int base, int line, int nvars, int isnum) {
   result = block2(ls);
   handleResult(result);
 
-  leaveblock(fs);  /* end of scope for declared variables */
+  result = leaveblock(fs);  /* end of scope for declared variables */
+  handleResult(result);
   luaK_patchtohere(fs, prep);
   if (isnum)  /* numeric for? */
     endfor = luaK_codeAsBx(fs, OP_FORLOOP, base, NO_JUMP);
@@ -1714,7 +1727,8 @@ static void forstat (LexState *ls, int line) {
   result = check_match(ls, TK_END, TK_FOR, line);
   handleResult(result);
 
-  leaveblock(fs);  /* loop scope (`break' jumps to this point) */
+  result = leaveblock(fs);  /* loop scope (`break' jumps to this point) */
+  handleResult(result);
 }
 
 
@@ -1741,7 +1755,8 @@ static void test_then_block (LexState *ls, int *escapelist) {
     enterblock(fs, &bl, 0);  /* must enter block before 'goto' */
     gotostat(ls, v.t);  /* handle goto/break */
     if (block_follow(ls, 0)) {  /* 'goto' is the entire block? */
-      leaveblock(fs);
+      result = leaveblock(fs);
+      handleResult(result);
       return;  /* and that is it */
     }
     else  /* must skip over 'then' part if condition is false */
@@ -1755,7 +1770,8 @@ static void test_then_block (LexState *ls, int *escapelist) {
   result = statlist(ls);  /* `then' part */
   handleResult(result);
 
-  leaveblock(fs);
+  result = leaveblock(fs);
+  handleResult(result);
   if (ls->t.token == TK_ELSE ||
       ls->t.token == TK_ELSEIF)  /* followed by 'else'/'elseif'? */
     luaK_concat(fs, escapelist, luaK_jump(fs));  /* must jump over it */
