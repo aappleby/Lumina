@@ -28,16 +28,28 @@ public:
   int getc();
   size_t read(void* b, size_t n);
 
+  template<typename T>
+  T read() {
+    T t = 0;
+    read(&t, sizeof(T));
+    return t;
+  }
+
   void skip(size_t len);
 
   bool empty() {
     return cursor_ == buffer_.size();
   }
 
+  bool error() {
+    return error_;
+  }
+
 private:
 
   std::vector<char> buffer_;
   size_t cursor_;
+  bool error_;
 };
 
 #endif

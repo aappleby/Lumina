@@ -6,6 +6,7 @@
 
 #include "lzio.h"
 
+#include <assert.h>
 #include <string.h>
 
 //------------------------------------------------------------------------------
@@ -16,6 +17,7 @@ void Zio::init(const char* buffer, size_t len) {
     memcpy(&buffer_[0], buffer, len);
   }
   cursor_ = 0;
+  error_ = false;
 }
 
 int Zio::next() {
@@ -30,31 +32,37 @@ int Zio::getc() {
 }
 
 size_t Zio::read (void* buf, size_t len) {
-  char* out = (char*)buf;
-  while (len) {
-    if (empty()) return len;
-
-    size_t left = buffer_.size() - cursor_;
-    size_t m = (len < left) ? len : left;
-    memcpy(out, &buffer_[cursor_], m);
-
-    cursor_ += m;
-    out += m;
-    len -= m;
+  size_t left = buffer_.size() - cursor_;
+  if(left < len) {
+    memset(buf, 0, len);
+    error_ = true;
+    return len;
   }
+
+  memcpy(buf, &buffer_[cursor_], len);
+  cursor_ += len;
+
   return 0;
 }
 
 std::string Zio::next(size_t len) {
-
   size_t left = buffer_.size() - cursor_;
-  size_t m = (len < left) ? len : left;
+  if(len > left) {
+    error_ = true;
+    return "";
+  }
 
   return std::string(buffer_.begin() + cursor_,
-                     buffer_.begin() + cursor_ + m);
+                     buffer_.begin() + cursor_ + len);
 }
 
 void Zio::skip(size_t len) {
+  size_t left = buffer_.size() - cursor_;
+  if(len > left) {
+    error_ = true;
+    return;
+  }
+
   cursor_ += len;
   if(cursor_ > buffer_.size()) cursor_ = buffer_.size();
 }

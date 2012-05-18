@@ -8,9 +8,9 @@ public:
   LuaObject(LuaType type);
   virtual ~LuaObject();
 
-  void linkGC(LuaList& gclist);
-  void linkGC(LuaList& list, LuaObject* prev, LuaObject* next);
-  void unlinkGC(LuaList& gclist);
+  virtual void linkGC(LuaList& gclist);
+  virtual void linkGC(LuaList& list, LuaObject* prev, LuaObject* next);
+  virtual void unlinkGC(LuaList& gclist);
 
   enum Color {
     WHITE0 = 1,

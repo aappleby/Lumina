@@ -23,119 +23,71 @@
 struct LoadState {
  LuaThread* L;
  Zio* Z;
- std::vector<char> b_;
  const char* name;
 };
 
-static LuaResult error3(LoadState* S, const char* why)
-{
-  luaO_pushfstring(S->L,"%s: %s precompiled chunk",S->name,why);
-  return LUA_ERRSYNTAX;
+static LuaProto* LoadFunction(LoadState* S);
+
+template<class T>
+void LoadVector(Zio* z, LuaVector<T>& v) {
+  int n = z->read<int>();
+  v.resize_nocheck(n);
+  z->read(v.begin(), n * sizeof(T));
 }
 
-#define LoadByte(S)		(uint8_t)LoadChar(S)
-#define LoadVar(S,x)		LoadMem(S,&x,1,sizeof(x))
-#define LoadVector(S,b,n,size)	LoadMem(S,b,n,size)
-
-static void LoadBlock(LoadState* S, void* b, size_t size)
+static LuaString* LoadString(Zio* z)
 {
-  LuaResult result = LUA_OK;
-  if (S->Z->read(b,size)!=0) {
-    result = error3(S, "truncated");
-    handleResult(result);
-  }
-}
-
-static void LoadMem(LoadState* S, void* b, int n, size_t size) {
-  return LoadBlock(S,b,n*size);
-}
-
-static int LoadChar(LoadState* S)
-{
-  char x;
-  LoadVar(S,x);
-  return x;
-}
-
-static int LoadInt(LoadState* S)
-{
-  LuaResult result = LUA_OK;
-  int x;
-  LoadVar(S,x);
-  if(x < 0) {
-    result = error3(S,"corrupted");
-    handleResult(result);
-  }
-  return x;
-}
-
-static double LoadNumber(LoadState* S)
-{
-  double x;
-  LoadVar(S,x);
-  return x;
-}
-
-static LuaString* LoadString(LoadState* S)
-{
-  size_t size;
-  LoadVar(S,size);
+  size_t size = z->read<size_t>();
   if (size==0) {
     return NULL;
   }
   else {
-    S->b_.resize(size);
-    LoadBlock(S,&S->b_[0],size*sizeof(char));
-    return thread_G->strings_->Create(&S->b_[0],size-1); /* remove trailing '\0' */
+    std::vector<char> buf;
+    buf.resize(size);
+    z->read(&buf[0],size * sizeof(char));
+    return thread_G->strings_->Create(&buf[0], size-1); /* remove trailing '\0' */
   }
 }
 
-static void LoadCode(LoadState* S, LuaProto* f)
-{
-  int n=LoadInt(S);
-  f->instructions_.resize_nocheck(n);
-  LoadVector(S,&f->instructions_[0],n,sizeof(Instruction));
-}
-
-static LuaProto* LoadFunction(LoadState* S);
-
 static void LoadConstants(LoadState* S, LuaProto* f)
 {
-  int i,n;
-  n=LoadInt(S);
+  Zio* z = S->Z;
+  int n = z->read<int>();
   f->constants.resize_nocheck(n);
 
-  for (i=0; i<n; i++)
+  for (int i=0; i < n; i++)
   {
-    switch(LoadChar(S))
+    switch(z->read<char>())
     {
     case LUA_TNIL:
       f->constants[i] = LuaValue::Nil();
       break;
-    case LUA_TBOOLEAN:
-      f->constants[i] = LoadChar(S) ? true : false;
+    case LUA_TBOOLEAN: {
+      f->constants[i] = z->read<char>() ? true : false;
       break;
-    case LUA_TNUMBER:
-      f->constants[i] = LoadNumber(S);
+    }
+    case LUA_TNUMBER: {
+      f->constants[i] = z->read<double>();
       break;
+    }
     case LUA_TSTRING:
-      f->constants[i] = LoadString(S);
+      f->constants[i] = LoadString(z);
       break;
     default:
       f->constants[i] = LuaValue::Nil();
     }
   }
-  n=LoadInt(S);
 
+  n = z->read<int>();
   f->subprotos_.resize_nocheck(n);
 
-  for (i=0; i<n; i++) f->subprotos_[i]=NULL;
-  for (i=0; i<n; i++) f->subprotos_[i]=LoadFunction(S);
+  for (int i=0; i < n; i++) f->subprotos_[i] = NULL;
+  for (int i=0; i < n; i++) f->subprotos_[i] = LoadFunction(S);
 }
 
-static void LoadUpvalues(LoadState* S, LuaProto* f)
+static void LoadUpvalues(Zio* z, LuaProto* f)
 {
-  int n=LoadInt(S);
+  int n = z->read<int>();
 
   f->upvalues.resize_nocheck(n);
   
@@ -144,21 +96,18 @@ static void LoadUpvalues(LoadState* S, LuaProto* f)
   }
 
   for (int i=0; i<n; i++) {
-    f->upvalues[i].instack=LoadByte(S);
-    f->upvalues[i].idx=LoadByte(S);
+    f->upvalues[i].instack = z->read<uint8_t>();
+    f->upvalues[i].idx = z->read<uint8_t>();
   }
 }
 
-static void LoadDebug(LoadState* S, LuaProto* f)
+static void LoadDebug(Zio* z, LuaProto* f)
 {
-  f->source=LoadString(S);
-  int n = LoadInt(S);
+  f->source = LoadString(z);
 
-  f->lineinfo.resize_nocheck(n);
+  LoadVector(z, f->lineinfo);
 
-  LoadVector(S,f->lineinfo.begin(),n,sizeof(int));
-  n=LoadInt(S);
-
+  int n = z->read<int>();
   f->locvars.resize_nocheck(n);
 
   for (int i=0; i < n; i++) {
@@ -167,34 +116,39 @@ static void LoadDebug(LoadState* S, LuaProto* f)
 
   for (int i=0; i < n; i++)
   {
-    f->locvars[i].varname=LoadString(S);
-    f->locvars[i].startpc=LoadInt(S);
-    f->locvars[i].endpc=LoadInt(S);
+    f->locvars[i].varname = LoadString(z);
+    f->locvars[i].startpc = z->read<int>();
+    f->locvars[i].endpc = z->read<int>();
   }
 
-  n=LoadInt(S);
+  n = z->read<int>();
 
   for (int i=0; i < n; i++) {
-    f->upvalues[i].name=LoadString(S);
+    f->upvalues[i].name = LoadString(z);
   }
 }
 
 static LuaProto* LoadFunction(LoadState* S)
 {
+  Zio* z = S->Z;
+
   LuaProto* f = new LuaProto();
   f->linkGC(getGlobalGCList());
   LuaResult result = S->L->stack_.push_reserve2(LuaValue(f));
   handleResult(result);
 
-  f->linedefined=LoadInt(S);
-  f->lastlinedefined=LoadInt(S);
-  f->numparams=LoadByte(S);
-  f->is_vararg=LoadByte(S) ? true : false;
-  f->maxstacksize=LoadByte(S);
-  LoadCode(S,f);
+  f->linedefined = z->read<int>();
+  f->lastlinedefined = z->read<int>();
+  
+  f->numparams = z->read<uint8_t>();
+  f->is_vararg = z->read<uint8_t>() ? true : false;
+  f->maxstacksize = z->read<uint8_t>();
+
+  LoadVector(z, f->instructions_);
+
   LoadConstants(S,f);
-  LoadUpvalues(S,f);
-  LoadDebug(S,f);
+  LoadUpvalues(z,f);
+  LoadDebug(z,f);
 
   // TODO(aappleby): What exactly is getting popped here?
   S->L->stack_.pop();
@@ -208,6 +162,12 @@ static LuaProto* LoadFunction(LoadState* S)
 #define N2	N1+2
 #define N3	N2+6
 
+static LuaResult error3(LoadState* S, const char* why)
+{
+  luaO_pushfstring(S->L,"%s: %s precompiled chunk",S->name,why);
+  return LUA_ERRSYNTAX;
+}
+
 static LuaResult LoadHeader(LoadState* S)
 {
   LuaResult result = LUA_OK;
@@ -215,7 +175,9 @@ static LuaResult LoadHeader(LoadState* S)
   uint8_t s[LUAC_HEADERSIZE];
   luaU_header(h);
   memcpy(s,h,sizeof(char));			/* first char already read */
-  LoadBlock(S,s+sizeof(char),LUAC_HEADERSIZE-sizeof(char));
+  
+  S->Z->read(s+sizeof(char), LUAC_HEADERSIZE-sizeof(char));
+  
   if (memcmp(h,s,N0) == 0) {
     return result;
   }
@@ -259,7 +221,14 @@ LuaProto* luaU_undump (LuaThread* L, Zio* Z, const char* name)
   S.Z=Z;
   result = LoadHeader(&S);
   handleResult(result);
-  return LoadFunction(&S);
+  LuaProto* p = LoadFunction(&S);
+
+  if (S.Z->error()) {
+    result = error3(&S, "truncated");
+    handleResult(result);
+  }
+
+  return p;
 }
 
 #define MYINT(s)	(s[0]-'0')
