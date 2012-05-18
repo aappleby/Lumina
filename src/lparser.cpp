@@ -324,41 +324,42 @@ static void markupval (FuncState *fs, int level) {
   Find variable with given name 'n'. If it is an upvalue, add this
   upvalue into all intermediate functions.
 */
-static void singlevaraux (FuncState *fs, LuaString *n, expdesc *var, int base, int& out) {
+static LuaResult singlevaraux (FuncState *fs, LuaString *n, expdesc *var, int base, int& out) {
   LuaResult result = LUA_OK;
+  /* no more levels? */
   if (fs == NULL) {
-    /* no more levels? */
     out = VVOID;  /* default is global */
-    return;
+    return result;
   }
-  else {
-    int v = searchvar(fs, n);  /* look up locals at current level */
-    if (v >= 0) {  /* found? */
-      init_exp(var, VLOCAL, v);  /* variable is local */
-      if (!base)
-        markupval(fs, v);  /* local will be used as an upval */
-      out = VLOCAL;
-      return;
-    }
-    else {  /* not found as local at current level; try upvalues */
-      int idx = searchupvalue(fs, n);  /* try existing upvalues */
-      if (idx < 0) {  /* not found? */
-        int temp;
-        singlevaraux(fs->prev, n, var, 0, temp);
-        if (temp == VVOID) {
-          /* try upper levels */
-          out = VVOID;  /* not found; is a global */
-          return;
-        }
-        /* else was LOCAL or UPVAL */
-        result = newupvalue(fs, n, var, idx);  /* will be a new upvalue */
-        handleResult(result);
-      }
-      init_exp(var, VUPVAL, idx);
-      out = VUPVAL;
-      return;
-    }
+
+  /* look up locals at current level */
+  int v = searchvar(fs, n);
+  if (v >= 0) {  /* found? */
+    init_exp(var, VLOCAL, v);  /* variable is local */
+    if (!base)
+      markupval(fs, v);  /* local will be used as an upval */
+    out = VLOCAL;
+    return result;
   }
+
+  /* not found as local at current level; try upvalues */
+  int idx = searchupvalue(fs, n);  /* try existing upvalues */
+  if (idx < 0) {  /* not found? */
+    int temp;
+    result = singlevaraux(fs->prev, n, var, 0, temp);
+    if(result != LUA_OK) return result;
+    if (temp == VVOID) {
+      /* try upper levels */
+      out = VVOID;  /* not found; is a global */
+      return result;
+    }
+    /* else was LOCAL or UPVAL */
+    result = newupvalue(fs, n, var, idx);  /* will be a new upvalue */
+    if(result != LUA_OK) return result;
+  }
+  init_exp(var, VUPVAL, idx);
+  out = VUPVAL;
+  return result;
 }
 
 
@@ -370,10 +371,13 @@ static LuaResult singlevar (LexState *ls, expdesc *var) {
 
   FuncState *fs = ls->fs;
   int temp;
-  singlevaraux(fs, varname, var, 1, temp);
+  result = singlevaraux(fs, varname, var, 1, temp);
+  if(result != LUA_OK) return result;
+
   if (temp == VVOID) {  /* global name? */
     expdesc key;
-    singlevaraux(fs, ls->envn, var, 1, temp);  /* get environment variable */
+    result = singlevaraux(fs, ls->envn, var, 1, temp);  /* get environment variable */
+    if(result != LUA_OK) return result;
     assert(var->k == VLOCAL || var->k == VUPVAL);
     codestring(ls, &key, varname);  /* key is variable name */
     luaK_indexed(fs, var, &key);  /* env[varname] */
@@ -403,7 +407,7 @@ static void adjust_assign (LexState *ls, int nvars, int nexps, expdesc *e) {
 
 
 
-static void closegoto (LexState *ls, int g, Labeldesc *label) {
+static LuaResult closegoto (LexState *ls, int g, Labeldesc *label) {
   LuaResult result = LUA_OK;
   int i;
   FuncState *fs = ls->fs;
@@ -416,20 +420,22 @@ static void closegoto (LexState *ls, int g, Labeldesc *label) {
       "<goto %s> at line %d jumps into the scope of local " LUA_QS,
       gt->name->c_str(), gt->line, vname->c_str());
     result = semerror(ls, msg);
-    handleResult(result);
+    if(result != LUA_OK) return result;
   }
   luaK_patchlist(fs, gt->pc, label->pc);
   /* remove goto from pending list */
   for (i = g; i < gl->n - 1; i++)
     gl->arr[i] = gl->arr[i + 1];
   gl->n--;
+  return result;
 }
 
 
 /*
 ** try to close a goto with existing labels; this solves backward jumps
 */
-static int findlabel (LexState *ls, int g) {
+static LuaResult findlabel (LexState *ls, int g, int& out) {
+  LuaResult result = LUA_OK;
   int i;
   BlockCnt *bl = ls->fs->bl;
   Dyndata *dyd = ls->dyd;
@@ -441,11 +447,15 @@ static int findlabel (LexState *ls, int g) {
       if (gt->nactvar > lb->nactvar &&
           (bl->upval || dyd->label.n > bl->firstlabel))
         luaK_patchclose(ls->fs, gt->pc, lb->nactvar);
-      closegoto(ls, g, lb);  /* close it */
-      return 1;
+      result = closegoto(ls, g, lb);  /* close it */
+      if(result != LUA_OK) return result;
+      out = 1;
+      return result;
     }
   }
-  return 0;  /* label not found; cannot close goto */
+  /* label not found; cannot close goto */
+  out = 0;
+  return result;
 }
 
 
@@ -468,15 +478,20 @@ static int newlabelentry (LexState *ls, Labellist *l, LuaString *name,
 ** check whether new label 'lb' matches any pending gotos in current
 ** block; solves forward jumps
 */
-static void findgotos (LexState *ls, Labeldesc *lb) {
+static LuaResult findgotos (LexState *ls, Labeldesc *lb) {
+  LuaResult result = LUA_OK;
   Labellist *gl = &ls->dyd->gt;
   int i = ls->fs->bl->firstgoto;
   while (i < gl->n) {
-    if (gl->arr[i].name == lb->name)
-      closegoto(ls, i, lb);
-    else
+    if (gl->arr[i].name == lb->name) {
+      result = closegoto(ls, i, lb);
+      if(result != LUA_OK) return result;
+    }
+    else {
       i++;
+    }
   }
+  return result;
 }
 
 
@@ -486,7 +501,8 @@ static void findgotos (LexState *ls, Labeldesc *lb) {
 ** the goto exits the scope of any variable (which can be the
 ** upvalue), close those variables being exited.
 */
-static void movegotosout (FuncState *fs, BlockCnt *bl) {
+static LuaResult movegotosout (FuncState *fs, BlockCnt *bl) {
+  LuaResult result = LUA_OK;
   int i = bl->firstgoto;
   Labellist *gl = &fs->ls->dyd->gt;
   /* correct pending gotos to current block and try to close it
@@ -498,9 +514,14 @@ static void movegotosout (FuncState *fs, BlockCnt *bl) {
         luaK_patchclose(fs, gt->pc, bl->nactvar);
       gt->nactvar = bl->nactvar;
     }
-    if (!findlabel(fs->ls, i))
+    int temp;
+    result = findlabel(fs->ls, i, temp);
+    if(result != LUA_OK) return result;
+    if (!temp) {
       i++;  /* move to next one */
+    }
   }
+  return result;
 }
 
 
@@ -519,10 +540,12 @@ static void enterblock (FuncState *fs, BlockCnt *bl, uint8_t isloop) {
 /*
 ** create a label named "break" to resolve break statements
 */
-static void breaklabel (LexState *ls) {
+static LuaResult breaklabel (LexState *ls) {
+  LuaResult result = LUA_OK;
   LuaString* n = thread_G->strings_->Create("break");
   int l = newlabelentry(ls, &ls->dyd->label, n, 0, ls->fs->pc);
-  findgotos(ls, &ls->dyd->label.arr[l]);
+  result = findgotos(ls, &ls->dyd->label.arr[l]);
+  return result;
 }
 
 /*
@@ -542,6 +565,7 @@ static l_noret undefgoto (LexState *ls, Labeldesc *gt) {
 
 
 static void leaveblock (FuncState *fs) {
+  LuaResult result = LUA_OK;
   BlockCnt *bl = fs->bl;
   LexState *ls = fs->ls;
   if (bl->previous && bl->upval) {
@@ -550,17 +574,24 @@ static void leaveblock (FuncState *fs) {
     luaK_patchclose(fs, j, bl->nactvar);
     luaK_patchtohere(fs, j);
   }
-  if (bl->isloop)
-    breaklabel(ls);  /* close pending breaks */
+  if (bl->isloop) {
+    result = breaklabel(ls);  /* close pending breaks */
+    handleResult(result);
+  }
   fs->bl = bl->previous;
   removevars(fs, bl->nactvar);
   assert(bl->nactvar == fs->nactvar);
   fs->freereg = fs->nactvar;  /* free registers */
   ls->dyd->label.n = bl->firstlabel;  /* remove local labels */
-  if (bl->previous)  /* inner block? */
-    movegotosout(fs, bl);  /* update pending gotos to outer block */
-  else if (bl->firstgoto < ls->dyd->gt.n)  /* pending gotos in outer block? */
+  if (bl->previous) {
+    /* inner block? */
+    result = movegotosout(fs, bl);  /* update pending gotos to outer block */
+    handleResult(result);
+  }
+  else if (bl->firstgoto < ls->dyd->gt.n) {
+    /* pending gotos in outer block? */
     undefgoto(ls, &ls->dyd->gt.arr[bl->firstgoto]);  /* error */
+  }
 }
 
 
@@ -1422,7 +1453,8 @@ static void gotostat (LexState *ls, int pc) {
     label = thread_G->strings_->Create("break");
   }
   g = newlabelentry(ls, &ls->dyd->gt, label, line, pc);
-  findlabel(ls, g);  /* close it if label already defined */
+  result = findlabel(ls, g, temp);  /* close it if label already defined */
+  handleResult(result);
 }
 
 
@@ -1462,7 +1494,8 @@ static void labelstat (LexState *ls, LuaString *label, int line) {
     /* assume that locals are already out of scope */
     ll->arr[l].nactvar = fs->bl->nactvar;
   }
-  findgotos(ls, &ll->arr[l]);
+  result = findgotos(ls, &ll->arr[l]);
+  handleResult(result);
 }
 
 
