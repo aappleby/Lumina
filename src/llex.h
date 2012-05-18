@@ -44,8 +44,7 @@ public:
 };
 
 
-void luaX_setinput (LuaThread *L, LexState *ls, Zio *z,
-                              LuaString *source, int firstchar);
+void luaX_setinput (LuaThread *L, LexState *ls, Zio *z, LuaString *source);
 LuaResult luaX_next (LexState *ls);
 LuaResult luaX_lookahead (LexState *ls, int& out);
 LuaResult luaX_syntaxerror (LexState *ls, const char *s);

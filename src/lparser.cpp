@@ -1952,7 +1952,6 @@ LuaResult luaY_parser (LuaThread *L,
                        Zio *z,
                        Dyndata *dyd, 
                        const char *name, 
-                       int firstchar,
                        LuaProto*& out) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(L);
@@ -1968,7 +1967,7 @@ LuaResult luaY_parser (LuaThread *L,
 
   lexstate.dyd = dyd;
   dyd->actvar.n = dyd->gt.n = dyd->label.n = 0;
-  luaX_setinput(L, &lexstate, z, tname, firstchar);
+  luaX_setinput(L, &lexstate, z, tname);
   open_mainfunc(&lexstate, &funcstate, &bl);
   result = luaX_next(&lexstate);  /* read first token */
   if(result != LUA_OK) return result;

@@ -115,7 +115,6 @@ LuaResult luaY_parser (LuaThread *L,
                        Zio *z,
                        Dyndata *dyd, 
                        const char *name, 
-                       int firstchar,
                        LuaProto*& out);
 
 

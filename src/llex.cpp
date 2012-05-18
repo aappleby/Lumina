@@ -60,12 +60,12 @@ static void inclinenumber (LexState *ls) {
 }
 
 
-void luaX_setinput (LuaThread *L, LexState *ls, Zio *z, LuaString *source, int firstchar) {
+void luaX_setinput (LuaThread *L, LexState *ls, Zio *z, LuaString *source) {
   THREAD_CHECK(L);
 
   ls->decpoint = '.';
   ls->L = L;
-  ls->current_ = firstchar;
+  ls->current_ = z->getc();
   ls->lookahead.token = TK_EOS;  /* no look-ahead token */
   ls->z = z;
   ls->fs = NULL;

@@ -531,9 +531,11 @@ int lua_yieldk (LuaThread *L, int nresults, int ctx, LuaCallback k) {
 
 static LuaResult checkmode (LuaThread *L, const char *mode, const char *x) {
   THREAD_CHECK(L);
-  if (mode && strchr(mode, x[0]) == NULL) {
-    luaO_pushfstring(L, "attempt to load a %s chunk (mode is " LUA_QS ")", x, mode);
-    return LUA_ERRSYNTAX;
+  if (mode) {
+    if(strchr(mode, x[0]) == NULL) {
+      luaO_pushfstring(L, "attempt to load a %s chunk (mode is " LUA_QS ")", x, mode);
+      return LUA_ERRSYNTAX;
+    }
   }
   return LUA_OK;
 }
@@ -566,7 +568,6 @@ int luaD_protectedparser (LuaThread *L, Zio *z, const char *name, const char *mo
       }
     }
     else {
-      z->getc();
       result = checkmode(L, mode, "text");
       if(result != LUA_OK) {
         L->restoreState(s, result, 0);
@@ -574,7 +575,7 @@ int luaD_protectedparser (LuaThread *L, Zio *z, const char *name, const char *mo
         return result;
       }
       Dyndata dyd;
-      result = luaY_parser(L, z, &dyd, name, c, new_proto);
+      result = luaY_parser(L, z, &dyd, name, new_proto);
       if(result != LUA_OK) {
         L->restoreState(s, result, 0);
         inparser = 0;
