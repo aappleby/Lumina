@@ -1566,7 +1566,7 @@ static LuaResult whilestat (LexState *ls, int line) {
 }
 
 
-static void repeatstat (LexState *ls, int line) {
+static LuaResult repeatstat (LexState *ls, int line) {
   LuaResult result = LUA_OK;
   /* repeatstat -> REPEAT block UNTIL cond */
   int condexit;
@@ -1576,39 +1576,38 @@ static void repeatstat (LexState *ls, int line) {
   enterblock(fs, &bl1, 1);  /* loop block */
   enterblock(fs, &bl2, 0);  /* scope block */
   result = luaX_next(ls);  /* skip REPEAT */
-  handleResult(result);
+  if(result != LUA_OK) return result;
   
   result = statlist(ls);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   result = check_match(ls, TK_UNTIL, TK_REPEAT, line);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   result = cond2(ls, condexit);  /* read condition (inside scope block) */
-  handleResult(result);
+  if(result != LUA_OK) return result;
   if (bl2.upval)  /* upvalues? */
     luaK_patchclose(fs, condexit, bl2.nactvar);
   result = leaveblock(fs);  /* finish scope */
-  handleResult(result);
+  if(result != LUA_OK) return result;
   luaK_patchlist(fs, condexit, repeat_init);  /* close the loop */
   result = leaveblock(fs);  /* finish loop */
-  handleResult(result);
+  return result;
 }
 
 
-static int exp1 (LexState *ls) {
+static LuaResult exp1 (LexState *ls, int& out) {
   LuaResult result = LUA_OK;
   expdesc e;
-  int reg;
   result = expr(ls, &e);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   luaK_exp2nextreg(ls->fs, &e);
   assert(e.k == VNONRELOC);
-  reg = e.info;
-  return reg;
+  out = e.info;
+  return result;
 }
 
 
-static void forbody (LexState *ls, int base, int line, int nvars, int isnum) {
+static LuaResult forbody (LexState *ls, int base, int line, int nvars, int isnum) {
   LuaResult result = LUA_OK;
   /* forbody -> DO block */
   BlockCnt bl;
@@ -1617,17 +1616,17 @@ static void forbody (LexState *ls, int base, int line, int nvars, int isnum) {
   adjustlocalvars(ls, 3);  /* control variables */
 
   result = check_next(ls, TK_DO);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   prep = isnum ? luaK_codeAsBx(fs, OP_FORPREP, base, NO_JUMP) : luaK_jump(fs);
   enterblock(fs, &bl, 0);  /* scope for declared variables */
   adjustlocalvars(ls, nvars);
   luaK_reserveregs(fs, nvars);
   result = block2(ls);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   result = leaveblock(fs);  /* end of scope for declared variables */
-  handleResult(result);
+  if(result != LUA_OK) return result;
   luaK_patchtohere(fs, prep);
   if (isnum)  /* numeric for? */
     endfor = luaK_codeAsBx(fs, OP_FORLOOP, base, NO_JUMP);
@@ -1638,50 +1637,58 @@ static void forbody (LexState *ls, int base, int line, int nvars, int isnum) {
   }
   luaK_patchlist(fs, endfor, prep + 1);
   luaK_fixline(fs, line);
+  return result;
 }
 
 
-static void fornum (LexState *ls, LuaString *varname, int line) {
+static LuaResult fornum (LexState *ls, LuaString *varname, int line) {
   LuaResult result = LUA_OK;
   /* fornum -> NAME = exp1,exp1[,exp1] forbody */
   FuncState *fs = ls->fs;
   int base = fs->freereg;
-  {
-    result = new_localvarliteral(ls, "(for index)");
-    handleResult(result);
 
-    result = new_localvarliteral(ls, "(for limit)");
-    handleResult(result);
+  result = new_localvarliteral(ls, "(for index)");
+  if(result != LUA_OK) return result;
 
-    result = new_localvarliteral(ls, "(for step)");
-    handleResult(result);
-    
-    result = new_localvar(ls, varname);
-    handleResult(result);
-  }
-  result = check_next(ls, '=');
-  handleResult(result);
+  result = new_localvarliteral(ls, "(for limit)");
+  if(result != LUA_OK) return result;
 
-  exp1(ls);  /* initial value */
-  result = check_next(ls, ',');
-  handleResult(result);
+  result = new_localvarliteral(ls, "(for step)");
+  if(result != LUA_OK) return result;
   
-  exp1(ls);  /* limit */
+  result = new_localvar(ls, varname);
+  if(result != LUA_OK) return result;
+
+  result = check_next(ls, '=');
+  if(result != LUA_OK) return result;
+
   int temp;
+  result = exp1(ls, temp);  /* initial value */
+  if(result != LUA_OK) return result;
+
+  result = check_next(ls, ',');
+  if(result != LUA_OK) return result;
+  
+  result = exp1(ls, temp);  /* limit */
+  if(result != LUA_OK) return result;
+
   result = testnext(ls, ',', temp);
-  handleResult(result);
+  if(result != LUA_OK) return result;
+
   if (temp) {
-    exp1(ls);  /* optional step */
+    result = exp1(ls, temp);  /* optional step */
+    if(result != LUA_OK) return result;
   }
   else {  /* default step = 1 */
     luaK_codek(fs, fs->freereg, luaK_numberK(fs, 1));
     luaK_reserveregs(fs, 1);
   }
-  forbody(ls, base, line, 1, 1);
+  result = forbody(ls, base, line, 1, 1);
+  return result;
 }
 
 
-static void forlist (LexState *ls, LuaString *indexname) {
+static LuaResult forlist (LexState *ls, LuaString *indexname) {
   LuaResult result = LUA_OK;
 
   /* forlist -> NAME {,NAME} IN explist forbody */
@@ -1693,47 +1700,48 @@ static void forlist (LexState *ls, LuaString *indexname) {
 
   /* create control variables */
   result = new_localvarliteral(ls, "(for generator)");
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   result = new_localvarliteral(ls, "(for state)");
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   result = new_localvarliteral(ls, "(for control)");
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   /* create declared variables */
   result = new_localvar(ls, indexname);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   int temp;
   while (1) {
     result = testnext(ls, ',', temp);
-    handleResult(result);
+    if(result != LUA_OK) return result;
     if(!temp) break;
     LuaString* temp;
     result = str_checkname(ls, temp);
-    handleResult(result);
+    if(result != LUA_OK) return result;
     result = new_localvar(ls, temp);
-    handleResult(result);
+    if(result != LUA_OK) return result;
     nvars++;
   }
 
   result = check_next(ls, TK_IN);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   line = ls->lexer_.getLineNumber();
 
   result = explist(ls, &e, temp);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   adjust_assign(ls, 3, temp, &e);
 
   luaK_checkstack(fs, 3);  /* extra space to call generator */
-  forbody(ls, base, line, nvars - 3, 0);
+  result = forbody(ls, base, line, nvars - 3, 0);
+  return result;
 }
 
 
-static void forstat (LexState *ls, int line) {
+static LuaResult forstat (LexState *ls, int line) {
   LuaResult result = LUA_OK;
   /* forstat -> FOR (fornum | forlist) END */
   FuncState *fs = ls->fs;
@@ -1741,24 +1749,32 @@ static void forstat (LexState *ls, int line) {
   BlockCnt bl;
   enterblock(fs, &bl, 1);  /* scope for loop and control variables */
   
-  result= luaX_next(ls);  /* skip `for' */
-  handleResult(result);
+  result = luaX_next(ls);  /* skip `for' */
+  if(result != LUA_OK) return result;
 
   result = str_checkname(ls, varname);  /* first variable name */
-  handleResult(result);
+  if(result != LUA_OK) return result;
   switch (ls->t.token) {
-    case '=': fornum(ls, varname, line); break;
-    case ',': case TK_IN: forlist(ls, varname); break;
+    case '=': {
+      result = fornum(ls, varname, line);
+      if(result != LUA_OK) return result;
+      break;
+    }
+    case ',': case TK_IN: {
+      result = forlist(ls, varname);
+      if(result != LUA_OK) return result;
+      break;
+    }
     default: {
       result = luaX_syntaxerror(ls, LUA_QL("=") " or " LUA_QL("in") " expected");
-      handleResult(result);
+      if(result != LUA_OK) return result;
     }
   }
   result = check_match(ls, TK_END, TK_FOR, line);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   result = leaveblock(fs);  /* loop scope (`break' jumps to this point) */
-  handleResult(result);
+  return result;
 }
 
 
@@ -2021,11 +2037,13 @@ static LuaResult statement (LexState *ls) {
       break;
     }
     case TK_FOR: {  /* stat -> forstat */
-      forstat(ls, line);
+      result = forstat(ls, line);
+      if(result != LUA_OK) return result;
       break;
     }
     case TK_REPEAT: {  /* stat -> repeatstat */
-      repeatstat(ls, line);
+      result = repeatstat(ls, line);
+      if(result != LUA_OK) return result;
       break;
     }
     case TK_FUNCTION: {  /* stat -> funcstat */
