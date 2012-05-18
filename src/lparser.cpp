@@ -233,8 +233,7 @@ static LuaResult new_localvar (LexState *ls, LuaString *name) {
   FuncState *fs = ls->fs;
   Dyndata *dyd = ls->dyd;
   int reg = registerlocalvar(ls, name);
-  result = checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal,
-                      MAXVARS, "local variables");
+  result = checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal, MAXVARS, "local variables");
   if(result != LUA_OK) return result;
   if(dyd->actvar.n+1 >= (int)dyd->actvar.arr.size()) {
     dyd->actvar.arr.grow();
@@ -244,14 +243,8 @@ static LuaResult new_localvar (LexState *ls, LuaString *name) {
 }
 
 
-static void new_localvarliteral_ (LexState *ls, const char *name, size_t sz) {
-  LuaResult result = LUA_OK;
-  result = new_localvar(ls, luaX_newstring(ls, name, sz));
-  handleResult(result);
-}
-
-static void new_localvarliteral(LexState* ls, const char* name) {
-  return new_localvarliteral_(ls, name, strlen(name));
+static LuaResult new_localvarliteral(LexState* ls, const char* name) {
+  return new_localvar(ls, luaX_newstring(ls, name, strlen(name)));
 }
 
 static LocVar *getlocvar (FuncState *fs, int i) {
@@ -287,12 +280,12 @@ static int searchupvalue (FuncState *fs, LuaString *name) {
 }
 
 
-static int newupvalue (FuncState *fs, LuaString *name, expdesc *v) {
+static LuaResult newupvalue (FuncState *fs, LuaString *name, expdesc *v, int& out) {
   LuaResult result = LUA_OK;
   LuaProto *f = fs->f;
   int oldsize = (int)f->upvalues.size();
   result = checklimit(fs, fs->num_upvals + 1, MAXUPVAL, "upvalues");
-  handleResult(result);
+  if(result != LUA_OK) return result;
   if(fs->num_upvals >= (int)f->upvalues.size()) {
     f->upvalues.grow();
   }
@@ -301,7 +294,8 @@ static int newupvalue (FuncState *fs, LuaString *name, expdesc *v) {
   f->upvalues[fs->num_upvals].idx = cast_byte(v->info);
   f->upvalues[fs->num_upvals].name = name;
   luaC_barrier(f, LuaValue(name));
-  return fs->num_upvals++;
+  out = fs->num_upvals++;
+  return result;
 }
 
 
@@ -330,27 +324,39 @@ static void markupval (FuncState *fs, int level) {
   Find variable with given name 'n'. If it is an upvalue, add this
   upvalue into all intermediate functions.
 */
-static int singlevaraux (FuncState *fs, LuaString *n, expdesc *var, int base) {
-  if (fs == NULL)  /* no more levels? */
-    return VVOID;  /* default is global */
+static void singlevaraux (FuncState *fs, LuaString *n, expdesc *var, int base, int& out) {
+  LuaResult result = LUA_OK;
+  if (fs == NULL) {
+    /* no more levels? */
+    out = VVOID;  /* default is global */
+    return;
+  }
   else {
     int v = searchvar(fs, n);  /* look up locals at current level */
     if (v >= 0) {  /* found? */
       init_exp(var, VLOCAL, v);  /* variable is local */
       if (!base)
         markupval(fs, v);  /* local will be used as an upval */
-      return VLOCAL;
+      out = VLOCAL;
+      return;
     }
     else {  /* not found as local at current level; try upvalues */
       int idx = searchupvalue(fs, n);  /* try existing upvalues */
       if (idx < 0) {  /* not found? */
-        if (singlevaraux(fs->prev, n, var, 0) == VVOID) /* try upper levels */
-          return VVOID;  /* not found; is a global */
+        int temp;
+        singlevaraux(fs->prev, n, var, 0, temp);
+        if (temp == VVOID) {
+          /* try upper levels */
+          out = VVOID;  /* not found; is a global */
+          return;
+        }
         /* else was LOCAL or UPVAL */
-        idx  = newupvalue(fs, n, var);  /* will be a new upvalue */
+        result = newupvalue(fs, n, var, idx);  /* will be a new upvalue */
+        handleResult(result);
       }
       init_exp(var, VUPVAL, idx);
-      return VUPVAL;
+      out = VUPVAL;
+      return;
     }
   }
 }
@@ -363,9 +369,11 @@ static LuaResult singlevar (LexState *ls, expdesc *var) {
   if(result != LUA_OK) return result;
 
   FuncState *fs = ls->fs;
-  if (singlevaraux(fs, varname, var, 1) == VVOID) {  /* global name? */
+  int temp;
+  singlevaraux(fs, varname, var, 1, temp);
+  if (temp == VVOID) {  /* global name? */
     expdesc key;
-    singlevaraux(fs, ls->envn, var, 1);  /* get environment variable */
+    singlevaraux(fs, ls->envn, var, 1, temp);  /* get environment variable */
     assert(var->k == VLOCAL || var->k == VUPVAL);
     codestring(ls, &key, varname);  /* key is variable name */
     luaK_indexed(fs, var, &key);  /* env[varname] */
@@ -643,11 +651,14 @@ static void close_func (LexState *ls) {
 ** upvalue named LUA_ENV
 */
 static void open_mainfunc (LexState *ls, FuncState *fs, BlockCnt *bl) {
+  LuaResult result = LUA_OK;
   expdesc v;
   open_func(ls, fs, bl);
   fs->f->is_vararg = true;  /* main function is always vararg */
   init_exp(&v, VLOCAL, 0);
-  newupvalue(fs, ls->envn, &v);  /* create environment upvalue */
+  int temp;
+  result = newupvalue(fs, ls->envn, &v, temp);  /* create environment upvalue */
+  handleResult(result);
 }
 
 
@@ -920,7 +931,8 @@ static LuaResult body2 (LexState *ls, expdesc *e, int ismethod, int line) {
   if(result != LUA_OK) return result;
 
   if (ismethod) {
-    new_localvarliteral(ls, "self");  /* create 'self' parameter */
+    result = new_localvarliteral(ls, "self");  /* create 'self' parameter */
+    if(result != LUA_OK) return result;
     adjustlocalvars(ls, 1);
   }
 
@@ -1559,9 +1571,14 @@ static void fornum (LexState *ls, LuaString *varname, int line) {
   FuncState *fs = ls->fs;
   int base = fs->freereg;
   {
-    new_localvarliteral(ls, "(for index)");
-    new_localvarliteral(ls, "(for limit)");
-    new_localvarliteral(ls, "(for step)");
+    result = new_localvarliteral(ls, "(for index)");
+    handleResult(result);
+
+    result = new_localvarliteral(ls, "(for limit)");
+    handleResult(result);
+
+    result = new_localvarliteral(ls, "(for step)");
+    handleResult(result);
     
     result = new_localvar(ls, varname);
     handleResult(result);
@@ -1599,9 +1616,15 @@ static void forlist (LexState *ls, LuaString *indexname) {
   int base = fs->freereg;
 
   /* create control variables */
-  new_localvarliteral(ls, "(for generator)");
-  new_localvarliteral(ls, "(for state)");
-  new_localvarliteral(ls, "(for control)");
+  result = new_localvarliteral(ls, "(for generator)");
+  handleResult(result);
+
+  result = new_localvarliteral(ls, "(for state)");
+  handleResult(result);
+
+  result = new_localvarliteral(ls, "(for control)");
+  handleResult(result);
+
   /* create declared variables */
   result = new_localvar(ls, indexname);
   handleResult(result);
