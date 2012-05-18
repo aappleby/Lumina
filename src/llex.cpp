@@ -101,12 +101,6 @@ static int check_next (LexState *ls, const char *set) {
 */
 static void buffreplace (LexState *ls, char from, char to) {
   THREAD_CHECK(ls->L);
-  /*
-  size_t n = ls->buff_.size();
-  char *p = &ls->buff_[0];
-  while (n--)
-    if (p[n] == from) p[n] = to;
-  */
   ls->lexer_.replace(from,to);
 }
 

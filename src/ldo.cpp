@@ -550,7 +550,7 @@ int luaD_protectedparser (LuaThread *L, Zio *z, const char *name, const char *mo
   try {
     LuaProto *new_proto;
 
-    int c = z->getc();  /* read first character */
+    int c = z->next();  /* read first character */
     if (c == LUA_SIGNATURE[0]) {
       result = checkmode(L, mode, "binary");
       if(result != LUA_OK) {
@@ -566,6 +566,7 @@ int luaD_protectedparser (LuaThread *L, Zio *z, const char *name, const char *mo
       }
     }
     else {
+      z->getc();
       result = checkmode(L, mode, "text");
       if(result != LUA_OK) {
         L->restoreState(s, result, 0);

@@ -20,12 +20,7 @@
 #include "lundump.h"
 #include "lzio.h"
 
-struct LoadState {
- LuaThread* L;
- Zio* Z;
-};
-
-static LuaResult LoadFunction(LoadState* S, LuaProto*& out);
+static void LoadFunction(Zio* z, LuaProto*& out);
 
 template<class T>
 void LoadVector(Zio* z, LuaVector<T>& v) {
@@ -48,9 +43,8 @@ static LuaString* LoadString(Zio* z)
   }
 }
 
-static LuaResult LoadConstants(LoadState* S, LuaProto* f)
+static void LoadConstants(Zio* z, LuaProto* f)
 {
-  Zio* z = S->Z;
   int n = z->read<int>();
   f->constants.resize_nocheck(n);
 
@@ -61,14 +55,12 @@ static LuaResult LoadConstants(LoadState* S, LuaProto* f)
     case LUA_TNIL:
       f->constants[i] = LuaValue::Nil();
       break;
-    case LUA_TBOOLEAN: {
+    case LUA_TBOOLEAN:
       f->constants[i] = z->read<char>() ? true : false;
       break;
-    }
-    case LUA_TNUMBER: {
+    case LUA_TNUMBER:
       f->constants[i] = z->read<double>();
       break;
-    }
     case LUA_TSTRING:
       f->constants[i] = LoadString(z);
       break;
@@ -79,24 +71,16 @@ static LuaResult LoadConstants(LoadState* S, LuaProto* f)
 
   n = z->read<int>();
   f->subprotos_.resize_nocheck(n);
-
   for (int i=0; i < n; i++) {
-    LuaResult result = LoadFunction(S, f->subprotos_[i]);
-    if(result != LUA_OK) return result;
+    LoadFunction(z, f->subprotos_[i]);
   }
-  return LUA_OK;
 }
 
 static void LoadUpvalues(Zio* z, LuaProto* f)
 {
   int n = z->read<int>();
-
   f->upvalues.resize_nocheck(n);
   
-  for (int i=0; i<n; i++) {
-    f->upvalues[i].name=NULL;
-  }
-
   for (int i=0; i<n; i++) {
     f->upvalues[i].instack = z->read<uint8_t>();
     f->upvalues[i].idx = z->read<uint8_t>();
@@ -112,10 +96,6 @@ static void LoadDebug(Zio* z, LuaProto* f)
   int n = z->read<int>();
   f->locvars.resize_nocheck(n);
 
-  for (int i=0; i < n; i++) {
-    f->locvars[i].varname=NULL;
-  }
-
   for (int i=0; i < n; i++)
   {
     f->locvars[i].varname = LoadString(z);
@@ -124,22 +104,15 @@ static void LoadDebug(Zio* z, LuaProto* f)
   }
 
   n = z->read<int>();
-
   for (int i=0; i < n; i++) {
     f->upvalues[i].name = LoadString(z);
   }
 }
 
-static LuaResult LoadFunction(LoadState* S, LuaProto*& out)
+static void LoadFunction(Zio* z, LuaProto*& out)
 {
-  LuaResult result = LUA_OK;
-
-  Zio* z = S->Z;
-
   LuaProto* f = new LuaProto();
   f->linkGC(getGlobalGCList());
-  result = S->L->stack_.push_reserve2(LuaValue(f));
-  if(result != LUA_OK) return result;
 
   f->linedefined = z->read<int>();
   f->lastlinedefined = z->read<int>();
@@ -150,17 +123,11 @@ static LuaResult LoadFunction(LoadState* S, LuaProto*& out)
 
   LoadVector(z, f->instructions_);
 
-  result = LoadConstants(S,f);
-  if(result != LUA_OK) return result;
-
+  LoadConstants(z, f);
   LoadUpvalues(z,f);
   LoadDebug(z,f);
 
-  // TODO(aappleby): What exactly is getting popped here?
-  S->L->stack_.pop();
-
   out = f;
-  return result;
 }
 
 /* the code below must be consistent with the code in luaU_header */
@@ -169,44 +136,6 @@ static LuaResult LoadFunction(LoadState* S, LuaProto*& out)
 #define N2	N1+2
 #define N3	N2+6
 
-static LuaResult error3(LoadState* S, const char* name, const char* why)
-{
-  luaO_pushfstring(S->L,"%s: %s precompiled chunk",name,why);
-  return LUA_ERRSYNTAX;
-}
-
-static LuaResult LoadHeader(LoadState* S, const char* name)
-{
-  LuaResult result = LUA_OK;
-  uint8_t h[LUAC_HEADERSIZE];
-  uint8_t s[LUAC_HEADERSIZE];
-  luaU_header(h);
-  memcpy(s,h,sizeof(char));			/* first char already read */
-  
-  S->Z->read(s+sizeof(char), LUAC_HEADERSIZE-sizeof(char));
-  
-  if (memcmp(h,s,N0) == 0) {
-    return result;
-  }
-  if (memcmp(h,s,N1) != 0) {
-    result = error3(S, name, "not a");
-    if(result != LUA_OK) return result;
-  }
-  if (memcmp(h,s,N2) != 0) {
-    result = error3(S, name, "version mismatch in");
-    if(result != LUA_OK) return result;
-  }
-  if (memcmp(h,s,N3) != 0) {
-    result = error3(S, name, "incompatible");
-    if(result != LUA_OK) return result;
-  }
-  else {
-    result = error3(S, name, "corrupted");
-    if(result != LUA_OK) return result;
-  }
-  return result;
-}
-
 /*
 ** load precompiled chunk
 */
@@ -214,7 +143,6 @@ LuaResult luaU_undump (LuaThread* L, Zio* Z, const char* name, LuaProto*& out)
 {
   LuaResult result = LUA_OK;
   THREAD_CHECK(L);
-  LoadState S;
   if (*name=='@' || *name=='=') {
     name=name+1;
   }
@@ -224,18 +152,38 @@ LuaResult luaU_undump (LuaThread* L, Zio* Z, const char* name, LuaProto*& out)
   else {
     name=name;
   }
-  S.L=L;
-  S.Z=Z;
-  result = LoadHeader(&S, name);
-  if(result != LUA_OK) return result;
+
+  uint8_t h[LUAC_HEADERSIZE];
+  luaU_header(h);
+  
+  uint8_t s[LUAC_HEADERSIZE];
+  Z->read(s, LUAC_HEADERSIZE);
+  
+  if (memcmp(h,s,N0) != 0) {
+    if (memcmp(h,s,N1) != 0) {
+      luaO_pushfstring(L, "%s: not a precompiled chunk",name);
+      return LUA_ERRSYNTAX;
+    }
+    if (memcmp(h,s,N2) != 0) {
+      luaO_pushfstring(L, "%s: version mismatch in precompiled chunk",name);
+      return LUA_ERRSYNTAX;
+    }
+    if (memcmp(h,s,N3) != 0) {
+      luaO_pushfstring(L, "%s: incompatible precompiled chunk",name);
+      return LUA_ERRSYNTAX;
+    }
+    else {
+      luaO_pushfstring(L, "%s: corrupted precompiled chunk",name);
+      return LUA_ERRSYNTAX;
+    }
+  }
 
   LuaProto* p = NULL;
-  result = LoadFunction(&S, p);
-  if(result != LUA_OK) return result;
+  LoadFunction(Z, p);
 
-  if (S.Z->error()) {
-    result = error3(&S, name, "truncated");
-    if(result != LUA_OK) return result;
+  if (Z->error()) {
+    luaO_pushfstring(L, "%s: truncated precompiled chunk",name);
+    return LUA_ERRSYNTAX;
   }
 
   out = p;
