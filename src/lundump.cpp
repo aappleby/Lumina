@@ -23,10 +23,9 @@
 struct LoadState {
  LuaThread* L;
  Zio* Z;
- const char* name;
 };
 
-static LuaProto* LoadFunction(LoadState* S);
+static LuaResult LoadFunction(LoadState* S, LuaProto*& out);
 
 template<class T>
 void LoadVector(Zio* z, LuaVector<T>& v) {
@@ -49,7 +48,7 @@ static LuaString* LoadString(Zio* z)
   }
 }
 
-static void LoadConstants(LoadState* S, LuaProto* f)
+static LuaResult LoadConstants(LoadState* S, LuaProto* f)
 {
   Zio* z = S->Z;
   int n = z->read<int>();
@@ -81,8 +80,11 @@ static void LoadConstants(LoadState* S, LuaProto* f)
   n = z->read<int>();
   f->subprotos_.resize_nocheck(n);
 
-  for (int i=0; i < n; i++) f->subprotos_[i] = NULL;
-  for (int i=0; i < n; i++) f->subprotos_[i] = LoadFunction(S);
+  for (int i=0; i < n; i++) {
+    LuaResult result = LoadFunction(S, f->subprotos_[i]);
+    if(result != LUA_OK) return result;
+  }
+  return LUA_OK;
 }
 
 static void LoadUpvalues(Zio* z, LuaProto* f)
@@ -128,14 +130,16 @@ static void LoadDebug(Zio* z, LuaProto* f)
   }
 }
 
-static LuaProto* LoadFunction(LoadState* S)
+static LuaResult LoadFunction(LoadState* S, LuaProto*& out)
 {
+  LuaResult result = LUA_OK;
+
   Zio* z = S->Z;
 
   LuaProto* f = new LuaProto();
   f->linkGC(getGlobalGCList());
-  LuaResult result = S->L->stack_.push_reserve2(LuaValue(f));
-  handleResult(result);
+  result = S->L->stack_.push_reserve2(LuaValue(f));
+  if(result != LUA_OK) return result;
 
   f->linedefined = z->read<int>();
   f->lastlinedefined = z->read<int>();
@@ -146,14 +150,17 @@ static LuaProto* LoadFunction(LoadState* S)
 
   LoadVector(z, f->instructions_);
 
-  LoadConstants(S,f);
+  result = LoadConstants(S,f);
+  if(result != LUA_OK) return result;
+
   LoadUpvalues(z,f);
   LoadDebug(z,f);
 
   // TODO(aappleby): What exactly is getting popped here?
   S->L->stack_.pop();
 
-  return f;
+  out = f;
+  return result;
 }
 
 /* the code below must be consistent with the code in luaU_header */
@@ -162,13 +169,13 @@ static LuaProto* LoadFunction(LoadState* S)
 #define N2	N1+2
 #define N3	N2+6
 
-static LuaResult error3(LoadState* S, const char* why)
+static LuaResult error3(LoadState* S, const char* name, const char* why)
 {
-  luaO_pushfstring(S->L,"%s: %s precompiled chunk",S->name,why);
+  luaO_pushfstring(S->L,"%s: %s precompiled chunk",name,why);
   return LUA_ERRSYNTAX;
 }
 
-static LuaResult LoadHeader(LoadState* S)
+static LuaResult LoadHeader(LoadState* S, const char* name)
 {
   LuaResult result = LUA_OK;
   uint8_t h[LUAC_HEADERSIZE];
@@ -182,19 +189,19 @@ static LuaResult LoadHeader(LoadState* S)
     return result;
   }
   if (memcmp(h,s,N1) != 0) {
-    result = error3(S,"not a");
+    result = error3(S, name, "not a");
     if(result != LUA_OK) return result;
   }
   if (memcmp(h,s,N2) != 0) {
-    result = error3(S,"version mismatch in");
+    result = error3(S, name, "version mismatch in");
     if(result != LUA_OK) return result;
   }
   if (memcmp(h,s,N3) != 0) {
-    result = error3(S,"incompatible");
+    result = error3(S, name, "incompatible");
     if(result != LUA_OK) return result;
   }
   else {
-    result = error3(S,"corrupted");
+    result = error3(S, name, "corrupted");
     if(result != LUA_OK) return result;
   }
   return result;
@@ -203,32 +210,36 @@ static LuaResult LoadHeader(LoadState* S)
 /*
 ** load precompiled chunk
 */
-LuaProto* luaU_undump (LuaThread* L, Zio* Z, const char* name)
+LuaResult luaU_undump (LuaThread* L, Zio* Z, const char* name, LuaProto*& out)
 {
   LuaResult result = LUA_OK;
   THREAD_CHECK(L);
   LoadState S;
   if (*name=='@' || *name=='=') {
-    S.name=name+1;
+    name=name+1;
   }
   else if (*name==LUA_SIGNATURE[0]) {
-    S.name="binary string";
+    name="binary string";
   }
   else {
-    S.name=name;
+    name=name;
   }
   S.L=L;
   S.Z=Z;
-  result = LoadHeader(&S);
-  handleResult(result);
-  LuaProto* p = LoadFunction(&S);
+  result = LoadHeader(&S, name);
+  if(result != LUA_OK) return result;
+
+  LuaProto* p = NULL;
+  result = LoadFunction(&S, p);
+  if(result != LUA_OK) return result;
 
   if (S.Z->error()) {
-    result = error3(&S, "truncated");
-    handleResult(result);
+    result = error3(&S, name, "truncated");
+    if(result != LUA_OK) return result;
   }
 
-  return p;
+  out = p;
+  return result;
 }
 
 #define MYINT(s)	(s[0]-'0')

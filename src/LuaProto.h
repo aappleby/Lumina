@@ -31,6 +31,10 @@ class LuaProto : public LuaObject {
 public:
   LuaProto();
 
+  virtual void linkGC(LuaList& gclist);
+  virtual void linkGC(LuaList& list, LuaObject* prev, LuaObject* next);
+  virtual void unlinkGC(LuaList& gclist);
+
   virtual void VisitGC(LuaGCVisitor& visitor);
   virtual int  PropagateGC(LuaGCVisitor& visitor);
 

@@ -558,7 +558,12 @@ int luaD_protectedparser (LuaThread *L, Zio *z, const char *name, const char *mo
         inparser = 0;
         return result;
       }
-      new_proto = luaU_undump(L, z, name);
+      result = luaU_undump(L, z, name, new_proto);
+      if(result != LUA_OK) {
+        L->restoreState(s, result, 0);
+        inparser = 0;
+        return result;
+      }
     }
     else {
       result = checkmode(L, mode, "text");

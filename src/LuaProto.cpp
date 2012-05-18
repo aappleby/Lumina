@@ -14,6 +14,18 @@ LuaProto::LuaProto() : LuaObject(LUA_TPROTO) {
   source = NULL;
 }
 
+void LuaProto::linkGC(LuaList& gclist) {
+  LuaObject::linkGC(gclist);
+}
+
+void LuaProto::linkGC(LuaList& list, LuaObject* prev, LuaObject* next) {
+  LuaObject::linkGC(list, prev, next);
+}
+
+void LuaProto::unlinkGC(LuaList& gclist) {
+  LuaObject::unlinkGC(gclist);
+}
+
 void LuaProto::VisitGC(LuaGCVisitor& visitor) {
   setColor(GRAY);
   visitor.PushGray(this);
