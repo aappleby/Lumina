@@ -1778,7 +1778,7 @@ static LuaResult forstat (LexState *ls, int line) {
 }
 
 
-static void test_then_block (LexState *ls, int *escapelist) {
+static LuaResult test_then_block (LexState *ls, int *escapelist) {
   LuaResult result = LUA_OK;
 
   /* test_then_block -> [IF | ELSEIF] cond THEN block */
@@ -1788,23 +1788,22 @@ static void test_then_block (LexState *ls, int *escapelist) {
   int jf;  /* instruction to skip 'then' code (if condition is false) */
   
   result = luaX_next(ls);  /* skip IF or ELSEIF */
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   result = expr(ls, &v);  /* read condition */
-  handleResult(result);
+  if(result != LUA_OK) return result;
   
   result = check_next(ls, TK_THEN);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   
   if (ls->t.token == TK_GOTO || ls->t.token == TK_BREAK) {
     luaK_goiffalse(ls->fs, &v);  /* will jump to label if condition is true */
     enterblock(fs, &bl, 0);  /* must enter block before 'goto' */
     result = gotostat(ls, v.t);  /* handle goto/break */
-    handleResult(result);
+    if(result != LUA_OK) return result;
     if (block_follow(ls, 0)) {  /* 'goto' is the entire block? */
       result = leaveblock(fs);
-      handleResult(result);
-      return;  /* and that is it */
+      return result;
     }
     else  /* must skip over 'then' part if condition is false */
       jf = luaK_jump(fs);
@@ -1815,54 +1814,59 @@ static void test_then_block (LexState *ls, int *escapelist) {
     jf = v.f;
   }
   result = statlist(ls);  /* `then' part */
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   result = leaveblock(fs);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   if (ls->t.token == TK_ELSE ||
       ls->t.token == TK_ELSEIF)  /* followed by 'else'/'elseif'? */
     luaK_concat(fs, escapelist, luaK_jump(fs));  /* must jump over it */
   luaK_patchtohere(fs, jf);
+  return result;
 }
 
 
-static void ifstat (LexState *ls, int line) {
+static LuaResult ifstat (LexState *ls, int line) {
   LuaResult result = LUA_OK;
   /* ifstat -> IF cond THEN block {ELSEIF cond THEN block} [ELSE block] END */
   FuncState *fs = ls->fs;
   int escapelist = NO_JUMP;  /* exit list for finished parts */
-  test_then_block(ls, &escapelist);  /* IF cond THEN block */
+  result = test_then_block(ls, &escapelist);  /* IF cond THEN block */
+  if(result != LUA_OK) return result;
   while (ls->t.token == TK_ELSEIF) {
-    test_then_block(ls, &escapelist);  /* ELSEIF cond THEN block */
+    result = test_then_block(ls, &escapelist);  /* ELSEIF cond THEN block */
+    if(result != LUA_OK) return result;
   }
   int temp;
   result = testnext(ls, TK_ELSE, temp);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   if (temp) {
     result = block2(ls);  /* `else' part */
-    handleResult(result);
+    if(result != LUA_OK) return result;
   }
   result = check_match(ls, TK_END, TK_IF, line);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   luaK_patchtohere(fs, escapelist);  /* patch escape list to 'if' end */
+  return result;
 }
 
 
-static void localfunc (LexState *ls) {
+static LuaResult localfunc (LexState *ls) {
   LuaResult result = LUA_OK;
   expdesc b;
   FuncState *fs = ls->fs;
   LuaString* temp;
   result = str_checkname(ls, temp);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   result = new_localvar(ls, temp);  /* new local variable */
-  handleResult(result);
+  if(result != LUA_OK) return result;
   adjustlocalvars(ls, 1);  /* enter its scope */
   result = body2(ls, &b, 0, ls->lexer_.getLineNumber());  /* function created in next register */
-  handleResult(result);
+  if(result != LUA_OK) return result;
   /* debug information will only see the variable after this point! */
   getlocvar(fs, b.info)->startpc = fs->pc;
+  return result;
 }
 
 
@@ -2017,7 +2021,8 @@ static LuaResult statement (LexState *ls) {
       break;
     }
     case TK_IF: {  /* stat -> ifstat */
-      ifstat(ls, line);
+      result = ifstat(ls, line);
+      if(result != LUA_OK) return result;
       break;
     }
     case TK_WHILE: {  /* stat -> whilestat */
@@ -2059,7 +2064,8 @@ static LuaResult statement (LexState *ls) {
       result = testnext(ls, TK_FUNCTION, temp);
       if(result != LUA_OK) return result;
       if (temp) {  /* local function? */
-        localfunc(ls);
+        result = localfunc(ls);
+        if(result != LUA_OK) return result;
       }
       else {
         result = localstat(ls);
