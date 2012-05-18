@@ -67,13 +67,7 @@ LuaGlobalScope::~LuaGlobalScope() {
   thread_G = oldState ? oldState->l_G : NULL;
 }
 
-extern int inparser;
-
 void throwError(LuaResult err) {
-  if(inparser) {
-    int b = 0;
-    b++;
-  }
   throw err;
 }
 

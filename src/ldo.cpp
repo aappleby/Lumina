@@ -540,70 +540,56 @@ static LuaResult checkmode (LuaThread *L, const char *mode, const char *x) {
   return LUA_OK;
 }
 
-int inparser = 0;
-
 int luaD_protectedparser (LuaThread *L, Zio *z, const char *name, const char *mode) {
-  inparser = 1;
   LuaResult result = LUA_OK;
   THREAD_CHECK(L);
   LuaExecutionState s = L->saveState(L->stack_.top_);
   L->nonyieldable_count_++;  /* cannot yield during parsing */
 
-  try {
-    LuaProto *new_proto;
+  LuaProto *new_proto;
 
-    int c = z->next();  /* read first character */
-    if (c == LUA_SIGNATURE[0]) {
-      result = checkmode(L, mode, "binary");
-      if(result != LUA_OK) {
-        L->restoreState(s, result, 0);
-        inparser = 0;
-        return result;
-      }
-      result = luaU_undump(L, z, name, new_proto);
-      if(result != LUA_OK) {
-        L->restoreState(s, result, 0);
-        inparser = 0;
-        return result;
-      }
-    }
-    else {
-      result = checkmode(L, mode, "text");
-      if(result != LUA_OK) {
-        L->restoreState(s, result, 0);
-        inparser = 0;
-        return result;
-      }
-      Dyndata dyd;
-      result = luaY_parser(L, z, &dyd, name, new_proto);
-      if(result != LUA_OK) {
-        L->restoreState(s, result, 0);
-        inparser = 0;
-        return result;
-      }
-    }
-    
-    LuaResult result = L->stack_.push_reserve2(LuaValue(new_proto));
+  int c = z->next();  /* read first character */
+  if (c == LUA_SIGNATURE[0]) {
+    result = checkmode(L, mode, "binary");
     if(result != LUA_OK) {
       L->restoreState(s, result, 0);
-      inparser = 0;
       return result;
     }
-
-    LuaClosure* cl = new LuaClosure(new_proto, (int)new_proto->upvalues.size());
-    L->stack_.top_[-1] = LuaValue(cl);
-    // initialize upvalues
-    for (int i = 0; i < (int)new_proto->upvalues.size(); i++) {
-      cl->ppupvals_[i] = new LuaUpvalue();
-      cl->ppupvals_[i]->linkGC(getGlobalGCList());
+    result = luaU_undump(L, z, name, new_proto);
+    if(result != LUA_OK) {
+      L->restoreState(s, result, 0);
+      return result;
     }
   }
-  catch(LuaResult error) {
-    result = error;
+  else {
+    result = checkmode(L, mode, "text");
+    if(result != LUA_OK) {
+      L->restoreState(s, result, 0);
+      return result;
+    }
+    Dyndata dyd;
+    result = luaY_parser(L, z, &dyd, name, new_proto);
+    if(result != LUA_OK) {
+      L->restoreState(s, result, 0);
+      return result;
+    }
+  }
+  
+  result = L->stack_.push_reserve2(LuaValue(new_proto));
+  if(result != LUA_OK) {
+    L->restoreState(s, result, 0);
+    return result;
+  }
+
+  LuaClosure* cl = new LuaClosure(new_proto, (int)new_proto->upvalues.size());
+  L->stack_.top_[-1] = LuaValue(cl);
+  // initialize upvalues
+  for (int i = 0; i < (int)new_proto->upvalues.size(); i++) {
+    cl->ppupvals_[i] = new LuaUpvalue();
+    cl->ppupvals_[i]->linkGC(getGlobalGCList());
   }
 
   L->restoreState(s, result, 0);
-  inparser = 0;
   return result;
 }
 
