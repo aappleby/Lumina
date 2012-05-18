@@ -92,16 +92,17 @@ static LuaResult checklimit (FuncState *fs, int v, int l, const char *what) {
 }
 
 
-static void testnext (LexState *ls, int c, int& out) {
+static LuaResult testnext (LexState *ls, int c, int& out) {
   LuaResult result = LUA_OK;
   if (ls->t.token == c) {
     result = luaX_next(ls);
-    handleResult(result);
+    if(result != LUA_OK) return result;
     out = 1;
   }
   else {
     out = 0;
   }
+  return result;
 }
 
 
@@ -134,7 +135,9 @@ static LuaResult check_condition(LexState* ls, bool c, const char* msg) {
 static LuaResult check_match (LexState *ls, int what, int who, int where) {
   LuaResult result = LUA_OK;
   int temp;
-  testnext(ls, what, temp);
+  result = testnext(ls, what, temp);
+  if(result != LUA_OK) return result;
+  
   if (!temp) {
     if (where == ls->lexer_.getLineNumber()) {
       result = error_expected(ls, what);
@@ -200,12 +203,13 @@ static void codestring (LexState *ls, expdesc *e, LuaString *s) {
 }
 
 
-static void checkname (LexState *ls, expdesc *e) {
+static LuaResult checkname (LexState *ls, expdesc *e) {
   LuaResult result = LUA_OK;
   LuaString* temp;
   result = str_checkname(ls, temp);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   codestring(ls, e, temp);
+  return result;
 }
 
 
@@ -689,7 +693,8 @@ static void fieldsel (LexState *ls, expdesc *v) {
   luaK_exp2anyregup(fs, v);
   result = luaX_next(ls);  /* skip the dot or colon */
   handleResult(result);
-  checkname(ls, &key);
+  result = checkname(ls, &key);
+  handleResult(result);
   luaK_indexed(fs, v, &key);
 }
 
@@ -736,7 +741,8 @@ static void recfield (LexState *ls, struct ConsControl *cc) {
   if (ls->t.token == TK_NAME) {
     result = checklimit(fs, cc->nh, MAX_INT, "items in a constructor");
     handleResult(result);
-    checkname(ls, &key);
+    result = checkname(ls, &key);
+    handleResult(result);
   }
   else  /* ls->t.token == '[' */
     yindex(ls, &key);
@@ -838,8 +844,10 @@ static void constructor (LexState *ls, expdesc *t) {
     if (ls->t.token == '}') break;
     closelistfield(fs, &cc);
     field(ls, &cc);
-    testnext(ls, ',', temp1);
-    testnext(ls, ';', temp2);
+    result = testnext(ls, ',', temp1);
+    handleResult(result);
+    result = testnext(ls, ';', temp2);
+    handleResult(result);
   } while (temp1 || temp2);
   
   result = check_match(ls, '}', '{', line);
@@ -885,7 +893,8 @@ static LuaResult parlist (LexState *ls) {
           if(result != LUA_OK) return result;
         }
       }
-      testnext(ls, ',', temp);
+      result = testnext(ls, ',', temp);
+      if(result != LUA_OK) return result;
     } while (!f->is_vararg && temp);
   }
   adjustlocalvars(ls, nparams);
@@ -940,7 +949,8 @@ static LuaResult explist (LexState *ls, expdesc *v, int& out) {
 
   int temp;
   while (1) {
-    testnext(ls, ',', temp);
+    result = testnext(ls, ',', temp);
+    if(result != LUA_OK) return result;
     if(!temp) break;
     luaK_exp2nextreg(ls->fs, v);
     result = expr(ls, v);
@@ -1072,7 +1082,9 @@ static LuaResult primaryexp (LexState *ls, expdesc *v) {
         result = luaX_next(ls);
         if(result != LUA_OK) return result;
 
-        checkname(ls, &key);
+        result = checkname(ls, &key);
+        if(result != LUA_OK) return result;
+
         luaK_self(fs, v, &key);
         result = funcargs2(ls, v, line);
         if(result != LUA_OK) return result;
@@ -1318,7 +1330,9 @@ static LuaResult assignment2 (LexState *ls, struct LHS_assign *lh, int nvars) {
   if(result != LUA_OK) return result;
 
   int temp;
-  testnext(ls, ',', temp);
+  result = testnext(ls, ',', temp);
+  if(result != LUA_OK) return result;
+
   if (temp) {  /* assignment -> `,' primaryexp assignment */
     struct LHS_assign nv;
     nv.prev = lh;
@@ -1380,7 +1394,8 @@ static void gotostat (LexState *ls, int pc) {
   LuaString *label;
   int g;
   int temp;
-  testnext(ls, TK_GOTO, temp);
+  result = testnext(ls, TK_GOTO, temp);
+  handleResult(result);
   if (temp) {
     result = str_checkname(ls, label);
     handleResult(result);
@@ -1554,7 +1569,8 @@ static void fornum (LexState *ls, LuaString *varname, int line) {
   
   exp1(ls);  /* limit */
   int temp;
-  testnext(ls, ',', temp);
+  result = testnext(ls, ',', temp);
+  handleResult(result);
   if (temp) {
     exp1(ls);  /* optional step */
   }
@@ -1585,7 +1601,8 @@ static void forlist (LexState *ls, LuaString *indexname) {
 
   int temp;
   while (1) {
-    testnext(ls, ',', temp);
+    result = testnext(ls, ',', temp);
+    handleResult(result);
     if(!temp) break;
     LuaString* temp;
     result = str_checkname(ls, temp);
@@ -1692,7 +1709,8 @@ static void ifstat (LexState *ls, int line) {
     test_then_block(ls, &escapelist);  /* ELSEIF cond THEN block */
   }
   int temp;
-  testnext(ls, TK_ELSE, temp);
+  result = testnext(ls, TK_ELSE, temp);
+  handleResult(result);
   if (temp) {
     result = block2(ls);  /* `else' part */
     handleResult(result);
@@ -1734,10 +1752,12 @@ static LuaResult localstat (LexState *ls) {
     if(result != LUA_OK) return result;
     new_localvar(ls, temp);
     nvars++;
-    testnext(ls, ',', temp1);
+    result = testnext(ls, ',', temp1);
+    if(result != LUA_OK) return result;
   } while (temp1);
 
-  testnext(ls, '=', temp1);
+  result = testnext(ls, '=', temp1);
+  if(result != LUA_OK) return result;
   if (temp1) {
     result = explist(ls, &e, nexps);
     if(result != LUA_OK) return result;
@@ -1843,7 +1863,7 @@ static LuaResult retstat (LexState *ls) {
   }
   luaK_ret(fs, first, nret);
   int temp;
-  testnext(ls, ';', temp);  /* skip optional semicolon */
+  result = testnext(ls, ';', temp);  /* skip optional semicolon */
   return result;
 }
 
@@ -1901,7 +1921,8 @@ static LuaResult statement (LexState *ls) {
       if(result != LUA_OK) return result;
 
       int temp;
-      testnext(ls, TK_FUNCTION, temp);
+      result = testnext(ls, TK_FUNCTION, temp);
+      if(result != LUA_OK) return result;
       if (temp) {  /* local function? */
         localfunc(ls);
       }
