@@ -228,28 +228,31 @@ static int registerlocalvar (LexState *ls, LuaString *varname) {
 }
 
 
-static void new_localvar (LexState *ls, LuaString *name) {
+static LuaResult new_localvar (LexState *ls, LuaString *name) {
   LuaResult result = LUA_OK;
   FuncState *fs = ls->fs;
   Dyndata *dyd = ls->dyd;
   int reg = registerlocalvar(ls, name);
   result = checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal,
                       MAXVARS, "local variables");
-  handleResult(result);
+  if(result != LUA_OK) return result;
   if(dyd->actvar.n+1 >= (int)dyd->actvar.arr.size()) {
     dyd->actvar.arr.grow();
   }
   dyd->actvar.arr[dyd->actvar.n++].idx = cast(short, reg);
+  return result;
 }
 
 
 static void new_localvarliteral_ (LexState *ls, const char *name, size_t sz) {
-  new_localvar(ls, luaX_newstring(ls, name, sz));
+  LuaResult result = LUA_OK;
+  result = new_localvar(ls, luaX_newstring(ls, name, sz));
+  handleResult(result);
 }
 
-#define new_localvarliteral(ls,v) \
-	new_localvarliteral_(ls, "" v, (sizeof(v)/sizeof(char))-1)
-
+static void new_localvarliteral(LexState* ls, const char* name) {
+  return new_localvarliteral_(ls, name, strlen(name));
+}
 
 static LocVar *getlocvar (FuncState *fs, int i) {
   int idx = fs->ls->dyd->actvar.arr[fs->firstlocal + i].idx;
@@ -878,7 +881,8 @@ static LuaResult parlist (LexState *ls) {
           result = str_checkname(ls, temp);
           if(result != LUA_OK) return result;
 
-          new_localvar(ls, temp);
+          result = new_localvar(ls, temp);
+          if(result != LUA_OK) return result;
           nparams++;
           break;
         }
@@ -1558,7 +1562,9 @@ static void fornum (LexState *ls, LuaString *varname, int line) {
     new_localvarliteral(ls, "(for index)");
     new_localvarliteral(ls, "(for limit)");
     new_localvarliteral(ls, "(for step)");
-    new_localvar(ls, varname);
+    
+    result = new_localvar(ls, varname);
+    handleResult(result);
   }
   result = check_next(ls, '=');
   handleResult(result);
@@ -1597,7 +1603,8 @@ static void forlist (LexState *ls, LuaString *indexname) {
   new_localvarliteral(ls, "(for state)");
   new_localvarliteral(ls, "(for control)");
   /* create declared variables */
-  new_localvar(ls, indexname);
+  result = new_localvar(ls, indexname);
+  handleResult(result);
 
   int temp;
   while (1) {
@@ -1607,7 +1614,8 @@ static void forlist (LexState *ls, LuaString *indexname) {
     LuaString* temp;
     result = str_checkname(ls, temp);
     handleResult(result);
-    new_localvar(ls, temp);
+    result = new_localvar(ls, temp);
+    handleResult(result);
     nvars++;
   }
 
@@ -1729,7 +1737,8 @@ static void localfunc (LexState *ls) {
   LuaString* temp;
   result = str_checkname(ls, temp);
   handleResult(result);
-  new_localvar(ls, temp);  /* new local variable */
+  result = new_localvar(ls, temp);  /* new local variable */
+  handleResult(result);
   adjustlocalvars(ls, 1);  /* enter its scope */
   result = body2(ls, &b, 0, ls->lexer_.getLineNumber());  /* function created in next register */
   handleResult(result);
@@ -1750,7 +1759,8 @@ static LuaResult localstat (LexState *ls) {
     LuaString* temp;
     result = str_checkname(ls, temp);
     if(result != LUA_OK) return result;
-    new_localvar(ls, temp);
+    result = new_localvar(ls, temp);
+    if(result != LUA_OK) return result;
     nvars++;
     result = testnext(ls, ',', temp1);
     if(result != LUA_OK) return result;
