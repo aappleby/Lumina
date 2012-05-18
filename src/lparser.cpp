@@ -892,7 +892,7 @@ static LuaResult field2 (LexState *ls, struct ConsControl *cc) {
 }
 
 
-static void constructor (LexState *ls, expdesc *t) {
+static LuaResult constructor2 (LexState *ls, expdesc *t) {
   LuaResult result = LUA_OK;
   /* constructor -> '{' [ field { sep field } [sep] ] '}'
      sep -> ',' | ';' */
@@ -907,7 +907,7 @@ static void constructor (LexState *ls, expdesc *t) {
   luaK_exp2nextreg(ls->fs, t);  /* fix it at stack top */
 
   result = check_next(ls, '{');
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   int temp1, temp2;
   do {
@@ -915,19 +915,20 @@ static void constructor (LexState *ls, expdesc *t) {
     if (ls->t.token == '}') break;
     closelistfield(fs, &cc);
     result = field2(ls, &cc);
-    handleResult(result);
+    if(result != LUA_OK) return result;
     result = testnext(ls, ',', temp1);
-    handleResult(result);
+    if(result != LUA_OK) return result;
     result = testnext(ls, ';', temp2);
-    handleResult(result);
+    if(result != LUA_OK) return result;
   } while (temp1 || temp2);
   
   result = check_match(ls, '}', '{', line);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   lastlistfield(fs, &cc);
   SETARG_B(fs->f->instructions_[pc], luaO_int2fb(cc.na)); /* set initial array size */
   SETARG_C(fs->f->instructions_[pc], luaO_int2fb(cc.nh));  /* set initial table size */
+  return result;
 }
 
 /* }====================================================================== */
@@ -1062,7 +1063,8 @@ static LuaResult funcargs2 (LexState *ls, expdesc *f, int line) {
       break;
     }
     case '{': {  /* funcargs -> constructor */
-      constructor(ls, &args);
+      result = constructor2(ls, &args);
+      if(result != LUA_OK) return result;
       break;
     }
     case TK_STRING: {  /* funcargs -> STRING */
@@ -1214,7 +1216,7 @@ static LuaResult simpleexp (LexState *ls, expdesc *v) {
       break;
     }
     case '{': {  /* constructor */
-      constructor(ls, v);
+      result = constructor2(ls, v);
       return result;
     }
     case TK_FUNCTION: {
@@ -1454,43 +1456,44 @@ static LuaResult assignment2 (LexState *ls, struct LHS_assign *lh, int nvars) {
 }
 
 
-static int cond (LexState *ls) {
+static LuaResult cond2 (LexState *ls, int& out) {
   LuaResult result = LUA_OK;
   /* cond -> exp */
   expdesc v;
   result = expr(ls, &v);  /* read condition */
-  handleResult(result);
+  if(result != LUA_OK) return result;
   if (v.k == VNIL) v.k = VFALSE;  /* `falses' are all equal here */
   luaK_goiftrue(ls->fs, &v);
-  return v.f;
+  out = v.f;
+  return result;
 }
 
 
-static void gotostat (LexState *ls, int pc) {
+static LuaResult gotostat (LexState *ls, int pc) {
   LuaResult result = LUA_OK;
   int line = ls->lexer_.getLineNumber();
   LuaString *label;
   int g;
   int temp;
   result = testnext(ls, TK_GOTO, temp);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   if (temp) {
     result = str_checkname(ls, label);
-    handleResult(result);
+    if(result != LUA_OK) return result;
   }
   else {
     result = luaX_next(ls);  /* skip break */
-    handleResult(result);
+    if(result != LUA_OK) return result;
     label = thread_G->strings_->Create("break");
   }
   g = newlabelentry(ls, &ls->dyd->gt, label, line, pc);
   result = findlabel(ls, g, temp);  /* close it if label already defined */
-  handleResult(result);
+  return result;
 }
 
 
 /* check for repeated labels on the same block */
-static void checkrepeated (FuncState *fs, Labellist *ll, LuaString *label) {
+static LuaResult checkrepeated (FuncState *fs, Labellist *ll, LuaString *label) {
   LuaResult result = LUA_OK;
   int i;
   for (i = fs->bl->firstlabel; i < ll->n; i++) {
@@ -1499,38 +1502,40 @@ static void checkrepeated (FuncState *fs, Labellist *ll, LuaString *label) {
                           "label " LUA_QS " already defined on line %d",
                           label->c_str(), ll->arr[i].line);
       result = semerror(fs->ls, msg);
-      handleResult(result);
+      if(result != LUA_OK) return result;
     }
   }
+  return result;
 }
 
 
-static void labelstat (LexState *ls, LuaString *label, int line) {
+static LuaResult labelstat (LexState *ls, LuaString *label, int line) {
   LuaResult result = LUA_OK;
   /* label -> '::' NAME '::' */
   FuncState *fs = ls->fs;
   Labellist *ll = &ls->dyd->label;
   int l;  /* index of new label being created */
-  checkrepeated(fs, ll, label);  /* check for repeated labels */
+  result = checkrepeated(fs, ll, label);  /* check for repeated labels */
+  if(result != LUA_OK) return result;
   result = check_next(ls, TK_DBCOLON);  /* skip double colon */
-  handleResult(result);
+  if(result != LUA_OK) return result;
   /* create new entry for this label */
   l = newlabelentry(ls, ll, label, line, fs->pc);
   /* skip other no-op statements */
   while (ls->t.token == ';' || ls->t.token == TK_DBCOLON) {
     result = statement(ls);
-    handleResult(result);
+    if(result != LUA_OK) return result;
   }
   if (block_follow(ls, 0)) {  /* label is last no-op statement in the block? */
     /* assume that locals are already out of scope */
     ll->arr[l].nactvar = fs->bl->nactvar;
   }
   result = findgotos(ls, &ll->arr[l]);
-  handleResult(result);
+  return result;
 }
 
 
-static void whilestat (LexState *ls, int line) {
+static LuaResult whilestat (LexState *ls, int line) {
   LuaResult result = LUA_OK;
   /* whilestat -> WHILE cond DO block END */
   FuncState *fs = ls->fs;
@@ -1538,24 +1543,26 @@ static void whilestat (LexState *ls, int line) {
   int condexit;
   BlockCnt bl;
   result = luaX_next(ls);  /* skip WHILE */
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   whileinit = luaK_getlabel(fs);
-  condexit = cond(ls);
+  result = cond2(ls, condexit);
+  if(result != LUA_OK) return result;
   enterblock(fs, &bl, 1);
   
   result = check_next(ls, TK_DO);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   
   result = block2(ls);
-  handleResult(result);
+  if(result != LUA_OK) return result;
 
   luaK_jumpto(fs, whileinit);
   result = check_match(ls, TK_END, TK_WHILE, line);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   result = leaveblock(fs);
-  handleResult(result);
+  if(result != LUA_OK) return result;
   luaK_patchtohere(fs, condexit);  /* false conditions finish the loop */
+  return result;
 }
 
 
@@ -1576,7 +1583,8 @@ static void repeatstat (LexState *ls, int line) {
 
   result = check_match(ls, TK_UNTIL, TK_REPEAT, line);
   handleResult(result);
-  condexit = cond(ls);  /* read condition (inside scope block) */
+  result = cond2(ls, condexit);  /* read condition (inside scope block) */
+  handleResult(result);
   if (bl2.upval)  /* upvalues? */
     luaK_patchclose(fs, condexit, bl2.nactvar);
   result = leaveblock(fs);  /* finish scope */
@@ -1775,7 +1783,8 @@ static void test_then_block (LexState *ls, int *escapelist) {
   if (ls->t.token == TK_GOTO || ls->t.token == TK_BREAK) {
     luaK_goiffalse(ls->fs, &v);  /* will jump to label if condition is true */
     enterblock(fs, &bl, 0);  /* must enter block before 'goto' */
-    gotostat(ls, v.t);  /* handle goto/break */
+    result = gotostat(ls, v.t);  /* handle goto/break */
+    handleResult(result);
     if (block_follow(ls, 0)) {  /* 'goto' is the entire block? */
       result = leaveblock(fs);
       handleResult(result);
@@ -1996,7 +2005,8 @@ static LuaResult statement (LexState *ls) {
       break;
     }
     case TK_WHILE: {  /* stat -> whilestat */
-      whilestat(ls, line);
+      result = whilestat(ls, line);
+      if(result != LUA_OK) return result;
       break;
     }
     case TK_DO: {  /* stat -> DO block END */
@@ -2046,7 +2056,8 @@ static LuaResult statement (LexState *ls) {
       LuaString* temp;
       result = str_checkname(ls, temp);
       if(result != LUA_OK) return result;
-      labelstat(ls, temp, line);
+      result = labelstat(ls, temp, line);
+      if(result != LUA_OK) return result;
       break;
     }
     case TK_RETURN: {  /* stat -> retstat */
@@ -2058,7 +2069,8 @@ static LuaResult statement (LexState *ls) {
     }
     case TK_BREAK:   /* stat -> breakstat */
     case TK_GOTO: {  /* stat -> 'goto' NAME */
-      gotostat(ls, luaK_jump(ls->fs));
+      result = gotostat(ls, luaK_jump(ls->fs));
+      if(result != LUA_OK) return result;
       break;
     }
     default: {  /* stat -> func | assignment */
