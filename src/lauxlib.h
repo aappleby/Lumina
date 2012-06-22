@@ -136,13 +136,13 @@ void luaL_getmetatable(LuaThread* L, const char* tname);
 ** =======================================================
 */
 
-typedef struct luaL_Buffer {
+struct luaL_Buffer {
   char *b;  /* buffer address */
   size_t size;  /* buffer size */
   size_t n;  /* number of characters in buffer */
   LuaThread *L;
   char initb[LUAL_BUFFERSIZE];  /* initial buffer */
-} luaL_Buffer;
+};
 
 
 #define luaL_addchar(B,c) \

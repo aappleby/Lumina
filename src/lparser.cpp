@@ -72,7 +72,7 @@ static LuaResult error_expected (LexState *ls, int token) {
 
 
 static LuaResult errorlimit (FuncState *fs, int limit, const char *what) {
-  LuaThread *L = fs->ls->L;
+  LuaThread *L = fs->L;
   const char *msg;
   int line = fs->f->linedefined;
   const char *where = (line == 0)
@@ -416,7 +416,7 @@ static LuaResult closegoto (LexState *ls, int g, Labeldesc *label) {
   assert(gt->name == label->name);
   if (gt->nactvar < label->nactvar) {
     LuaString *vname = getlocvar(fs, gt->nactvar)->varname;
-    const char *msg = luaO_pushfstring(ls->L,
+    const char *msg = luaO_pushfstring(ls->fs->L,
       "<goto %s> at line %d jumps into the scope of local " LUA_QS,
       gt->name->c_str(), gt->line, vname->c_str());
     result = semerror(ls, msg);
@@ -557,7 +557,7 @@ static LuaResult undefgoto (LexState *ls, Labeldesc *gt) {
   const char *msg = (strcmp(name, "break") == 0)
                     ? "<%s> at line %d not inside a loop"
                     : "no visible label " LUA_QS " for <goto> at line %d";
-  msg = luaO_pushfstring(ls->L, msg, name, gt->line);
+  msg = luaO_pushfstring(ls->fs->L, msg, name, gt->line);
   return semerror(ls, msg);
 }
 
@@ -619,7 +619,7 @@ static void codeclosure (LexState *ls, LuaProto *clp, expdesc *v) {
 static LuaResult open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   LuaResult result = LUA_OK;
 
-  LuaThread *L = ls->L;
+  LuaThread *L = fs->L;
 
   fs->prev = ls->fs;  /* linked list of funcstates */
   fs->ls = ls;
@@ -644,7 +644,7 @@ static LuaResult open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   if(result != LUA_OK) return result;
 
   fs->f = f;
-  f->source = ls->L->l_G->strings_->Create(ls->lexer_.getSource());
+  f->source = fs->L->l_G->strings_->Create(ls->lexer_.getSource());
   f->maxstacksize = 2;  /* registers 0/1 are always valid */
 
   fs->constant_map = new LuaTable();
@@ -661,7 +661,7 @@ static LuaResult open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
 static LuaResult close_func (LexState *ls) {
   LuaResult result = LUA_OK;
 
-  LuaThread *L = ls->L;
+  LuaThread *L = ls->fs->L;
   FuncState *fs = ls->fs;
   LuaProto *f = fs->f;
   luaK_ret(fs, 0, 0);  /* final return */
@@ -982,6 +982,7 @@ static LuaResult body2 (LexState *ls, expdesc *e, int ismethod, int line) {
   LuaResult result = LUA_OK;
   /* body ->  `(' parlist `)' block END */
   FuncState new_fs;
+  new_fs.L = ls->fs->L;
   BlockCnt bl;
   result = open_func(ls, &new_fs, &bl);
   if(result != LUA_OK) return result;
@@ -1284,9 +1285,9 @@ static const struct {
 */
 static LuaResult subexpr (LexState *ls, expdesc *v, int limit, BinOpr& out) {
   LuaResult result = LUA_OK;
-  ScopedCallDepth d(ls->L);
+  ScopedCallDepth d(ls->fs->L);
 
-  if (ls->L->l_G->call_depth_ > LUAI_MAXCCALLS) {
+  if (ls->fs->L->l_G->call_depth_ > LUAI_MAXCCALLS) {
     return errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
   }
 
@@ -1423,7 +1424,7 @@ static LuaResult assignment2 (LexState *ls, struct LHS_assign *lh, int nvars) {
 
     // Because this operates recursively, having the left hand side of an expression be
     // "a,a,a,a,a,.......,a,a = 100" with too many A's could overflow the stack
-    if ((nvars + ls->L->l_G->call_depth_) > LUAI_MAXCCALLS) {
+    if ((nvars + ls->fs->L->l_G->call_depth_) > LUAI_MAXCCALLS) {
       return errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
     }
 
@@ -1498,7 +1499,7 @@ static LuaResult checkrepeated (FuncState *fs, Labellist *ll, LuaString *label) 
   int i;
   for (i = fs->bl->firstlabel; i < ll->n; i++) {
     if (label == ll->arr[i].name) {
-      const char *msg = luaO_pushfstring(fs->ls->L,
+      const char *msg = luaO_pushfstring(fs->L,
                           "label " LUA_QS " already defined on line %d",
                           label->c_str(), ll->arr[i].line);
       result = semerror(fs->ls, msg);
@@ -2006,9 +2007,9 @@ static LuaResult retstat (LexState *ls) {
 
 static LuaResult statement (LexState *ls) {
   LuaResult result = LUA_OK;
-  ScopedCallDepth d(ls->L);
+  ScopedCallDepth d(ls->fs->L);
 
-  if (ls->L->l_G->call_depth_ > LUAI_MAXCCALLS) {
+  if (ls->fs->L->l_G->call_depth_ > LUAI_MAXCCALLS) {
     return errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
   }
 
@@ -2119,34 +2120,62 @@ LuaResult luaY_parser (LuaThread *L,
                        LuaProto*& out) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(L);
+
   LexState lexstate;
   FuncState funcstate;
+
+  funcstate.L = L;
+
   BlockCnt bl;
   LuaString* tname = NULL;
 
   tname = thread_G->strings_->Create(name);
   /* push name to protect it */
   result = L->stack_.push_reserve2(LuaValue(tname));
-  if(result != LUA_OK) return result;
+  if(result != LUA_OK) {
+    L->PushErrors(lexstate.lexer_.getErrors());
+    lexstate.lexer_.clearErrors();
+    return result;
+  }
 
   lexstate.dyd = dyd;
   dyd->actvar.n = dyd->gt.n = dyd->label.n = 0;
-  luaX_setinput(L, &lexstate, z, tname);
+  luaX_setinput(&lexstate, z, tname);
   
   result = open_mainfunc(&lexstate, &funcstate, &bl);
-  if(result != LUA_OK) return result;
+  if(result != LUA_OK) {
+    L->PushErrors(lexstate.lexer_.getErrors());
+    lexstate.lexer_.clearErrors();
+    return result;
+  }
 
   result = luaX_next(&lexstate);  /* read first token */
-  if(result != LUA_OK) return result;
+  if(result != LUA_OK) {
+    L->PushErrors(lexstate.lexer_.getErrors());
+    lexstate.lexer_.clearErrors();
+    return result;
+  }
   
   result = statlist(&lexstate);  /* main body */
-  if(result != LUA_OK) return result;
+  if(result != LUA_OK) {
+    L->PushErrors(lexstate.lexer_.getErrors());
+    lexstate.lexer_.clearErrors();
+    return result;
+  }
   
   result = check_token(&lexstate, TK_EOS);
-  if(result != LUA_OK) return result;
+  if(result != LUA_OK) {
+    L->PushErrors(lexstate.lexer_.getErrors());
+    lexstate.lexer_.clearErrors();
+    return result;
+  }
 
   result = close_func(&lexstate);
-  if(result != LUA_OK) return result;
+  if(result != LUA_OK) {
+    L->PushErrors(lexstate.lexer_.getErrors());
+    lexstate.lexer_.clearErrors();
+    return result;
+  }
 
   L->stack_.pop();  /* pop name */
   assert(!funcstate.prev && funcstate.num_upvals == 1 && !lexstate.fs);

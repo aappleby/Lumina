@@ -36,10 +36,7 @@ static void save (LexState *ls, int c) {
 }
 
 LuaResult luaX_syntaxerror (LexState *ls, const char *msg) {
-  THREAD_CHECK(ls->L);
   ls->lexer_.RecordLexError(msg, ls->t.token);
-  ls->L->PushErrors(ls->lexer_.getErrors());
-  ls->lexer_.clearErrors();
   return LUA_ERRSYNTAX;
 }
 
@@ -49,7 +46,6 @@ LuaResult luaX_syntaxerror (LexState *ls, const char *msg) {
 ** \n, \r, \n\r, or \r\n)
 */
 static void inclinenumber (LexState *ls) {
-  THREAD_CHECK(ls->L);
   int old = ls->current_;
   assert(currIsNewline(ls));
   ls->current_ = ls->z->getc();  /* skip `\n' or `\r' */
@@ -60,11 +56,8 @@ static void inclinenumber (LexState *ls) {
 }
 
 
-void luaX_setinput (LuaThread *L, LexState *ls, Zio *z, LuaString *source) {
-  THREAD_CHECK(L);
-
+void luaX_setinput (LexState *ls, Zio *z, LuaString *source) {
   ls->decpoint = '.';
-  ls->L = L;
   ls->current_ = z->getc();
   ls->lookahead.token = TK_EOS;  /* no look-ahead token */
   ls->z = z;
@@ -87,7 +80,6 @@ void luaX_setinput (LuaThread *L, LexState *ls, Zio *z, LuaString *source) {
 
 
 static int check_next (LexState *ls, const char *set) {
-  THREAD_CHECK(ls->L);
   if (ls->current_ == '\0' || !strchr(set, ls->current_))
     return 0;
   save(ls, ls->current_);
@@ -100,7 +92,6 @@ static int check_next (LexState *ls, const char *set) {
 ** change all characters 'from' in buffer to 'to'
 */
 static void buffreplace (LexState *ls, char from, char to) {
-  THREAD_CHECK(ls->L);
   ls->lexer_.replace(from,to);
 }
 
@@ -116,7 +107,6 @@ static void buffreplace (LexState *ls, char from, char to) {
 */
 static LuaResult trydecpoint (LexState *ls, Token* token) {
   LuaResult result = LUA_OK;
-  THREAD_CHECK(ls->L);
   char old = ls->decpoint;
   ls->decpoint = getlocaledecpoint();
   buffreplace(ls, old, ls->decpoint);  /* try new decimal separator */
@@ -127,8 +117,6 @@ static LuaResult trydecpoint (LexState *ls, Token* token) {
     /* format error with correct decimal point: no more options */
     buffreplace(ls, ls->decpoint, '.');  /* undo change (for error message) */
     ls->lexer_.RecordLexError("malformed number", TK_NUMBER);
-    ls->L->PushErrors(ls->lexer_.getErrors());
-    ls->lexer_.clearErrors();
     return LUA_ERRSYNTAX;
   }
   return result;
@@ -138,7 +126,6 @@ static LuaResult trydecpoint (LexState *ls, Token* token) {
 /* double */
 static LuaResult read_numeral (LexState *ls, Token* token) {
   LuaResult result = LUA_OK;
-  THREAD_CHECK(ls->L);
   assert(lisdigit(ls->current_));
   do {
     save(ls, ls->current_);
@@ -163,7 +150,6 @@ static LuaResult read_numeral (LexState *ls, Token* token) {
 ** -1 if sequence is malformed
 */
 static int skip_sep (LexState *ls) {
-  THREAD_CHECK(ls->L);
   int count = 0;
   int s = ls->current_;
   assert(s == '[' || s == ']');
@@ -180,7 +166,6 @@ static int skip_sep (LexState *ls) {
 
 static LuaResult read_long_string (LexState *ls, Token* token, int sep) {
   LuaResult result = LUA_OK;
-  THREAD_CHECK(ls->L);
   /* skip 2nd `[' */
   save(ls, ls->current_);
   ls->current_ = ls->z->getc();
@@ -192,8 +177,6 @@ static LuaResult read_long_string (LexState *ls, Token* token, int sep) {
     switch (ls->current_) {
       case EOZ:
         ls->lexer_.RecordLexError((token) ? "unfinished long string" : "unfinished long comment", TK_EOS);
-        ls->L->PushErrors(ls->lexer_.getErrors());
-        ls->lexer_.clearErrors();
         return LUA_ERRSYNTAX;
         break;  /* to avoid warnings */
       case ']': {
@@ -234,7 +217,6 @@ endloop:
 
 
 static LuaResult escerror (LexState *ls, int *c, int n, const char *msg) {
-  THREAD_CHECK(ls->L);
   int i;
   /* prepare error message */
   ls->lexer_.clearBuffer();
@@ -243,15 +225,12 @@ static LuaResult escerror (LexState *ls, int *c, int n, const char *msg) {
     save(ls, c[i]);
   }
   ls->lexer_.RecordLexError(msg, TK_STRING);
-  ls->L->PushErrors(ls->lexer_.getErrors());
-  ls->lexer_.clearErrors();
   return LUA_ERRSYNTAX;
 }
 
 
 static LuaResult readhexaesc (LexState *ls, int& out) {
   LuaResult result = LUA_OK;
-  THREAD_CHECK(ls->L);
   int c[3], i;  /* keep input for error message */
   int r = 0;  /* result accumulator */
   c[0] = 'x';  /* for error message */
@@ -270,7 +249,6 @@ static LuaResult readhexaesc (LexState *ls, int& out) {
 
 static LuaResult readdecesc (LexState *ls, int& out) {
   LuaResult result = LUA_OK;
-  THREAD_CHECK(ls->L);
   int c[3], i;
   int r = 0;  /* result accumulator */
   for (i = 0; i < 3 && lisdigit(ls->current_); i++) {  /* read up to 3 digits */
@@ -289,7 +267,6 @@ static LuaResult readdecesc (LexState *ls, int& out) {
 
 static LuaResult read_string (LexState *ls, int del, Token* token) {
   LuaResult result = LUA_OK;
-  THREAD_CHECK(ls->L);
   /* keep delimiter (for error messages) */
   save(ls, ls->current_);
   ls->current_ = ls->z->getc();
@@ -298,15 +275,11 @@ static LuaResult read_string (LexState *ls, int del, Token* token) {
     switch (ls->current_) {
       case EOZ:
         ls->lexer_.RecordLexError("unfinished string", TK_EOS);
-        ls->L->PushErrors(ls->lexer_.getErrors());
-        ls->lexer_.clearErrors();
         return LUA_ERRSYNTAX;
         break;  /* to avoid warnings */
       case '\n':
       case '\r':
         ls->lexer_.RecordLexError("unfinished string", TK_STRING);
-        ls->L->PushErrors(ls->lexer_.getErrors());
-        ls->lexer_.clearErrors();
         return LUA_ERRSYNTAX;
         break;  /* to avoid warnings */
       case '\\': {  /* escape sequences */
@@ -374,7 +347,6 @@ static LuaResult read_string (LexState *ls, int del, Token* token) {
 
 static LuaResult llex (LexState *ls, Token* out) {
   LuaResult result = LUA_OK;
-  THREAD_CHECK(ls->L);
   ls->lexer_.clearBuffer();
   for (;;) {
     switch (ls->current_) {
@@ -424,8 +396,6 @@ static LuaResult llex (LexState *ls, Token* out) {
         }
         else {
           ls->lexer_.RecordLexError("invalid long string delimiter", TK_STRING);
-          ls->L->PushErrors(ls->lexer_.getErrors());
-          ls->lexer_.clearErrors();
           return LUA_ERRSYNTAX;
         }
       }
@@ -556,7 +526,6 @@ static LuaResult llex (LexState *ls, Token* out) {
 
 LuaResult luaX_next (LexState *ls) {
   LuaResult result = LUA_OK;
-  THREAD_CHECK(ls->L);
   ls->lastline = ls->lexer_.getLineNumber();
   if (ls->lookahead.token != TK_EOS) {  /* is there a look-ahead token? */
     ls->t = ls->lookahead;  /* use this one */
@@ -572,7 +541,6 @@ LuaResult luaX_next (LexState *ls) {
 
 LuaResult luaX_lookahead (LexState *ls, int& out) {
   LuaResult result = LUA_OK;
-  THREAD_CHECK(ls->L);
   assert(ls->lookahead.token == TK_EOS);
   result = llex(ls, &ls->lookahead);
   if(result != LUA_OK) return result;

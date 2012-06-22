@@ -33,7 +33,7 @@ public:
   Token t;  /* current token */
   Token lookahead;  /* look ahead token */
   FuncState *fs;  /* current function (parser) */
-  LuaThread *L;
+  //LuaThread *L;
   Zio *z;  /* input stream */
 
   struct Dyndata *dyd;  /* dynamic structures used by the parser */
@@ -44,7 +44,7 @@ public:
 };
 
 
-void luaX_setinput (LuaThread *L, LexState *ls, Zio *z, LuaString *source);
+void luaX_setinput (LexState *ls, Zio *z, LuaString *source);
 LuaResult luaX_next (LexState *ls);
 LuaResult luaX_lookahead (LexState *ls, int& out);
 LuaResult luaX_syntaxerror (LexState *ls, const char *s);

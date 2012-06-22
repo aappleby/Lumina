@@ -89,6 +89,8 @@ class LexState;
 /* state needed to generate code for a given function */
 class FuncState {
 public:
+  LuaThread* L;
+
   LuaProto *f;  /* current function header */
 
   // This table maps constants to indexes into the constants array, and

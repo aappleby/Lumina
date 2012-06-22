@@ -311,7 +311,7 @@ LuaValue LuaTable::findKeyString( LuaValue val ) {
 
 //-----------------------------------------------------------------------------
 
-void countKey( LuaValue key, int* logtable ) {
+void countKey(LuaValue key, int* logtable) {
   if(key.isInteger()) {
     int k = key.getInteger();
     if((0 < k) && (k <= MAXASIZE)) {

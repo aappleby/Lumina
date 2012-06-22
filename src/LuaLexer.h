@@ -108,10 +108,6 @@ public:
     return errors_;
   }
 
-  std::vector<std::string>& getErrors2() {
-    return errors_;
-  }
-
   void clearErrors() {
     errors_.clear();
   }
