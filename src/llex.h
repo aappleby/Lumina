@@ -9,14 +9,7 @@
 
 #include "LuaLexer.h"
 
-#include<vector>
-
-#include "lobject.h"
-#include "lzio.h"
-
-
 class LexState;
-
 class FuncState;
 
 /* state of the lexer plus state of the parser when shared by all

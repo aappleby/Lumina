@@ -6,26 +6,12 @@
 
 #include "LuaConversions.h"
 #include "LuaGlobals.h"
-#include "LuaState.h"
 
-#include <locale.h>
-#include <string.h>
-
-#include "lua.h"
+#include "lobject.h"
 
 #include "lctype.h"
-#include "ldo.h"
-#include "lgc.h"
 #include "llex.h"
-#include "lobject.h"
-#include "lparser.h"
-#include "lstate.h"
 #include "lzio.h"
-
-
-
-//#define next(ls) (ls->current = zgetc(ls->z))
-
 
 
 #define currIsNewline(ls)	(ls->current_ == '\n' || ls->current_ == '\r')
