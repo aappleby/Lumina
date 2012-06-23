@@ -1281,9 +1281,9 @@ static const struct {
 */
 static LuaResult subexpr (LexState *ls, expdesc *v, int limit, BinOpr& out) {
   LuaResult result = LUA_OK;
-  ScopedCallDepth d(ls->fs->L);
+  ScopedIncrementer d(ls->subexpression_depth_);
 
-  if (ls->fs->L->l_G->call_depth_ > LUAI_MAXCCALLS) {
+  if (ls->subexpression_depth_ > LUAI_MAXCCALLS) {
     return errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
   }
 
@@ -1420,7 +1420,7 @@ static LuaResult assignment2 (LexState *ls, struct LHS_assign *lh, int nvars) {
 
     // Because this operates recursively, having the left hand side of an expression be
     // "a,a,a,a,a,.......,a,a = 100" with too many A's could overflow the stack
-    if ((nvars + ls->fs->L->l_G->call_depth_) > LUAI_MAXCCALLS) {
+    if (nvars > 100) {
       return errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
     }
 
@@ -2003,9 +2003,9 @@ static LuaResult retstat (LexState *ls) {
 
 static LuaResult statement (LexState *ls) {
   LuaResult result = LUA_OK;
-  ScopedCallDepth d(ls->fs->L);
+  ScopedIncrementer d(ls->statement_depth_);
 
-  if (ls->fs->L->l_G->call_depth_ > LUAI_MAXCCALLS) {
+  if (ls->statement_depth_ > LUAI_MAXCCALLS) {
     return errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
   }
 

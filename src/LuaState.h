@@ -59,3 +59,16 @@ struct ScopedCallDepth
   LuaThread* state_;
 };
 
+struct ScopedIncrementer {
+  ScopedIncrementer(int& count) : count_(count) {
+    count_++;
+  }
+
+  ~ScopedIncrementer() {
+    count_--;
+  }
+  int& count_;
+
+private:
+  ScopedIncrementer& operator = (const ScopedIncrementer&);
+};

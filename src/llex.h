@@ -17,7 +17,11 @@ class FuncState;
 class LexState {
 public:
 
-  LexState(LuaLog* log) : lexer_(log) {
+  LexState(LuaLog* log) 
+  : lexer_(log),
+    subexpression_depth_(0),
+    statement_depth_(0)
+  {
   }
 
   int current_;  /* current character (charint) */
@@ -34,6 +38,8 @@ public:
   char decpoint;  /* locale decimal point */
 
   LuaLexer lexer_;
+  int subexpression_depth_;
+  int statement_depth_;
 };
 
 

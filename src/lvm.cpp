@@ -1337,7 +1337,8 @@ void luaV_run (LuaThread *L) {
 void luaV_execute (LuaThread *L, int funcindex, int /*nresults*/) {
   LuaResult result = LUA_OK;
 
-  ScopedCallDepth d(L);
+  ScopedIncrementer d(L->l_G->call_depth_);
+
   if(L->l_G->call_depth_ == LUAI_MAXCCALLS) {
     result = luaG_runerror("C stack overflow");
     handleResult(result);

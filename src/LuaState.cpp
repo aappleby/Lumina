@@ -14,16 +14,6 @@ LuaResult luaG_runerror (const char *fmt, ...);
 
 //-----------------------------------------------------------------------------
 
-ScopedCallDepth::ScopedCallDepth(LuaThread* state) : state_(state) {
-  state_->l_G->call_depth_++;
-}
-
-ScopedCallDepth::~ScopedCallDepth() {
-  state_->l_G->call_depth_--;
-}
-
-//-----------------------------------------------------------------------------
-
 LuaThread::LuaThread(LuaVM* g) : LuaObject(LUA_TTHREAD) {
   l_G = g;
   linkGC(l_G->allgc);
