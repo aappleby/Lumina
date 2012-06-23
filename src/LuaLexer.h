@@ -4,6 +4,8 @@
 
 #define FIRST_RESERVED	257
 
+class LuaLog;
+
 /*
 * WARNING: if you change the order of this enumeration,
 * grep "ORDER RESERVED"
@@ -56,7 +58,7 @@ protected:
 class LuaLexer {
 public:
 
-  LuaLexer() {
+  LuaLexer(LuaLog* log) : log_(log) {
     Reset(NULL);
   }
 
@@ -104,14 +106,6 @@ public:
     linenumber_ = 1;
   }
   
-  const std::vector<std::string>& getErrors() {
-    return errors_;
-  }
-
-  void clearErrors() {
-    errors_.clear();
-  }
-
   const std::string& getSource() {
     return source_;
   }
@@ -125,5 +119,6 @@ private:
   std::vector<char> buffer_;
   int linenumber_;  /* input line counter */
 
-  std::vector<std::string> errors_;
+  //std::vector<std::string> errors_;
+  LuaLog* log_;
 };

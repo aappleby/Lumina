@@ -11,13 +11,7 @@ int luaO_fb2int (int x);
 
 std::string luaO_chunkid2 (std::string source);
 
-
-bool StringVprintf(const char *fmt,
-                   va_list argp,
-                   std::string& result,
-                   std::string& error);
-
-bool StringVprintf(const char *fmt,
+void StringVprintf(const char *fmt,
                    va_list argp,
                    std::string& result);
 

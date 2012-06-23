@@ -58,23 +58,15 @@ static void pushstr (LuaThread *L, const char *str, int l) {
 }
 
 const char *luaO_pushvfstring (const char *fmt, va_list argp) {
-  LuaResult result = LUA_OK;
   LuaThread* L = thread_L;
 
   std::string result2;
-  std::string error2;
-  StringVprintf(fmt, argp, result2, error2);
-
-  if(error2.size()) {
-    result = luaG_runerror(error2.c_str());
-    handleResult(result);
-  }
+  StringVprintf(fmt, argp, result2);
 
   pushstr(L, result2.c_str(), result2.size());
 
   return L->stack_.top_[-1].getString()->c_str();
 }
-
 
 const char *luaO_pushfstring (LuaThread *L, const char *fmt, ...) {
   THREAD_CHECK(L);

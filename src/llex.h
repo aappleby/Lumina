@@ -17,7 +17,7 @@ class FuncState;
 class LexState {
 public:
 
-  LexState() {
+  LexState(LuaLog* log) : lexer_(log) {
   }
 
   int current_;  /* current character (charint) */

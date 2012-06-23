@@ -78,7 +78,7 @@ std::string luaO_chunkid2 (std::string source) {
 }
 
 
-bool StringVprintf(const char *fmt, va_list argp, std::string& result, std::string& error) {
+void StringVprintf(const char *fmt, va_list argp, std::string& result) {
   char buff[256];
   int n = 0;
   for (;;) {
@@ -122,22 +122,13 @@ bool StringVprintf(const char *fmt, va_list argp, std::string& result, std::stri
         break;
       }
       default: {
-        int l = sprintf(buff, "invalid option '%%%c' to 'lua_pushfstring'", *(e + 1));
-        error = std::string(buff, l);
-        return false;
+        assert(false && "Invalid option to StringVprintf");
       }
     }
     n += 2;
     fmt = e+2;
   }
   result += fmt;
-
-  return true;
-}
-
-bool StringVprintf (const char *fmt, va_list argp, std::string& result) {
-  std::string error;
-  return StringVprintf(fmt, argp, result, error);
 }
 
 std::string StringPrintf(const char* fmt, ...) {
@@ -145,16 +136,13 @@ std::string StringPrintf(const char* fmt, ...) {
   va_start(argp, fmt);
 
   std::string result;
-  std::string error;
 
-  bool ok = StringVprintf(fmt, argp, result, error);
-  assert(ok);
+  StringVprintf(fmt, argp, result);
 
   va_end(argp);
 
   return result;
 }
-
 
 
 int luaO_hexavalue (int c) {

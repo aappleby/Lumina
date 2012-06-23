@@ -6,6 +6,7 @@
 
 #include "LuaConversions.h"
 #include "LuaGlobals.h"
+#include "LuaLog.h"
 #include "LuaProto.h"
 #include "LuaState.h"
 
@@ -2113,15 +2114,16 @@ static LuaResult statement (LexState *ls) {
 /* }====================================================================== */
 
 
-LuaResult luaY_parser (LuaThread *L,
-                       Zio *z,
-                       Dyndata *dyd, 
-                       const char *name, 
-                       LuaProto*& out) {
+LuaResult luaY_parser2 (LuaThread *L,
+                        Zio *z,
+                        Dyndata *dyd, 
+                        const char *name, 
+                        LuaProto*& out) {
   LuaResult result = LUA_OK;
   THREAD_CHECK(L);
 
-  LexState lexstate;
+  LuaLog log;
+  LexState lexstate(&log);
   FuncState funcstate;
 
   funcstate.L = L;
@@ -2133,8 +2135,8 @@ LuaResult luaY_parser (LuaThread *L,
   /* push name to protect it */
   result = L->stack_.push_reserve2(LuaValue(tname));
   if(result != LUA_OK) {
-    L->PushErrors(lexstate.lexer_.getErrors());
-    lexstate.lexer_.clearErrors();
+    L->PushErrors(log.getErrors());
+    log.clearErrors();
     return result;
   }
 
@@ -2144,36 +2146,36 @@ LuaResult luaY_parser (LuaThread *L,
   
   result = open_mainfunc(&lexstate, &funcstate, &bl);
   if(result != LUA_OK) {
-    L->PushErrors(lexstate.lexer_.getErrors());
-    lexstate.lexer_.clearErrors();
+    L->PushErrors(log.getErrors());
+    log.clearErrors();
     return result;
   }
 
   result = luaX_next(&lexstate);  /* read first token */
   if(result != LUA_OK) {
-    L->PushErrors(lexstate.lexer_.getErrors());
-    lexstate.lexer_.clearErrors();
+    L->PushErrors(log.getErrors());
+    log.clearErrors();
     return result;
   }
   
   result = statlist(&lexstate);  /* main body */
   if(result != LUA_OK) {
-    L->PushErrors(lexstate.lexer_.getErrors());
-    lexstate.lexer_.clearErrors();
+    L->PushErrors(log.getErrors());
+    log.clearErrors();
     return result;
   }
   
   result = check_token(&lexstate, TK_EOS);
   if(result != LUA_OK) {
-    L->PushErrors(lexstate.lexer_.getErrors());
-    lexstate.lexer_.clearErrors();
+    L->PushErrors(log.getErrors());
+    log.clearErrors();
     return result;
   }
 
   result = close_func(&lexstate);
   if(result != LUA_OK) {
-    L->PushErrors(lexstate.lexer_.getErrors());
-    lexstate.lexer_.clearErrors();
+    L->PushErrors(log.getErrors());
+    log.clearErrors();
     return result;
   }
 
@@ -2185,3 +2187,10 @@ LuaResult luaY_parser (LuaThread *L,
   return result;
 }
 
+LuaResult luaY_parser (LuaThread *L,
+                       Zio *z,
+                       Dyndata *dyd, 
+                       const char *name, 
+                       LuaProto*& out) {
+  return luaY_parser2(L, z, dyd, name, out);
+}

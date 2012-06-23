@@ -577,6 +577,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\LuaLog.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\LuaLog.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\LuaObject.cpp"
 				>
 			</File>

@@ -1,6 +1,7 @@
 #include "LuaLexer.h"
 
 #include "LuaConversions.h"
+#include "LuaLog.h"
 #include "lctype.h"
 
 #include <assert.h>
@@ -60,11 +61,13 @@ void LuaLexer::RecordLexError(const char *msg, int token) {
 
   if (token) {
     std::string temp3 = getDebugToken(token);
-    std::string temp2 = StringPrintf("%s:%d: %s near %s", buff.c_str(), linenumber_, msg, temp3.c_str());
-    errors_.push_back(temp2);
+    log_->RecordError("%s:%d: %s near %s", buff.c_str(), linenumber_, msg, temp3.c_str());
+    //std::string temp2 = StringPrintf("%s:%d: %s near %s", buff.c_str(), linenumber_, msg, temp3.c_str());
+    //errors_.push_back(temp2);
   }
   else {
-    std::string temp1 = StringPrintf("%s:%d: %s", buff.c_str(), linenumber_, msg);
-    errors_.push_back(temp1);
+    //std::string temp1 = StringPrintf("%s:%d: %s", buff.c_str(), linenumber_, msg);
+    //errors_.push_back(temp1);
+    log_->RecordError("%s:%d: %s", buff.c_str(), linenumber_, msg);
   }
 }
