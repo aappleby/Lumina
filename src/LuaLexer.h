@@ -1,5 +1,6 @@
 #pragma once
 
+#include <assert.h>
 #include <vector>
 
 #define FIRST_RESERVED	257
@@ -33,10 +34,30 @@ struct Token {
   : reserved_(0) {
   }
 
-  int token;
-  double r;
+  Token& operator = (RESERVED id) {
+    assert(id >= 0);
+    id_ = id;
+  }
+
+  Token& operator = (const char c) {
+    assert(c >= 0);
+    id_ = c;
+  }
+
+  Token& operator = (const unsigned char c) {
+    assert(c >= 0);
+    id_ = c;
+  }
+
+  Token& operator = (double number) {
+    id_ = TK_NUMBER;
+    number_ = number;
+  }
 
   void setString(const char* s, size_t len);
+
+  // doesn't check for reserved words
+  void setString2(const char* s, size_t len);
 
   int getReserved();
 
@@ -48,7 +69,13 @@ struct Token {
     return text_.size();
   }
 
+  int getId() const { return id_; }
+  double getNumber() const { return number_; }
+
 protected:
+
+  int id_;
+  double number_;
 
   std::string text_;
   int reserved_;
@@ -112,6 +139,8 @@ public:
 
   void RecordLexError(const char* msg, int token);
 
+  //Token& getToken() { return token_; }
+
 private:
 
   std::string source_;
@@ -119,6 +148,7 @@ private:
   std::vector<char> buffer_;
   int linenumber_;  /* input line counter */
 
-  //std::vector<std::string> errors_;
   LuaLog* log_;
+
+  //Token token_;
 };

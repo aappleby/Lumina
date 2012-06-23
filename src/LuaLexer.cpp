@@ -30,6 +30,11 @@ void Token::setString(const char* s, size_t len) {
   }
 }
 
+void Token::setString2(const char* s, size_t len) {
+  text_ = std::string(s,len);
+  reserved_ = 0;
+}
+
 int Token::getReserved() {
   return reserved_;
 }
@@ -62,12 +67,8 @@ void LuaLexer::RecordLexError(const char *msg, int token) {
   if (token) {
     std::string temp3 = getDebugToken(token);
     log_->RecordError("%s:%d: %s near %s", buff.c_str(), linenumber_, msg, temp3.c_str());
-    //std::string temp2 = StringPrintf("%s:%d: %s near %s", buff.c_str(), linenumber_, msg, temp3.c_str());
-    //errors_.push_back(temp2);
   }
   else {
-    //std::string temp1 = StringPrintf("%s:%d: %s", buff.c_str(), linenumber_, msg);
-    //errors_.push_back(temp1);
     log_->RecordError("%s:%d: %s", buff.c_str(), linenumber_, msg);
   }
 }

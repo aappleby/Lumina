@@ -22,7 +22,7 @@ static void save (LexState *ls, int c) {
 }
 
 LuaResult luaX_syntaxerror (LexState *ls, const char *msg) {
-  ls->lexer_.RecordLexError(msg, ls->t.token);
+  ls->lexer_.RecordLexError(msg, ls->t.getId());
   return LUA_ERRSYNTAX;
 }
 
@@ -45,7 +45,7 @@ static void inclinenumber (LexState *ls) {
 void luaX_setinput (LexState *ls, Zio *z, LuaString *source) {
   ls->decpoint = '.';
   ls->current_ = z->getc();
-  ls->lookahead.token = TK_EOS;  /* no look-ahead token */
+  ls->lookahead = TK_EOS;  /* no look-ahead token */
   ls->z = z;
   ls->fs = NULL;
   ls->lastline = 1;
@@ -97,14 +97,15 @@ static LuaResult trydecpoint (LexState *ls, Token* token) {
   ls->decpoint = getlocaledecpoint();
   buffreplace(ls, old, ls->decpoint);  /* try new decimal separator */
 
-  
-  int ok = luaO_str2d(ls->lexer_.getBuffer(), ls->lexer_.getLen() - 1, &token->r);
+  double temp;
+  int ok = luaO_str2d(ls->lexer_.getBuffer(), ls->lexer_.getLen() - 1, &temp);
   if (!ok) {
     /* format error with correct decimal point: no more options */
     buffreplace(ls, ls->decpoint, '.');  /* undo change (for error message) */
     ls->lexer_.RecordLexError("malformed number", TK_NUMBER);
     return LUA_ERRSYNTAX;
   }
+  *token = temp;
   return result;
 }
 
@@ -122,11 +123,15 @@ static LuaResult read_numeral (LexState *ls, Token* token) {
   } while (lislalnum(ls->current_) || ls->current_ == '.');
   save(ls, '\0');
   buffreplace(ls, '.', ls->decpoint);  /* follow locale for decimal point */
-  int ok = luaO_str2d(ls->lexer_.getBuffer(), ls->lexer_.getLen() - 1, &token->r);
+
+  double temp;
+  int ok = luaO_str2d(ls->lexer_.getBuffer(), ls->lexer_.getLen() - 1, &temp);
   if (!ok) {
     /* format error? */
     return trydecpoint(ls, token); /* try to update decimal point separator */
   }
+  *token = temp;
+
   return result;
 }
 
@@ -195,8 +200,8 @@ static LuaResult read_long_string (LexState *ls, Token* token, int sep) {
 endloop:
 
   if (token) {
-    token->setString(ls->lexer_.getBuffer() + (2 + sep),
-                     ls->lexer_.getLen() - 2*(2 + sep));
+    token->setString2(ls->lexer_.getBuffer() + (2 + sep),
+                      ls->lexer_.getLen() - 2*(2 + sep));
   }
   return result;
 }
@@ -325,8 +330,8 @@ static LuaResult read_string (LexState *ls, int del, Token* token) {
   save(ls, ls->current_);
   ls->current_ = ls->z->getc();
 
-  token->setString(ls->lexer_.getBuffer() + 1,
-                   ls->lexer_.getLen() - 2);
+  token->setString2(ls->lexer_.getBuffer() + 1,
+                    ls->lexer_.getLen() - 2);
   return result;
 }
 
@@ -347,7 +352,7 @@ static LuaResult llex (LexState *ls, Token* out) {
       case '-': {  /* '-' or '--' (comment) */
         ls->current_ = ls->z->getc();
         if (ls->current_ != '-') {
-          out->token = '-';
+          *out = '-';
           return result;
         }
         /* else is a comment */
@@ -373,11 +378,11 @@ static LuaResult llex (LexState *ls, Token* out) {
         if (sep >= 0) {
           result = read_long_string(ls, out, sep);
           if(result != LUA_OK) return result;
-          out->token = TK_STRING;
+          *out = TK_STRING;
           return result;
         }
         else if (sep == -1) {
-          out->token = '[';
+          *out = '[';
           return result;
         }
         else {
@@ -388,66 +393,66 @@ static LuaResult llex (LexState *ls, Token* out) {
       case '=': {
         ls->current_ = ls->z->getc();
         if (ls->current_ != '=') {
-          out->token = '=';
+          *out = '=';
           return result;
         }
         else {
           ls->current_ = ls->z->getc();
-          out->token = TK_EQ;
+          *out = TK_EQ;
           return result;
         }
       }
       case '<': {
         ls->current_ = ls->z->getc();
         if (ls->current_ != '=') {
-          out->token = '<';
+          *out = '<';
           return result;
         }
         else {
           ls->current_ = ls->z->getc();
-          out->token = TK_LE;
+          *out = TK_LE;
           return result;
         }
       }
       case '>': {
         ls->current_ = ls->z->getc();
         if (ls->current_ != '=') {
-          out->token = '>';
+          *out = '>';
           return result;
         }
         else {
           ls->current_ = ls->z->getc();
-          out->token = TK_GE;
+          *out = TK_GE;
           return result;
         }
       }
       case '~': {
         ls->current_ = ls->z->getc();
         if (ls->current_ != '=') {
-          out->token = '~';
+          *out = '~';
           return result;
         }
         else {
           ls->current_ = ls->z->getc();
-          out->token = TK_NE;
+          *out = TK_NE;
           return result;
         }
       }
       case ':': {
         ls->current_ = ls->z->getc();
         if (ls->current_ != ':') {
-          out->token = ':';
+          *out = ':';
           return result;
         }
         else {
           ls->current_ = ls->z->getc();
-          out->token = TK_DBCOLON;
+          *out = TK_DBCOLON;
           return result;
         }
       }
       case '"': case '\'': {  /* short literal strings */
         result = read_string(ls, ls->current_, out);
-        out->token = TK_STRING;
+        *out = TK_STRING;
         return result;
       }
       case '.': {  /* '.', '..', '...', or number */
@@ -455,16 +460,16 @@ static LuaResult llex (LexState *ls, Token* out) {
         ls->current_ = ls->z->getc();
         if (check_next(ls, ".")) {
           if (check_next(ls, ".")) {
-            out->token = TK_DOTS;   /* '...' */
+            *out = TK_DOTS;   /* '...' */
             return result;
           }
           else {
-            out->token = TK_CONCAT;   /* '..' */
+            *out = TK_CONCAT;   /* '..' */
             return result;
           }
         }
         else if (!lisdigit(ls->current_)) {
-          out->token = '.';
+          *out = '.';
           return result;
         }
         /* else go through */
@@ -473,11 +478,11 @@ static LuaResult llex (LexState *ls, Token* out) {
       case '5': case '6': case '7': case '8': case '9': {
         result = read_numeral(ls, out);
         if(result != LUA_OK) return result;
-        out->token = TK_NUMBER;
+        *out = TK_NUMBER;
         return result;
       }
       case EOZ: {
-        out->token = TK_EOS;
+        *out = TK_EOS;
         return result;
       }
       default: {
@@ -487,21 +492,23 @@ static LuaResult llex (LexState *ls, Token* out) {
             ls->current_ = ls->z->getc();
           } while (lislalnum(ls->current_));
 
+          // TODO - the reserved stuff should really be hidden inside the token,
+          // this should be out->setName() or something.
           out->setString(ls->lexer_.getBuffer(), ls->lexer_.getLen());
           if (out->getReserved() > 0) {
             /* reserved word? */
-            out->token = out->getReserved() - 1 + FIRST_RESERVED;
+            *out = (RESERVED)(out->getReserved() - 1 + FIRST_RESERVED);
             return result;
           }
           else {
-            out->token = TK_NAME;
+            *out = TK_NAME;
             return result;
           }
         }
         else {  /* single-char tokens (+ - / ...) */
           int c = ls->current_;
           ls->current_ = ls->z->getc();
-          out->token = c;
+          *out = (const unsigned char)c;
           return result;
         }
       }
@@ -513,9 +520,9 @@ static LuaResult llex (LexState *ls, Token* out) {
 LuaResult luaX_next (LexState *ls) {
   LuaResult result = LUA_OK;
   ls->lastline = ls->lexer_.getLineNumber();
-  if (ls->lookahead.token != TK_EOS) {  /* is there a look-ahead token? */
+  if (ls->lookahead.getId() != TK_EOS) {  /* is there a look-ahead token? */
     ls->t = ls->lookahead;  /* use this one */
-    ls->lookahead.token = TK_EOS;  /* and discharge it */
+    ls->lookahead = TK_EOS;  /* and discharge it */
   }
   else {
     result = llex(ls, &ls->t);  /* read next token */
@@ -527,10 +534,10 @@ LuaResult luaX_next (LexState *ls) {
 
 LuaResult luaX_lookahead (LexState *ls, int& out) {
   LuaResult result = LUA_OK;
-  assert(ls->lookahead.token == TK_EOS);
+  assert(ls->lookahead.getId() == TK_EOS);
   result = llex(ls, &ls->lookahead);
   if(result != LUA_OK) return result;
-  out = ls->lookahead.token;
+  out = ls->lookahead.getId();
   return result;
 }
 

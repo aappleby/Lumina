@@ -68,7 +68,7 @@ static LuaResult semerror (LexState *ls, const char *msg) {
 static LuaResult error_expected (LexState *ls, int token) {
   std::string text1 = ls->lexer_.getDebugToken(token);
   std::string text2 = StringPrintf("%s expected", text1.c_str());
-  ls->lexer_.RecordLexError(text2.c_str(), ls->t.token);
+  ls->lexer_.RecordLexError(text2.c_str(), ls->t.getId());
   return LUA_ERRSYNTAX;
 }
 
@@ -77,7 +77,7 @@ static LuaResult errorlimit (FuncState *fs, int limit, const char *what) {
   int line = fs->f->linedefined;
   std::string where = (line == 0) ? "main function" : StringPrintf("function at line %d", line);
   std::string msg = StringPrintf("too many %s (limit is %d) in %s", what, limit, where.c_str());
-  fs->ls->lexer_.RecordLexError(msg.c_str(), fs->ls->t.token);
+  fs->ls->lexer_.RecordLexError(msg.c_str(), fs->ls->t.getId());
   return LUA_ERRSYNTAX;
 }
 
@@ -93,7 +93,7 @@ static LuaResult checklimit (FuncState *fs, int v, int l, const char *what) {
 
 static LuaResult testnext (LexState *ls, int c, int& out) {
   LuaResult result = LUA_OK;
-  if (ls->t.token == c) {
+  if (ls->t.getId() == c) {
     result = luaX_next(ls);
     if(result != LUA_OK) return result;
     out = 1;
@@ -107,7 +107,7 @@ static LuaResult testnext (LexState *ls, int c, int& out) {
 
 static LuaResult check_token (LexState *ls, int c) {
   LuaResult result = LUA_OK;
-  if (ls->t.token != c) {
+  if (ls->t.getId() != c) {
     result = error_expected(ls, c);
   }
   return result;
@@ -710,7 +710,7 @@ static LuaResult open_mainfunc (LexState *ls, FuncState *fs, BlockCnt *bl) {
 ** so it handled in separate.
 */
 static int block_follow (LexState *ls, int withuntil) {
-  switch (ls->t.token) {
+  switch (ls->t.getId()) {
     case TK_ELSE: case TK_ELSEIF:
     case TK_END: case TK_EOS:
       return 1;
@@ -724,7 +724,7 @@ static LuaResult statlist (LexState *ls) {
   LuaResult result = LUA_OK;
   /* statlist -> { stat [`;'] } */
   while (!block_follow(ls, 1)) {
-    if (ls->t.token == TK_RETURN) {
+    if (ls->t.getId() == TK_RETURN) {
       result = statement(ls);
       return result;  /* 'return' must be last statement */
     }
@@ -792,7 +792,7 @@ static LuaResult recfield (LexState *ls, struct ConsControl *cc) {
   int reg = ls->fs->freereg;
   expdesc key, val;
   int rkkey;
-  if (ls->t.token == TK_NAME) {
+  if (ls->t.getId() == TK_NAME) {
     result = checklimit(fs, cc->nh, MAX_INT, "items in a constructor");
     if(result != LUA_OK) return result;
     result = checkname(ls, &key);
@@ -857,7 +857,7 @@ static LuaResult listfield (LexState *ls, struct ConsControl *cc) {
 static LuaResult field2 (LexState *ls, struct ConsControl *cc) {
   LuaResult result = LUA_OK;
   /* field -> listfield | recfield */
-  switch(ls->t.token) {
+  switch(ls->t.getId()) {
     case TK_NAME: {  /* may be 'listfield' or 'recfield' */
       int temp;
       result = luaX_lookahead(ls, temp);
@@ -908,7 +908,7 @@ static LuaResult constructor2 (LexState *ls, expdesc *t) {
   int temp1, temp2;
   do {
     assert(cc.v.k == VVOID || cc.tostore > 0);
-    if (ls->t.token == '}') break;
+    if (ls->t.getId() == '}') break;
     closelistfield(fs, &cc);
     result = field2(ls, &cc);
     if(result != LUA_OK) return result;
@@ -938,10 +938,10 @@ static LuaResult parlist (LexState *ls) {
   LuaProto *f = fs->f;
   int nparams = 0;
   f->is_vararg = false;
-  if (ls->t.token != ')') {  /* is `parlist' not empty? */
+  if (ls->t.getId() != ')') {  /* is `parlist' not empty? */
     int temp;
     do {
-      switch (ls->t.token) {
+      switch (ls->t.getId()) {
         case TK_NAME: {  /* param -> NAME */
           LuaString* temp;
           result = str_checkname(ls, temp);
@@ -1042,12 +1042,12 @@ static LuaResult funcargs2 (LexState *ls, expdesc *f, int line) {
   expdesc args;
   memset(&args,0,sizeof(args));
   int base, nparams;
-  switch (ls->t.token) {
+  switch (ls->t.getId()) {
     case '(': {  /* funcargs -> `(' [ explist ] `)' */
       result = luaX_next(ls);
       if(result != LUA_OK) return result;
 
-      if (ls->t.token == ')')  /* arg list is empty? */
+      if (ls->t.getId() == ')')  /* arg list is empty? */
         args.k = VVOID;
       else {
         int temp;
@@ -1105,7 +1105,7 @@ static LuaResult funcargs2 (LexState *ls, expdesc *f, int line) {
 // prefixexp -> NAME | '(' expr ')'
 static LuaResult prefixexp (LexState *ls, expdesc *v) {
   LuaResult result = LUA_OK;
-  switch (ls->t.token) {
+  switch (ls->t.getId()) {
     case '(': {
       int line = ls->lexer_.getLineNumber();
       result = luaX_next(ls);
@@ -1140,7 +1140,7 @@ static LuaResult primaryexp (LexState *ls, expdesc *v) {
   result = prefixexp(ls, v);
   if(result != LUA_OK) return result;
   for (;;) {
-    switch (ls->t.token) {
+    switch (ls->t.getId()) {
       case '.': {  /* fieldsel */
         result = fieldsel(ls, v);
         if(result != LUA_OK) return result;
@@ -1182,10 +1182,10 @@ static LuaResult primaryexp (LexState *ls, expdesc *v) {
 // simpleexp -> NUMBER | STRING | NIL | TRUE | FALSE | ... | constructor | FUNCTION body | primaryexp
 static LuaResult simpleexp (LexState *ls, expdesc *v) {
   LuaResult result = LUA_OK;
-  switch (ls->t.token) {
+  switch (ls->t.getId()) {
     case TK_NUMBER: {
       init_exp(v, VKNUM, 0);
-      v->nval = ls->t.r;
+      v->nval = ls->t.getNumber();
       break;
     }
     case TK_STRING: {
@@ -1287,7 +1287,7 @@ static LuaResult subexpr (LexState *ls, expdesc *v, int limit, BinOpr& out) {
     return errorlimit(ls->fs, LUAI_MAXCCALLS, "C levels");
   }
 
-  UnOpr uop = getunopr(ls->t.token);
+  UnOpr uop = getunopr(ls->t.getId());
   if (uop != OPR_NOUNOPR) {
     int line = ls->lexer_.getLineNumber();
     result = luaX_next(ls);
@@ -1303,7 +1303,7 @@ static LuaResult subexpr (LexState *ls, expdesc *v, int limit, BinOpr& out) {
   }
 
   /* expand while operators have priorities higher than `limit' */
-  BinOpr op = getbinopr(ls->t.token);
+  BinOpr op = getbinopr(ls->t.getId());
   while (op != OPR_NOBINOPR && priority[op].left > limit) {
     expdesc v2;
     BinOpr nextop;
@@ -1519,7 +1519,7 @@ static LuaResult labelstat (LexState *ls, LuaString *label, int line) {
   /* create new entry for this label */
   l = newlabelentry(ls, ll, label, line, fs->pc);
   /* skip other no-op statements */
-  while (ls->t.token == ';' || ls->t.token == TK_DBCOLON) {
+  while (ls->t.getId() == ';' || ls->t.getId() == TK_DBCOLON) {
     result = statement(ls);
     if(result != LUA_OK) return result;
   }
@@ -1751,7 +1751,7 @@ static LuaResult forstat (LexState *ls, int line) {
 
   result = str_checkname(ls, varname);  /* first variable name */
   if(result != LUA_OK) return result;
-  switch (ls->t.token) {
+  switch (ls->t.getId()) {
     case '=': {
       result = fornum(ls, varname, line);
       if(result != LUA_OK) return result;
@@ -1793,7 +1793,7 @@ static LuaResult test_then_block (LexState *ls, int *escapelist) {
   result = check_next(ls, TK_THEN);
   if(result != LUA_OK) return result;
   
-  if (ls->t.token == TK_GOTO || ls->t.token == TK_BREAK) {
+  if (ls->t.getId() == TK_GOTO || ls->t.getId() == TK_BREAK) {
     luaK_goiffalse(ls->fs, &v);  /* will jump to label if condition is true */
     enterblock(fs, &bl, 0);  /* must enter block before 'goto' */
     result = gotostat(ls, v.t);  /* handle goto/break */
@@ -1815,8 +1815,8 @@ static LuaResult test_then_block (LexState *ls, int *escapelist) {
 
   result = leaveblock(fs);
   if(result != LUA_OK) return result;
-  if (ls->t.token == TK_ELSE ||
-      ls->t.token == TK_ELSEIF)  /* followed by 'else'/'elseif'? */
+  if (ls->t.getId() == TK_ELSE ||
+      ls->t.getId() == TK_ELSEIF)  /* followed by 'else'/'elseif'? */
     luaK_concat(fs, escapelist, luaK_jump(fs));  /* must jump over it */
   luaK_patchtohere(fs, jf);
   return result;
@@ -1830,7 +1830,7 @@ static LuaResult ifstat (LexState *ls, int line) {
   int escapelist = NO_JUMP;  /* exit list for finished parts */
   result = test_then_block(ls, &escapelist);  /* IF cond THEN block */
   if(result != LUA_OK) return result;
-  while (ls->t.token == TK_ELSEIF) {
+  while (ls->t.getId() == TK_ELSEIF) {
     result = test_then_block(ls, &escapelist);  /* ELSEIF cond THEN block */
     if(result != LUA_OK) return result;
   }
@@ -1908,11 +1908,11 @@ static LuaResult funcname (LexState *ls, expdesc *v, int& out) {
   int ismethod = 0;
   result = singlevar(ls, v);
   if(result != LUA_OK) return result;
-  while (ls->t.token == '.') {
+  while (ls->t.getId() == '.') {
     result = fieldsel(ls, v);
     if(result != LUA_OK) return result;
   }
-  if (ls->t.token == ':') {
+  if (ls->t.getId() == ':') {
     ismethod = 1;
     result = fieldsel(ls, v);
     if(result != LUA_OK) return result;
@@ -1966,7 +1966,7 @@ static LuaResult retstat (LexState *ls) {
   FuncState *fs = ls->fs;
   expdesc e;
   int first, nret;  /* registers with returned values */
-  if (block_follow(ls, 1) || ls->t.token == ';') {
+  if (block_follow(ls, 1) || ls->t.getId() == ';') {
     first = nret = 0;  /* return no values */
   }
   else {
@@ -2011,7 +2011,7 @@ static LuaResult statement (LexState *ls) {
 
   int line = ls->lexer_.getLineNumber();  /* may be needed for error messages */
 
-  switch (ls->t.token) {
+  switch (ls->t.getId()) {
     case ';': {  /* stat -> ';' (empty statement) */
       result = luaX_next(ls);  /* skip ';' */
       if(result != LUA_OK) return result;
