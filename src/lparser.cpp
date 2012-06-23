@@ -60,27 +60,25 @@ static LuaResult expr (LexState *ls, expdesc *v);
 
 /* semantic error */
 static LuaResult semerror (LexState *ls, const char *msg) {
-  ls->t.token = 0;  /* remove 'near to' from final message */
-  return luaX_syntaxerror(ls, msg);
+  ls->lexer_.RecordLexError(msg, 0);
+  return LUA_ERRSYNTAX;
 }
 
 
 static LuaResult error_expected (LexState *ls, int token) {
   std::string text1 = ls->lexer_.getDebugToken(token);
   std::string text2 = StringPrintf("%s expected", text1.c_str());
-  return luaX_syntaxerror(ls, text2.c_str());
+  ls->lexer_.RecordLexError(text2.c_str(), ls->t.token);
+  return LUA_ERRSYNTAX;
 }
 
 
 static LuaResult errorlimit (FuncState *fs, int limit, const char *what) {
-  LuaThread *L = fs->L;
-  const char *msg;
   int line = fs->f->linedefined;
-  const char *where = (line == 0)
-                      ? "main function"
-                      : luaO_pushfstring(L, "function at line %d", line);
-  msg = luaO_pushfstring(L, "too many %s (limit is %d) in %s", what, limit, where);
-  return luaX_syntaxerror(fs->ls, msg);
+  std::string where = (line == 0) ? "main function" : StringPrintf("function at line %d", line);
+  std::string msg = StringPrintf("too many %s (limit is %d) in %s", what, limit, where.c_str());
+  fs->ls->lexer_.RecordLexError(msg.c_str(), fs->ls->t.token);
+  return LUA_ERRSYNTAX;
 }
 
 
@@ -417,11 +415,9 @@ static LuaResult closegoto (LexState *ls, int g, Labeldesc *label) {
   assert(gt->name == label->name);
   if (gt->nactvar < label->nactvar) {
     LuaString *vname = getlocvar(fs, gt->nactvar)->varname;
-    const char *msg = luaO_pushfstring(ls->fs->L,
-      "<goto %s> at line %d jumps into the scope of local " LUA_QS,
+    std::string msg = StringPrintf("<goto %s> at line %d jumps into the scope of local " LUA_QS,
       gt->name->c_str(), gt->line, vname->c_str());
-    result = semerror(ls, msg);
-    if(result != LUA_OK) return result;
+    return semerror(ls, msg.c_str());
   }
   luaK_patchlist(fs, gt->pc, label->pc);
   /* remove goto from pending list */
@@ -555,11 +551,10 @@ static LuaResult breaklabel (LexState *ls) {
 */
 static LuaResult undefgoto (LexState *ls, Labeldesc *gt) {
   const char* name = gt->name->c_str();
-  const char *msg = (strcmp(name, "break") == 0)
-                    ? "<%s> at line %d not inside a loop"
-                    : "no visible label " LUA_QS " for <goto> at line %d";
-  msg = luaO_pushfstring(ls->fs->L, msg, name, gt->line);
-  return semerror(ls, msg);
+  std::string msg = (strcmp(name, "break") == 0)
+                    ? StringPrintf("<%s> at line %d not inside a loop", name, gt->line)
+                    : StringPrintf("no visible label " LUA_QS " for <goto> at line %d", name, gt->line);
+  return semerror(ls, msg.c_str());
 }
 
 
@@ -982,7 +977,7 @@ static LuaResult parlist (LexState *ls) {
 static LuaResult body2 (LexState *ls, expdesc *e, int ismethod, int line) {
   LuaResult result = LUA_OK;
   /* body ->  `(' parlist `)' block END */
-  FuncState new_fs;
+  FuncState new_fs(ls->fs->log_);
   new_fs.L = ls->fs->L;
   BlockCnt bl;
   result = open_func(ls, &new_fs, &bl);
@@ -2124,7 +2119,7 @@ LuaResult luaY_parser2 (LuaThread *L,
 
   LuaLog log;
   LexState lexstate(&log);
-  FuncState funcstate;
+  FuncState funcstate(&log);
 
   funcstate.L = L;
 

@@ -89,7 +89,11 @@ class LexState;
 /* state needed to generate code for a given function */
 class FuncState {
 public:
+  FuncState(LuaLog* log) : log_(log) {
+  }
+
   LuaThread* L;
+  LuaLog* log_;
 
   LuaProto *f;  /* current function header */
 
